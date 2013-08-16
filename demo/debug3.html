@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>HTML-ViewParse</title>
+	<script type="text/javascript" src="../build/0.3/HTML-ViewParse.debug.js"></script>
+	<style type="text/css">
+		.man{
+			background-color: #000;
+			color: #fff;
+		}
+		.woman{
+			background-color: #900;
+			color: #099;
+		}
+	</style>
+</head>
+<body>
+
+</body>
+
+<script type="text/template" name="people">
+	<h1>Here Comes Some People</h1>{(people.length)}
+	<hr />
+	<ul>
+	{#if( {(showPeople)} )}
+		{#each( {(people)} )}
+		<li>
+			{(name)}
+			{#if( {equa({(name)}{("Gaubee")})} )}
+				 is author
+			{/if()}
+		</li>
+		{/each()}
+	{#else()}
+		{#each( {(age)} )}
+		<li>
+			{(name)} is {(age)} year old!
+		</li>
+		{/each()}
+	{/if()}
+
+	</ul>
+
+	<hr />
+</script>
+
+
+</html>
+
+<script type="text/javascript">
+	ViewParser.scans();
+
+	var n = ViewParser.modules["people"];
+	var b = n();
+	b.append(document.body);
+
+	b.set("showPeople",true);
+	b.set("people",[{
+		name:"Gaubee"
+	},{
+		name:"Linda"
+	}]);
+
+	setTimeout(function (argument) {
+		b.set("people",[{
+			name:"Bageel"
+		},{
+			name:"Meaner"
+		},{
+			name:"MVW"
+		},{
+			name:"MVVM"
+		}]);
+	},1000);
+	setTimeout(function (argument) {
+		b.set("people",[{
+			name:"Gaubee"
+		},{
+			name:"MVVM"
+		},{
+			name:"MVW"
+		}]);
+	},2000);
+
+	setTimeout(function (argument) {
+		b.set("showPeople",false);
+		b.set("age",[{
+			name:"Gaubee",
+			age:20
+		},{
+			name:"My lover",
+			age:"NaN (T_T)!"
+		}]);
+	},3000);
+
+	setTimeout(function (argument) {
+		b.set("showPeople",true);
+	},4000);
+</script>
