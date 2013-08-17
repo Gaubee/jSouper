@@ -102,6 +102,10 @@ var $ = {
 		if (!arr) return;
 		return this._each($.slice(arr), callback, i)
 	},
+	forEachDyna:function(arr, callback, i){
+		if (!arr) return;
+		return this._each(arr, callback, i)
+	},
 	_each: function(arr, callback, i) {
 		for (i = i || 0; i < arr.length; i += 1) {
 			if (callback(arr[i], i, arr) === false) break;

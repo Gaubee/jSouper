@@ -104,6 +104,10 @@ var $ = {
 		if (!arr) return;
 		return this._each($.slice(arr), callback, i)
 	},
+	forEachDyna:function(arr, callback, i){
+		if (!arr) return;
+		return this._each(arr, callback, i)
+	},
 	_each: function(arr, callback, i) {
 		for (i = i || 0; i < arr.length; i += 1) {
 			if (callback(arr[i], i, arr) === false) break;
@@ -231,14 +235,14 @@ DataManager.prototype = {
 			default:
 				hashTable = DataManager.flat(obj, key);
 		}
-
+		// console.log("parse set:",hashTable);
 		$.forEach(hashTable, function(key) {
 			var val = hashTable._data[key];
-			if ($.indexOf(database, key)===-1) {
+			if ($.indexOf(database, key) === -1) {
 				$.push(database, key);
 			}
-			
-			if (database._data[key] !== val||(val instanceof Object)) {
+
+			if (database._data[key] !== val || (val instanceof Object)) {
 				database._data[key] = val;
 				dm._touchOffSubset(key);
 			}
@@ -246,8 +250,17 @@ DataManager.prototype = {
 	},
 	_touchOffSubset: function(key) {
 		// console.log("_touchOffSubset:",key)
-		$.forEach(this._viewInstances, function(vi) {
-			vi.touchOff(key);
+		$.forEachDyna(this._viewInstances, function(vi) {//use forEachDyna --> attr-vi will be pushin when vi._isAttr.bindHandle files
+			if (vi._isAttr) {
+				// console.log("building attribute text!!");
+				$.forIn(vi._triggers,function (trigger,key) {
+					vi.touchOff(key);
+				});
+				// console.log("building result:",vi.NodeList[vi.handleNodeTree.id].currentNode.innerText,vi.dataManager)
+				vi._isAttr.bindHandle(vi.dataManager);
+			} else {
+				vi.touchOff(key);
+			}
 		});
 		$.forEach(this._subsetDataManagers, function(dm) {
 			dm._touchOffSubset(key);
@@ -256,7 +269,9 @@ DataManager.prototype = {
 	collect: function(viewInstance) {
 		var dm = this;
 		if ($.indexOf(dm._viewInstances, viewInstance) === -1) {
+			viewInstance.dataManager.remove(viewInstance);
 			$.push(dm._viewInstances, viewInstance);
+			viewInstance.dataManager = dm;
 		}
 		return dm;
 	},
@@ -269,6 +284,14 @@ DataManager.prototype = {
 		}
 		$.push(this._subsetDataManagers, subsetDataManager);
 		return subsetDataManager; //subset(vi).set(basedata);
+	},
+	remove:function(viewInstance){
+		var dm = this,
+			vis = dm._viewInstances,
+			index = $.indexOf(vis,viewInstance);
+		if (index!==-1) {
+			vis.splice(index,1);
+		}
 	}
 }
 /*
@@ -343,8 +366,8 @@ var IEfix = {
 };
 var _comment_reg = /<!--[\w\W]*?-->/g;
 
-function _buildTrigger(handleNodeTree) {
-	var self = this,
+function _buildTrigger(handleNodeTree, dataManager) {
+	var self = this, //View Instance
 		triggers = self._triggers;
 	handleNodeTree = handleNodeTree || self.handleNodeTree;
 	_traversal(handleNodeTree, function(handle, index, parentHandle) {
@@ -379,53 +402,70 @@ function _buildTrigger(handleNodeTree) {
 					attrKey = (_isIE && IEfix[attrKey]) || attrKey
 
 				if (_matchRule.test(attrValue)) {
+
 					var attrViewInstance = (V.attrModules[handle.id + attrKey] = V.parse(attrValue))(),
 						_shadowDIV = $.DOM.clone(shadowDIV);
 					attrViewInstance.append(_shadowDIV);
-					$.forIn(attrViewInstance._triggers, function(triggerCollection, key) {
-						if (key && key !== ".") {
-							$.forEach(triggerCollection, function(trigger) {
-								var _newTrigger = $.create(trigger);
-								_newTrigger.bubble = false; //this kind of Parent Handle can not be bubbling trigger.
-								_newTrigger.event = function(NodeList, dataManager, eventTrigger) {
-									$.forIn(attrViewInstance._triggers, function(attrTriggerCollection, attrTriggerKey) {
-										if (attrTriggerKey && attrTriggerKey !== ".") {
-											attrViewInstance.set(attrTriggerKey, dataManager.get(attrTriggerKey));
-										}
-									});
-
-									var currentNode = NodeList[handle.id].currentNode,
-										attrOuter = _shadowDIV.innerText;
-									// console.log(currentNode)
-									if (attrOuter === undefined) {
-										attrOuter = _shadowDIV.innerHTML.replace(_comment_reg, "");
+					attrViewInstance._isAttr = {
+						key: attrKey,
+						parserNode: _shadowDIV,
+						/*When the trigger of be injecte in the View instance being fired (triggered by the ViewInstance instance), 
+						it will storage the property value where the currentNode,// and the dataManager, 
+						and lock it into attrViewInstance, 
+						waiting for updates the attribute.*/ //(so the trigger of be injecte in mush be unshift)
+						currentNode: null,
+						bindHandle: function() {
+							var self = this,
+								currentNode = self.currentNode,
+								parserNode = self.parserNode,
+								attrOuter = parserNode.innerText || parserNode.textContent || "";
+							// console.log("using currentNode:",currentNode);
+							if (currentNode) {
+								if (attrKey === "style" && _isIE) {
+									currentNode.style.setAttribute('cssText', attrOuter);
+								} else if (attrKey.indexOf("on") === 0 && _event_by_fun) {
+									try {
+										var attrOuterEvent = Function(attrOuter);
+									} catch (e) {
+										attrOuterEvent = $.noop;
 									}
-									if (attrKey === "style" && _isIE) {
-										currentNode.style.setAttribute('cssText', attrOuter);
-									} else if (attrKey.indexOf("on") === 0 && _event_by_fun) {
-										try {
-											var attrOuterEvent = Function(attrOuter);
-										} catch (e) {
-											attrOuterEvent = $.noop;
-										}
-										currentNode.setAttribute(attrKey, attrOuterEvent);
-										if (typeof currentNode.getAttribute(attrKey) === "string") {
-											_event_by_fun = false;
-											currentNode.setAttribute(attrKey, attrOuter);
-										}
-									} else {
+									currentNode.setAttribute(attrKey, attrOuterEvent);
+									if (typeof currentNode.getAttribute(attrKey) === "string") {
+										_event_by_fun = false;
 										currentNode.setAttribute(attrKey, attrOuter);
 									}
-									if (attrKey === "value") {
-										currentNode.value = attrOuter;
-									}
-								};
-
-								$.unshift((triggers[key] = triggers[key] || []), _newTrigger); //Storage as key -> array
-								$.push(handle._triggers, _newTrigger); //Storage as array
-							})
+								} else {
+									currentNode.setAttribute(attrKey, attrOuter);
+								}
+								if (attrKey === "value") {
+									currentNode.value = attrOuter;
+								}
+							}
 						}
+					};
+
+
+					var attrTrigger = {
+						// key:"$ATTR",
+						TEMP: {
+							belongsNodeId: handle.id,
+							self: attrViewInstance
+						},
+						event: function(NodeList, dataManager, eventTrigger) {
+							var self = this,
+								TEMP = self.TEMP,
+								attrViewInstance = TEMP.self;
+							currentNode = NodeList[TEMP.belongsNodeId].currentNode;
+							attrViewInstance._isAttr.currentNode = currentNode;
+							dataManager.collect(attrViewInstance);
+
+							// console.log("get currentNode:",currentNode);
+						}
+					}
+					$.forIn(attrViewInstance._triggers, function(trigger, key) {
+						$.unshift((triggers[key] = triggers[key] || []), attrTrigger);
 					});
+
 				}
 			});
 		}
@@ -476,6 +516,7 @@ var ViewInstance = function(handleNodeTree, NodeList, triggers, data) {
 	} else {
 		dataManager = DataManager(data, self);
 	}
+	self._isAttr = false;//if no null --> Storage the attribute key and current.
 	self.dataManager = dataManager;
 	self.handleNodeTree = handleNodeTree;
 	self.DOMArr = $.slice(handleNodeTree.childNodes);

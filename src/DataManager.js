@@ -77,14 +77,14 @@ DataManager.prototype = {
 			default:
 				hashTable = DataManager.flat(obj, key);
 		}
-
+		// console.log("parse set:",hashTable);
 		$.forEach(hashTable, function(key) {
 			var val = hashTable._data[key];
-			if ($.indexOf(database, key)===-1) {
+			if ($.indexOf(database, key) === -1) {
 				$.push(database, key);
 			}
-			
-			if (database._data[key] !== val||(val instanceof Object)) {
+
+			if (database._data[key] !== val || (val instanceof Object)) {
 				database._data[key] = val;
 				dm._touchOffSubset(key);
 			}
@@ -92,8 +92,17 @@ DataManager.prototype = {
 	},
 	_touchOffSubset: function(key) {
 		// console.log("_touchOffSubset:",key)
-		$.forEach(this._viewInstances, function(vi) {
-			vi.touchOff(key);
+		$.forEachDyna(this._viewInstances, function(vi) {//use forEachDyna --> attr-vi will be pushin when vi._isAttr.bindHandle files
+			if (vi._isAttr) {
+				// console.log("building attribute text!!");
+				$.forIn(vi._triggers,function (trigger,key) {
+					vi.touchOff(key);
+				});
+				// console.log("building result:",vi.NodeList[vi.handleNodeTree.id].currentNode.innerText,vi.dataManager)
+				vi._isAttr.bindHandle(vi.dataManager);
+			} else {
+				vi.touchOff(key);
+			}
 		});
 		$.forEach(this._subsetDataManagers, function(dm) {
 			dm._touchOffSubset(key);
@@ -102,7 +111,9 @@ DataManager.prototype = {
 	collect: function(viewInstance) {
 		var dm = this;
 		if ($.indexOf(dm._viewInstances, viewInstance) === -1) {
+			viewInstance.dataManager.remove(viewInstance);
 			$.push(dm._viewInstances, viewInstance);
+			viewInstance.dataManager = dm;
 		}
 		return dm;
 	},
@@ -115,5 +126,13 @@ DataManager.prototype = {
 		}
 		$.push(this._subsetDataManagers, subsetDataManager);
 		return subsetDataManager; //subset(vi).set(basedata);
+	},
+	remove:function(viewInstance){
+		var dm = this,
+			vis = dm._viewInstances,
+			index = $.indexOf(vis,viewInstance);
+		if (index!==-1) {
+			vis.splice(index,1);
+		}
 	}
 }

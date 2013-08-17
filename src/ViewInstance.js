@@ -13,6 +13,7 @@ var ViewInstance = function(handleNodeTree, NodeList, triggers, data) {
 	} else {
 		dataManager = DataManager(data, self);
 	}
+	self._isAttr = false;//if no null --> Storage the attribute key and current.
 	self.dataManager = dataManager;
 	self.handleNodeTree = handleNodeTree;
 	self.DOMArr = $.slice(handleNodeTree.childNodes);
