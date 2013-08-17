@@ -1,7 +1,7 @@
 {
   "name": "HTML-ViewParse",
-  "version": "0.5.4",
-  "description": "MVC/MVVM's View module",
+  "version": "0.6.0",
+  "description": "A separate ViewModel module",
   "dependencies": {
     "grunt": "~0.4.1",
     "grunt-contrib-jshint": "~0.6.0",

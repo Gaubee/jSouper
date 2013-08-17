@@ -3,48 +3,67 @@
  */
 _hasOwn = Object.prototype.hasOwnProperty;
 
-function DataManager(baseData) {
+function DataManager(baseData, viewInstance) {
 	var self = this;
 	if (!(self instanceof DataManager)) {
-		return new DataManager(baseData);
+		return new DataManager(baseData, viewInstance);
 	}
+	baseData = baseData || {};
 	self._database = DataManager.flat(baseData);
-	self._viewInstances = [];
-	self._parentDataManager = null;
+	// console.log(viewInstance)
+	self._viewInstances = viewInstance ? [viewInstance] : []; //to touch off
+	self._parentDataManager = null; //to get data
+	self._subsetDataManagers = []; //to touch off
 };
 DataManager.flat = function(obj, prefixKey) {
 	prefixKey = prefixKey || "";
 	var hashTable = [];
 	hashTable._data = {};
-	$.forIn(obj, function(val, key) {
-		key = prefixKey ? prefixKey + "." + key : key;
-		hashTable._data[key] = val;
-		$.push(hashTable, key);
-		if (val instanceof Array) {
-			hashTable[key + ".length"] = val.length;
-		} else if (val instanceof Object) { //obj or fan
-			$.forEach(val = DataManager.flat(val, key), function(key) {
-				hashTable._data[key] = val._data[key];
+	if (obj instanceof Object) {
+		if (obj instanceof Array) {
+			var lenKey = prefixKey + ".length"
+			$.push(hashTable, lenKey);
+			hashTable._data[lenKey] = obj.length;
+		} else {
+			$.forIn(obj, function(val, key) {
+				key = prefixKey ? prefixKey + "." + key : key;
+				hashTable._data[key] = val;
 				$.push(hashTable, key);
-			})
+				if (val instanceof Object) {
+					$.forEach(val = DataManager.flat(val, key), function(key) {
+						hashTable._data[key] = val._data[key];
+						$.push(hashTable, key);
+					})
+				}
+			});
 		}
-	});
+	}
+	if (prefixKey) {
+		$.push(hashTable, prefixKey);
+		hashTable._data[prefixKey] = obj;
+	}
+
 	return hashTable;
 };
 DataManager.prototype = {
 	get: function(key) {
-		var dm = this;
-		do {
-			if (key in dm._database._data) {
-				return dm._database._data[key];
-			}
-		} while (dm = dm._parentDataManager);
+		var dm = this,
+			parentDM_mark = "$PARENT.";
+		if (key.indexOf("$PARENT.")) {
+			do {
+				if (_hasOwn.call(dm._database._data, key)) {
+					return dm._database._data[key];
+				}
+			} while (dm = dm._parentDataManager);
+		} else {
+			return dm._parentDataManager.get(key.replace(parentDM_mark, ""));
+		}
 	},
 	set: function(key, obj) {
 		var dm = this,
 			viewInstances,
 			argsLen = arguments.length,
-			hashTable,
+			hashTable = [],
 			database = this._database;
 
 		switch (argsLen) {
@@ -58,22 +77,43 @@ DataManager.prototype = {
 			default:
 				hashTable = DataManager.flat(obj, key);
 		}
+
 		$.forEach(hashTable, function(key) {
-			if (!database._hasOwn(key)) {
+			var val = hashTable._data[key];
+			if ($.indexOf(database, key)===-1) {
 				$.push(database, key);
 			}
-			if (database[key] !== hashTable[key]) {
-				database._data[key] = hashTable[key];
-				do {
-					viewInstances = dm._viewInstances;
-					$.forEach(viewInstances, function(vi) {
-						vi.touchOff(key);
-					});
-				} while (dm = dm._parentDataManager);
+			
+			if (database._data[key] !== val||(val instanceof Object)) {
+				database._data[key] = val;
+				dm._touchOffSubset(key);
 			}
 		});
 	},
+	_touchOffSubset: function(key) {
+		// console.log("_touchOffSubset:",key)
+		$.forEach(this._viewInstances, function(vi) {
+			vi.touchOff(key);
+		});
+		$.forEach(this._subsetDataManagers, function(dm) {
+			dm._touchOffSubset(key);
+		});
+	},
 	collect: function(viewInstance) {
-
+		var dm = this;
+		if ($.indexOf(dm._viewInstances, viewInstance) === -1) {
+			$.push(dm._viewInstances, viewInstance);
+		}
+		return dm;
+	},
+	subset: function(baseData, viewInstance) {
+		var subsetDataManager = DataManager(baseData, viewInstance);
+		subsetDataManager._parentDataManager = this;
+		if (viewInstance instanceof ViewInstance) {
+			viewInstance.dataManager = subsetDataManager;
+			viewInstance.reDraw();
+		}
+		$.push(this._subsetDataManagers, subsetDataManager);
+		return subsetDataManager; //subset(vi).set(basedata);
 	}
 }

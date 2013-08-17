@@ -114,13 +114,16 @@ function _buildTrigger(handleNodeTree) {
 							$.forEach(triggerCollection, function(trigger) {
 								var _newTrigger = $.create(trigger);
 								_newTrigger.bubble = false; //this kind of Parent Handle can not be bubbling trigger.
-								_newTrigger.event = function(NodeList, database, eventTrigger) {
+								_newTrigger.event = function(NodeList, dataManager, eventTrigger) {
 									$.forIn(attrViewInstance._triggers, function(attrTriggerCollection, attrTriggerKey) {
-										attrViewInstance.set(attrTriggerKey, database[attrTriggerKey]);
+										if (attrTriggerKey && attrTriggerKey !== ".") {
+											attrViewInstance.set(attrTriggerKey, dataManager.get(attrTriggerKey));
+										}
 									});
 
 									var currentNode = NodeList[handle.id].currentNode,
 										attrOuter = _shadowDIV.innerText;
+									// console.log(currentNode)
 									if (attrOuter === undefined) {
 										attrOuter = _shadowDIV.innerHTML.replace(_comment_reg, "");
 									}
@@ -156,7 +159,7 @@ function _buildTrigger(handleNodeTree) {
 	});
 };
 
-function _create(data) {
+function _create(data) { //data maybe basedata or dataManager
 	var self = this,
 		NodeList_of_ViewInstance = {}, //save newDOM  without the most top of parentNode -- change with append!!
 		topNode = $.create(self.handleNodeTree);

@@ -37,7 +37,7 @@ V.registerTrigger("#if", function(handle, index, parentHandle) {
 	trigger = {
 		// key:"",//default is ""
 		// chain: true,
-		event: function(NodeList_of_ViewInstance, database, triggerBy) {
+		event: function(NodeList_of_ViewInstance, dataManager, triggerBy) {
 			var conditionVal = !!NodeList_of_ViewInstance[conditionHandleId]._data,
 				parentNode = NodeList_of_ViewInstance[parentHandleId].currentNode,
 				markHandleId = comment_else_id, //if(true)
@@ -64,7 +64,7 @@ V.registerTrigger("#if", function(handle, index, parentHandle) {
 					});
 					if (display) {
 						if (currentHandle.display) { //Custom Display Function,default is false
-							currentHandle.display(true, NodeList_of_ViewInstance, database, triggerBy)
+							currentHandle.display(true, NodeList_of_ViewInstance, dataManager, triggerBy)
 						} else if (node) {
 							$.DOM.replace(parentNode, node, placeholderNode)
 						}
@@ -76,7 +76,7 @@ V.registerTrigger("#if", function(handle, index, parentHandle) {
 						placeholderNode = (currentHandle.placeholderNode = currentHandle.placeholderNode || $.DOM.Comment(id));
 
 					if (currentHandle.display) { //Custom Display Function,default is false
-						currentHandle.display(false, NodeList_of_ViewInstance, database, triggerBy)
+						currentHandle.display(false, NodeList_of_ViewInstance, dataManager, triggerBy)
 					} else if (node) {
 						$.DOM.replace(parentNode, placeholderNode, node)
 					}
@@ -95,28 +95,30 @@ V.registerTrigger("#each", function(handle, index, parentHandle) {
 		trigger;
 
 	trigger = {
-		event: function(NodeList_of_ViewInstance, database) {
-			var data = database[arrDataHandleKey];
-			var divideIndex = -1;
-			var inserNew;
+		event: function(NodeList_of_ViewInstance, dataManager) {
+			var data = dataManager.get(arrDataHandleKey),
+				divideIndex = -1,
+				inserNew;
+
 			$.forEach(data, function(eachItemData, index) {
 				// console.log(arrViewInstances[index])
-				if (!arrViewInstances[index]) {
-					arrViewInstances[index] = V.eachModules[id]($.create(database));
+				var viewInstance = arrViewInstances[index];
+				if (!viewInstance) {
+					viewInstance = arrViewInstances[index] = V.eachModules[id]();
+					dataManager.subset(eachItemData,viewInstance);//reset arrViewInstance's dataManager
 					inserNew = true;
 				}
-				var viewInstance = arrViewInstances[index];
 				if (!viewInstance._canRemoveAble) { //had being recovered into the packingBag
 					inserNew = true;
 				}
-				$.forIn(eachItemData, function(dataVal, dataKey) {
-					if (viewInstance.get(dataKey)!==dataVal) {
-						viewInstance.set(dataKey, dataVal);
-					}
-				});
+
 				if (inserNew) {
+					// 
 					viewInstance.insert(NodeList_of_ViewInstance[comment_endeach_id].currentNode)
 					// console.log(NodeList_of_ViewInstance[id]._controllers)
+				}else{
+					// console.log(eachItemData)
+					viewInstance.set(eachItemData);
 				}
 				divideIndex = index;
 			});
@@ -129,8 +131,8 @@ V.registerTrigger("#each", function(handle, index, parentHandle) {
 			}, divideIndex);
 			var lengthKey = arrDataHandleKey + ".length";
 			// console.log(lengthKey);
-			if (database.get(lengthKey) !== divideIndex) {
-				database.set(lengthKey, divideIndex)
+			if (dataManager.get(lengthKey) !== divideIndex) {
+				dataManager.set(lengthKey, divideIndex)
 				handle.len = divideIndex
 			}
 		}
@@ -145,8 +147,8 @@ V.registerTrigger("", function(handle, index, parentHandle) {
 	if (parentHandle.type !== "handle") { //as textHandle
 		trigger = {
 			key: key,
-			event: function(NodeList_of_ViewInstance, database) { //call by ViewInstance's Node
-				NodeList_of_ViewInstance[textHandleId].currentNode.data = database[key];
+			event: function(NodeList_of_ViewInstance, dataManager) { //call by ViewInstance's Node
+				NodeList_of_ViewInstance[textHandleId].currentNode.data = dataManager.get(key);
 			}
 		}
 	} else { //as stringHandle
@@ -154,7 +156,7 @@ V.registerTrigger("", function(handle, index, parentHandle) {
 			trigger = { //const 
 				key: ".", //const trigger
 				bubble: true,
-				event: function(NodeList_of_ViewInstance, database) {
+				event: function(NodeList_of_ViewInstance, dataManager) {
 					NodeList_of_ViewInstance[this.handleId]._data = key.substring(1, key.length - 1);
 				}
 			};
@@ -162,8 +164,8 @@ V.registerTrigger("", function(handle, index, parentHandle) {
 			trigger = {
 				key: key,
 				bubble: true,
-				event: function(NodeList_of_ViewInstance, database) {
-					NodeList_of_ViewInstance[this.handleId]._data = database[key];
+				event: function(NodeList_of_ViewInstance, dataManager) {
+					NodeList_of_ViewInstance[this.handleId]._data = dataManager.get(key);
 				}
 			};
 		}
@@ -181,7 +183,7 @@ var _equal = function(handle, index, parentHandle) { //Equal
 	trigger = {
 		// key:"",//default key === ""
 		bubble: true,
-		event: function(NodeList_of_ViewInstance, database) {
+		event: function(NodeList_of_ViewInstance, dataManager) {
 			var equal,
 				val = NodeList_of_ViewInstance[childHandlesId[0]]._data; //first value
 			$.forEach(childHandlesId, function(child_handle_id) { //Compared to other values
@@ -203,7 +205,7 @@ var _nagete = function(handle, index, parentHandle) { //Negate
 	trigger = {
 		// key:"",//default key === ""
 		bubble: true,
-		event: function(NodeList_of_ViewInstance, database) {
+		event: function(NodeList_of_ViewInstance, dataManager) {
 			NodeList_of_ViewInstance[this.handleId]._data = !NodeList_of_ViewInstance[nageteHandlesId]._data; //first value
 		}
 	}
@@ -222,7 +224,7 @@ V.registerTrigger("or",function(handle, index, parentHandle){
 	trigger = {
 		// key:"",//default key === ""
 		bubble: true,
-		event: function(NodeList_of_ViewInstance, database) {
+		event: function(NodeList_of_ViewInstance, dataManager) {
 			var handleId = this.handleId;
 			$.forEach(childHandlesId, function(child_handle_id) { //Compared to other values
 				if (NodeList_of_ViewInstance[child_handle_id]._data) {
@@ -245,7 +247,7 @@ V.registerTrigger("and",function(handle, index, parentHandle){
 	trigger = {
 		// key:"",//default key === ""
 		bubble: true,
-		event: function(NodeList_of_ViewInstance, database) {
+		event: function(NodeList_of_ViewInstance, dataManager) {
 			var and = true;
 			$.forEach(childHandlesId, function(child_handle_id) { //Compared to other values
 				and = !!NodeList_of_ViewInstance[child_handle_id]._data

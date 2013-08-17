@@ -22,6 +22,19 @@
 </script>
 <script type="text/javascript">
 
+	dm1 = DataManager({
+		name:"Gaubee"
+	});
+	dm2 = dm1.subset({
+		nickname:"PuYi"
+	});
+	console.log(dm1.get("name"),dm2.get("name"));
+	dm1.set("name","GaubeeX");
+	console.log(dm1.get("name"),dm2.get("name"));
+	dm2.set("name","GaubeeY");
+	console.log(dm1.get("name"),dm2.get("name"));
+	console.log(dm1.get("name"),dm2.get("$PARENT.name"));
+
 	b = document.body
 
 	ViewParser.scans();
@@ -29,8 +42,9 @@
 	var Set = ViewParser.modules["set"],
 		set = Set({
 			checked:false
-		})
+		}),
+		setDM = set.dataManager
 		;
 	set.append(b);
-
+	
 </script>

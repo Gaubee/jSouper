@@ -2,21 +2,21 @@
  * View Instance constructor
  */
 
-var ViewInstance = function(handleNodeTree, NodeList, triggers, database) {
+var ViewInstance = function(handleNodeTree, NodeList, triggers, data) {
 	if (!(this instanceof ViewInstance)) {
-		return new ViewInstance(handleNodeTree, NodeList, triggers, database);
+		return new ViewInstance(handleNodeTree, NodeList, triggers, data);
 	}
-	var self = this;
+	var self = this,
+		dataManager;
+	if (data instanceof DataManager) {
+		dataManager = data.collect(self);
+	} else {
+		dataManager = DataManager(data, self);
+	}
+	self.dataManager = dataManager;
 	self.handleNodeTree = handleNodeTree;
 	self.DOMArr = $.slice(handleNodeTree.childNodes);
 	self.NodeList = NodeList;
-	self._database = database || {};
-	self._database.set = function() {
-		self.set.apply(self, $.slice(arguments))
-	};
-	self._database.get = function() {
-		self.get.apply(self, $.slice(arguments))
-	};
 	var el = NodeList[handleNodeTree.id].currentNode;
 	self._packingBag = el;
 	self._id = $.uid();
@@ -32,18 +32,19 @@ var ViewInstance = function(handleNodeTree, NodeList, triggers, database) {
 		self._triggers[key] = tiggerCollection;
 	});
 	$.forEach(self._triggers["."], function(tiggerFun) { //const value
-		tiggerFun.event(NodeList, database);
+		tiggerFun.event(NodeList, dataManager);
 	});
-	self.reDraw()
+	self.reDraw();
+	// return self.dataManager;
 };
 
-function _bubbleTrigger(tiggerCollection, NodeList, database, eventTrigger) {
+function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {
 	var self = this;
 	$.forEach(tiggerCollection, function(trigger) {
-		trigger.event(NodeList, database, eventTrigger);
+		trigger.event(NodeList, dataManager, eventTrigger);
 		if (trigger.bubble) {
 			var parentNode = NodeList[trigger.handleId].parentNode;
-			parentNode && _bubbleTrigger.apply(self, [parentNode._triggers, NodeList, database, trigger]);
+			parentNode && _bubbleTrigger.apply(self, [parentNode._triggers, NodeList, dataManager, trigger]);
 		}
 	});
 };
@@ -58,12 +59,10 @@ function _replaceTopHandleCurrent(self, el) {
 ViewInstance.prototype = {
 	reDraw: function() {
 		var self = this,
-			database = self._database;
-		// console.log(database)
-		$.forIn(database, function(val, key) {
-			if (!/get|set/.test(key)) {
-				self.set(key, val);
-			}
+			dataManager = self.dataManager;
+		
+		$.forIn(self._triggers, function(val,key) {
+			dataManager._touchOffSubset(key)
 		});
 	},
 	append: function(el) {
@@ -118,32 +117,17 @@ ViewInstance.prototype = {
 		}
 	},
 	get: function get(key) {
-		var self = this,
-			database = self._database
-		return database[key]
+		var dm = this.dataManager;
+		return dm.get.apply(dm, $.slice(arguments));
 	},
-	set: function set(key, value) {
-		var self = this,
-			database = self._database,
-			NodeList = self.NodeList,
-			oldValue = database[key];
-
-		if (oldValue != value) {
-			database[key] = value;
-		}
-		if (value instanceof Array) {
-			self.set(key + ".length",value.length)
-		}else if(value instanceof Object){
-			$.forIn(value,function(itemVal,itemKey){
-				self.set(key+"."+itemKey,itemVal)
-			})
-		}
-		_bubbleTrigger.apply(self, [self._triggers[key], NodeList, database])
+	set: function set() {
+		var dm = this.dataManager;
+		return dm.set.apply(dm, $.slice(arguments));
 	},
-	touchOff:function(key){
+	touchOff: function(key) {
 		var self = this,
-			database = self._database,
+			dataManager = self.dataManager,
 			NodeList = self.NodeList;
-		_bubbleTrigger.apply(self, [self._triggers[key], NodeList, database])
+		_bubbleTrigger.apply(self, [self._triggers[key], NodeList, dataManager])
 	}
-};	
+};
