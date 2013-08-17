@@ -20,7 +20,7 @@ module.exports = function(grunt) {
 		src: '',
 		concat: {
 			dist: {
-				src: ['src/$.js', 'src/View.js', 'src/ViewInstance.js', 'src/Handle.js', 'src/export.js', 'src/registerHandle.js', 'src/registerTrigger.js', 'src/*.js'],
+				src: ['src/$.js' ,'src/DataManager.js', 'src/View.js', 'src/ViewInstance.js', 'src/Handle.js', 'src/export.js', 'src/registerHandle.js', 'src/registerTrigger.js', 'src/*.js'],
 				dest: 'build/HTML-ViewParse.debug.js'
 			}
 		},

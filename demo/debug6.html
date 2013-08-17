@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>HTML-ViewParse</title>
+	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js"></script>
+	<script type="text/javascript">
+	(function (ie){if(!ie)return;var b=document.createElement("script");b.setAttribute("type","text/javascript");b.setAttribute("src","http://"+location.hostname+"/firebug-lite/build/firebug-lite.js");document.getElementsByTagName("head")[0].appendChild(b)}(!+"\v1")); 
+	</script>
+</head>
+<body>
+</body>
+<script type="text/template" name="set">
+<input class="toggle" type="checkbox" onclick="" checked>{(checked)}
+</script>
+
+</html>
+<script type="text/javascript">
+	// b = document.body
+	// ViewParser.scans();
+	// Sim = V.modules["sim"];
+	// sim = Sim();
+</script>
+<script type="text/javascript">
+
+	b = document.body
+
+	ViewParser.scans();
+
+	var Set = ViewParser.modules["set"],
+		set = Set({
+			checked:false
+		})
+		;
+	set.append(b);
+
+</script>

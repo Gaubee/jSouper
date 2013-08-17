@@ -23,7 +23,7 @@ var ViewInstance = function(handleNodeTree, NodeList, triggers, database) {
 	self._open = $.DOM.Comment(self._id + " _open");
 	self._close = $.DOM.Comment(self._id + " _close");
 	self._canRemoveAble = false;
-	$.DOM.insertBefore(el, self._open,el.childNodes[0]);
+	$.DOM.insertBefore(el, self._open, el.childNodes[0]);
 	$.DOM.append(el, self._close);
 	self._triggers = {};
 	self.TEMP = {};
@@ -83,7 +83,7 @@ ViewInstance.prototype = {
 			NodeList = self.NodeList,
 			currentTopNode = NodeList[handleNodeTree.id].currentNode,
 			elParentNode = el.parentNode;
-		console.log(el,elParentNode)
+
 		$.forEach(currentTopNode.childNodes, function(child_node) {
 			$.DOM.insertBefore(elParentNode, child_node, el);
 		});
@@ -100,20 +100,19 @@ ViewInstance.prototype = {
 				openNode = self._open,
 				closeNode = self._close,
 				startIndex = 0;
-			console.log(currentTopNode)
-			$.forEach(currentTopNode.childNodes, function(child_node,index) {
+
+			$.forEach(currentTopNode.childNodes, function(child_node, index) {
 				if (child_node === openNode) {
 					startIndex = index
-					console.log(startIndex)
 				}
 			});
-			$.forEach(currentTopNode.childNodes, function(child_node,index) {
+			$.forEach(currentTopNode.childNodes, function(child_node, index) {
 				// console.log(index,child_node,el)
 				$.DOM.append(el, child_node);
 				if (child_node === closeNode) {
 					return false;
 				}
-			},startIndex);
+			}, startIndex);
 			_replaceTopHandleCurrent(self, el);
 			this._canRemoveAble = false; //Has being recovered into the _packingBag,can't no be remove again. --> it should be insert
 		}
@@ -128,10 +127,23 @@ ViewInstance.prototype = {
 			database = self._database,
 			NodeList = self.NodeList,
 			oldValue = database[key];
-		if (oldValue != value) {
-			self._database[key] = value;
-		}
 
+		if (oldValue != value) {
+			database[key] = value;
+		}
+		if (value instanceof Array) {
+			self.set(key + ".length",value.length)
+		}else if(value instanceof Object){
+			$.forIn(value,function(itemVal,itemKey){
+				self.set(key+"."+itemKey,itemVal)
+			})
+		}
+		_bubbleTrigger.apply(self, [self._triggers[key], NodeList, database])
+	},
+	touchOff:function(key){
+		var self = this,
+			database = self._database,
+			NodeList = self.NodeList;
 		_bubbleTrigger.apply(self, [self._triggers[key], NodeList, database])
 	}
-};
+};	

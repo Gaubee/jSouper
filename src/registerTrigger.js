@@ -97,12 +97,12 @@ V.registerTrigger("#each", function(handle, index, parentHandle) {
 	trigger = {
 		event: function(NodeList_of_ViewInstance, database) {
 			var data = database[arrDataHandleKey];
-			var divideIndex = 0;
+			var divideIndex = -1;
 			var inserNew;
 			$.forEach(data, function(eachItemData, index) {
 				// console.log(arrViewInstances[index])
 				if (!arrViewInstances[index]) {
-					arrViewInstances[index] = V.eachModules[id]();
+					arrViewInstances[index] = V.eachModules[id]($.create(database));
 					inserNew = true;
 				}
 				var viewInstance = arrViewInstances[index];
@@ -211,3 +211,50 @@ var _nagete = function(handle, index, parentHandle) { //Negate
 };
 V.registerTrigger("nega", _nagete);
 V.registerTrigger("!", _nagete);
+V.registerTrigger("or",function(handle, index, parentHandle){
+	var childHandlesId = [],
+		trigger;
+	$.forEach(handle.childNodes, function(child_handle) {
+		if (child_handle.type === "handle") {
+			$.push(childHandlesId, child_handle.id);
+		}
+	});
+	trigger = {
+		// key:"",//default key === ""
+		bubble: true,
+		event: function(NodeList_of_ViewInstance, database) {
+			var handleId = this.handleId;
+			$.forEach(childHandlesId, function(child_handle_id) { //Compared to other values
+				if (NodeList_of_ViewInstance[child_handle_id]._data) {
+					NodeList_of_ViewInstance[handleId]._data = true;
+					return false; //stop forEach
+				}
+			}); 
+		}
+	}
+	return trigger;
+});
+V.registerTrigger("and",function(handle, index, parentHandle){
+	var childHandlesId = [],
+		trigger;
+	$.forEach(handle.childNodes, function(child_handle) {
+		if (child_handle.type === "handle") {
+			$.push(childHandlesId, child_handle.id);
+		}
+	});
+	trigger = {
+		// key:"",//default key === ""
+		bubble: true,
+		event: function(NodeList_of_ViewInstance, database) {
+			var and = true;
+			$.forEach(childHandlesId, function(child_handle_id) { //Compared to other values
+				and = !!NodeList_of_ViewInstance[child_handle_id]._data
+				if (!and) {
+					return false; //stop forEach
+				}
+			}); 
+			NodeList_of_ViewInstance[this.handleId]._data = and;
+		}
+	}
+	return trigger;
+});

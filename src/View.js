@@ -69,6 +69,7 @@ var IEfix = {
 	vspace: "vSpace"
 };
 var _comment_reg = /<!--[\w\W]*?-->/g;
+
 function _buildTrigger(handleNodeTree) {
 	var self = this,
 		triggers = self._triggers;
@@ -121,14 +122,14 @@ function _buildTrigger(handleNodeTree) {
 									var currentNode = NodeList[handle.id].currentNode,
 										attrOuter = _shadowDIV.innerText;
 									if (attrOuter === undefined) {
-										attrOuter = _shadowDIV.innerHTML.replace(_comment_reg,"");
+										attrOuter = _shadowDIV.innerHTML.replace(_comment_reg, "");
 									}
 									if (attrKey === "style" && _isIE) {
 										currentNode.style.setAttribute('cssText', attrOuter);
 									} else if (attrKey.indexOf("on") === 0 && _event_by_fun) {
-										try{
-											var attrOuterEvent  = Function(attrOuter);
-										}catch(e){
+										try {
+											var attrOuterEvent = Function(attrOuter);
+										} catch (e) {
 											attrOuterEvent = $.noop;
 										}
 										currentNode.setAttribute(attrKey, attrOuterEvent);
@@ -138,6 +139,9 @@ function _buildTrigger(handleNodeTree) {
 										}
 									} else {
 										currentNode.setAttribute(attrKey, attrOuter);
+									}
+									if (attrKey === "value") {
+										currentNode.value = attrOuter;
 									}
 								};
 

@@ -151,6 +151,85 @@ var _traversal = function(node, callback) {
 	}
 };
 /*
+ * DataManager constructor
+ */
+_hasOwn = Object.prototype.hasOwnProperty;
+
+function DataManager(baseData) {
+	var self = this;
+	if (!(self instanceof DataManager)) {
+		return new DataManager(baseData);
+	}
+	self._database = DataManager.flat(baseData);
+	self._viewInstances = [];
+	self._parentDataManager = null;
+};
+DataManager.flat = function(obj, prefixKey) {
+	prefixKey = prefixKey || "";
+	var hashTable = [];
+	hashTable._data = {};
+	$.forIn(obj, function(val, key) {
+		key = prefixKey ? prefixKey + "." + key : key;
+		hashTable._data[key] = val;
+		$.push(hashTable, key);
+		if (val instanceof Array) {
+			hashTable[key + ".length"] = val.length;
+		} else if (val instanceof Object) { //obj or fan
+			$.forEach(val = DataManager.flat(val, key), function(key) {
+				hashTable._data[key] = val._data[key];
+				$.push(hashTable, key);
+			})
+		}
+	});
+	return hashTable;
+};
+DataManager.prototype = {
+	get: function(key) {
+		var dm = this;
+		do {
+			if (key in dm._database._data) {
+				return dm._database._data[key];
+			}
+		} while (dm = dm._parentDataManager);
+	},
+	set: function(key, obj) {
+		var dm = this,
+			viewInstances,
+			argsLen = arguments.length,
+			hashTable,
+			database = this._database;
+
+		switch (argsLen) {
+			case 0:
+				return;
+			case 1:
+				if (key instanceof Object) {
+					hashTable = DataManager.flat(key);
+				}
+				break;
+			default:
+				hashTable = DataManager.flat(obj, key);
+		}
+		$.forEach(hashTable, function(key) {
+			if (!database._hasOwn(key)) {
+				$.push(database, key);
+			}
+			if (database[key] !== hashTable[key]) {
+				database._data[key] = hashTable[key];
+				do {
+					viewInstances = dm._viewInstances;
+					$.forEach(viewInstances, function(vi) {
+						vi.touchOff(key);
+					});
+				} while (dm = dm._parentDataManager);
+			}
+		});
+	},
+	collect: function(viewInstance) {
+
+	}
+}
+/*
  * View constructor
  */
 
@@ -221,6 +300,7 @@ var IEfix = {
 	vspace: "vSpace"
 };
 var _comment_reg = /<!--[\w\W]*?-->/g;
+
 function _buildTrigger(handleNodeTree) {
 	var self = this,
 		triggers = self._triggers;
@@ -273,14 +353,14 @@ function _buildTrigger(handleNodeTree) {
 									var currentNode = NodeList[handle.id].currentNode,
 										attrOuter = _shadowDIV.innerText;
 									if (attrOuter === undefined) {
-										attrOuter = _shadowDIV.innerHTML.replace(_comment_reg,"");
+										attrOuter = _shadowDIV.innerHTML.replace(_comment_reg, "");
 									}
 									if (attrKey === "style" && _isIE) {
 										currentNode.style.setAttribute('cssText', attrOuter);
 									} else if (attrKey.indexOf("on") === 0 && _event_by_fun) {
-										try{
-											var attrOuterEvent  = Function(attrOuter);
-										}catch(e){
+										try {
+											var attrOuterEvent = Function(attrOuter);
+										} catch (e) {
 											attrOuterEvent = $.noop;
 										}
 										currentNode.setAttribute(attrKey, attrOuterEvent);
@@ -290,6 +370,9 @@ function _buildTrigger(handleNodeTree) {
 										}
 									} else {
 										currentNode.setAttribute(attrKey, attrOuter);
+									}
+									if (attrKey === "value") {
+										currentNode.value = attrOuter;
 									}
 								};
 
@@ -358,7 +441,7 @@ var ViewInstance = function(handleNodeTree, NodeList, triggers, database) {
 	self._open = $.DOM.Comment(self._id + " _open");
 	self._close = $.DOM.Comment(self._id + " _close");
 	self._canRemoveAble = false;
-	$.DOM.insertBefore(el, self._open,el.childNodes[0]);
+	$.DOM.insertBefore(el, self._open, el.childNodes[0]);
 	$.DOM.append(el, self._close);
 	self._triggers = {};
 	self.TEMP = {};
@@ -418,7 +501,7 @@ ViewInstance.prototype = {
 			NodeList = self.NodeList,
 			currentTopNode = NodeList[handleNodeTree.id].currentNode,
 			elParentNode = el.parentNode;
-		console.log(el,elParentNode)
+
 		$.forEach(currentTopNode.childNodes, function(child_node) {
 			$.DOM.insertBefore(elParentNode, child_node, el);
 		});
@@ -435,20 +518,19 @@ ViewInstance.prototype = {
 				openNode = self._open,
 				closeNode = self._close,
 				startIndex = 0;
-			console.log(currentTopNode)
-			$.forEach(currentTopNode.childNodes, function(child_node,index) {
+
+			$.forEach(currentTopNode.childNodes, function(child_node, index) {
 				if (child_node === openNode) {
 					startIndex = index
-					console.log(startIndex)
 				}
 			});
-			$.forEach(currentTopNode.childNodes, function(child_node,index) {
+			$.forEach(currentTopNode.childNodes, function(child_node, index) {
 				// console.log(index,child_node,el)
 				$.DOM.append(el, child_node);
 				if (child_node === closeNode) {
 					return false;
 				}
-			},startIndex);
+			}, startIndex);
 			_replaceTopHandleCurrent(self, el);
 			this._canRemoveAble = false; //Has being recovered into the _packingBag,can't no be remove again. --> it should be insert
 		}
@@ -463,13 +545,27 @@ ViewInstance.prototype = {
 			database = self._database,
 			NodeList = self.NodeList,
 			oldValue = database[key];
-		if (oldValue != value) {
-			self._database[key] = value;
-		}
 
+		if (oldValue != value) {
+			database[key] = value;
+		}
+		if (value instanceof Array) {
+			self.set(key + ".length",value.length)
+		}else if(value instanceof Object){
+			$.forIn(value,function(itemVal,itemKey){
+				self.set(key+"."+itemKey,itemVal)
+			})
+		}
+		_bubbleTrigger.apply(self, [self._triggers[key], NodeList, database])
+	},
+	touchOff:function(key){
+		var self = this,
+			database = self._database,
+			NodeList = self.NodeList;
 		_bubbleTrigger.apply(self, [self._triggers[key], NodeList, database])
 	}
-};
+};	
+
 
 /*
  * parse function
@@ -902,12 +998,12 @@ V.registerTrigger("#each", function(handle, index, parentHandle) {
 	trigger = {
 		event: function(NodeList_of_ViewInstance, database) {
 			var data = database[arrDataHandleKey];
-			var divideIndex = 0;
+			var divideIndex = -1;
 			var inserNew;
 			$.forEach(data, function(eachItemData, index) {
 				// console.log(arrViewInstances[index])
 				if (!arrViewInstances[index]) {
-					arrViewInstances[index] = V.eachModules[id]();
+					arrViewInstances[index] = V.eachModules[id]($.create(database));
 					inserNew = true;
 				}
 				var viewInstance = arrViewInstances[index];
@@ -1016,7 +1112,53 @@ var _nagete = function(handle, index, parentHandle) { //Negate
 };
 V.registerTrigger("nega", _nagete);
 V.registerTrigger("!", _nagete);
-
+V.registerTrigger("or",function(handle, index, parentHandle){
+	var childHandlesId = [],
+		trigger;
+	$.forEach(handle.childNodes, function(child_handle) {
+		if (child_handle.type === "handle") {
+			$.push(childHandlesId, child_handle.id);
+		}
+	});
+	trigger = {
+		// key:"",//default key === ""
+		bubble: true,
+		event: function(NodeList_of_ViewInstance, database) {
+			var handleId = this.handleId;
+			$.forEach(childHandlesId, function(child_handle_id) { //Compared to other values
+				if (NodeList_of_ViewInstance[child_handle_id]._data) {
+					NodeList_of_ViewInstance[handleId]._data = true;
+					return false; //stop forEach
+				}
+			}); 
+		}
+	}
+	return trigger;
+});
+V.registerTrigger("and",function(handle, index, parentHandle){
+	var childHandlesId = [],
+		trigger;
+	$.forEach(handle.childNodes, function(child_handle) {
+		if (child_handle.type === "handle") {
+			$.push(childHandlesId, child_handle.id);
+		}
+	});
+	trigger = {
+		// key:"",//default key === ""
+		bubble: true,
+		event: function(NodeList_of_ViewInstance, database) {
+			var and = true;
+			$.forEach(childHandlesId, function(child_handle_id) { //Compared to other values
+				and = !!NodeList_of_ViewInstance[child_handle_id]._data
+				if (!and) {
+					return false; //stop forEach
+				}
+			}); 
+			NodeList_of_ViewInstance[this.handleId]._data = and;
+		}
+	}
+	return trigger;
+});
 // Avoid `console` errors in browsers that lack a console.
 (function() {
     var method;

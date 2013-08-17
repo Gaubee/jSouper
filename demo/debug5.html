@@ -2,8 +2,10 @@
 <html>
 <head>
 	<title>HTML-ViewParse</title>
-	<script type="text/javascript" src="../build/0.3/HTML-ViewParse.debug.js"></script>
-	<!-- // <script type="text/javascript" src="https://getfirebug.com/firebug-lite.js"></script> -->
+	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js"></script>
+	<script type="text/javascript">
+	(function (ie){if(!ie)return;var b=document.createElement("script");b.setAttribute("type","text/javascript");b.setAttribute("src","http://"+location.hostname+"/firebug-lite/build/firebug-lite.js");document.getElementsByTagName("head")[0].appendChild(b)}(!+"\v1")); 
+	</script>
 </head>
 <body>
 </body>
@@ -71,8 +73,9 @@
 	}];
 	b = document.body
 
-
+	console.time("scans");
 	ViewParser.scans();
+	console.timeEnd("scans");
 
 	var People = ViewParser.modules["people"],
 		us = People({
