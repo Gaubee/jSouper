@@ -255,7 +255,7 @@ DataManager.prototype = {
 				$.forEach(vi._triggers, function(key) {
 					vi.touchOff(key);
 				});
-				vi._isAttr.bindHandle(vi.dataManager);
+				vi._isAttr.bindHandle(vi,vi.dataManager);
 			} else {
 				vi.touchOff(key);
 			}
@@ -429,7 +429,7 @@ var _AttributeHandle = function(attrKey) {
 	return _AttributeHandleEvent.com;
 
 };
-_getAttrOuter = Function("n", "return n." + (_hasOwn.call(_testDIV, "innerText") ? "innerText" : "textContent") + "||''")
+_getAttrOuter = Function("n", "return n." + (_hasOwn.call(_testDIV, "innerText") ? "innerText" : "textContent") + ".replace(/\\//g,'\\/\\/')||''")
 var _AttributeHandleEvent = {
 	event: function(key, currentNode, parserNode) {
 		var attrOuter = _getAttrOuter(parserNode);
@@ -453,15 +453,18 @@ var _AttributeHandleEvent = {
 		currentNode[key] = attrOuter;
 	},
 	bool: function(key, currentNode, parserNode) {
+		console.log("----------------")
+		console.log(key,":",_getAttrOuter(parserNode),currentNode)
 		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
 		if (attrOuter) {
-			currentNode.setAttribute(key, key);
+			// currentNode.setAttribute(key, key);
+			currentNode[key] = key;
 		} else {
 			currentNode.removeAttribute(key);
 		}
 	}
 };
-var _bindHandle = function() {
+var _bindHandle = function(viewInstance ,dataManager) {
 	var self = this,
 		attrKey = self.key,
 		currentNode = self.currentNode,
@@ -470,6 +473,7 @@ var _bindHandle = function() {
 	if (currentNode) {
 		self._bindHandle(attrKey, currentNode, parserNode);
 	}
+	dataManager.remove(viewInstance)
 };
 
 function _buildTrigger(handleNodeTree, dataManager) {

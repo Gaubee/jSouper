@@ -96,7 +96,7 @@ DataManager.prototype = {
 				$.forEach(vi._triggers, function(key) {
 					vi.touchOff(key);
 				});
-				vi._isAttr.bindHandle(vi.dataManager);
+				vi._isAttr.bindHandle(vi,vi.dataManager);
 			} else {
 				vi.touchOff(key);
 			}
