@@ -67,6 +67,7 @@ ViewInstance.prototype = {
 		$.forEach(self._triggers, function(key) {
 			dataManager._touchOffSubset(key)
 		});
+		return self;
 	},
 	append: function(el) {
 		var self = this,
@@ -77,7 +78,8 @@ ViewInstance.prototype = {
 		$.forEach(currentTopNode.childNodes, function(child_node) {
 			$.DOM.append(el, child_node);
 		});
-		_replaceTopHandleCurrent(self, el)
+		_replaceTopHandleCurrent(self, el);
+		return self;
 	},
 	insert: function(el) {
 		var self = this,
@@ -90,6 +92,7 @@ ViewInstance.prototype = {
 			$.DOM.insertBefore(elParentNode, child_node, el);
 		});
 		_replaceTopHandleCurrent(self, elParentNode)
+		return self;
 	},
 	remove: function() {
 		var self = this,
@@ -117,6 +120,7 @@ ViewInstance.prototype = {
 			_replaceTopHandleCurrent(self, el);
 			this._canRemoveAble = false; //Has being recovered into the _packingBag,can't no be remove again. --> it should be insert
 		}
+		return self;
 	},
 	get: function get(key) {
 		var dm = this.dataManager;

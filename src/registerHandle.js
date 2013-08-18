@@ -25,9 +25,10 @@ V.registerHandle("", function(handle, index, parentHandle) {
 		}
 	}
 });
-var _commentPlaceholder = function(handle, parentHandle) {
+var _commentPlaceholder = function(handle, parentHandle,commentText) {
+		commentText = commentText||(handleName + handle.id);
 	var handleName = handle.handleName,
-		commentNode = $.DOM.Comment(handleName + handle.id),
+		commentNode = $.DOM.Comment(commentText),
 		commentHandle = CommentHandle(commentNode); // commentHandle as Placeholder
 
 	$.push(handle.childNodes, commentHandle);
@@ -92,3 +93,7 @@ V.registerHandle("#each", function(handle, index, parentHandle) {
 	_commentPlaceholder(handle, parentHandle);
 });
 V.registerHandle("/each", placeholderHandle);
+V.registerHandle("HTML",function(handle, index, parentHandle){
+	var endCommentHandle = _commentPlaceholder(handle, parentHandle,"html_end_"+handle.id),
+		startCommentHandle = _commentPlaceholder(handle, parentHandle,"html_start_"+handle.id);
+});

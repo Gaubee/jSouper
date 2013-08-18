@@ -645,6 +645,7 @@ ViewInstance.prototype = {
 		$.forEach(self._triggers, function(key) {
 			dataManager._touchOffSubset(key)
 		});
+		return self;
 	},
 	append: function(el) {
 		var self = this,
@@ -655,7 +656,8 @@ ViewInstance.prototype = {
 		$.forEach(currentTopNode.childNodes, function(child_node) {
 			$.DOM.append(el, child_node);
 		});
-		_replaceTopHandleCurrent(self, el)
+		_replaceTopHandleCurrent(self, el);
+		return self;
 	},
 	insert: function(el) {
 		var self = this,
@@ -668,6 +670,7 @@ ViewInstance.prototype = {
 			$.DOM.insertBefore(elParentNode, child_node, el);
 		});
 		_replaceTopHandleCurrent(self, elParentNode)
+		return self;
 	},
 	remove: function() {
 		var self = this,
@@ -695,6 +698,7 @@ ViewInstance.prototype = {
 			_replaceTopHandleCurrent(self, el);
 			this._canRemoveAble = false; //Has being recovered into the _packingBag,can't no be remove again. --> it should be insert
 		}
+		return self;
 	},
 	get: function get(key) {
 		var dm = this.dataManager;
@@ -978,9 +982,10 @@ V.registerHandle("", function(handle, index, parentHandle) {
 		}
 	}
 });
-var _commentPlaceholder = function(handle, parentHandle) {
+var _commentPlaceholder = function(handle, parentHandle,commentText) {
+		commentText = commentText||(handleName + handle.id);
 	var handleName = handle.handleName,
-		commentNode = $.DOM.Comment(handleName + handle.id),
+		commentNode = $.DOM.Comment(commentText),
 		commentHandle = CommentHandle(commentNode); // commentHandle as Placeholder
 
 	$.push(handle.childNodes, commentHandle);
@@ -1045,6 +1050,10 @@ V.registerHandle("#each", function(handle, index, parentHandle) {
 	_commentPlaceholder(handle, parentHandle);
 });
 V.registerHandle("/each", placeholderHandle);
+V.registerHandle("HTML",function(handle, index, parentHandle){
+	var endCommentHandle = _commentPlaceholder(handle, parentHandle,"html_end_"+handle.id),
+		startCommentHandle = _commentPlaceholder(handle, parentHandle,"html_start_"+handle.id);
+});
 V.registerTrigger("#if", function(handle, index, parentHandle) {
 	// console.log(handle)
 	var id = handle.id,
@@ -1301,6 +1310,47 @@ V.registerTrigger("and",function(handle, index, parentHandle){
 				}
 			}); 
 			NodeList_of_ViewInstance[this.handleId]._data = and;
+		}
+	}
+	return trigger;
+});
+V.registerTrigger("HTML",function(handle, index, parentHandle){
+	var handleChilds=handle.childNodes,
+		htmlTextHandlesId = handleChilds[0].id,
+		beginCommentId = handleChilds[handleChilds.length-1].id,
+		endCommentId = handleChilds[handleChilds.length-2].id,
+		trigger;
+	trigger = {
+		// key:"",//default key === ""
+		bubble: true,
+		TEMP:{
+			cacheNode:$.DOM.clone(shadowDIV)
+		},
+		event: function(NodeList_of_ViewInstance, dataManager) {
+			var htmlText = NodeList_of_ViewInstance[htmlTextHandlesId]._data,
+				cacheNode = this.TEMP.cacheNode,
+				startCommentNode = NodeList_of_ViewInstance[beginCommentId].currentNode,
+				endCommentNode = NodeList_of_ViewInstance[endCommentId].currentNode,
+				parentNode = endCommentNode.parentNode,
+				brotherNodes = parentNode.childNodes,
+				index = -1;
+			$.forEach(brotherNodes,function(node,i){
+				index = i;
+				if (node === startCommentNode) {
+					return false;
+				}
+			});
+			index = index+1;
+			$.forEach(brotherNodes,function(node,i){
+				if (node === endCommentNode) {
+					return false;
+				}
+				parentNode.removeChild(node);
+			},index);
+			cacheNode.innerHTML = htmlText;
+			$.forEach(cacheNode.childNodes,function(node,i){
+				$.DOM.insertBefore(parentNode,node,endCommentNode);
+			});
 		}
 	}
 	return trigger;
