@@ -2,7 +2,7 @@
 <html>
 <head>
 	<title>HTML-ViewParse</title>
-	<script type="text/javascript" src="../build/0.3/HTML-ViewParse.debug.js"></script>
+	<script type="text/javascript" src="../../lib/HTML-ViewParse.min.js"></script>
 	<style type="text/css">
 	.man{
 		background-color: #000;
@@ -24,7 +24,7 @@
 	I am a {#if( {equa( {(sex)}{('woman')} )} )}girl({(sex)}){#else()}boy{/if()}.
 	<hr />
 	<div>
-		<input value="{(name)} is a {(sex)}" class="{(sex)}" attr-style="{(style)}" onClick="{(clickEvent)}"><br />
+		<input id="xx" value="{(name)} is a {(sex)}" attr-class="{(sex)}" attr-style="{(style)}" attr-onClick="{(clickEvent)}"><br />
 		my name is {(name)}.
 	</div>
 	<br />
@@ -66,7 +66,7 @@
 		b2.set("sex","man");
 		b2.set("name","Micor");
 	},3000);
-
+	console.log("-------------------------")
 	setTimeout(function(){
 		b.set("style","font-size: 16px")
 	})

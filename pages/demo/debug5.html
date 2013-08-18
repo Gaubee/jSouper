@@ -2,8 +2,7 @@
 <html>
 <head>
 	<title>HTML-ViewParse</title>
-	<script type="text/javascript" src="../build/0.3/HTML-ViewParse.debug.js"></script>
-	<!-- // <script type="text/javascript" src="https://getfirebug.com/firebug-lite.js"></script> -->
+	<script type="text/javascript" src="../../lib/HTML-ViewParse.min.js"></script>
 </head>
 <body>
 </body>
@@ -35,7 +34,7 @@
 	<hr />
 	name:<input id="xx" onchange="{(viewName)}.set('who',this.value);"/>{(who)}
 	<br />
-	<!----><input onclick="if(controller.{(who)})controller.{(who)}.changeSex()" value="change sex!" type="button">
+	<!----><input id="cs" attr-onclick="if(controller['{(who)}'])controller['{(who)}'].changeSex()" value="change sex!" type="button">
 	<input attr-onclick="controller.addMember('{(who)}')" value="add members({(who)})!" type="button">
 	<input attr-onclick="controller.removeMember('{(who)}')" value="remove members({(who)})!" type="button">
 </script>
@@ -71,8 +70,9 @@
 	}];
 	b = document.body
 
-
+	console.time("scans");
 	ViewParser.scans();
+	console.timeEnd("scans");
 
 	var People = ViewParser.modules["people"],
 		us = People({

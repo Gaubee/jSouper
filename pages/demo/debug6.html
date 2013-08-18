@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>HTML-ViewParse</title>
+	<script type="text/javascript" src="../../lib/HTML-ViewParse.min.js"></script>
+</head>
+<body>
+</body>
+<script type="text/template" name="set">
+<input class="toggle" type="checkbox" onclick="" checked>{(checked)}
+</script>
+
+</html>
+<script type="text/javascript">
+	// b = document.body
+	// ViewParser.scans();
+	// Sim = V.modules["sim"];
+	// sim = Sim();
+</script>
+<script type="text/javascript">
+
+	dm1 = DataManager({
+		name:"Gaubee"
+	});
+	dm2 = dm1.subset({
+		nickname:"PuYi"
+	});
+	console.log(dm1.get("name"),dm2.get("name"));
+	dm1.set("name","GaubeeX");
+	console.log(dm1.get("name"),dm2.get("name"));
+	dm2.set("name","GaubeeY");
+	console.log(dm1.get("name"),dm2.get("name"));
+	console.log(dm1.get("name"),dm2.get("$PARENT.name"));
+
+	b = document.body
+
+	ViewParser.scans();
+
+	var Set = ViewParser.modules["set"],
+		set = Set({
+			checked:false
+		}),
+		setDM = set.dataManager
+		;
+	set.append(b);
+	
+</script>
