@@ -37,7 +37,7 @@
 	<hr />
 	name:<input id="xx" onchange="{(viewName)}.set('who',this.value);"/>{(who)}
 	<br />
-	<!----><input onclick="if(controller['{(who)}'])controller['{(who)}'].changeSex()" value="change sex!" type="button">
+	<!----><input id="cs" attr-onclick="if(controller['{(who)}'])controller['{(who)}'].changeSex()" value="change sex!" type="button">
 	<input attr-onclick="controller.addMember('{(who)}')" value="add members({(who)})!" type="button">
 	<input attr-onclick="controller.removeMember('{(who)}')" value="remove members({(who)})!" type="button">
 </script>

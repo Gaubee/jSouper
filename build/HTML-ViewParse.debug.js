@@ -8,7 +8,7 @@ var shadowBody = document.createElement("body");
 var $ = {
 	id: 100,
 	uidAvator: Math.random().toString(36).substring(2),
-	noop:function(){},
+	noop:function noop(){},
 	uid: function() {
 		return this.id = this.id + 1;
 	},
@@ -256,18 +256,20 @@ DataManager.prototype = {
 		});
 	},
 	_touchOffSubset: function(key) {
+		$.forEach(this._subsetDataManagers, function(dm) {
+			dm._touchOffSubset(key);
+		});
 		$.forEachDyna(this._viewInstances, function(vi) { //use forEachDyna --> attr-vi will be pushin when vi._isAttr.bindHandle files
 			if (vi._isAttr) {
+				// console.log("building attribute value!")//DEBUG
 				$.forEach(vi._triggers, function(key) {
 					vi.touchOff(key);
 				});
 				vi._isAttr.bindHandle(vi,vi.dataManager);
+				vi.dataManager.remove(vi);
 			} else {
 				vi.touchOff(key);
 			}
-		});
-		$.forEach(this._subsetDataManagers, function(dm) {
-			dm._touchOffSubset(key);
 		});
 	},
 	collect: function(viewInstance) {
@@ -327,7 +329,6 @@ function _buildHandler(handleNodeTree) {
 		handles = self._handles
 		handleNodeTree = handleNodeTree || self.handleNodeTree;
 	_traversal(handleNodeTree, function(item_node, index, handleNodeTree) {
-		// console.log(item_node, index, handleNodeTree)
 		item_node.parentNode = handleNodeTree;
 		if (item_node.type === "handle") {
 			var handleFactory = V.handles[item_node.handleName];
@@ -352,7 +353,7 @@ var IEfix = {
 	cellspacing: "cellSpacing",
 	"class": "className",
 	colspan: "colSpan",
-	checked: "defaultChecked",
+	// checked: "defaultChecked",
 	selected: "defaultSelected",
 	"for": "htmlFor",
 	frameborder: "frameBorder",
@@ -385,7 +386,34 @@ noresize  noResize  (frame)
 nowrap    noWrap    (td, th; deprecated)
 noshade   noShade   (hr; deprecated)
 compact             (ul, ol, dl, menu, dir; deprecated)
+//------------anyother answer
+all elements: hidden
+script: async, defer
+button: autofocus, formnovalidate, disabled
+input: autofocus, formnovalidate, multiple, readonly, required, disabled, checked
+keygen: autofocus, disabled
+select: autofocus, multiple, required, disabled
+textarea: autofocus, readonly, required, disabled
+style: scoped
+ol: reversed
+command: disabled, checked
+fieldset: disabled
+optgroup: disabled
+option: selected, disabled
+audio: autoplay, controls, loop, muted
+video: autoplay, controls, loop, muted
+iframe: seamless
+track: default
+img: ismap
+form: novalidate
+details: open
+object: typemustmatch
+marquee: truespeed
+//----
+editable
+draggable
 */
+
 
 //  key : isboolean --> value = key --> hidden = "hidden"
 var _Assignment = {
@@ -403,7 +431,26 @@ var _Assignment = {
 	nowrap: true,
 	noshade: true,
 	// compact:true
-	hidden: true //
+	truespeed: true,
+	async: true,
+	typemustmatch: true,
+	open: true,
+	novalidate: true,
+	ismap: true,
+	"default": true,
+	seamless: true,
+	autoplay: true,
+	controls: true,
+	loop: true,
+	muted: true,
+	reversed: true,
+	scoped: true,
+	autofocus: true,
+	required: true,
+	formnovalidate: true,
+	editable: true,
+	draggable: true,
+	hidden: true
 };
 
 var _testDIV = $.DOM.clone(shadowDIV);
@@ -426,6 +473,9 @@ var _AttributeHandle = function(attrKey) {
 	if (attrKey.indexOf("on") === 0 && _event_by_fun) {
 		return _AttributeHandleEvent.event;
 	}
+	if (attrKey === "checked"&&_isIE) {
+		return _AttributeHandleEvent.iecheck;
+	}
 	if (_hasOwn.call(_Assignment, attrKey)) {
 		if (assign = _Assignment[attrKey]) {
 			return _AttributeHandleEvent.bool;
@@ -440,8 +490,11 @@ var _AttributeHandleEvent = {
 	event: function(key, currentNode, parserNode) {
 		var attrOuter = _getAttrOuter(parserNode);
 		try {
+			// console.log("event building:",attrOuter)//DEBUG
 			var attrOuterEvent = Function(attrOuter);
+			// console.log("event build success!")//DEBUG
 		} catch (e) {
+			// console.log("event build error !")//DEBUG
 			attrOuterEvent = $.noop;
 		}
 		currentNode.setAttribute(key, attrOuterEvent);
@@ -458,25 +511,41 @@ var _AttributeHandleEvent = {
 		var attrOuter = _getAttrOuter(parserNode);
 		currentNode[key] = attrOuter;
 	},
+	iecheck:function(key, currentNode, parserNode){
+		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
+
+		if (attrOuter) {
+			currentNode.defaultChecked = true;
+			currentNode[key] = key;
+			console.log("BOOL true:",currentNode[key])
+		} else {
+			currentNode.defaultChecked = false;
+			currentNode[key] = false;
+		}
+		this._bindHandle = _AttributeHandleEvent.bool
+	},
 	bool: function(key, currentNode, parserNode) {
 		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
+		
 		if (attrOuter) {
 			// currentNode.setAttribute(key, key);
 			currentNode[key] = key;
+			console.log("BOOL true:",currentNode[key])
 		} else {
-			currentNode.removeAttribute(key);
+			// currentNode.removeAttribute(key);
+			currentNode[key] = false;
 		}
 	}
 };
-var _bindHandle = function(viewInstance ,dataManager) {
+var _bindHandle = function() { /*viewInstance ,dataManager*/
 	var self = this,
 		attrKey = self.key,
 		currentNode = self.currentNode,
 		parserNode = self.parserNode;
 	if (currentNode) {
+		console.log(attrKey,":",parserNode.innerText);//DEBUG
 		self._bindHandle(attrKey, currentNode, parserNode);
 	}
-	dataManager.remove(viewInstance)
 };
 
 function _buildTrigger(handleNodeTree, dataManager) {
@@ -484,7 +553,6 @@ function _buildTrigger(handleNodeTree, dataManager) {
 		triggerTable = self._triggerTable;
 	handleNodeTree = handleNodeTree || self.handleNodeTree;
 	_traversal(handleNodeTree, function(handle, index, parentHandle) {
-		// handle.parentNode = parentHandle;
 		if (handle.type === "handle") {
 			var triggerFactory = V.triggers[handle.handleName];
 			if (triggerFactory) {
@@ -627,6 +695,11 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {
 	var self = this;
 	$.forEach(tiggerCollection, function(trigger) {
+		// if (trigger.key) {//DEBUG
+		// 	console.log("event:",trigger.key," to ",dataManager.get(trigger.key),"fires")
+		// }else{
+		// 	console.log("event","bubble")
+		// }
 		trigger.event(NodeList, dataManager, eventTrigger);
 		if (trigger.bubble) {
 			var parentNode = NodeList[trigger.handleId].parentNode;

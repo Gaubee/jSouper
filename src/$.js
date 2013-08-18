@@ -8,7 +8,7 @@ var shadowBody = document.createElement("body");
 var $ = {
 	id: 100,
 	uidAvator: Math.random().toString(36).substring(2),
-	noop:function(){},
+	noop:function noop(){},
 	uid: function() {
 		return this.id = this.id + 1;
 	},

@@ -91,18 +91,20 @@ DataManager.prototype = {
 		});
 	},
 	_touchOffSubset: function(key) {
+		$.forEach(this._subsetDataManagers, function(dm) {
+			dm._touchOffSubset(key);
+		});
 		$.forEachDyna(this._viewInstances, function(vi) { //use forEachDyna --> attr-vi will be pushin when vi._isAttr.bindHandle files
 			if (vi._isAttr) {
+				// console.log("building attribute value!")//DEBUG
 				$.forEach(vi._triggers, function(key) {
 					vi.touchOff(key);
 				});
 				vi._isAttr.bindHandle(vi,vi.dataManager);
+				vi.dataManager.remove(vi);
 			} else {
 				vi.touchOff(key);
 			}
-		});
-		$.forEach(this._subsetDataManagers, function(dm) {
-			dm._touchOffSubset(key);
 		});
 	},
 	collect: function(viewInstance) {

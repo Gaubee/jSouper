@@ -44,6 +44,11 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {
 	var self = this;
 	$.forEach(tiggerCollection, function(trigger) {
+		// if (trigger.key) {//DEBUG
+		// 	console.log("event:",trigger.key," to ",dataManager.get(trigger.key),"fires")
+		// }else{
+		// 	console.log("event","bubble")
+		// }
 		trigger.event(NodeList, dataManager, eventTrigger);
 		if (trigger.bubble) {
 			var parentNode = NodeList[trigger.handleId].parentNode;
