@@ -2,7 +2,10 @@
 <html>
 <head>
 	<title>HTML-ViewParse</title>
-	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js"></script>
+	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js"></script>	
+	<script type="text/javascript">
+	(function (ie){if(!ie)return;var b=document.createElement("script");b.setAttribute("type","text/javascript");b.setAttribute("src","http://"+location.hostname+"/firebug-lite/build/firebug-lite.js");document.getElementsByTagName("head")[0].appendChild(b)}(!+"\v1")); 
+	</script>
 	<style type="text/css">
 	.man{
 		background-color: #000;
@@ -24,7 +27,7 @@
 	I am a {#if( {equa( {(sex)}{('woman')} )} )}girl({(sex)}){#else()}boy{/if()}.
 	<hr />
 	<div>
-		<input value="{(name)} is a {(sex)}" class="{(sex)}" attr-style="{(style)}" onClick="{(clickEvent)}"><br />
+		<input id="xx" value="{(name)} is a {(sex)}" attr-class="{(sex)}" attr-style="{(style)}" attr-onClick="{(clickEvent)}"><br />
 		my name is {(name)}.
 	</div>
 	<br />
@@ -42,30 +45,30 @@
 	var b = n();
 	
 	b.append(document.body);
-	// setTimeout(function (argument) {
-	// 	b.set("sex","man");
-	// 	b.set("name","Gaubee");
-	// },100)
-	// setTimeout(function (argument) {
-	// 	b.set("sex","woman");
-	// 	b.set("name","Lisa");
-	// },400);
-	// setTimeout(function(){
-	// 	b.set("clickEvent","alert('clickEvent  1!')");
-	// })
+	setTimeout(function (argument) {
+		b.set("sex","man");
+		b.set("name","Gaubee");
+	},100)
+	setTimeout(function (argument) {
+		b.set("sex","woman");
+		b.set("name","Lisa");
+	},400);
+	setTimeout(function(){
+		b.set("clickEvent","alert('clickEvent  1!')");
+	})
 
 
 	var b2 = n();
 	
 	b2.append(document.body);
-	// setTimeout(function (argument) {
-	// 	b2.set("sex","man");
-	// 	b2.set("name","Linda");
-	// },200)
-	// setTimeout(function (argument) {
-	// 	b2.set("sex","man");
-	// 	b2.set("name","Micor");
-	// },300);
+	setTimeout(function (argument) {
+		b2.set("sex","man");
+		b2.set("name","Linda");
+	},200)
+	setTimeout(function (argument) {
+		b2.set("sex","man");
+		b2.set("name","Micor");
+	},300);
 	console.log("-------------------------")
 	setTimeout(function(){
 		b.set("style","font-size: 16px")
@@ -73,7 +76,7 @@
 	setTimeout(function(){
 		b2.set("style","font-size: 9px")
 	})
-	// setTimeout(function(){
-	// 	b2.set("clickEvent","alert('clickEvent  2!')");
-	// })
+	setTimeout(function(){
+		b2.set("clickEvent","alert('clickEvent  2!')");
+	})
 </script>
