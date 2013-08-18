@@ -1,7 +1,10 @@
 var global = this;
 var shadowBody = document.createElement("body");
-var shadowDIV = document.createElement("div");
-
+	shadowDIV = document.createElement("div"),
+	$TRUE = true,
+	$FALSE = false,
+	$NULL = null,
+	$UNDEFINED = undefined;
 var $ = {
 	id: 100,
 	uidAvator: Math.random().toString(36).substring(2),

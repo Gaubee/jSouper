@@ -2,9 +2,9 @@
  * View Instance constructor
  */
 
-var ViewInstance = function(handleNodeTree, NodeList, triggers, data) {
+var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	if (!(this instanceof ViewInstance)) {
-		return new ViewInstance(handleNodeTree, NodeList, triggers, data);
+		return new ViewInstance(handleNodeTree, NodeList, triggerTable, data);
 	}
 	var self = this,
 		dataManager;
@@ -26,17 +26,19 @@ var ViewInstance = function(handleNodeTree, NodeList, triggers, data) {
 	self._canRemoveAble = false;
 	$.DOM.insertBefore(el, self._open, el.childNodes[0]);
 	$.DOM.append(el, self._close);
-	self._triggers = {};
+	(self._triggers = [])._ = {};
 	self.TEMP = {};
 
-	$.forIn(triggers, function(tiggerCollection, key) {
-		self._triggers[key] = tiggerCollection;
+	$.forIn(triggerTable, function(tiggerCollection, key) {
+		if (key&&key!==".") {
+			$.push(self._triggers,key);
+		}
+		self._triggers._[key] = tiggerCollection;
 	});
-	$.forEach(self._triggers["."], function(tiggerFun) { //const value
+	$.forEach(triggerTable["."], function(tiggerFun) { //const value
 		tiggerFun.event(NodeList, dataManager);
 	});
 	self.reDraw();
-	// return self.dataManager;
 };
 
 function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {
@@ -61,8 +63,8 @@ ViewInstance.prototype = {
 	reDraw: function() {
 		var self = this,
 			dataManager = self.dataManager;
-		
-		$.forIn(self._triggers, function(val,key) {
+
+		$.forEach(self._triggers, function(key) {
 			dataManager._touchOffSubset(key)
 		});
 	},
@@ -90,7 +92,6 @@ ViewInstance.prototype = {
 		_replaceTopHandleCurrent(self, elParentNode)
 	},
 	remove: function() {
-		// console.log(this._packingBag)
 		var self = this,
 			el = this._packingBag
 		if (self._canRemoveAble) {
@@ -129,6 +130,7 @@ ViewInstance.prototype = {
 		var self = this,
 			dataManager = self.dataManager,
 			NodeList = self.NodeList;
-		_bubbleTrigger.apply(self, [self._triggers[key], NodeList, dataManager])
+
+		_bubbleTrigger.apply(self, [self._triggers._[key], NodeList, dataManager])
 	}
 };

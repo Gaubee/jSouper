@@ -105,7 +105,7 @@ V.registerTrigger("#each", function(handle, index, parentHandle) {
 				var viewInstance = arrViewInstances[index];
 				if (!viewInstance) {
 					viewInstance = arrViewInstances[index] = V.eachModules[id]();
-					dataManager.subset(eachItemData,viewInstance);//reset arrViewInstance's dataManager
+					dataManager.subset({},viewInstance);//reset arrViewInstance's dataManager
 					inserNew = true;
 				}
 				if (!viewInstance._canRemoveAble) { //had being recovered into the packingBag
@@ -116,10 +116,8 @@ V.registerTrigger("#each", function(handle, index, parentHandle) {
 					// 
 					viewInstance.insert(NodeList_of_ViewInstance[comment_endeach_id].currentNode)
 					// console.log(NodeList_of_ViewInstance[id]._controllers)
-				}else{
-					// console.log(eachItemData)
-					viewInstance.set(eachItemData);
 				}
+				viewInstance.set(eachItemData);
 				divideIndex = index;
 			});
 			// console.log(divideIndex)

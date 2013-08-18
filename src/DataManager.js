@@ -77,7 +77,7 @@ DataManager.prototype = {
 			default:
 				hashTable = DataManager.flat(obj, key);
 		}
-		// console.log("parse set:",hashTable);
+		
 		$.forEach(hashTable, function(key) {
 			var val = hashTable._data[key];
 			if ($.indexOf(database, key) === -1) {
@@ -91,14 +91,11 @@ DataManager.prototype = {
 		});
 	},
 	_touchOffSubset: function(key) {
-		// console.log("_touchOffSubset:",key)
-		$.forEachDyna(this._viewInstances, function(vi) {//use forEachDyna --> attr-vi will be pushin when vi._isAttr.bindHandle files
+		$.forEachDyna(this._viewInstances, function(vi) { //use forEachDyna --> attr-vi will be pushin when vi._isAttr.bindHandle files
 			if (vi._isAttr) {
-				// console.log("building attribute text!!");
-				$.forIn(vi._triggers,function (trigger,key) {
+				$.forEach(vi._triggers, function(key) {
 					vi.touchOff(key);
 				});
-				// console.log("building result:",vi.NodeList[vi.handleNodeTree.id].currentNode.innerText,vi.dataManager)
 				vi._isAttr.bindHandle(vi.dataManager);
 			} else {
 				vi.touchOff(key);
@@ -127,12 +124,12 @@ DataManager.prototype = {
 		$.push(this._subsetDataManagers, subsetDataManager);
 		return subsetDataManager; //subset(vi).set(basedata);
 	},
-	remove:function(viewInstance){
+	remove: function(viewInstance) {
 		var dm = this,
 			vis = dm._viewInstances,
-			index = $.indexOf(vis,viewInstance);
-		if (index!==-1) {
-			vis.splice(index,1);
+			index = $.indexOf(vis, viewInstance);
+		if (index !== -1) {
+			vis.splice(index, 1);
 		}
 	}
 }

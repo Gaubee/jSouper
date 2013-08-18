@@ -9,7 +9,9 @@ function View(arg) {
 	}
 	self.handleNodeTree = arg;
 	self._handles = [];
-	self._triggers = {}; //bey key word
+	self._triggerTable = {};
+	// self._triggers = {};
+	// (self._triggers = [])._ = {}; //storage key word and _ storage trigger instance
 
 
 	_buildHandler.call(self);
@@ -85,54 +87,56 @@ noshade   noShade   (hr; deprecated)
 compact             (ul, ol, dl, menu, dir; deprecated)
 */
 
-//  key : [isboolean , (default boolean value)isreverse]
+//  key : isboolean --> value = key --> hidden = "hidden"
 var _Assignment = {
 	className: false,
 	value: false,
-	checked: [true, false],
-	selected: [true], // equal to [true,false]
-	disabled: [true],
-	readonly: [true],
+	checked: true,
+	selected: true, // equal to [true,false]
+	disabled: true,
+	readonly: true,
+	multiple: true,
+	ismap: true,
+	defer: true,
+	// declare:true
+	noresize: true,
+	nowrap: true,
+	noshade: true,
+	// compact:true
+	hidden: true //
 };
 
 var _testDIV = $.DOM.clone(shadowDIV);
 var _event_by_fun = (function() {
-	try {
-		var testEvent = Function(""),
-			attrKey = "onclick";
-		console.log
-		_testDIV.setAttribute(attrKey, testEvent);
-		if (typeof _testDIV.getAttribute(attrKey) === "string") {
-			return false;
-		}
-	} finally {
-		return true;
+	var testEvent = Function(""),
+		attrKey = "onclick";
+
+	_testDIV.setAttribute(attrKey, testEvent);
+	if (typeof _testDIV.getAttribute(attrKey) === "string") {
+		return false;
 	}
+	return true;
 }());
 var _booleanFalseRegExp = /false|undefined|null|NaN/;
-var AttributeHandle = function(attrKey) {
+var _AttributeHandle = function(attrKey) {
 	var assign;
 	if (attrKey === "style" && _isIE) {
-		return AttributeHandle.list.style;
+		return _AttributeHandleEvent.style;
 	}
 	if (attrKey.indexOf("on") === 0 && _event_by_fun) {
-		return AttributeHandle.list.event;
+		return _AttributeHandleEvent.event;
 	}
-	console.log(_Assignment, attrKey)
 	if (_hasOwn.call(_Assignment, attrKey)) {
 		if (assign = _Assignment[attrKey]) {
-			if (assign[1]) {
-				return AttributeHandle.list.reBool;
-			}
-			return AttributeHandle.list.bool;
+			return _AttributeHandleEvent.bool;
 		}
-		return AttributeHandle.list.dir;
+		return _AttributeHandleEvent.dir;
 	}
-	return AttributeHandle.list.com;
+	return _AttributeHandleEvent.com;
 
 };
-_getAttrOuter = Function("n", "return n." + (_hasOwn.call(shadowDIV, "innerText") ? "innerText" : "textContent") + "||''")
-AttributeHandle.list = {
+_getAttrOuter = Function("n", "return n." + (_hasOwn.call(_testDIV, "innerText") ? "innerText" : "textContent") + "||''")
+var _AttributeHandleEvent = {
 	event: function(key, currentNode, parserNode) {
 		var attrOuter = _getAttrOuter(parserNode);
 		try {
@@ -140,7 +144,7 @@ AttributeHandle.list = {
 		} catch (e) {
 			attrOuterEvent = $.noop;
 		}
-		currentNode.setAttribute(attrKey, attrOuterEvent);
+		currentNode.setAttribute(key, attrOuterEvent);
 	},
 	style: function(key, currentNode, parserNode) {
 		var attrOuter = _getAttrOuter(parserNode);
@@ -157,25 +161,26 @@ AttributeHandle.list = {
 	bool: function(key, currentNode, parserNode) {
 		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
 		if (attrOuter) {
-			currentNode.setAttribute(key, true);
-		} else {
-			currentNode.removeAttribute(key);
-		}
-	},
-	reBool: function(key, currentNode, parserNode) {
-		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
-		if (!attrOuter) {
-			currentNode.setAttribute(key, true);
+			currentNode.setAttribute(key, key);
 		} else {
 			currentNode.removeAttribute(key);
 		}
 	}
 };
-// var _comment_reg = /<!--[\w\W]*?-->/g;
+var _bindHandle = function() {
+	var self = this,
+		attrKey = self.key,
+		currentNode = self.currentNode,
+		parserNode = self.parserNode;
+	// console.log(self._bindHandle)
+	if (currentNode) {
+		self._bindHandle(attrKey, currentNode, parserNode);
+	}
+};
 
 function _buildTrigger(handleNodeTree, dataManager) {
 	var self = this, //View Instance
-		triggers = self._triggers;
+		triggerTable = self._triggerTable;
 	handleNodeTree = handleNodeTree || self.handleNodeTree;
 	_traversal(handleNodeTree, function(handle, index, parentHandle) {
 		// handle.parentNode = parentHandle;
@@ -183,13 +188,11 @@ function _buildTrigger(handleNodeTree, dataManager) {
 			var triggerFactory = V.triggers[handle.handleName];
 			if (triggerFactory) {
 				var trigger = triggerFactory(handle, index, parentHandle);
-				// cos
 				if (trigger) {
 					var key = trigger.key = trigger.key || "";
-					// console.log
 					trigger.handleId = trigger.handleId || handle.id;
 					//unshift list and In order to achieve the trigger can be simulated bubble
-					$.unshift((triggers[key] = triggers[key] || []), trigger); //Storage as key -> array
+					$.unshift((triggerTable[key] = triggerTable[key] || []), trigger); //Storage as key -> array
 					$.push(handle._triggers, trigger); //Storage as array
 				}
 			}
@@ -198,9 +201,7 @@ function _buildTrigger(handleNodeTree, dataManager) {
 				nodeHTMLStr = node.outerHTML.replace(node.innerHTML, ""),
 				attrs = nodeHTMLStr.match(_attrRegExp);
 
-			// console.log("element attrs:", attrs)
 			$.forEach(attrs, function(attrStr) {
-				// console.log("attr item:", attrStr)
 				var attrInfo = attrStr.search("="),
 					attrKey = $.trim(attrStr.substring(0, attrInfo)),
 					attrValue = node.getAttribute(attrKey)
@@ -221,18 +222,8 @@ function _buildTrigger(handleNodeTree, dataManager) {
 						and lock it into attrViewInstance, 
 						waiting for updates the attribute.*/ //(so the trigger of be injecte in mush be unshift)
 						currentNode: null,
-						_bindHandle: AttributeHandle(attrKey),
-						bindHandle: function() {
-							var self = this,
-								currentNode = self.currentNode,
-								parserNode = self.parserNode,
-								attrOuter = parserNode.innerText || parserNode.textContent || "";
-							console.log(self._bindHandle)
-							if (currentNode) {
-								self._bindHandle(attrKey, currentNode, parserNode);
-								return;
-							}
-						}
+						_bindHandle: _AttributeHandle(attrKey),
+						bindHandle: _bindHandle
 					};
 
 
@@ -249,12 +240,10 @@ function _buildTrigger(handleNodeTree, dataManager) {
 							currentNode = NodeList[TEMP.belongsNodeId].currentNode;
 							attrViewInstance._isAttr.currentNode = currentNode;
 							dataManager.collect(attrViewInstance);
-
-							// console.log("get currentNode:",currentNode);
 						}
 					}
-					$.forIn(attrViewInstance._triggers, function(trigger, key) {
-						$.unshift((triggers[key] = triggers[key] || []), attrTrigger);
+					$.forEach(attrViewInstance._triggers, function(key) {
+						$.unshift((triggerTable[key] = triggerTable[key] || []), attrTrigger);
 					});
 
 				}
@@ -289,6 +278,5 @@ function _create(data) { //data maybe basedata or dataManager
 	$.forEach(self._handles, function(handle) {
 		handle.call(self, NodeList_of_ViewInstance);
 	});
-
-	return ViewInstance(self.handleNodeTree, NodeList_of_ViewInstance, self._triggers, data);
+	return ViewInstance(self.handleNodeTree, NodeList_of_ViewInstance, self._triggerTable, data);
 };
