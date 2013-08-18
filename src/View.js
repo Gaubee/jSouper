@@ -159,8 +159,6 @@ var _AttributeHandleEvent = {
 		currentNode[key] = attrOuter;
 	},
 	bool: function(key, currentNode, parserNode) {
-		console.log("----------------")
-		console.log(key,":",_getAttrOuter(parserNode),currentNode)
 		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
 		if (attrOuter) {
 			// currentNode.setAttribute(key, key);
@@ -175,7 +173,6 @@ var _bindHandle = function(viewInstance ,dataManager) {
 		attrKey = self.key,
 		currentNode = self.currentNode,
 		parserNode = self.parserNode;
-	// console.log(self._bindHandle)
 	if (currentNode) {
 		self._bindHandle(attrKey, currentNode, parserNode);
 	}

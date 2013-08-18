@@ -109,7 +109,13 @@ var $ = {
 	},
 	forEachDyna:function(arr, callback, i){
 		if (!arr) return;
-		return this._each(arr, callback, i)
+		for (i = i || 0, len = arr.length; i < arr.length; i += 1) {
+			if (callback(arr[i], i, arr) === false) break;
+			if (len > arr.length) { //arr had been cut
+				i -= len - arr.length;
+			}
+			len = arr.length;
+		}
 	},
 	_each: function(arr, callback, i) {
 		for (i = i || 0; i < arr.length; i += 1) {
@@ -455,8 +461,6 @@ var _AttributeHandleEvent = {
 		currentNode[key] = attrOuter;
 	},
 	bool: function(key, currentNode, parserNode) {
-		console.log("----------------")
-		console.log(key,":",_getAttrOuter(parserNode),currentNode)
 		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
 		if (attrOuter) {
 			// currentNode.setAttribute(key, key);
@@ -471,7 +475,6 @@ var _bindHandle = function(viewInstance ,dataManager) {
 		attrKey = self.key,
 		currentNode = self.currentNode,
 		parserNode = self.parserNode;
-	// console.log(self._bindHandle)
 	if (currentNode) {
 		self._bindHandle(attrKey, currentNode, parserNode);
 	}
