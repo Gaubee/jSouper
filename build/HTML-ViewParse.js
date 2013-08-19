@@ -1,7 +1,8 @@
 !(function viewParse(global) {
 
+'use strict';
 var global = this;
-var shadowBody = document.createElement("body");
+var shadowBody = document.createElement("body"),
 	shadowDIV = document.createElement("div"),
 	$TRUE = true,
 	$FALSE = false,
@@ -99,6 +100,11 @@ var $ = {
 			callback(obj[i], i, obj);
 		}
 	},
+	fastEach:function(arr, callback, scope){//Array.prototype.forEach
+		for (var i = 0,len = arr.length; i < len; i += 1) {
+			callback(arr[i], i);
+		}
+	},
 	reverseEach: function(arr, callback, i) {
 		if (!arr) return;
 		return this._each($.slice(arr).reverse(), callback, arr.length - 1 - i)
@@ -118,6 +124,7 @@ var $ = {
 		}
 	},
 	_each: function(arr, callback, i) {
+		'use strict';
 		for (i = i || 0; i < arr.length; i += 1) {
 			if (callback(arr[i], i, arr) === false) break;
 		}
@@ -168,7 +175,7 @@ var _traversal = function(node, callback) {
 /*
  * DataManager constructor
  */
-_hasOwn = Object.prototype.hasOwnProperty;
+var _hasOwn = Object.prototype.hasOwnProperty;
 
 function DataManager(baseData, viewInstance) {
 	var self = this;
@@ -292,7 +299,19 @@ DataManager.prototype = {
 		$.forEach(this._subsetDataManagers, function(dm) {
 			dm._touchOffSubset(key);
 		});
-		$.forEachDyna(this._viewInstances, function(vi) { //use forEachDyna --> attr-vi will be pushin when vi._isAttr.bindHandle files
+		// $.forEachDyna(, function(vi) { //use forEachDyna --> attr-vi will be pushin when vi._isAttr.bindHandle files
+		// 	if (vi._isAttr) {
+		// 		// console.log("building attribute value!")//DEBUG
+		// 		$.forEach(vi._triggers, function(key) {
+		// 			vi.touchOff(key);
+		// 		});
+		// 		vi._isAttr.bindHandle(vi, vi.dataManager);
+		// 		vi.dataManager.remove(vi);
+		// 	} else {
+		// 		vi.touchOff(key);
+		// 	}
+		// });
+		for(var i = 0,vis = this._viewInstances,vi,len = vis.length;vi = vis[i];){
 			if (vi._isAttr) {
 				// console.log("building attribute value!")//DEBUG
 				$.forEach(vi._triggers, function(key) {
@@ -302,8 +321,9 @@ DataManager.prototype = {
 				vi.dataManager.remove(vi);
 			} else {
 				vi.touchOff(key);
+				i+=1;
 			}
-		});
+		}
 	},
 	collect: function(viewInstance) {
 		var dm = this;
@@ -457,7 +477,6 @@ var _Assignment = {
 	disabled: true,
 	readonly: true,
 	multiple: true,
-	ismap: true,
 	defer: true,
 	// declare:true
 	noresize: true,
@@ -518,7 +537,27 @@ var _AttributeHandle = function(attrKey) {
 	return _AttributeHandleEvent.com;
 
 };
-_getAttrOuter = Function("n", "return n." + (_hasOwn.call(_testDIV, "innerText") ? "innerText" : "textContent") + "||''")
+var _getAttrOuter = Function("n", "return n." + (_hasOwn.call(_testDIV, "textContent") ? "textContent" : "innerText") + "||''")
+var _ti,uidKey;
+var _asynSetAttribute = function(obj,funName,key,value){
+	var uidKey = $.uidAvator+key;
+	if (_ti = obj[uidKey]) {
+		clearTimeout(_ti)
+	}
+	obj[uidKey] = setTimeout(function(){
+		obj[funName](key,value);
+		obj[$.uidAvator] = 0;
+	},0)
+};
+var _asynAttributeAssignment = function(obj,key,value){
+	var uidKey = $.uidAvator+key;
+	if (_ti = obj[uidKey]) {
+		clearTimeout(_ti)
+	}
+	obj[uidKey] = setTimeout(function(){
+		obj[key] = value;
+	},0)
+};
 var _AttributeHandleEvent = {
 	event: function(key, currentNode, parserNode) {
 		var attrOuter = _getAttrOuter(parserNode);
@@ -530,41 +569,48 @@ var _AttributeHandleEvent = {
 			// console.log("event build error !")//DEBUG
 			attrOuterEvent = $.noop;
 		}
-		currentNode.setAttribute(key, attrOuterEvent);
+		_asynSetAttribute(currentNode,"setAttribute",key, attrOuterEvent)
+		// currentNode.setAttribute(key, attrOuterEvent);
 	},
 	style: function(key, currentNode, parserNode) {
 		var attrOuter = _getAttrOuter(parserNode);
-		currentNode.style.setAttribute('cssText', attrOuter);
+		_asynSetAttribute(currentNode.style,"setAttribute",'cssText', attrOuter)
+		// currentNode.style.setAttribute('cssText', attrOuter);
 	},
 	com: function(key, currentNode, parserNode) {
 		var attrOuter = _getAttrOuter(parserNode);
-		currentNode.setAttribute(key, attrOuter);
+		// _asynSetAttribute(currentNode,"setAttribute",key, attrOuter)
+		currentNode.setAttribute(key, attrOuter)
 	},
+	//---------
 	dir: function(key, currentNode, parserNode) {
 		var attrOuter = _getAttrOuter(parserNode);
-		currentNode[key] = attrOuter;
+		_asynAttributeAssignment(currentNode,key,attrOuter);
+		// currentNode[key] = attrOuter;
 	},
 	iecheck: function(key, currentNode, parserNode) {
 		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
 
 		if (attrOuter) {
-			currentNode.defaultChecked = true;
-			currentNode[key] = key;
+			_asynAttributeAssignment(currentNode,"defaultChecked",key);
+			// currentNode.defaultChecked = true;
 		} else {
-			currentNode.defaultChecked = false;
-			currentNode[key] = false;
+			_asynAttributeAssignment(currentNode,"defaultChecked",false);
+			// currentNode.defaultChecked = false;
 		}
-		this._bindHandle = _AttributeHandleEvent.bool
+		(this._bindHandle = _AttributeHandleEvent.bool)(key, currentNode, parserNode);
 	},
 	bool: function(key, currentNode, parserNode) {
 		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
 
 		if (attrOuter) {
 			// currentNode.setAttribute(key, key);
-			currentNode[key] = key;
+			_asynAttributeAssignment(currentNode,key,key);
+			// currentNode[key] = key;
 		} else {
 			// currentNode.removeAttribute(key);
-			currentNode[key] = false;
+			_asynAttributeAssignment(currentNode,key,false);
+			// currentNode[key] = false;
 		}
 	}
 };
@@ -608,7 +654,7 @@ function _buildTrigger(handleNodeTree, dataManager) {
 					attrKey = attrKey.toLowerCase()
 					attrKey = attrKey.indexOf(V.prefix) ? attrKey : attrKey.replace(V.prefix, "")
 					attrKey = (_isIE && IEfix[attrKey]) || attrKey
-
+					
 				if (_matchRule.test(attrValue)) {
 
 					var attrViewInstance = (V.attrModules[handle.id + attrKey] = V.parse(attrValue))(),
@@ -636,8 +682,8 @@ function _buildTrigger(handleNodeTree, dataManager) {
 						event: function(NodeList, dataManager, eventTrigger) {
 							var self = this,
 								TEMP = self.TEMP,
-								attrViewInstance = TEMP.self;
-							currentNode = NodeList[TEMP.belongsNodeId].currentNode;
+								attrViewInstance = TEMP.self,
+								currentNode = NodeList[TEMP.belongsNodeId].currentNode;
 							attrViewInstance._isAttr.currentNode = currentNode;
 							dataManager.collect(attrViewInstance);
 						}
@@ -734,7 +780,7 @@ function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {
 		trigger.event(NodeList, dataManager, eventTrigger,self._isAttr);
 		if (trigger.bubble) {
 			var parentNode = NodeList[trigger.handleId].parentNode;
-			parentNode && _bubbleTrigger.apply(self, [parentNode._triggers, NodeList, dataManager, trigger,self._isAttr]);
+			parentNode && _bubbleTrigger.call(self, parentNode._triggers, NodeList, dataManager, trigger);
 		}
 	});
 };
@@ -811,18 +857,21 @@ ViewInstance.prototype = {
 	},
 	get: function get(key) {
 		var dm = this.dataManager;
-		return dm.get.apply(dm, $.slice(arguments));
+		return dm.get.call(dm, key);
 	},
-	set: function set() {
+	set: function set(key,obj) {
 		var dm = this.dataManager;
-		return dm.set.apply(dm, $.slice(arguments));
+		if (arguments.length===2) {
+			return dm.set.call(dm, key,obj);
+		}else{
+			return dm.set.call(dm, key);
+		}
 	},
 	touchOff: function(key) {
 		var self = this,
 			dataManager = self.dataManager,
 			NodeList = self.NodeList;
-
-		_bubbleTrigger.apply(self, [self._triggers._[key], NodeList, dataManager])
+		_bubbleTrigger.call(self, self._triggers._[key], NodeList, dataManager)
 	}
 };
 
@@ -1024,7 +1073,7 @@ var V = global.ViewParser = {
 
 		$.forEach(insertBefore, function(item) {
 			var node = item.baseNode,
-				parentNode = item.parentNode
+				parentNode = item.parentNode,
 				insertNodesHTML = item.insertNodesHTML;
 			shadowDIV.innerHTML = insertNodesHTML;
 			//Using innerHTML rendering is complete immediate operation DOM, 

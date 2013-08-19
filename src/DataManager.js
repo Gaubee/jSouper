@@ -1,7 +1,7 @@
 /*
  * DataManager constructor
  */
-_hasOwn = Object.prototype.hasOwnProperty;
+var _hasOwn = Object.prototype.hasOwnProperty;
 
 function DataManager(baseData, viewInstance) {
 	var self = this;
@@ -125,7 +125,19 @@ DataManager.prototype = {
 		$.forEach(this._subsetDataManagers, function(dm) {
 			dm._touchOffSubset(key);
 		});
-		$.forEachDyna(this._viewInstances, function(vi) { //use forEachDyna --> attr-vi will be pushin when vi._isAttr.bindHandle files
+		// $.forEachDyna(, function(vi) { //use forEachDyna --> attr-vi will be pushin when vi._isAttr.bindHandle files
+		// 	if (vi._isAttr) {
+		// 		// console.log("building attribute value!")//DEBUG
+		// 		$.forEach(vi._triggers, function(key) {
+		// 			vi.touchOff(key);
+		// 		});
+		// 		vi._isAttr.bindHandle(vi, vi.dataManager);
+		// 		vi.dataManager.remove(vi);
+		// 	} else {
+		// 		vi.touchOff(key);
+		// 	}
+		// });
+		for(var i = 0,vis = this._viewInstances,vi,len = vis.length;vi = vis[i];){
 			if (vi._isAttr) {
 				// console.log("building attribute value!")//DEBUG
 				$.forEach(vi._triggers, function(key) {
@@ -135,8 +147,9 @@ DataManager.prototype = {
 				vi.dataManager.remove(vi);
 			} else {
 				vi.touchOff(key);
+				i+=1;
 			}
-		});
+		}
 	},
 	collect: function(viewInstance) {
 		var dm = this;

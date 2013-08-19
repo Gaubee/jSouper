@@ -122,7 +122,6 @@ var _Assignment = {
 	disabled: true,
 	readonly: true,
 	multiple: true,
-	ismap: true,
 	defer: true,
 	// declare:true
 	noresize: true,
@@ -183,7 +182,27 @@ var _AttributeHandle = function(attrKey) {
 	return _AttributeHandleEvent.com;
 
 };
-_getAttrOuter = Function("n", "return n." + (_hasOwn.call(_testDIV, "innerText") ? "innerText" : "textContent") + "||''")
+var _getAttrOuter = Function("n", "return n." + (_hasOwn.call(_testDIV, "textContent") ? "textContent" : "innerText") + "||''")
+var _ti,uidKey;
+var _asynSetAttribute = function(obj,funName,key,value){
+	var uidKey = $.uidAvator+key;
+	if (_ti = obj[uidKey]) {
+		clearTimeout(_ti)
+	}
+	obj[uidKey] = setTimeout(function(){
+		obj[funName](key,value);
+		obj[$.uidAvator] = 0;
+	},0)
+};
+var _asynAttributeAssignment = function(obj,key,value){
+	var uidKey = $.uidAvator+key;
+	if (_ti = obj[uidKey]) {
+		clearTimeout(_ti)
+	}
+	obj[uidKey] = setTimeout(function(){
+		obj[key] = value;
+	},0)
+};
 var _AttributeHandleEvent = {
 	event: function(key, currentNode, parserNode) {
 		var attrOuter = _getAttrOuter(parserNode);
@@ -195,41 +214,48 @@ var _AttributeHandleEvent = {
 			// console.log("event build error !")//DEBUG
 			attrOuterEvent = $.noop;
 		}
-		currentNode.setAttribute(key, attrOuterEvent);
+		_asynSetAttribute(currentNode,"setAttribute",key, attrOuterEvent)
+		// currentNode.setAttribute(key, attrOuterEvent);
 	},
 	style: function(key, currentNode, parserNode) {
 		var attrOuter = _getAttrOuter(parserNode);
-		currentNode.style.setAttribute('cssText', attrOuter);
+		_asynSetAttribute(currentNode.style,"setAttribute",'cssText', attrOuter)
+		// currentNode.style.setAttribute('cssText', attrOuter);
 	},
 	com: function(key, currentNode, parserNode) {
 		var attrOuter = _getAttrOuter(parserNode);
-		currentNode.setAttribute(key, attrOuter);
+		// _asynSetAttribute(currentNode,"setAttribute",key, attrOuter)
+		currentNode.setAttribute(key, attrOuter)
 	},
+	//---------
 	dir: function(key, currentNode, parserNode) {
 		var attrOuter = _getAttrOuter(parserNode);
-		currentNode[key] = attrOuter;
+		_asynAttributeAssignment(currentNode,key,attrOuter);
+		// currentNode[key] = attrOuter;
 	},
 	iecheck: function(key, currentNode, parserNode) {
 		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
 
 		if (attrOuter) {
-			currentNode.defaultChecked = true;
-			currentNode[key] = key;
+			_asynAttributeAssignment(currentNode,"defaultChecked",key);
+			// currentNode.defaultChecked = true;
 		} else {
-			currentNode.defaultChecked = false;
-			currentNode[key] = false;
+			_asynAttributeAssignment(currentNode,"defaultChecked",false);
+			// currentNode.defaultChecked = false;
 		}
-		this._bindHandle = _AttributeHandleEvent.bool
+		(this._bindHandle = _AttributeHandleEvent.bool)(key, currentNode, parserNode);
 	},
 	bool: function(key, currentNode, parserNode) {
 		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
 
 		if (attrOuter) {
 			// currentNode.setAttribute(key, key);
-			currentNode[key] = key;
+			_asynAttributeAssignment(currentNode,key,key);
+			// currentNode[key] = key;
 		} else {
 			// currentNode.removeAttribute(key);
-			currentNode[key] = false;
+			_asynAttributeAssignment(currentNode,key,false);
+			// currentNode[key] = false;
 		}
 	}
 };
@@ -273,7 +299,7 @@ function _buildTrigger(handleNodeTree, dataManager) {
 					attrKey = attrKey.toLowerCase()
 					attrKey = attrKey.indexOf(V.prefix) ? attrKey : attrKey.replace(V.prefix, "")
 					attrKey = (_isIE && IEfix[attrKey]) || attrKey
-
+					
 				if (_matchRule.test(attrValue)) {
 
 					var attrViewInstance = (V.attrModules[handle.id + attrKey] = V.parse(attrValue))(),
@@ -301,8 +327,8 @@ function _buildTrigger(handleNodeTree, dataManager) {
 						event: function(NodeList, dataManager, eventTrigger) {
 							var self = this,
 								TEMP = self.TEMP,
-								attrViewInstance = TEMP.self;
-							currentNode = NodeList[TEMP.belongsNodeId].currentNode;
+								attrViewInstance = TEMP.self,
+								currentNode = NodeList[TEMP.belongsNodeId].currentNode;
 							attrViewInstance._isAttr.currentNode = currentNode;
 							dataManager.collect(attrViewInstance);
 						}

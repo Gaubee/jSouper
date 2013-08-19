@@ -1,5 +1,6 @@
+'use strict';
 var global = this;
-var shadowBody = document.createElement("body");
+var shadowBody = document.createElement("body"),
 	shadowDIV = document.createElement("div"),
 	$TRUE = true,
 	$FALSE = false,
@@ -97,6 +98,11 @@ var $ = {
 			callback(obj[i], i, obj);
 		}
 	},
+	fastEach:function(arr, callback, scope){//Array.prototype.forEach
+		for (var i = 0,len = arr.length; i < len; i += 1) {
+			callback(arr[i], i);
+		}
+	},
 	reverseEach: function(arr, callback, i) {
 		if (!arr) return;
 		return this._each($.slice(arr).reverse(), callback, arr.length - 1 - i)
@@ -116,6 +122,7 @@ var $ = {
 		}
 	},
 	_each: function(arr, callback, i) {
+		'use strict';
 		for (i = i || 0; i < arr.length; i += 1) {
 			if (callback(arr[i], i, arr) === false) break;
 		}

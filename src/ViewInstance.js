@@ -52,7 +52,7 @@ function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {
 		trigger.event(NodeList, dataManager, eventTrigger,self._isAttr);
 		if (trigger.bubble) {
 			var parentNode = NodeList[trigger.handleId].parentNode;
-			parentNode && _bubbleTrigger.apply(self, [parentNode._triggers, NodeList, dataManager, trigger,self._isAttr]);
+			parentNode && _bubbleTrigger.call(self, parentNode._triggers, NodeList, dataManager, trigger);
 		}
 	});
 };
@@ -129,17 +129,20 @@ ViewInstance.prototype = {
 	},
 	get: function get(key) {
 		var dm = this.dataManager;
-		return dm.get.apply(dm, $.slice(arguments));
+		return dm.get.call(dm, key);
 	},
-	set: function set() {
+	set: function set(key,obj) {
 		var dm = this.dataManager;
-		return dm.set.apply(dm, $.slice(arguments));
+		if (arguments.length===2) {
+			return dm.set.call(dm, key,obj);
+		}else{
+			return dm.set.call(dm, key);
+		}
 	},
 	touchOff: function(key) {
 		var self = this,
 			dataManager = self.dataManager,
 			NodeList = self.NodeList;
-
-		_bubbleTrigger.apply(self, [self._triggers._[key], NodeList, dataManager])
+		_bubbleTrigger.call(self, self._triggers._[key], NodeList, dataManager)
 	}
 };

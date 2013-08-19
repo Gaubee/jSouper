@@ -69,7 +69,7 @@ var V = global.ViewParser = {
 
 		$.forEach(insertBefore, function(item) {
 			var node = item.baseNode,
-				parentNode = item.parentNode
+				parentNode = item.parentNode,
 				insertNodesHTML = item.insertNodesHTML;
 			shadowDIV.innerHTML = insertNodesHTML;
 			//Using innerHTML rendering is complete immediate operation DOM, 

@@ -2,7 +2,7 @@
 <html>
 <head>
 	<title>HTML-ViewParse</title>
-	<script type="text/javascript" src="../build/HTML-ViewParse.min.js"></script>
+	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js"></script>
 	<script type="text/javascript">
 	(function (ie){if(!ie)return;var b=document.createElement("script");b.setAttribute("type","text/javascript");b.setAttribute("src","http://"+location.hostname+"/firebug-lite/build/firebug-lite.js");document.getElementsByTagName("head")[0].appendChild(b)}(!+"\v1")); 
 	</script>
@@ -14,10 +14,12 @@
 	</style>
 </head>
 <body>
+	<div id="div"></div>
+	<div id="div2"></div>
 </body>
 
 <script type="text/template" name="test">
-	<span class="{(class)}">{(name)}</span>
+	<span id="sp" attr-class="{(class)}">{(name)}</span>
 </script>
 </html>
 
@@ -27,20 +29,56 @@
 		"name":true,
 		"class":"nameclass"
 	}).append(document.body);
+/*
+
 	setTimeout(function(){
-		var i = 10000;
-		console.time("set name")
-		do{
-			nm.set("name",!nm.get("name"));
-		}while(i--);
-		console.timeEnd("set name")
-	},100)
-	setTimeout(function(){
-		var i = 10000;
+		var i = 10001;
 		console.time("set class")
 		do{
-			nm.set("class",nm.get("class")?"":"nameclass");
+			// nm.get("class")//10~20 -> 4~5
+			// nm.set("class","nameclass");//20~80 -> 10~15
+			// nm.set("class",i);//380~250 -> 120~130
+			nm.set("class",nm.get("class")?"":"nameclass");//1200~1300 820~900
+			// sp.className = "nameclass"; // 2~5ms
+			// sp.innerText = i;//5~15ms
+			// sp.setAttribute("class",i);//10~15ms
+			// div.innerText = i;
+			// sp.className = "nameclass";//5~100ms
+			// nm.set("class",nm.get("class")?"":"nameclass");//without setAttribute:65~75
 		}while(i--);
 		console.timeEnd("set class")
-	},200)
+	},1000);
+*/
+/*
+	D = document.createElement("div");
+	T = document.createTextNode("?");
+	D.appendChild(T);
+	setTimeout(function(){
+		var i = 10001;
+		console.time("DOM")
+		do{
+			div2.innerText = i;
+			// T.data = i;//30~45
+			div.innerText = div2.innerText;//175~190
+		}while(i--);
+		console.timeEnd("DOM")
+	},200);
+*/
+	setTimeout(function(){
+		var i = 10001;
+		console.time("DOM")
+		var x;
+		do{
+			// div.innerText = i;
+			// i = div.innerText;
+			div.innerHTML = i;
+			x = div2.innerText
+			x = div2.innerText
+			x = div2.innerText
+			// div.innerText = div.innerText;
+			// div.innerText = div.innerText;
+		}while(i--);
+		console.timeEnd("DOM")
+	},200);
+
 </script>
