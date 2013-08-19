@@ -167,6 +167,7 @@ var _traversal = function(node, callback) {
  * DataManager constructor
  */
 _hasOwn = Object.prototype.hasOwnProperty;
+
 function DataManager(baseData, viewInstance) {
 	var self = this;
 	if (!(self instanceof DataManager)) {
@@ -178,6 +179,7 @@ function DataManager(baseData, viewInstance) {
 	self._viewInstances = viewInstance ? [viewInstance] : []; //to touch off
 	self._parentDataManager = null; //to get data
 	self._subsetDataManagers = []; //to touch off
+	self._arrayDateManagers = {};//Chain
 };
 global.DataManager = DataManager;
 DataManager.flat = function(obj, prefixKey) {
@@ -189,6 +191,7 @@ DataManager.flat = function(obj, prefixKey) {
 			var lenKey = prefixKey + ".length"
 			$.push(hashTable, lenKey);
 			hashTable._data[lenKey] = obj.length;
+			// obj = $.create(obj);
 		} else {
 			$.forIn(obj, function(val, key) {
 				key = prefixKey ? prefixKey + "." + key : key;
@@ -203,23 +206,51 @@ DataManager.flat = function(obj, prefixKey) {
 			});
 		}
 	}
-	if (prefixKey) {
+	// if (prefixKey) {
 		$.push(hashTable, prefixKey);
 		hashTable._data[prefixKey] = obj;
-	}
+	// }
 
 	return hashTable;
 };
+var _arrIndexReg = /(\.([0-9]+))\./;
 DataManager.prototype = {
 	get: function(key) {
 		var dm = this,
-			parentDM_mark = "$PARENT.";
+			dmBak = dm,
+			parentDM_mark = "$PARENT.",
+			key = key||"";
+			key = key==="$THIS"?"":key;
+		// if (!key) {
+		// 	return dm._database._data;
+		// }
 		if (key.indexOf("$PARENT.")) {
 			do {
 				if (_hasOwn.call(dm._database._data, key)) {
 					return dm._database._data[key];
 				}
 			} while (dm = dm._parentDataManager);
+			// var keyArr = key.split(_arrIndexReg),
+			var keyArr = key+".",
+				result;
+			// if (keyArr.length > 1) {
+			keyArr.replace(_arrIndexReg, function(w,dotIndex,index,i) {
+				var preKey = keyArr.substring(0,i),
+					dotKey = preKey+dotIndex,
+					maybeArr = dmBak.get(preKey),
+					maybeDm
+				if ((maybeArr instanceof Array)) {//Chain
+					// console.log(dotKey,key.substring(i))
+					if (!(dotKey in dmBak._arrayDateManagers)&&(index in maybeArr)) {
+						maybeDm = dmBak._arrayDateManagers[dotKey] = DataManager(maybeArr[index]);
+					}
+					if (maybeDm = dmBak._arrayDateManagers[dotKey]) {
+						result = maybeDm.get(key.substring(i+dotIndex.length+1))
+					}
+				}
+			});
+			return result;
+			// }
 		} else {
 			return dm._parentDataManager.get(key.replace(parentDM_mark, ""));
 		}
@@ -242,7 +273,7 @@ DataManager.prototype = {
 			default:
 				hashTable = DataManager.flat(obj, key);
 		}
-		
+
 		$.forEach(hashTable, function(key) {
 			var val = hashTable._data[key];
 			if ($.indexOf(database, key) === -1) {
@@ -265,7 +296,7 @@ DataManager.prototype = {
 				$.forEach(vi._triggers, function(key) {
 					vi.touchOff(key);
 				});
-				vi._isAttr.bindHandle(vi,vi.dataManager);
+				vi._isAttr.bindHandle(vi, vi.dataManager);
 				vi.dataManager.remove(vi);
 			} else {
 				vi.touchOff(key);
