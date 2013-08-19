@@ -171,7 +171,7 @@ var _AttributeHandle = function(attrKey) {
 	if (attrKey.indexOf("on") === 0 && _event_by_fun) {
 		return _AttributeHandleEvent.event;
 	}
-	if (attrKey === "checked"&&_isIE) {
+	if (attrKey === "checked" && _isIE) {
 		return _AttributeHandleEvent.iecheck;
 	}
 	if (_hasOwn.call(_Assignment, attrKey)) {
@@ -183,7 +183,7 @@ var _AttributeHandle = function(attrKey) {
 	return _AttributeHandleEvent.com;
 
 };
-_getAttrOuter = Function("n", "return n." + (_hasOwn.call(_testDIV, "innerText") ? "innerText" : "textContent") + ".replace(/\\//g,'\\/\\/')||''")
+_getAttrOuter = Function("n", "return n." + (_hasOwn.call(_testDIV, "innerText") ? "innerText" : "textContent") + "||''")
 var _AttributeHandleEvent = {
 	event: function(key, currentNode, parserNode) {
 		var attrOuter = _getAttrOuter(parserNode);
@@ -209,13 +209,12 @@ var _AttributeHandleEvent = {
 		var attrOuter = _getAttrOuter(parserNode);
 		currentNode[key] = attrOuter;
 	},
-	iecheck:function(key, currentNode, parserNode){
+	iecheck: function(key, currentNode, parserNode) {
 		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
 
 		if (attrOuter) {
 			currentNode.defaultChecked = true;
 			currentNode[key] = key;
-			console.log("BOOL true:",currentNode[key])
 		} else {
 			currentNode.defaultChecked = false;
 			currentNode[key] = false;
@@ -224,11 +223,10 @@ var _AttributeHandleEvent = {
 	},
 	bool: function(key, currentNode, parserNode) {
 		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
-		
+
 		if (attrOuter) {
 			// currentNode.setAttribute(key, key);
 			currentNode[key] = key;
-			console.log("BOOL true:",currentNode[key])
 		} else {
 			// currentNode.removeAttribute(key);
 			currentNode[key] = false;
@@ -241,7 +239,7 @@ var _bindHandle = function() { /*viewInstance ,dataManager*/
 		currentNode = self.currentNode,
 		parserNode = self.parserNode;
 	if (currentNode) {
-		console.log(attrKey,":",parserNode.innerText);//DEBUG
+		// console.log(attrKey,":",parserNode.innerText);//DEBUG
 		self._bindHandle(attrKey, currentNode, parserNode);
 	}
 };

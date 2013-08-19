@@ -49,10 +49,10 @@ function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {
 		// }else{
 		// 	console.log("event","bubble")
 		// }
-		trigger.event(NodeList, dataManager, eventTrigger);
+		trigger.event(NodeList, dataManager, eventTrigger,self._isAttr);
 		if (trigger.bubble) {
 			var parentNode = NodeList[trigger.handleId].parentNode;
-			parentNode && _bubbleTrigger.apply(self, [parentNode._triggers, NodeList, dataManager, trigger]);
+			parentNode && _bubbleTrigger.apply(self, [parentNode._triggers, NodeList, dataManager, trigger,self._isAttr]);
 		}
 	});
 };

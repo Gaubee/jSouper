@@ -2,7 +2,6 @@
  * DataManager constructor
  */
 _hasOwn = Object.prototype.hasOwnProperty;
-
 function DataManager(baseData, viewInstance) {
 	var self = this;
 	if (!(self instanceof DataManager)) {
@@ -15,6 +14,7 @@ function DataManager(baseData, viewInstance) {
 	self._parentDataManager = null; //to get data
 	self._subsetDataManagers = []; //to touch off
 };
+global.DataManager = DataManager;
 DataManager.flat = function(obj, prefixKey) {
 	prefixKey = prefixKey || "";
 	var hashTable = [];

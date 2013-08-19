@@ -38,7 +38,7 @@ V.registerTrigger("#if", function(handle, index, parentHandle) {
 		// key:"",//default is ""
 		// chain: true,
 		event: function(NodeList_of_ViewInstance, dataManager, triggerBy) {
-			var conditionVal = !!NodeList_of_ViewInstance[conditionHandleId]._data,
+			var conditionVal = !! NodeList_of_ViewInstance[conditionHandleId]._data,
 				parentNode = NodeList_of_ViewInstance[parentHandleId].currentNode,
 				markHandleId = comment_else_id, //if(true)
 				markHandle; //default is undefined --> insertBefore === appendChild
@@ -105,7 +105,7 @@ V.registerTrigger("#each", function(handle, index, parentHandle) {
 				var viewInstance = arrViewInstances[index];
 				if (!viewInstance) {
 					viewInstance = arrViewInstances[index] = V.eachModules[id]();
-					dataManager.subset({},viewInstance);//reset arrViewInstance's dataManager
+					dataManager.subset({}, viewInstance); //reset arrViewInstance's dataManager
 					inserNew = true;
 				}
 				if (!viewInstance._canRemoveAble) { //had being recovered into the packingBag
@@ -145,8 +145,12 @@ V.registerTrigger("", function(handle, index, parentHandle) {
 	if (parentHandle.type !== "handle") { //as textHandle
 		trigger = {
 			key: key,
-			event: function(NodeList_of_ViewInstance, dataManager) { //call by ViewInstance's Node
-				NodeList_of_ViewInstance[textHandleId].currentNode.data = dataManager.get(key);
+			event: function(NodeList_of_ViewInstance, dataManager, triggerBy, isAttr, vi) { //call by ViewInstance's Node
+				if (isAttr&&isAttr.key.indexOf("on")===0) {
+					NodeList_of_ViewInstance[textHandleId].currentNode.data = String(dataManager.get(key)).replace(/"/g, '\\"').replace(/'/g, "\\'");
+				} else {
+					NodeList_of_ViewInstance[textHandleId].currentNode.data = dataManager.get(key)
+				}
 			}
 		}
 	} else { //as stringHandle
@@ -190,7 +194,7 @@ var _equal = function(handle, index, parentHandle) { //Equal
 					return false; //stop forEach
 				}
 			}, 1); //start from second;
-			NodeList_of_ViewInstance[this.handleId]._data = !!equal;
+			NodeList_of_ViewInstance[this.handleId]._data = !! equal;
 		}
 	}
 	return trigger;
@@ -211,7 +215,7 @@ var _nagete = function(handle, index, parentHandle) { //Negate
 };
 V.registerTrigger("nega", _nagete);
 V.registerTrigger("!", _nagete);
-V.registerTrigger("or",function(handle, index, parentHandle){
+V.registerTrigger("or", function(handle, index, parentHandle) {
 	var childHandlesId = [],
 		trigger;
 	$.forEach(handle.childNodes, function(child_handle) {
@@ -229,12 +233,12 @@ V.registerTrigger("or",function(handle, index, parentHandle){
 					NodeList_of_ViewInstance[handleId]._data = true;
 					return false; //stop forEach
 				}
-			}); 
+			});
 		}
 	}
 	return trigger;
 });
-V.registerTrigger("and",function(handle, index, parentHandle){
+V.registerTrigger("and", function(handle, index, parentHandle) {
 	var childHandlesId = [],
 		trigger;
 	$.forEach(handle.childNodes, function(child_handle) {
@@ -248,27 +252,27 @@ V.registerTrigger("and",function(handle, index, parentHandle){
 		event: function(NodeList_of_ViewInstance, dataManager) {
 			var and = true;
 			$.forEach(childHandlesId, function(child_handle_id) { //Compared to other values
-				and = !!NodeList_of_ViewInstance[child_handle_id]._data
+				and = !! NodeList_of_ViewInstance[child_handle_id]._data
 				if (!and) {
 					return false; //stop forEach
 				}
-			}); 
+			});
 			NodeList_of_ViewInstance[this.handleId]._data = and;
 		}
 	}
 	return trigger;
 });
-V.registerTrigger("HTML",function(handle, index, parentHandle){
-	var handleChilds=handle.childNodes,
+V.registerTrigger("HTML", function(handle, index, parentHandle) {
+	var handleChilds = handle.childNodes,
 		htmlTextHandlesId = handleChilds[0].id,
-		beginCommentId = handleChilds[handleChilds.length-1].id,
-		endCommentId = handleChilds[handleChilds.length-2].id,
+		beginCommentId = handleChilds[handleChilds.length - 1].id,
+		endCommentId = handleChilds[handleChilds.length - 2].id,
 		trigger;
 	trigger = {
 		// key:"",//default key === ""
 		bubble: true,
-		TEMP:{
-			cacheNode:$.DOM.clone(shadowDIV)
+		TEMP: {
+			cacheNode: $.DOM.clone(shadowDIV)
 		},
 		event: function(NodeList_of_ViewInstance, dataManager) {
 			var htmlText = NodeList_of_ViewInstance[htmlTextHandlesId]._data,
@@ -278,22 +282,22 @@ V.registerTrigger("HTML",function(handle, index, parentHandle){
 				parentNode = endCommentNode.parentNode,
 				brotherNodes = parentNode.childNodes,
 				index = -1;
-			$.forEach(brotherNodes,function(node,i){
+			$.forEach(brotherNodes, function(node, i) {
 				index = i;
 				if (node === startCommentNode) {
 					return false;
 				}
 			});
-			index = index+1;
-			$.forEach(brotherNodes,function(node,i){
+			index = index + 1;
+			$.forEach(brotherNodes, function(node, i) {
 				if (node === endCommentNode) {
 					return false;
 				}
 				parentNode.removeChild(node);
-			},index);
+			}, index);
 			cacheNode.innerHTML = htmlText;
-			$.forEach(cacheNode.childNodes,function(node,i){
-				$.DOM.insertBefore(parentNode,node,endCommentNode);
+			$.forEach(cacheNode.childNodes, function(node, i) {
+				$.DOM.insertBefore(parentNode, node, endCommentNode);
 			});
 		}
 	}

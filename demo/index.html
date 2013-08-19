@@ -2,14 +2,45 @@
 <html>
 <head>
 	<title>HTML-ViewParse</title>
-	<script type="text/javascript" src="../build/0.3/HTML-ViewParse.min.js"></script>
+	<script type="text/javascript" src="../build/HTML-ViewParse.min.js"></script>
+	<script type="text/javascript">
+	(function (ie){if(!ie)return;var b=document.createElement("script");b.setAttribute("type","text/javascript");b.setAttribute("src","http://"+location.hostname+"/firebug-lite/build/firebug-lite.js");document.getElementsByTagName("head")[0].appendChild(b)}(!+"\v1")); 
+	</script>
+	<style type="text/css">
+		.nameclass{
+			color: #EEE;
+			color: #2f3Ef2;
+		}
+	</style>
 </head>
 <body>
-	<h1>Hello HTML-ViewParse</h1>
-
 </body>
+
+<script type="text/template" name="test">
+	<span class="{(class)}">{(name)}</span>
+</script>
 </html>
 
 <script type="text/javascript">
-
+	ViewParser.scans();
+	nm = ViewParser.modules["test"]({
+		"name":true,
+		"class":"nameclass"
+	}).append(document.body);
+	setTimeout(function(){
+		var i = 10000;
+		console.time("set name")
+		do{
+			nm.set("name",!nm.get("name"));
+		}while(i--);
+		console.timeEnd("set name")
+	},100)
+	setTimeout(function(){
+		var i = 10000;
+		console.time("set class")
+		do{
+			nm.set("class",nm.get("class")?"":"nameclass");
+		}while(i--);
+		console.timeEnd("set class")
+	},200)
 </script>
