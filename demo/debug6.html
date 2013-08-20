@@ -8,10 +8,10 @@
 	</script>
 </head>
 <body>
-	{(list.1.name)}
-	<hr/>
 <script type="text/template" name="sim">
 
+	{(list.1.name)}{(list.1.other.0)}
+	<hr/>
 	{#each( {(list)} )}
 	<div> {#if({(name)})} {(name)}.hehe... {#else()} {($THIS)}  {/if()}  </div>
 	{/each()}
@@ -25,29 +25,29 @@
 		sim = Sim({
 			list:["???..???",{name:"Gaubee"},"XXX...XXX"]
 		}).append(b);
+		setTimeout(function(){
+			sim.set("list",["???..???",{name:"Bangeel",other:[]},"XXX...XXX"])
+		},300)
+		setTimeout(function(){
+			sim.set("list",["???..???",{name:"Bangeel",other:["(you find me!!)"]},"XXX...XXX"])
+		},900)
 </script>
 <script type="text/javascript">
 
-	dm1 = DataManager({
-		name:"Gaubee",
-		"name.arr":["one",{gaubee:[1,2,{bangeel:"yes!you find me!"}]}]
-	});
-	dm2 = dm1.subset({
-		nickname:"PuYi"
-	});
-	console.log(dm1.get("name"),dm2.get("name"));
-	dm1.set("name","GaubeeX");
-	console.log(dm1.get("name"),dm2.get("name"));
-	dm2.set("name","GaubeeY");
-	console.log(dm1.get("name"),dm2.get("name"));
-	console.log(dm1.get("name"),dm2.get("$PARENT.name"));
-	// console.log(dm1.get("name.arr.0"))
-	// console.log(dm1.get("name.arr.1.gaubee"))
-	var namestr = "name.arr.1.gaubee.2.bangeel";
-	console.log(dm1.get(namestr))
-	console.log(dm2.get(namestr))
-	// namestr.replace(_arrIndexReg,function(){
-	// 	console.log(arguments)
-	// })
+	// dm1 = DataManager({
+	// 	name:"Gaubee",
+	// 	"name.arr":["one",{gaubee:[1,2,{bangeel:"yes!you find me!"}]}]
+	// });
+	// dm2 = dm1.subset({
+	// 	nickname:"PuYi"
+	// });
+	// console.log(dm1.get("name"),dm2.get("name"));
+	// dm1.set("name","GaubeeX");
+	// console.log(dm1.get("name"),dm2.get("name"));
+	// dm2.set("name","GaubeeY");
+	// console.log(dm1.get("name"),dm2.get("name"));
+	// console.log(dm1.get("name"),dm2.get("$PARENT.name"));
+	// var namestr = "name.arr.1.gaubee.2.bangeel";
 	// console.log(dm1.get(namestr))
+	// console.log(dm2.get(namestr))
 </script>

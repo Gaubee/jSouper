@@ -29,7 +29,7 @@ V.registerTrigger("#each", function(handle, index, parentHandle) {
 					viewInstance.insert(NodeList_of_ViewInstance[comment_endeach_id].currentNode)
 					// console.log(NodeList_of_ViewInstance[id]._controllers)
 				}
-				console.log(eachItemData)
+				// console.log(eachItemData)
 				viewInstance.set(eachItemData);
 				divideIndex = index;
 			});

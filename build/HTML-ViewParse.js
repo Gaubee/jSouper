@@ -183,12 +183,15 @@ function DataManager(baseData, viewInstance) {
 		return new DataManager(baseData, viewInstance);
 	}
 	baseData = baseData || {};
+	// (self._database = [])._data = {};
 	self._database = DataManager.flat(baseData);
 	// console.log(viewInstance)
 	self._viewInstances = viewInstance ? [viewInstance] : []; //to touch off
 	self._parentDataManager = null; //to get data
 	self._subsetDataManagers = []; //to touch off
-	self._arrayDateManagers = {}; //Chain
+	(self._arrayDateManagers = [])._ = {}; //Chain
+	self._unknownKey = [];
+	// baseData&&self.set(baseData)
 };
 global.DataManager = DataManager;
 DataManager.flat = function(obj, prefixKey) {
@@ -215,10 +218,12 @@ DataManager.flat = function(obj, prefixKey) {
 			});
 		}
 	}
-	// if (prefixKey) {
+	if (!prefixKey) {
+		$.push(hashTable, "$THIS");
+		hashTable._data["$THIS"] = obj;
+	}
 	$.push(hashTable, prefixKey);
 	hashTable._data[prefixKey] = obj;
-	// }
 
 	return hashTable;
 };
@@ -247,29 +252,38 @@ DataManager.prototype = {
 				var preKey = keyArr.substring(0, i),
 					dotKey = preKey + dotIndex,
 					maybeArr = dmBak.get(preKey),
-					maybeDm
+					maybeDm;
 				if ((maybeArr instanceof Array)) { //Chain
 					// console.log(dotKey,key.substring(i))
-					if (!(dotKey in dmBak._arrayDateManagers) && (index in maybeArr)) {
-						maybeDm = dmBak._arrayDateManagers[dotKey] = DataManager(maybeArr[index]);
+					if (!(dotKey in dmBak._arrayDateManagers._) && (index in maybeArr)) {
+						maybeDm = dmBak._arrayDateManagers._[dotKey] = DataManager(maybeArr[index]);
+						maybeDm._viewInstances = dmBak._viewInstances;
+						maybeDm._prefix = (dmBak._prefix?dmBak._prefix+".":"")+dotKey;
+						$.push(dmBak._arrayDateManagers, dotKey);
 					}
-					if (maybeDm = dmBak._arrayDateManagers[dotKey]) {
+					if (maybeDm = dmBak._arrayDateManagers._[dotKey]) {
 						result = maybeDm.get(key.substring(i + dotIndex.length + 1))
 					}
 				}
 			});
-			return result;
-			// }
 		} else {
-			return dm._parentDataManager.get(key.replace(parentDM_mark, ""));
+			result = dm._parentDataManager.get(key.replace(parentDM_mark, ""));
 		}
+		if (result === undefined) {//Unknown key to manually trigger, whether it is unable to update the data.
+			// console.log(dm)
+			if($.indexOf(dmBak._unknownKey,key)===-1){
+				$.push(dmBak._unknownKey,key)
+			}
+		}
+		return result;
 	},
 	set: function(key, obj) {
 		var dm = this,
 			viewInstances,
 			argsLen = arguments.length,
-			hashTable  = [],
-			database = this._database;
+			hashTable = [],
+			database = dm._database,
+			arrayDateManagers = dm._arrayDateManagers;
 
 		switch (argsLen) {
 			case 0:
@@ -278,18 +292,18 @@ DataManager.prototype = {
 				obj = key;
 				if (obj instanceof Object) {
 					hashTable = DataManager.flat(obj);
-				}else{
-					hashTable._data  = {};
-					$.push(hashTable,"");
+				} else {
+					hashTable._data = {};
+					$.push(hashTable, "");
+					$.push(hashTable, "$THIS");
 					hashTable._data[""] = obj;
+					hashTable._data["$THIS"] = obj;
 				}
 				break;
 			default:
 				hashTable = DataManager.flat(obj, key);
 		}
-		$.push(hashTable,"$THIS");
-		hashTable._data["$THIS"] = obj;
-		console.log(hashTable)
+
 		$.forEach(hashTable, function(key) {
 			var val = hashTable._data[key];
 			if ($.indexOf(database, key) === -1) {
@@ -298,9 +312,38 @@ DataManager.prototype = {
 
 			if (database._data[key] !== val || (val instanceof Object)) {
 				database._data[key] = val;
+				if (dm._prefix) {
+					if (key) {
+						key = dm._prefix + "." + key
+					}else{
+						key = dm._prefix
+					}
+				}
 				dm._touchOffSubset(key);
 			}
+			$.fastEach(arrayDateManagers, function(arrDM_key) {
+				if (dm._prefix) {
+					key = key.replace(dm._prefix+".","");
+				}
+				if (arrDM_key.indexOf(key) === 0) {
+					var arrDM = arrayDateManagers._[arrDM_key],
+						index = arrDM_key.substring(key.length + 1);
+					arrDM.set(database._data[key][index]); //iteration trigger
+				}
+			});
 		});
+		var i,unKeys,unknownKey,len;
+		for(i=0,unKeys = dm._unknownKey,unknownKey,len = unKeys.length;i<len;){
+			unknownKey = unKeys[i];
+			if (dm.get(unknownKey)!==undefined) {
+				dm._touchOffSubset(unknownKey);
+				unKeys.splice(i,1);
+				len-=1;
+			}else{
+				i+=1;
+			}
+		}
+		
 	},
 	_touchOffSubset: function(key) {
 		$.forEach(this._subsetDataManagers, function(dm) {
@@ -1316,7 +1359,7 @@ V.registerTrigger("#each", function(handle, index, parentHandle) {
 					viewInstance.insert(NodeList_of_ViewInstance[comment_endeach_id].currentNode)
 					// console.log(NodeList_of_ViewInstance[id]._controllers)
 				}
-				console.log(eachItemData)
+				// console.log(eachItemData)
 				viewInstance.set(eachItemData);
 				divideIndex = index;
 			});
