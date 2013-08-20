@@ -19,14 +19,18 @@ module.exports = function(grunt) {
 		pkg: grunt.file.readJSON('package.json'),
 		src: '',
 		concat: {
-			dist: {
-				src: ['src/$.js' ,'src/DataManager.js', 'src/View.js', 'src/ViewInstance.js', 'src/Handle.js', 'src/export.js', 'src/registerHandle.js', 'src/registerTrigger.js', 'src/*.js'],
+			debug: {
+				src: [ 'src/plugins.js','src/$.js' ,'src/DataManager.js', 'src/View.js', 'src/ViewInstance.js', 'src/Handle.js', 'src/export.js', 'src/registerHandle/*.js', 'src/registerTrigger/*.js'],
 				dest: 'build/HTML-ViewParse.debug.js'
+			},
+			common:{
+				src: [ 'src/$.js' ,'src/DataManager.js', 'src/View.js', 'src/ViewInstance.js', 'src/Handle.js', 'src/export.js', 'src/registerHandle/*.js', 'src/registerTrigger/*.js'],
+				dest: 'build/HTML-ViewParse.js'
 			}
 		},
 		wrap: {
 			basic: {
-				src: ['build/HTML-ViewParse.debug.js'],
+				src: ['build/HTML-ViewParse.js'],
 				dest: 'build/HTML-ViewParse.js',
 				options: {
 					wrapper: ['!(function viewParse(global) {\n', '\n}(this));']
@@ -88,10 +92,7 @@ module.exports = function(grunt) {
 				files: ['demo/**']
 			},
 			js: {
-				files: ['src/*.js', 'src/lib/*.js']
-			},
-			v3: {
-				files: ['src/*.js'],
+				files: ['src/*.js', 'src/**/*.js'],
 				tasks: ['concat', 'wrap', 'uglify'] //,'closure-compiler'
 			}
 		}

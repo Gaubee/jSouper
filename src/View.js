@@ -1,3 +1,4 @@
+
 /*
  * View constructor
  */
@@ -316,7 +317,6 @@ function _buildTrigger(handleNodeTree, dataManager) {
 						_bindHandle: _AttributeHandle(attrKey),
 						bindHandle: _bindHandle
 					};
-
 
 					var attrTrigger = {
 						// key:"$ATTR",

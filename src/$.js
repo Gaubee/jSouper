@@ -1,5 +1,5 @@
 'use strict';
-var global = this;
+var global = global||this;
 var shadowBody = document.createElement("body"),
 	shadowDIV = document.createElement("div"),
 	$TRUE = true,

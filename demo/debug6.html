@@ -8,13 +8,23 @@
 	</script>
 </head>
 <body>
+	{(list.1.name)}
+	<hr/>
+<script type="text/template" name="sim">
+
+	{#each( {(list)} )}
+	<div> {#if({(name)})} {(name)}.hehe... {#else()} {($THIS)}  {/if()}  </div>
+	{/each()}
+</script>
 </body>
 </html>
 <script type="text/javascript">
-	// b = document.body
-	// ViewParser.scans();
-	// Sim = V.modules["sim"];
-	// sim = Sim();
+	ViewParser.scans();
+	var b = document.body,
+		Sim = V.modules["sim"],
+		sim = Sim({
+			list:["???..???",{name:"Gaubee"},"XXX...XXX"]
+		}).append(b);
 </script>
 <script type="text/javascript">
 

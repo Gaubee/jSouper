@@ -24,11 +24,11 @@
 </html>
 
 <script type="text/javascript">
-	ViewParser.scans();
-	nm = ViewParser.modules["test"]({
-		"name":true,
-		"class":"nameclass"
-	}).append(document.body);
+	// ViewParser.scans();
+	// nm = ViewParser.modules["test"]({
+	// 	"name":true,
+	// 	"class":"nameclass"
+	// }).append(document.body);
 /*
 
 	setTimeout(function(){
@@ -64,21 +64,48 @@
 		console.timeEnd("DOM")
 	},200);
 */
+	// setTimeout(function(){
+	// 	var i = 10001;
+	// 	console.time("DOM1")
+	// 	var x;
+	// 	do{
+	// 		div.innerHTML = i;
+	// 		// x = div2.innerText;
+	// 	}while(i--);
+	// 	console.timeEnd("DOM1")
+	// },100);
+	// setTimeout(function(){
+	// 	var i = 10001;
+	// 	console.time("DOM2")
+	// 	var x;
+	// 	do{
+	// 		// div.innerHTML = i;
+	// 		x = div2.innerText;
+	// 	}while(i--);
+	// 	console.timeEnd("DOM2")
+	// },200);
 	setTimeout(function(){
-		var i = 10001;
-		console.time("DOM")
+		var i = 1001;
+		console.time("DOM3")
 		var x;
 		do{
-			// div.innerText = i;
-			// i = div.innerText;
 			div.innerHTML = i;
-			x = div2.innerText
-			x = div2.innerText
-			x = div2.innerText
-			// div.innerText = div.innerText;
-			// div.innerText = div.innerText;
+			x = div2.innerText;
+			// x = div2.innerText;
+			// x = div2.innerText;
+			// x = div2.innerText;
+			// x = div2.innerText;
+			// x = div2.innerText;
+			// x = div2.innerText;
+			// x = div2.innerText;
+			// x = div2.innerText;
+			// x = div2.innerText;
+			// x = div2.innerText;
+			// x = div2.innerText;
+			// x = div2.innerText;
+			// x = div2.innerText;
 		}while(i--);
-		console.timeEnd("DOM")
-	},200);
+		console.timeEnd("DOM3")
+	},300);
 
 </script>
