@@ -9,28 +9,15 @@
 </head>
 <body>
 <script type="text/template" name="sim">
-
-	{(list.1.name)}{(list.1.other.0)}
-	<hr/>
-	{#each( {(list)} )}
-	<div> {#if({(name)})} {(name)}.hehe... {#else()} {($THIS)}  {/if()}  </div>
+	<ol>
+	{#each( {($THIS)} )}
+		<li>{($THIS)}</li>
 	{/each()}
-	<hr/>
-	{($THIS)}
+	</ol>
 	<hr/>
 	<ol>
 	{#each( {($THIS)} )}
 		<li>{($THIS)}</li>
-		<ul>
-		{#each( {($THIS)} )}
-			<li>{($THIS)}</li>
-			<ul>
-				{#each( {($THIS)} )}
-					<li>{($THIS)}</li>
-				{/each()}
-			</ul>
-		{/each()}
-		</ul>
 	{/each()}
 	</ol>
 </script>
@@ -40,23 +27,11 @@
 	ViewParser.scans();
 	var b = document.body,
 		Sim = V.modules["sim"],
-		sim = Sim({
-			list:["???..???",{name:"Gaubee"},"XXX...XXX"]
-		}).append(b);
-		/*
-*/
-		setTimeout(function(){
-			sim.set("list",["???..???",{name:"Bangeel",other:[]},"XXX...XXX"])
-		},300)
-		setTimeout(function(){
-			sim.set("list",["???..???",{name:"Bangeel",other:["(you find me!!)"]},"XXX...XXX"])
-		},600)
-		setTimeout(function(){
-			sim.set("Gaubee")
-		},600)
-		setTimeout(function(){
-			sim.set(["Gaubee1","Gaubee2","Gaubee3","Gaubee4","Gaubee5"])
-		},900)
+		sim = Sim("Gaubee").append(b);
+		sim.set("Gaubee");
+
+
+	var VV = V._instances;	
 </script>
 <script type="text/javascript">
 

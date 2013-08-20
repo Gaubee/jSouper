@@ -24,6 +24,7 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	self._open = $.DOM.Comment(self._id + " _open");
 	self._close = $.DOM.Comment(self._id + " _close");
 	self._canRemoveAble = false;
+	self._AVI = {};
 	$.DOM.insertBefore(el, self._open, el.childNodes[0]);
 	$.DOM.append(el, self._close);
 	(self._triggers = [])._ = {};
@@ -38,6 +39,7 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	$.forEach(triggerTable["."], function(tiggerFun) { //const value
 		tiggerFun.event(NodeList, dataManager);
 	});
+	V._instances[self._id] = self;
 	self.reDraw();
 };
 
@@ -49,7 +51,7 @@ function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {
 		// }else{
 		// 	console.log("event","bubble")
 		// }
-		trigger.event(NodeList, dataManager, eventTrigger,self._isAttr);
+		trigger.event(NodeList, dataManager, eventTrigger,self._isAttr,self._id);
 		if (trigger.bubble) {
 			var parentNode = NodeList[trigger.handleId].parentNode;
 			parentNode && _bubbleTrigger.call(self, parentNode._triggers, NodeList, dataManager, trigger);

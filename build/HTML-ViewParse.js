@@ -328,7 +328,9 @@ DataManager.prototype = {
 				if (arrDM_key.indexOf(key) === 0) {
 					var arrDM = arrayDateManagers._[arrDM_key],
 						index = arrDM_key.substring(key.length + 1);
-					arrDM.set(database._data[key][index]); //iteration trigger
+					if (database._data[key]){// The structure may be changed
+						arrDM.set(database._database[key][index]); //iteration trigger
+					}
 				}
 			});
 		});
@@ -803,6 +805,7 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	self._open = $.DOM.Comment(self._id + " _open");
 	self._close = $.DOM.Comment(self._id + " _close");
 	self._canRemoveAble = false;
+	self._AVI = {};
 	$.DOM.insertBefore(el, self._open, el.childNodes[0]);
 	$.DOM.append(el, self._close);
 	(self._triggers = [])._ = {};
@@ -817,6 +820,7 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	$.forEach(triggerTable["."], function(tiggerFun) { //const value
 		tiggerFun.event(NodeList, dataManager);
 	});
+	V._instances[self._id] = self;
 	self.reDraw();
 };
 
@@ -828,7 +832,7 @@ function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {
 		// }else{
 		// 	console.log("event","bubble")
 		// }
-		trigger.event(NodeList, dataManager, eventTrigger,self._isAttr);
+		trigger.event(NodeList, dataManager, eventTrigger,self._isAttr,self._id);
 		if (trigger.bubble) {
 			var parentNode = NodeList[trigger.handleId].parentNode;
 			parentNode && _bubbleTrigger.call(self, parentNode._triggers, NodeList, dataManager, trigger);
@@ -1162,7 +1166,8 @@ var V = global.ViewParser = {
 	handles: {},
 	modules: {},
 	attrModules: {},
-	eachModules: {}
+	eachModules: {},
+	_instances:{}
 };
 V.registerHandle("HTML",function(handle, index, parentHandle){
 	var endCommentHandle = _commentPlaceholder(handle, parentHandle,"html_end_"+handle.id),
@@ -1181,11 +1186,12 @@ var _commentPlaceholder = function(handle, parentHandle,commentText) {
 var placeholderHandle = function(handle, index, parentHandle) {
 	var commentHandle = _commentPlaceholder(handle, parentHandle);
 };
-var _each_display = function(show_or_hidden, NodeList_of_ViewInstance) {
+var _each_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManager, triggerBy,viewInstance_ID) {
 	var handle = this,
 		parentHandle = handle.parentNode,
 		comment_endeach_id,
-		arrViewInstances = handle.arrViewInstances;
+		allArrViewInstances = V._instances[viewInstance_ID]._AVI,
+		arrViewInstances = allArrViewInstances[handle.id];
 	$.forEach(parentHandle.childNodes, function(child_handle, index, cs) { //get comment_endeach_id
 		if (child_handle.id === handle.id) {
 			comment_endeach_id = cs[index + 3].id;
@@ -1215,17 +1221,24 @@ V.registerHandle("#each", function(handle, index, parentHandle) {
 		eachModuleHandle = ElementHandle(_shadowBody),
 		endIndex = 0;
 
-	handle.arrViewInstances = [];
+	// handle.arrViewInstances = [];//Should be at the same level with currentNode
 	handle.len = 0;
-
+	var layer = 1;
 	$.forEach(parentHandle.childNodes, function(childHandle, index) {
 		endIndex = index;
+		console.log(childHandle.handleName)
+		if (childHandle.handleName === "#each") {
+			layer+=1
+		}
 		if (childHandle.handleName === "/each") {
-			return false
+			layer-=1;
+			if (!layer) {
+				return false
+			}
 		}
 		$.push(eachModuleHandle.childNodes, childHandle);
 	}, index + 1);
-
+	console.log("----",handle.id,"-------")
 	parentHandle.childNodes.splice(index + 1, endIndex - index - 1); //Pulled out
 	V.eachModules[handle.id] = View(eachModuleHandle); //Compiled into new View module
 
@@ -1333,15 +1346,18 @@ V.registerTrigger("#each", function(handle, index, parentHandle) {
 	var id = handle.id,
 		arrDataHandleKey = handle.childNodes[0].childNodes[0].node.data,
 		comment_endeach_id = parentHandle.childNodes[index + 3].id, //eachHandle --> eachComment --> endeachHandle --> endeachComment
-		arrViewInstances = handle.arrViewInstances,
 		trigger;
 
 	trigger = {
-		event: function(NodeList_of_ViewInstance, dataManager) {
+		event: function(NodeList_of_ViewInstance, dataManager,eventTrigger,isAttr,viewInstance_ID) {
 			var data = dataManager.get(arrDataHandleKey),
+				allArrViewInstances,
+				arrViewInstances,// = NodeList_of_ViewInstance[id].arrViewInstances= NodeList_of_ViewInstance[id].arrViewInstances||[],
 				divideIndex = -1,
 				inserNew;
-
+			console.log(viewInstance_ID,id)
+			allArrViewInstances = V._instances[viewInstance_ID]._AVI;
+			arrViewInstances = allArrViewInstances[id] = allArrViewInstances[id]||[];
 			$.forEach(data, function(eachItemData, index) {
 				// console.log(arrViewInstances[index])
 				var viewInstance = arrViewInstances[index];
@@ -1354,20 +1370,22 @@ V.registerTrigger("#each", function(handle, index, parentHandle) {
 					inserNew = true;
 				}
 
+				// console.log(eachItemData)
+				viewInstance.set(eachItemData);
+
 				if (inserNew) {
-					// 
 					viewInstance.insert(NodeList_of_ViewInstance[comment_endeach_id].currentNode)
 					// console.log(NodeList_of_ViewInstance[id]._controllers)
 				}
-				// console.log(eachItemData)
-				viewInstance.set(eachItemData);
 				divideIndex = index;
 			});
 			// console.log(divideIndex)
 			divideIndex += 1;
+			// console.log(arrViewInstances)
 			$.forEach(arrViewInstances, function(eachItemHandle) {
 				// calibrate the top of handle's currentNode
-				eachItemHandle.NodeList[eachItemHandle.handleNodeTree.id].currentNode = NodeList_of_ViewInstance[parentHandle.id].currentNode;
+				// console.log(eachItemHandle.NodeList[eachItemHandle.handleNodeTree.id].currentNode,NodeList_of_ViewInstance[parentHandle.id].currentNode )
+				// eachItemHandle.NodeList[eachItemHandle.handleNodeTree.id].currentNode = NodeList_of_ViewInstance[parentHandle.id].currentNode;
 				eachItemHandle.remove();
 			}, divideIndex);
 			var lengthKey = arrDataHandleKey + ".length";
@@ -1485,7 +1503,7 @@ V.registerTrigger("#if", function(handle, index, parentHandle) {
 	trigger = {
 		// key:"",//default is ""
 		// chain: true,
-		event: function(NodeList_of_ViewInstance, dataManager, triggerBy) {
+		event: function(NodeList_of_ViewInstance, dataManager, triggerBy,isAttr,viewInstance_ID) {
 			var conditionVal = !! NodeList_of_ViewInstance[conditionHandleId]._data,
 				parentNode = NodeList_of_ViewInstance[parentHandleId].currentNode,
 				markHandleId = comment_else_id, //if(true)
@@ -1512,7 +1530,7 @@ V.registerTrigger("#if", function(handle, index, parentHandle) {
 					});
 					if (display) {
 						if (currentHandle.display) { //Custom Display Function,default is false
-							currentHandle.display(true, NodeList_of_ViewInstance, dataManager, triggerBy)
+							currentHandle.display(true, NodeList_of_ViewInstance, dataManager, triggerBy,viewInstance_ID)
 						} else if (node) {
 							$.DOM.replace(parentNode, node, placeholderNode)
 						}
@@ -1524,7 +1542,7 @@ V.registerTrigger("#if", function(handle, index, parentHandle) {
 						placeholderNode = (currentHandle.placeholderNode = currentHandle.placeholderNode || $.DOM.Comment(id));
 
 					if (currentHandle.display) { //Custom Display Function,default is false
-						currentHandle.display(false, NodeList_of_ViewInstance, dataManager, triggerBy)
+						currentHandle.display(false, NodeList_of_ViewInstance, dataManager, triggerBy,viewInstance_ID)
 					} else if (node) {
 						$.DOM.replace(parentNode, placeholderNode, node)
 					}

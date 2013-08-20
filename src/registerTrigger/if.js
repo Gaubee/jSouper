@@ -37,7 +37,7 @@ V.registerTrigger("#if", function(handle, index, parentHandle) {
 	trigger = {
 		// key:"",//default is ""
 		// chain: true,
-		event: function(NodeList_of_ViewInstance, dataManager, triggerBy) {
+		event: function(NodeList_of_ViewInstance, dataManager, triggerBy,isAttr,viewInstance_ID) {
 			var conditionVal = !! NodeList_of_ViewInstance[conditionHandleId]._data,
 				parentNode = NodeList_of_ViewInstance[parentHandleId].currentNode,
 				markHandleId = comment_else_id, //if(true)
@@ -64,7 +64,7 @@ V.registerTrigger("#if", function(handle, index, parentHandle) {
 					});
 					if (display) {
 						if (currentHandle.display) { //Custom Display Function,default is false
-							currentHandle.display(true, NodeList_of_ViewInstance, dataManager, triggerBy)
+							currentHandle.display(true, NodeList_of_ViewInstance, dataManager, triggerBy,viewInstance_ID)
 						} else if (node) {
 							$.DOM.replace(parentNode, node, placeholderNode)
 						}
@@ -76,7 +76,7 @@ V.registerTrigger("#if", function(handle, index, parentHandle) {
 						placeholderNode = (currentHandle.placeholderNode = currentHandle.placeholderNode || $.DOM.Comment(id));
 
 					if (currentHandle.display) { //Custom Display Function,default is false
-						currentHandle.display(false, NodeList_of_ViewInstance, dataManager, triggerBy)
+						currentHandle.display(false, NodeList_of_ViewInstance, dataManager, triggerBy,viewInstance_ID)
 					} else if (node) {
 						$.DOM.replace(parentNode, placeholderNode, node)
 					}

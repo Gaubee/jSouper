@@ -154,7 +154,9 @@ DataManager.prototype = {
 				if (arrDM_key.indexOf(key) === 0) {
 					var arrDM = arrayDateManagers._[arrDM_key],
 						index = arrDM_key.substring(key.length + 1);
-					arrDM.set(database._data[key][index]); //iteration trigger
+					if (database._data[key]){// The structure may be changed
+						arrDM.set(database._database[key][index]); //iteration trigger
+					}
 				}
 			});
 		});

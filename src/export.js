@@ -107,5 +107,6 @@ var V = global.ViewParser = {
 	handles: {},
 	modules: {},
 	attrModules: {},
-	eachModules: {}
+	eachModules: {},
+	_instances:{}
 };
