@@ -35,6 +35,9 @@ var $ = {
 	},
 	slice: function(likeArr) {
 		var array;
+		if (typeof likeArr === "string") {
+			return likeArr.split('');
+		}
 		try {
 			array = Array.prototype.slice.call(likeArr, 0); //non-IE and IE9+
 		} catch (ex) {
@@ -329,7 +332,7 @@ DataManager.prototype = {
 					var arrDM = arrayDateManagers._[arrDM_key],
 						index = arrDM_key.substring(key.length + 1);
 					if (database._data[key]){// The structure may be changed
-						arrDM.set(database._database[key][index]); //iteration trigger
+						arrDM.set(database._data[key][index]); //iteration trigger
 					}
 				}
 			});
@@ -1355,7 +1358,7 @@ V.registerTrigger("#each", function(handle, index, parentHandle) {
 				arrViewInstances,// = NodeList_of_ViewInstance[id].arrViewInstances= NodeList_of_ViewInstance[id].arrViewInstances||[],
 				divideIndex = -1,
 				inserNew;
-			console.log(viewInstance_ID,id)
+			// console.log(viewInstance_ID,id)
 			allArrViewInstances = V._instances[viewInstance_ID]._AVI;
 			arrViewInstances = allArrViewInstances[id] = allArrViewInstances[id]||[];
 			$.forEach(data, function(eachItemData, index) {

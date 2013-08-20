@@ -12,7 +12,7 @@ V.registerTrigger("#each", function(handle, index, parentHandle) {
 				arrViewInstances,// = NodeList_of_ViewInstance[id].arrViewInstances= NodeList_of_ViewInstance[id].arrViewInstances||[],
 				divideIndex = -1,
 				inserNew;
-			console.log(viewInstance_ID,id)
+			// console.log(viewInstance_ID,id)
 			allArrViewInstances = V._instances[viewInstance_ID]._AVI;
 			arrViewInstances = allArrViewInstances[id] = allArrViewInstances[id]||[];
 			$.forEach(data, function(eachItemData, index) {

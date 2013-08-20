@@ -33,6 +33,9 @@ var $ = {
 	},
 	slice: function(likeArr) {
 		var array;
+		if (typeof likeArr === "string") {
+			return likeArr.split('');
+		}
 		try {
 			array = Array.prototype.slice.call(likeArr, 0); //non-IE and IE9+
 		} catch (ex) {
