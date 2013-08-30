@@ -10,7 +10,8 @@
     "grunt-contrib-concat": "~0.3.0",
     "grunt-contrib-watch": "*",
     "connect-livereload": "*",
-    "grunt-contrib-connect": "*"
+    "grunt-contrib-connect": "*",
+    "grunt-wrap":"*"
   },
   "devDependencies": {
     "grunt": "~0.4.1"

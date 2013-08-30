@@ -25,8 +25,9 @@ var $ = {
 		return str.slice(0, i + 1);
 	},
 	push: function(arr, item) {
-		arr[arr.length] = item;
-		return item;
+		var len = arr.length
+		arr[len] = item;
+		return len;
 	},
 	unshift: function(arr, item) {
 		arr.splice(0, 0, item);

@@ -49,8 +49,9 @@ var $ = {
 		return str.slice(0, i + 1);
 	},
 	push: function(arr, item) {
-		arr[arr.length] = item;
-		return item;
+		var len = arr.length
+		arr[len] = item;
+		return len;
 	},
 	unshift: function(arr, item) {
 		arr.splice(0, 0, item);
@@ -395,7 +396,7 @@ DataManager.prototype = {
 				$.forEach(vi._triggers, function(key) {
 					vi.touchOff(key);
 				});
-				vi._isAttr.bindHandle(vi, vi.dataManager);
+				vi._isAttr.setAttribute(vi, vi.dataManager);
 				vi.dataManager.remove(vi);
 			} else {
 				vi.touchOff(key);
@@ -508,26 +509,26 @@ var _AttributeHandle = function(attrKey) {
 	var assign;
 	var attrHandles = V.attrHandles,
 		result;
-		// console.log("attrKey:",attrKey)
-	$.forEach(attrHandles,function(attrHandle){
+	// console.log("attrKey:",attrKey)
+	$.forEach(attrHandles, function(attrHandle) {
 		// console.log(attrHandle.match)
 		if (attrHandle.match(attrKey)) {
 			result = attrHandle.handle(attrKey);
 			return false
 		}
 	});
-	return result||_AttributeHandleEvent.com;
+	return result || _AttributeHandleEvent.com;
 };
-var _bindHandle = function() { /*viewInstance ,dataManager*/
-	var self = this,
-		attrKey = self.key,
-		currentNode = self.currentNode,
-		parserNode = self.parserNode;
-	if (currentNode) {
-		// console.log(attrKey,":",parserNode.innerText);//DEBUG
-		self._attributeHandle(attrKey, currentNode, parserNode);
-	}
-};
+// var setAttribute = function() { /*viewInstance ,dataManager*/
+// 	var self = this,
+// 		attrKey = self.key,
+// 		currentNode = self.currentNode,
+// 		parserNode = self.parserNode;
+// 	if (currentNode) {
+// 		// console.log(attrKey,":",parserNode.innerText);//DEBUG
+// 		self._attributeHandle(attrKey, currentNode, parserNode);
+// 	}
+// };
 
 var attributeHandle = function(attrStr, node, handle, triggerTable) {
 	var attrKey = $.trim(attrStr.substring(0, attrStr.search("="))),
@@ -538,11 +539,11 @@ var attributeHandle = function(attrStr, node, handle, triggerTable) {
 	if (_matchRule.test(attrValue)) {
 
 		var attrViewInstance = (V.attrModules[handle.id + attrKey] = V.parse(attrValue))(),
-			_shadowDIV = $.DOM.clone(shadowDIV);
+			_shadowDIV = $.DOM.clone(shadowDIV); //parserNode
 		attrViewInstance.append(_shadowDIV);
 		attrViewInstance._isAttr = {
 			key: attrKey,
-			parserNode: _shadowDIV,
+			// parserNode: _shadowDIV,
 			/*
 			When the trigger of be injecte in the View instance being fired (triggered by the ViewInstance instance), 
 			it will storage the property value where the currentNode,// and the dataManager, 
@@ -550,7 +551,14 @@ var attributeHandle = function(attrStr, node, handle, triggerTable) {
 			waiting for updates the attribute.*/ //(so the trigger of be injecte in mush be unshift)
 			currentNode: null,
 			_attributeHandle: _AttributeHandle(attrKey),
-			bindHandle: _bindHandle
+			setAttribute: function() { /*viewInstance ,dataManager*/
+				var self = this,
+					currentNode = self.currentNode;
+				if (currentNode) {
+					// console.log(attrKey,":",parserNode.innerText);//DEBUG
+					self._attributeHandle(attrKey, currentNode, _shadowDIV);
+				}
+			}
 		};
 
 		var attrTrigger = {
@@ -1342,11 +1350,19 @@ V.registerTrigger("", function(handle, index, parentHandle) {
 			key: key,
 			event: function(NodeList_of_ViewInstance, dataManager, triggerBy, isAttr, vi) { //call by ViewInstance's Node
 				// console.log("getData:",key,":",dataManager)
-				if (isAttr&&isAttr.key.indexOf("on")===0) {
-					NodeList_of_ViewInstance[textHandleId].currentNode.data = String(dataManager.get(key)).replace(/"/g, '\\"').replace(/'/g, "\\'");
+				var data;
+				if (isAttr) {
+					if (isAttr.key.indexOf("on")===0) {
+						data = String(dataManager.get(key)).replace(/"/g, '\\"').replace(/'/g, "\\'");
+					}else if(isAttr.key.indexOf("event-")===0&&_isIE){
+						data = String(dataManager.get(key)).replace(/\n/g, _ieEnterPlaceholder);
+					}else{
+						data = dataManager.get(key);
+					}
 				} else {
-					NodeList_of_ViewInstance[textHandleId].currentNode.data = dataManager.get(key)
-				}
+					data = dataManager.get(key)
+				};
+				NodeList_of_ViewInstance[textHandleId].currentNode.data = data;
 			}
 		}
 	} else { //as stringHandle
@@ -1592,6 +1608,44 @@ V.registerAttrHandle(function(attrKey){
 	return $.indexOf(_dirAssignment,attrKey) !==-1;
 }, function() {
 	return _AttributeHandleEvent.dir;
+})
+var _addEventListener = function(Element, eventName, eventFun) {
+	Element.addEventListener(eventName, eventFun, false);
+},
+	_removeEventListener = function(Element, eventName, eventFun) {
+		Element.removeEventListener(eventName, eventFun, false);
+	},
+	_attachEvent = function(Element, eventName, eventFun) {
+		Element.attachEvent("on" + eventName, eventFun);
+	},
+	_detachEvent = function(Element, eventName, eventFun) {
+		Element.detachEvent("on" + eventName, eventFun);
+	},
+	_registerEvent = _isIE ? _attachEvent : _addEventListener,
+	_cancelEvent =_isIE ? _detachEvent : _removeEventListener,
+	_ieEnterPlaceholder = "@" + Math.random().toString(36).substring(2),
+	_ieEnterPlaceholderRegExp = RegExp(_ieEnterPlaceholder,"g"),
+		_elementCache = [],
+	eventListerAttribute = function(key, currentNode, parserNode) {
+		var attrOuter = _getAttrOuter(parserNode),
+			eventName =  key.replace("event-on", "").replace("event-", ""),
+			eventFun = Function("return " + attrOuter.replace(_ieEnterPlaceholderRegExp,"\n"))(),
+			index = $.indexOf(_elementCache, currentNode);
+		if (index !== -1) {
+			index = $.push(_elementCache, currentNode)
+		};
+		var oldEventFun = _elementCache.event[index];
+		if (oldEventFun) {
+			_cancelEvent(currentNode,eventName, oldEventFun)
+		}
+		_registerEvent(currentNode,eventName, eventFun);
+		_elementCache.event[index] = eventFun;
+	};
+_elementCache.event = {};
+V.registerAttrHandle(function(attrKey) {
+	return attrKey.indexOf("event-") === 0;
+}, function(attrKey) {
+	return eventListerAttribute;
 })
 var _event_by_fun = (function() {
 	var testEvent = Function(""),

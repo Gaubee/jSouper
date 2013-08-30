@@ -75,26 +75,26 @@ var _AttributeHandle = function(attrKey) {
 	var assign;
 	var attrHandles = V.attrHandles,
 		result;
-		// console.log("attrKey:",attrKey)
-	$.forEach(attrHandles,function(attrHandle){
+	// console.log("attrKey:",attrKey)
+	$.forEach(attrHandles, function(attrHandle) {
 		// console.log(attrHandle.match)
 		if (attrHandle.match(attrKey)) {
 			result = attrHandle.handle(attrKey);
 			return false
 		}
 	});
-	return result||_AttributeHandleEvent.com;
+	return result || _AttributeHandleEvent.com;
 };
-var _bindHandle = function() { /*viewInstance ,dataManager*/
-	var self = this,
-		attrKey = self.key,
-		currentNode = self.currentNode,
-		parserNode = self.parserNode;
-	if (currentNode) {
-		// console.log(attrKey,":",parserNode.innerText);//DEBUG
-		self._attributeHandle(attrKey, currentNode, parserNode);
-	}
-};
+// var setAttribute = function() { /*viewInstance ,dataManager*/
+// 	var self = this,
+// 		attrKey = self.key,
+// 		currentNode = self.currentNode,
+// 		parserNode = self.parserNode;
+// 	if (currentNode) {
+// 		// console.log(attrKey,":",parserNode.innerText);//DEBUG
+// 		self._attributeHandle(attrKey, currentNode, parserNode);
+// 	}
+// };
 
 var attributeHandle = function(attrStr, node, handle, triggerTable) {
 	var attrKey = $.trim(attrStr.substring(0, attrStr.search("="))),
@@ -105,11 +105,11 @@ var attributeHandle = function(attrStr, node, handle, triggerTable) {
 	if (_matchRule.test(attrValue)) {
 
 		var attrViewInstance = (V.attrModules[handle.id + attrKey] = V.parse(attrValue))(),
-			_shadowDIV = $.DOM.clone(shadowDIV);
+			_shadowDIV = $.DOM.clone(shadowDIV); //parserNode
 		attrViewInstance.append(_shadowDIV);
 		attrViewInstance._isAttr = {
 			key: attrKey,
-			parserNode: _shadowDIV,
+			// parserNode: _shadowDIV,
 			/*
 			When the trigger of be injecte in the View instance being fired (triggered by the ViewInstance instance), 
 			it will storage the property value where the currentNode,// and the dataManager, 
@@ -117,7 +117,14 @@ var attributeHandle = function(attrStr, node, handle, triggerTable) {
 			waiting for updates the attribute.*/ //(so the trigger of be injecte in mush be unshift)
 			currentNode: null,
 			_attributeHandle: _AttributeHandle(attrKey),
-			bindHandle: _bindHandle
+			setAttribute: function() { /*viewInstance ,dataManager*/
+				var self = this,
+					currentNode = self.currentNode;
+				if (currentNode) {
+					// console.log(attrKey,":",parserNode.innerText);//DEBUG
+					self._attributeHandle(attrKey, currentNode, _shadowDIV);
+				}
+			}
 		};
 
 		var attrTrigger = {

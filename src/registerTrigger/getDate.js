@@ -9,11 +9,19 @@ V.registerTrigger("", function(handle, index, parentHandle) {
 			key: key,
 			event: function(NodeList_of_ViewInstance, dataManager, triggerBy, isAttr, vi) { //call by ViewInstance's Node
 				// console.log("getData:",key,":",dataManager)
-				if (isAttr&&isAttr.key.indexOf("on")===0) {
-					NodeList_of_ViewInstance[textHandleId].currentNode.data = String(dataManager.get(key)).replace(/"/g, '\\"').replace(/'/g, "\\'");
+				var data;
+				if (isAttr) {
+					if (isAttr.key.indexOf("on")===0) {
+						data = String(dataManager.get(key)).replace(/"/g, '\\"').replace(/'/g, "\\'");
+					}else if(isAttr.key.indexOf("event-")===0&&_isIE){
+						data = String(dataManager.get(key)).replace(/\n/g, _ieEnterPlaceholder);
+					}else{
+						data = dataManager.get(key);
+					}
 				} else {
-					NodeList_of_ViewInstance[textHandleId].currentNode.data = dataManager.get(key)
-				}
+					data = dataManager.get(key)
+				};
+				NodeList_of_ViewInstance[textHandleId].currentNode.data = data;
 			}
 		}
 	} else { //as stringHandle
