@@ -103,8 +103,22 @@ var V = global.ViewParser = {
 		// }
 		V.handles[handleName] = handle
 	},
+	registerAttrHandle:function(match,handle){
+		var attrHandle = V.attrHandles[V.attrHandles.length] = {
+			match:null,
+			handle:handle
+		}
+		if (typeof match==="function") {
+			attrHandle.match = match;
+		}else{
+			attrHandle.match = function(attrKey){
+				return attrKey===match;
+			}
+		}
+	},
 	triggers: {},
 	handles: {},
+	attrHandles:[],
 	modules: {},
 	attrModules: {},
 	eachModules: {},

@@ -431,48 +431,6 @@ DataManager.prototype = {
 		}
 	}
 };
-
-/*
- * View constructor
- */
-
-function View(arg) {
-	var self = this;
-	if (!(self instanceof View)) {
-		return new View(arg);
-	}
-	self.handleNodeTree = arg;
-	self._handles = [];
-	self._triggerTable = {};
-	// self._triggers = {};
-	// (self._triggers = [])._ = {}; //storage key word and _ storage trigger instance
-
-
-	_buildHandler.call(self);
-	_buildTrigger.call(self);
-
-	return function(data) {
-		return _create.call(self, data);
-	}
-};
-
-function _buildHandler(handleNodeTree) {
-	var self = this,
-		handles = self._handles
-		handleNodeTree = handleNodeTree || self.handleNodeTree;
-	_traversal(handleNodeTree, function(item_node, index, handleNodeTree) {
-		item_node.parentNode = handleNodeTree;
-		if (item_node.type === "handle") {
-			var handleFactory = V.handles[item_node.handleName];
-			if (handleFactory) {
-				var handle = handleFactory(item_node, index, handleNodeTree)
-				// handle&&$.push(handles, $.bind(handle,item_node));
-				handle && $.push(handles, handle);
-			}
-		}
-	});
-};
-var _attrRegExp = /(\S+)=["']?((?:.(?!["']?\s+(?:\S+)=|[>"']))+.)["']?/g;
 var _isIE = !+"\v1";
 //by RubyLouvre(司徒正美)
 //setAttribute bug:http://www.iefans.net/ie-setattribute-bug/
@@ -546,152 +504,19 @@ editable
 draggable
 */
 
-
-//  key : isboolean --> value = key --> hidden = "hidden"
-var _Assignment = {
-	className: false,
-	value: false,
-	checked: true,
-	selected: true, // equal to [true,false]
-	disabled: true,
-	readonly: true,
-	multiple: true,
-	defer: true,
-	// declare:true
-	noresize: true,
-	nowrap: true,
-	noshade: true,
-	// compact:true
-	truespeed: true,
-	async: true,
-	typemustmatch: true,
-	open: true,
-	novalidate: true,
-	ismap: true,
-	"default": true,
-	seamless: true,
-	autoplay: true,
-	controls: true,
-	loop: true,
-	muted: true,
-	reversed: true,
-	scoped: true,
-	autofocus: true,
-	required: true,
-	formnovalidate: true,
-	editable: true,
-	draggable: true,
-	hidden: true
-};
-
-var _testDIV = $.DOM.clone(shadowDIV);
-var _event_by_fun = (function() {
-	var testEvent = Function(""),
-		attrKey = "onclick";
-
-	_testDIV.setAttribute(attrKey, testEvent);
-	if (typeof _testDIV.getAttribute(attrKey) === "string") {
-		return false;
-	}
-	return true;
-}());
-var _booleanFalseRegExp = /false|undefined|null|NaN/;
 var _AttributeHandle = function(attrKey) {
 	var assign;
-	if (attrKey === "style" && _isIE) {
-		return _AttributeHandleEvent.style;
-	}
-	if (attrKey.indexOf("on") === 0 && _event_by_fun) {
-		return _AttributeHandleEvent.event;
-	}
-	if (attrKey === "checked" && _isIE) {
-		return _AttributeHandleEvent.iecheck;
-	}
-	if (_hasOwn.call(_Assignment, attrKey)) {
-		if (assign = _Assignment[attrKey]) {
-			return _AttributeHandleEvent.bool;
+	var attrHandles = V.attrHandles,
+		result;
+		// console.log("attrKey:",attrKey)
+	$.forEach(attrHandles,function(attrHandle){
+		// console.log(attrHandle.match)
+		if (attrHandle.match(attrKey)) {
+			result = attrHandle.handle(attrKey);
+			return false
 		}
-		return _AttributeHandleEvent.dir;
-	}
-	return _AttributeHandleEvent.com;
-
-};
-var _getAttrOuter = Function("n", "return n." + (_hasOwn.call(_testDIV, "textContent") ? "textContent" : "innerText") + "||''")
-var _ti,uidKey;
-var _asynSetAttribute = function(obj,funName,key,value){
-	var uidKey = $.uidAvator+key;
-	if (_ti = obj[uidKey]) {
-		clearTimeout(_ti)
-	}
-	obj[uidKey] = setTimeout(function(){
-		obj[funName](key,value);
-		obj[$.uidAvator] = 0;
-	},0)
-};
-var _asynAttributeAssignment = function(obj,key,value){
-	var uidKey = $.uidAvator+key;
-	if (_ti = obj[uidKey]) {
-		clearTimeout(_ti)
-	}
-	obj[uidKey] = setTimeout(function(){
-		obj[key] = value;
-	},0)
-};
-var _AttributeHandleEvent = {
-	event: function(key, currentNode, parserNode) {
-		var attrOuter = _getAttrOuter(parserNode);
-		try {
-			// console.log("event building:",attrOuter)//DEBUG
-			var attrOuterEvent = Function(attrOuter);
-			// console.log("event build success!")//DEBUG
-		} catch (e) {
-			// console.log("event build error !")//DEBUG
-			attrOuterEvent = $.noop;
-		}
-		_asynSetAttribute(currentNode,"setAttribute",key, attrOuterEvent)
-		// currentNode.setAttribute(key, attrOuterEvent);
-	},
-	style: function(key, currentNode, parserNode) {
-		var attrOuter = _getAttrOuter(parserNode);
-		_asynSetAttribute(currentNode.style,"setAttribute",'cssText', attrOuter)
-		// currentNode.style.setAttribute('cssText', attrOuter);
-	},
-	com: function(key, currentNode, parserNode) {
-		var attrOuter = _getAttrOuter(parserNode);
-		// _asynSetAttribute(currentNode,"setAttribute",key, attrOuter)
-		currentNode.setAttribute(key, attrOuter)
-	},
-	//---------
-	dir: function(key, currentNode, parserNode) {
-		var attrOuter = _getAttrOuter(parserNode);
-		_asynAttributeAssignment(currentNode,key,attrOuter);
-		// currentNode[key] = attrOuter;
-	},
-	iecheck: function(key, currentNode, parserNode) {
-		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
-
-		if (attrOuter) {
-			_asynAttributeAssignment(currentNode,"defaultChecked",key);
-			// currentNode.defaultChecked = true;
-		} else {
-			_asynAttributeAssignment(currentNode,"defaultChecked",false);
-			// currentNode.defaultChecked = false;
-		}
-		(this._bindHandle = _AttributeHandleEvent.bool)(key, currentNode, parserNode);
-	},
-	bool: function(key, currentNode, parserNode) {
-		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
-
-		if (attrOuter) {
-			// currentNode.setAttribute(key, key);
-			_asynAttributeAssignment(currentNode,key,key);
-			// currentNode[key] = key;
-		} else {
-			// currentNode.removeAttribute(key);
-			_asynAttributeAssignment(currentNode,key,false);
-			// currentNode[key] = false;
-		}
-	}
+	});
+	return result||_AttributeHandleEvent.com;
 };
 var _bindHandle = function() { /*viewInstance ,dataManager*/
 	var self = this,
@@ -700,9 +525,93 @@ var _bindHandle = function() { /*viewInstance ,dataManager*/
 		parserNode = self.parserNode;
 	if (currentNode) {
 		// console.log(attrKey,":",parserNode.innerText);//DEBUG
-		self._bindHandle(attrKey, currentNode, parserNode);
+		self._attributeHandle(attrKey, currentNode, parserNode);
 	}
 };
+
+var attributeHandle = function(attrStr, node, handle, triggerTable) {
+	var attrKey = $.trim(attrStr.substring(0, attrStr.search("="))),
+		attrValue = node.getAttribute(attrKey);
+	attrKey = attrKey.toLowerCase()
+	attrKey = attrKey.indexOf(V.prefix) ? attrKey : attrKey.replace(V.prefix, "")
+	attrKey = (_isIE && IEfix[attrKey]) || attrKey
+	if (_matchRule.test(attrValue)) {
+
+		var attrViewInstance = (V.attrModules[handle.id + attrKey] = V.parse(attrValue))(),
+			_shadowDIV = $.DOM.clone(shadowDIV);
+		attrViewInstance.append(_shadowDIV);
+		attrViewInstance._isAttr = {
+			key: attrKey,
+			parserNode: _shadowDIV,
+			/*
+			When the trigger of be injecte in the View instance being fired (triggered by the ViewInstance instance), 
+			it will storage the property value where the currentNode,// and the dataManager, 
+			and lock it into attrViewInstance, 
+			waiting for updates the attribute.*/ //(so the trigger of be injecte in mush be unshift)
+			currentNode: null,
+			_attributeHandle: _AttributeHandle(attrKey),
+			bindHandle: _bindHandle
+		};
+
+		var attrTrigger = {
+			// key:"$ATTR",
+			// TEMP: {
+			// 	belongsNodeId: handle.id,
+			// 	self: attrViewInstance
+			// },
+			event: function(NodeList, dataManager, eventTrigger) {
+				attrViewInstance._isAttr.currentNode = NodeList[handle.id].currentNode;
+				dataManager.collect(attrViewInstance);
+			}
+		}
+		$.forEach(attrViewInstance._triggers, function(key) {
+			$.unshift((triggerTable[key] = triggerTable[key] || []), attrTrigger);
+		});
+
+	}
+}
+/*
+ * View constructor
+ */
+
+function View(arg) {
+	var self = this;
+	if (!(self instanceof View)) {
+		return new View(arg);
+	}
+	self.handleNodeTree = arg;
+	self._handles = [];
+	self._triggerTable = {};
+	// self._triggers = {};
+	// (self._triggers = [])._ = {}; //storage key word and _ storage trigger instance
+
+
+	_buildHandler.call(self);
+	_buildTrigger.call(self);
+
+	return function(data) {
+		return _create.call(self, data);
+	}
+};
+
+function _buildHandler(handleNodeTree) {
+	var self = this,
+		handles = self._handles
+		handleNodeTree = handleNodeTree || self.handleNodeTree;
+	_traversal(handleNodeTree, function(item_node, index, handleNodeTree) {
+		item_node.parentNode = handleNodeTree;
+		if (item_node.type === "handle") {
+			var handleFactory = V.handles[item_node.handleName];
+			if (handleFactory) {
+				var handle = handleFactory(item_node, index, handleNodeTree)
+				// handle&&$.push(handles, $.bind(handle,item_node));
+				handle && $.push(handles, handle);
+			}
+		}
+	});
+};
+var _attrRegExp = /(\S+)=["']?((?:.(?!["']?\s+(?:\S+)=|[>"']))+.)["']?/g;
+
 
 function _buildTrigger(handleNodeTree, dataManager) {
 	var self = this, //View Instance
@@ -727,50 +636,8 @@ function _buildTrigger(handleNodeTree, dataManager) {
 				attrs = nodeHTMLStr.match(_attrRegExp);
 
 			$.forEach(attrs, function(attrStr) {
-				var attrInfo = attrStr.search("="),
-					attrKey = $.trim(attrStr.substring(0, attrInfo)),
-					attrValue = node.getAttribute(attrKey)
-					attrKey = attrKey.toLowerCase()
-					attrKey = attrKey.indexOf(V.prefix) ? attrKey : attrKey.replace(V.prefix, "")
-					attrKey = (_isIE && IEfix[attrKey]) || attrKey
-					
-				if (_matchRule.test(attrValue)) {
+				attributeHandle(attrStr, node, handle, triggerTable);
 
-					var attrViewInstance = (V.attrModules[handle.id + attrKey] = V.parse(attrValue))(),
-						_shadowDIV = $.DOM.clone(shadowDIV);
-					attrViewInstance.append(_shadowDIV);
-					attrViewInstance._isAttr = {
-						key: attrKey,
-						parserNode: _shadowDIV,
-						/*When the trigger of be injecte in the View instance being fired (triggered by the ViewInstance instance), 
-						it will storage the property value where the currentNode,// and the dataManager, 
-						and lock it into attrViewInstance, 
-						waiting for updates the attribute.*/ //(so the trigger of be injecte in mush be unshift)
-						currentNode: null,
-						_bindHandle: _AttributeHandle(attrKey),
-						bindHandle: _bindHandle
-					};
-
-					var attrTrigger = {
-						// key:"$ATTR",
-						TEMP: {
-							belongsNodeId: handle.id,
-							self: attrViewInstance
-						},
-						event: function(NodeList, dataManager, eventTrigger) {
-							var self = this,
-								TEMP = self.TEMP,
-								attrViewInstance = TEMP.self,
-								currentNode = NodeList[TEMP.belongsNodeId].currentNode;
-							attrViewInstance._isAttr.currentNode = currentNode;
-							dataManager.collect(attrViewInstance);
-						}
-					}
-					$.forEach(attrViewInstance._triggers, function(key) {
-						$.unshift((triggerTable[key] = triggerTable[key] || []), attrTrigger);
-					});
-
-				}
 			});
 		}
 	});
@@ -1187,8 +1054,22 @@ var V = global.ViewParser = {
 		// }
 		V.handles[handleName] = handle
 	},
+	registerAttrHandle:function(match,handle){
+		var attrHandle = V.attrHandles[V.attrHandles.length] = {
+			match:null,
+			handle:handle
+		}
+		if (typeof match==="function") {
+			attrHandle.match = match;
+		}else{
+			attrHandle.match = function(attrKey){
+				return attrKey===match;
+			}
+		}
+	},
 	triggers: {},
 	handles: {},
+	attrHandles:[],
 	modules: {},
 	attrModules: {},
 	eachModules: {},
@@ -1615,3 +1496,118 @@ V.registerTrigger("or", function(handle, index, parentHandle) {
 	}
 	return trigger;
 });
+var _testDIV = $.DOM.clone(shadowDIV);
+var _getAttrOuter = Function("n", "return n." + (_hasOwn.call(_testDIV, "textContent") ? "textContent" : "innerText") + "||''")
+var _booleanFalseRegExp = /false|undefined|null|NaN/;
+
+var _ti,
+	uidKey,
+	_asynSetAttribute = function(obj, funName, key, value) {
+		var uidKey = $.uidAvator + key;
+		if (_ti = obj[uidKey]) {
+			clearTimeout(_ti)
+		}
+		obj[uidKey] = setTimeout(function() {
+			obj[funName](key, value);
+			obj[$.uidAvator] = 0;
+		}, 0)
+	},
+	_asynAttributeAssignment = function(obj, key, value) {
+		var uidKey = $.uidAvator + key;
+		if (_ti = obj[uidKey]) {
+			clearTimeout(_ti)
+		}
+		obj[uidKey] = setTimeout(function() {
+			obj[key] = value;
+		}, 0)
+	};
+
+var _AttributeHandleEvent = {
+	event: function(key, currentNode, parserNode) {
+		var attrOuter = _getAttrOuter(parserNode);
+		try {
+			// console.log("event building:",attrOuter)//DEBUG
+			var attrOuterEvent = Function(attrOuter);
+			// console.log("event build success!")//DEBUG
+		} catch (e) {
+			// console.log("event build error !")//DEBUG
+			attrOuterEvent = $.noop;
+		}
+		// _asynSetAttribute(currentNode, "setAttribute", key, attrOuterEvent)
+		currentNode.setAttribute(key, attrOuterEvent);
+	},
+	style: function(key, currentNode, parserNode) {
+		var attrOuter = _getAttrOuter(parserNode);
+		// _asynSetAttribute(currentNode.style, "setAttribute", 'cssText', attrOuter)
+		currentNode.style.setAttribute('cssText', attrOuter);
+	},
+	com: function(key, currentNode, parserNode) {
+		var attrOuter = _getAttrOuter(parserNode);
+		_asynSetAttribute(currentNode,"setAttribute",key, attrOuter)
+		// currentNode.setAttribute(key, attrOuter)
+	},
+	//---------
+	dir: function(key, currentNode, parserNode) {
+		var attrOuter = _getAttrOuter(parserNode);
+		// _asynAttributeAssignment(currentNode, key, attrOuter);
+		currentNode[key] = attrOuter;
+	},
+	bool: function(key, currentNode, parserNode) {
+		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
+
+		if (attrOuter) {
+			// currentNode.setAttribute(key, key);
+			// _asynAttributeAssignment(currentNode, key, key);
+			currentNode[key] = key;
+		} else {
+			// currentNode.removeAttribute(key);
+			// _asynAttributeAssignment(currentNode, key, false);
+			currentNode[key] = false;
+		}
+	}
+};
+var _boolAssignment = ["checked", "selected", "disabled", "readonly", "multiple", "defer", "declare", "noresize", "nowrap", "noshade", "compact", "truespeed", "async", "typemustmatch", "open", "novalidate", "ismap", "default", "seamless", "autoplay", "controls", "loop", "muted", "reversed", "scoped", "autofocus", "required", "formnovalidate", "editable", "draggable", "hidden"];
+V.registerAttrHandle(function(attrKey){
+	return $.indexOf(_boolAssignment,attrKey) !==-1;
+}, function() {
+	return _AttributeHandleEvent.bool;
+})
+var iecheck = function(key, currentNode, parserNode) {
+	var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
+
+	if (attrOuter) {
+		_asynAttributeAssignment(currentNode, "defaultChecked", key);
+		// currentNode.defaultChecked = true;
+	} else {
+		_asynAttributeAssignment(currentNode, "defaultChecked", false);
+		// currentNode.defaultChecked = false;
+	}
+	(this._attributeHandle = _AttributeHandleEvent.bool)(key, currentNode, parserNode);
+}
+V.registerAttrHandle("checked", function() {
+	return _isIE ? iecheck : _AttributeHandleEvent.com;
+})
+var _dirAssignment = ["className","value"];
+V.registerAttrHandle(function(attrKey){
+	return $.indexOf(_dirAssignment,attrKey) !==-1;
+}, function() {
+	return _AttributeHandleEvent.dir;
+})
+var _event_by_fun = (function() {
+	var testEvent = Function(""),
+		attrKey = "onclick";
+
+	_testDIV.setAttribute(attrKey, testEvent);
+	if (typeof _testDIV.getAttribute(attrKey) === "string") {
+		return false;
+	}
+	return true;
+}());
+V.registerAttrHandle(function(attrKey){
+	attrKey.indexOf("on") === 0;
+},function () {
+	return _event_by_fun&&_AttributeHandleEvent.event;
+})
+V.registerAttrHandle("style",function () {
+	return _isIE&&_AttributeHandleEvent.style;
+})

@@ -20,11 +20,11 @@ module.exports = function(grunt) {
 		src: '',
 		concat: {
 			debug: {
-				src: [ 'src/plugins.js','src/$.js' ,'src/DataManager.js', 'src/View.js', 'src/ViewInstance.js', 'src/Handle.js', 'src/export.js', 'src/registerHandle/*.js', 'src/registerTrigger/*.js'],
+				src: ['src/plugins.js', 'src/$.js', 'src/DataManager.js', 'src/registerAttribute.js', 'src/View.js', 'src/ViewInstance.js', 'src/Handle.js', 'src/export.js', 'src/registerHandle/*.js', 'src/registerTrigger/*.js','src/registerAttributeHandle/*.js'],
 				dest: 'build/HTML-ViewParse.debug.js'
 			},
-			common:{
-				src: [ 'src/$.js' ,'src/DataManager.js', 'src/View.js', 'src/ViewInstance.js', 'src/Handle.js', 'src/export.js', 'src/registerHandle/*.js', 'src/registerTrigger/*.js'],
+			common: {
+				src: ['src/$.js', 'src/DataManager.js', 'src/registerAttribute.js', 'src/View.js', 'src/ViewInstance.js', 'src/Handle.js', 'src/export.js', 'src/registerHandle/*.js', 'src/registerTrigger/*.js','src/registerAttributeHandle/*.js'],
 				dest: 'build/HTML-ViewParse.js'
 			}
 		},
