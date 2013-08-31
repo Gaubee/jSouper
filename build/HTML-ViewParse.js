@@ -1608,16 +1608,19 @@ var _addEventListener = function(Element, eventName, eventFun) {
 		var attrOuter = _getAttrOuter(parserNode),
 			eventName =  key.replace("event-on", "").replace("event-", ""),
 			eventFun = Function("return " + attrOuter.replace(_ieEnterPlaceholderRegExp,"\n"))(),
-			index = $.indexOf(_elementCache, currentNode);
-		if (index !== -1) {
+			index = $.indexOf(_elementCache, currentNode),
+			eventCollection,
+			oldEventFun;
+		if (index === -1) {
 			index = $.push(_elementCache, currentNode)
+			_elementCache.event[index] = {};
 		};
-		var oldEventFun = _elementCache.event[index];
-		if (oldEventFun) {
+		eventCollection = _elementCache.event[index];
+		if (oldEventFun = eventCollection[eventName]) {
 			_cancelEvent(currentNode,eventName, oldEventFun)
 		}
 		_registerEvent(currentNode,eventName, eventFun);
-		_elementCache.event[index] = eventFun;
+		eventCollection[eventName] = eventFun;
 	};
 _elementCache.event = {};
 V.registerAttrHandle(function(attrKey) {
