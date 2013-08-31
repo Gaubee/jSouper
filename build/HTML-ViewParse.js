@@ -1,7 +1,7 @@
 !(function viewParse(global) {
 
 'use strict';
-var global = global||this;
+var global = global || this;
 var shadowBody = document.createElement("body"),
 	shadowDIV = document.createElement("div"),
 	$TRUE = true,
@@ -11,7 +11,7 @@ var shadowBody = document.createElement("body"),
 var $ = {
 	id: 100,
 	uidAvator: Math.random().toString(36).substring(2),
-	noop:function noop(){},
+	noop: function noop() {},
 	uid: function() {
 		return this.id = this.id + 1;
 	},
@@ -33,6 +33,17 @@ var $ = {
 	},
 	unshift: function(arr, item) {
 		arr.splice(0, 0, item);
+	},
+	unique: function(array) {
+		var a = array;
+		// var a = $.slice(array);
+		for (var i = 0; i < a.length; ++i) {
+			for (var j = i + 1; j < a.length; ++j) {
+				if (a[i] === a[j])
+					a.splice(j--, 1);
+			}
+		}
+		return a;
 	},
 	slice: function(likeArr) {
 		var array;
@@ -104,8 +115,8 @@ var $ = {
 			callback(obj[i], i, obj);
 		}
 	},
-	fastEach:function(arr, callback, scope){//Array.prototype.forEach
-		for (var i = 0,len = arr.length; i < len; i += 1) {
+	fastEach: function(arr, callback, scope) { //Array.prototype.forEach
+		for (var i = 0, len = arr.length; i < len; i += 1) {
 			callback(arr[i], i);
 		}
 	},
@@ -117,7 +128,7 @@ var $ = {
 		if (!arr) return;
 		return this._each($.slice(arr), callback, i)
 	},
-	forEachDyna:function(arr, callback, i){
+	forEachDyna: function(arr, callback, i) {
 		if (!arr) return;
 		for (i = i || 0, len = arr.length; i < arr.length; i += 1) {
 			if (callback(arr[i], i, arr) === false) break;
@@ -188,6 +199,7 @@ function DataManager(baseData, viewInstance) {
 	}
 	baseData = baseData || {};
 	// (self._database = [])._data = {};
+	self.id = $.uid();
 	self._database = DataManager.flat(baseData);
 	// console.log(viewInstance)
 	self._viewInstances = viewInstance ? [viewInstance] : []; //to touch off
@@ -195,7 +207,8 @@ function DataManager(baseData, viewInstance) {
 	self._subsetDataManagers = []; //to touch off
 	(self._arrayDateManagers = [])._ = {}; //Chain
 	self._unknownKey = [];
-	// baseData&&self.set(baseData)
+	// baseData&&self.set(baseData);
+	$.unique(self._database);
 };
 global.DataManager = DataManager;
 DataManager.flat = function(obj, prefixKey) {
@@ -226,7 +239,7 @@ DataManager.flat = function(obj, prefixKey) {
 		$.push(hashTable, "$THIS");
 		hashTable._data["$THIS"] = obj;
 	}
-	$.push(hashTable, prefixKey);
+	($.indexOf(hashTable,prefixKey)===-1)&&$.push(hashTable, prefixKey);
 	hashTable._data[prefixKey] = obj;
 
 	return hashTable;
@@ -286,6 +299,7 @@ DataManager.prototype = {
 			viewInstances,
 			argsLen = arguments.length,
 			hashTable = [],
+			updataKey = [],
 			database = dm._database,
 			arrayDateManagers = dm._arrayDateManagers;
 
@@ -323,6 +337,7 @@ DataManager.prototype = {
 						key = dm._prefix
 					}
 				}
+				$.push(updataKey,key)
 				dm._touchOffSubset(key);
 			}
 			$.fastEach(arrayDateManagers, function(arrDM_key) {
@@ -342,6 +357,7 @@ DataManager.prototype = {
 		for(i=0,unKeys = dm._unknownKey,unknownKey,len = unKeys.length;i<len;){
 			unknownKey = unKeys[i];
 			if (dm.get(unknownKey)!==undefined) {
+				$.push(updataKey,unknownKey)
 				dm._touchOffSubset(unknownKey);
 				unKeys.splice(i,1);
 				len-=1;
@@ -349,7 +365,7 @@ DataManager.prototype = {
 				i+=1;
 			}
 		}
-		
+		return updataKey;//$.unique(updataKey);
 	},
 	_touchOffSubset: function(key) {
 		$.forEach(this._subsetDataManagers, function(dm) {
@@ -385,7 +401,7 @@ DataManager.prototype = {
 	collect: function(viewInstance) {
 		var dm = this;
 		if ($.indexOf(dm._viewInstances, viewInstance) === -1) {
-			viewInstance.dataManager.remove(viewInstance);
+			viewInstance.dataManager&&viewInstance.dataManager.remove(viewInstance);
 			$.push(dm._viewInstances, viewInstance);
 			viewInstance.dataManager = dm;
 		}

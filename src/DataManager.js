@@ -10,6 +10,7 @@ function DataManager(baseData, viewInstance) {
 	}
 	baseData = baseData || {};
 	// (self._database = [])._data = {};
+	self.id = $.uid();
 	self._database = DataManager.flat(baseData);
 	// console.log(viewInstance)
 	self._viewInstances = viewInstance ? [viewInstance] : []; //to touch off
@@ -17,7 +18,8 @@ function DataManager(baseData, viewInstance) {
 	self._subsetDataManagers = []; //to touch off
 	(self._arrayDateManagers = [])._ = {}; //Chain
 	self._unknownKey = [];
-	// baseData&&self.set(baseData)
+	// baseData&&self.set(baseData);
+	$.unique(self._database);
 };
 global.DataManager = DataManager;
 DataManager.flat = function(obj, prefixKey) {
@@ -48,7 +50,7 @@ DataManager.flat = function(obj, prefixKey) {
 		$.push(hashTable, "$THIS");
 		hashTable._data["$THIS"] = obj;
 	}
-	$.push(hashTable, prefixKey);
+	($.indexOf(hashTable,prefixKey)===-1)&&$.push(hashTable, prefixKey);
 	hashTable._data[prefixKey] = obj;
 
 	return hashTable;
@@ -108,6 +110,7 @@ DataManager.prototype = {
 			viewInstances,
 			argsLen = arguments.length,
 			hashTable = [],
+			updataKey = [],
 			database = dm._database,
 			arrayDateManagers = dm._arrayDateManagers;
 
@@ -145,6 +148,7 @@ DataManager.prototype = {
 						key = dm._prefix
 					}
 				}
+				$.push(updataKey,key)
 				dm._touchOffSubset(key);
 			}
 			$.fastEach(arrayDateManagers, function(arrDM_key) {
@@ -164,6 +168,7 @@ DataManager.prototype = {
 		for(i=0,unKeys = dm._unknownKey,unknownKey,len = unKeys.length;i<len;){
 			unknownKey = unKeys[i];
 			if (dm.get(unknownKey)!==undefined) {
+				$.push(updataKey,unknownKey)
 				dm._touchOffSubset(unknownKey);
 				unKeys.splice(i,1);
 				len-=1;
@@ -171,7 +176,7 @@ DataManager.prototype = {
 				i+=1;
 			}
 		}
-		
+		return updataKey;//$.unique(updataKey);
 	},
 	_touchOffSubset: function(key) {
 		$.forEach(this._subsetDataManagers, function(dm) {
@@ -207,7 +212,7 @@ DataManager.prototype = {
 	collect: function(viewInstance) {
 		var dm = this;
 		if ($.indexOf(dm._viewInstances, viewInstance) === -1) {
-			viewInstance.dataManager.remove(viewInstance);
+			viewInstance.dataManager&&viewInstance.dataManager.remove(viewInstance);
 			$.push(dm._viewInstances, viewInstance);
 			viewInstance.dataManager = dm;
 		}

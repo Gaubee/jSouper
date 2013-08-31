@@ -1,5 +1,5 @@
 'use strict';
-var global = global||this;
+var global = global || this;
 var shadowBody = document.createElement("body"),
 	shadowDIV = document.createElement("div"),
 	$TRUE = true,
@@ -9,7 +9,7 @@ var shadowBody = document.createElement("body"),
 var $ = {
 	id: 100,
 	uidAvator: Math.random().toString(36).substring(2),
-	noop:function noop(){},
+	noop: function noop() {},
 	uid: function() {
 		return this.id = this.id + 1;
 	},
@@ -31,6 +31,17 @@ var $ = {
 	},
 	unshift: function(arr, item) {
 		arr.splice(0, 0, item);
+	},
+	unique: function(array) {
+		var a = array;
+		// var a = $.slice(array);
+		for (var i = 0; i < a.length; ++i) {
+			for (var j = i + 1; j < a.length; ++j) {
+				if (a[i] === a[j])
+					a.splice(j--, 1);
+			}
+		}
+		return a;
 	},
 	slice: function(likeArr) {
 		var array;
@@ -102,8 +113,8 @@ var $ = {
 			callback(obj[i], i, obj);
 		}
 	},
-	fastEach:function(arr, callback, scope){//Array.prototype.forEach
-		for (var i = 0,len = arr.length; i < len; i += 1) {
+	fastEach: function(arr, callback, scope) { //Array.prototype.forEach
+		for (var i = 0, len = arr.length; i < len; i += 1) {
 			callback(arr[i], i);
 		}
 	},
@@ -115,7 +126,7 @@ var $ = {
 		if (!arr) return;
 		return this._each($.slice(arr), callback, i)
 	},
-	forEachDyna:function(arr, callback, i){
+	forEachDyna: function(arr, callback, i) {
 		if (!arr) return;
 		for (i = i || 0, len = arr.length; i < arr.length; i += 1) {
 			if (callback(arr[i], i, arr) === false) break;
