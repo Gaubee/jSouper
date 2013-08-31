@@ -16,9 +16,9 @@ var Controller = function(dataManager, statementRelations) {
 
 	(self.dataManager = $.slice(dataManager)).unshift(DataManager(statementRelations));
 
-	$.fastEach(self.dataManager,function(dm){
-		Controller.Soap(dm);
-	});
+	// $.fastEach(self.dataManager,function(dm){
+	// 	Controller.Soap(dm);
+	// });
 
 	var exportsDM = self.exports();
 	console.log(exportsDM.id)
@@ -29,10 +29,11 @@ var Controller = function(dataManager, statementRelations) {
 		}
 	});
 };
-Controller.Soap = function(dataManager){//速补——《云图Cloud Atlas》
-	var _set = dataManager.set,
-		_get = dataManager.get;
-	dataManager.set = function(){
+(function Soap(){//速补——《云图Cloud Atlas》
+	var proto = DataManager.prototype,
+		_set = proto.set,
+		_get = proto.get;
+	proto.set = function(){
 		var relys = Controller.relyOn.container[this.id],
 			updataKey = _set.apply(this,$.slice(arguments))
 		relys&&$.fastEach(updataKey,function(key){
@@ -43,7 +44,7 @@ Controller.Soap = function(dataManager){//速补——《云图Cloud Atlas》
 			}
 		});
 	};
-	dataManager.get = function(key){
+	proto.get = function(key){
 		key = key||"";
 		var relyOn =Controller.relyOn,
 			id = this.id ;
@@ -52,7 +53,7 @@ Controller.Soap = function(dataManager){//速补——《云图Cloud Atlas》
 		}
 		return _get.call(this,key)
 	};
-};
+})();
 Controller.relyOn = {
 	status:false,
 	container:{},
