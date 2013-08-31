@@ -11,11 +11,15 @@
 	</style>
 </head>
 <body>
-	<script type="text/template" name="event">
+	<script type="text/template" name="controller_1">
 		<h2>Hello,{(fullName)},I am {(age)} years old.</h2>
 		<input value="{(firstName)}">
 		<input value="{(lastName)}">
 		<input value="{(age)}">
+		<hr />
+	</script>
+	<script type="text/template" name="controller_2">
+		<h3>My name is {(name)}</h3>
 		<hr />
 	</script>
 </body>
@@ -40,8 +44,7 @@
 			fullName:function(dm1,dm2){
 				return this.get("firstName")+"  "+dm2.get("lastName");
 			}
-		})
-		,
+		}),
 		controller_bak = Controller({
 			firstName:"Gaubee",
 			lastName:"Bangeel",
@@ -49,8 +52,32 @@
 				return this.get("firstName")+"  "+this.get("lastName");
 			},
 			age:20
+		}),
+		controller_3 = Controller({
+			firstName:"Gaubee",
+			lastName:"",
+			fullName:"your lover",
+			name:function(dm1,dm2){
+				if (this.get("fullName")) {
+					return this.get("fullName")
+				}else{
+					return this.get("firstName")+"  "+this.get("lastName");
+				}
+			},
+			age:20
 		})
 		;
-	ViewParser.modules["event"](controller.exports()).append(document.body)
-	ViewParser.modules["event"](controller_bak.exports()).append(document.body)
+	ViewParser.modules["controller_1"](controller.exports()).append(document.body);
+	ViewParser.modules["controller_1"](controller_bak.exports()).append(document.body);
+	ViewParser.modules["controller_2"](controller_3.exports()).append(document.body);
+	setTimeout(function(){
+		model_bak.set("lastName"," is OK!!");
+		controller_bak.set("firstName","Hello");
+	},1000);
+	setTimeout(function(){
+		controller_3.set("fullName","");
+	},2000);
+	setTimeout(function(){
+		controller_3.set("lastName","bangeel");
+	},3000);
 </script>
