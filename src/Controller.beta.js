@@ -3,6 +3,10 @@ var Controller = function(dataManager, statementRelations) {
 	if (!(self instanceof Controller)) {
 		return new Controller(dataManager, statementRelations);
 	}
+	if (statementRelations===undefined) {
+		statementRelations = dataManager;
+		dataManager = [];
+	}
 	if (!(dataManager instanceof Array)) {
 		if (!(dataManager instanceof DataManager)) {
 			dataManager = DataManager(dataManager);
@@ -17,16 +21,10 @@ var Controller = function(dataManager, statementRelations) {
 	});
 
 	var exportsDM = self.exports();
+	console.log(exportsDM.id)
 	$.fastEach(exportsDM._database,function(fnKey){
 		var fn = statementRelations[fnKey];
 		if (typeof fn ==="function") {
-			// var dependenceKey = Controller.pickDependence(fn,dataManager.length);
-			// $.fastEach(dependenceKey,function(key){
-			// 	$.push(dependence[key]||(dependence[key] = []),fnKey);
-			// })
-
-			// fn = Controller.relyOn.upPack(fnKey,fn,exportsDM,dataManager);
-			// exportsDM.set(fnKey,fn());
 			Controller.relyOn.upPack(fnKey,fn,exportsDM,dataManager)();
 		}
 	});
@@ -125,7 +123,7 @@ Controller.prototype.exports = function() {
 		cache._parentDataManager = result;
 		result = cache;
 	}
-	Controller.prototype.exports = function(){
+	self.exports = function(){
 		return result;
 	}
 	return result;

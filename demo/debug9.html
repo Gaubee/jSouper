@@ -16,6 +16,7 @@
 		<input value="{(firstName)}">
 		<input value="{(lastName)}">
 		<input value="{(age)}">
+		<hr />
 	</script>
 </body>
 
@@ -37,10 +38,19 @@
 		}),
 		controller = Controller([model,model_bak],{
 			fullName:function(dm1,dm2){
-				return dm1.get("firstName")+"  "+dm2.get("lastName");
+				return this.get("firstName")+"  "+dm2.get("lastName");
 			}
 		})
-		view = ViewParser.modules["event"](controller.exports()).append(document.body)
+		,
+		controller_bak = Controller({
+			firstName:"Gaubee",
+			lastName:"Bangeel",
+			fullName:function(dm1,dm2){
+				return this.get("firstName")+"  "+this.get("lastName");
+			},
+			age:20
+		})
 		;
-
+	ViewParser.modules["event"](controller.exports()).append(document.body)
+	ViewParser.modules["event"](controller_bak.exports()).append(document.body)
 </script>
