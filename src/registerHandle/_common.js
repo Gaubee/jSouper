@@ -1,6 +1,6 @@
 var _commentPlaceholder = function(handle, parentHandle,commentText) {
-		commentText = commentText||(handleName + handle.id);
 	var handleName = handle.handleName,
+		commentText = commentText||(handleName + handle.id),
 		commentNode = $.DOM.Comment(commentText),
 		commentHandle = CommentHandle(commentNode); // commentHandle as Placeholder
 

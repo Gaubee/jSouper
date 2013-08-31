@@ -722,6 +722,7 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	self._close = $.DOM.Comment(self._id + " _close");
 	self._canRemoveAble = false;
 	self._AVI = {};
+	self.__ALVI = {};
 	$.DOM.insertBefore(el, self._open, el.childNodes[0]);
 	$.DOM.append(el, self._close);
 	(self._triggers = [])._ = {};
@@ -1104,8 +1105,8 @@ V.registerHandle("HTML",function(handle, index, parentHandle){
 		startCommentHandle = _commentPlaceholder(handle, parentHandle,"html_start_"+handle.id);
 });
 var _commentPlaceholder = function(handle, parentHandle,commentText) {
-		commentText = commentText||(handleName + handle.id);
 	var handleName = handle.handleName,
+		commentText = commentText||(handleName + handle.id),
 		commentNode = $.DOM.Comment(commentText),
 		commentHandle = CommentHandle(commentNode); // commentHandle as Placeholder
 
@@ -1206,6 +1207,30 @@ V.registerHandle("", function(handle, index, parentHandle) {
 V.registerHandle("#if", placeholderHandle);
 V.registerHandle("#else", placeholderHandle);
 V.registerHandle("/if", placeholderHandle);
+var _layout_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManager, triggerBy,viewInstance_ID) {
+	var handle = this,
+		commentPlaceholderElement,
+		layoutViewInstance = V._instances[viewInstance_ID]._ALVI[handle.id];
+	$.forEach(handle.parentHandle.childNodes, function(child_handle, index, cs) { //get comment_endeach_id
+		if (child_handle.id === handle.id) {
+			commentPlaceholderElement = NodeList_of_ViewInstance[cs[index + 1].id].currentNode
+			return false;
+		}
+	});
+	if (show_or_hidden) {
+		layoutViewInstance.insert(commentPlaceholderElement);
+	} else {
+		layoutViewInstance.remove();
+	}
+
+};
+var layout = function(handle, index, parentHandle) {
+
+	handle.display = _layout_display; //Custom rendering function
+	_commentPlaceholder(handle, parentHandle);
+}
+V.registerHandle("#layout", layout);
+V.registerHandle(">", layout);
 V.registerTrigger("HTML", function(handle, index, parentHandle) {
 	var handleChilds = handle.childNodes,
 		htmlTextHandlesId = handleChilds[0].id,
@@ -1491,6 +1516,32 @@ V.registerTrigger("#if", function(handle, index, parentHandle) {
 
 	return trigger;
 });
+layoutTrigger = function(handle, index, parentHandle) {
+	// console.log(handle)
+	var id = handle.id,
+		arrDataHandleKey = handle.childNodes[0].childNodes[0].node.data,
+		comment_layout_id = parentHandle.childNodes[index + 1].id, //eachHandle --> eachComment --> endeachHandle --> endeachComment
+		trigger;
+	console.log(arrDataHandleKey)
+	trigger = {
+		event: function(NodeList_of_ViewInstance, dataManager, eventTrigger, isAttr, viewInstance_ID) {
+			var data = dataManager.get(arrDataHandleKey),
+				allArrViewInstances,
+				arrViewInstances, // = NodeList_of_ViewInstance[id].arrViewInstances= NodeList_of_ViewInstance[id].arrViewInstances||[],
+				divideIndex = -1,
+				inserNew;
+			// console.log(viewInstance_ID,id)
+			// AllLayoutViewInstance = V._instances[viewInstance_ID]._ALVI;
+			// layoutViewInstance = AllLayoutViewInstance[id] || (AllLayoutViewInstance[id] = []);
+			// layoutViewInstance.insert(NodeList_of_ViewInstance[comment_layout_id].currentNode)
+			console.log(data);
+		}
+	}
+	return trigger;
+}
+
+V.registerTrigger("#layout", layoutTrigger);
+V.registerTrigger(">", layoutTrigger);
 var _nagete = function(handle, index, parentHandle) { //Negate
 	var nageteHandlesId = handle.childNodes[0].id,
 		trigger;
