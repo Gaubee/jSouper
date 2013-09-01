@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>HTML-ViewParse</title>
+	<script type="text/javascript" src="../../lib/HTML-ViewParse.min.js"></script>	
+	<style type="text/css">
+	</style>
+</head>
+<body>
+	<script type="text/template" name="layout">
+		<h2>Hello,{(fullName)},I am {(age)} years old.</h2>
+		<hr />
+			{>({('detail')}{($THIS)})}
+		{#if({(age)})}
+			{>({('detail')}{($THIS)})}
+			<b>heheh</b>
+		{/if()}
+	</script>
+	<script type="text/template" name="detail">
+		{#if({(age)})}
+			{(age)}
+		{/if()}
+		<input value="{(firstName)}">
+		<input value="{(lastName)}">
+		<hr />
+	</script>
+</body>
+
+
+
+</html>
+
+<script type="text/javascript">
+	ViewParser.scans();
+	var model = DataManager({
+			firstName:"Gaubee",
+			lastName:"Bangeel",
+			fullName:"Gaubee Bangeel",
+			age:20
+		});
+	ViewParser.modules["layout"](model).append(document.body);
+	// model.set("firstName","???")
+	setTimeout(function(){
+		model.set("age",0)
+	},1000)
+</script>
