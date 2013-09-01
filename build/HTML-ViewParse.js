@@ -727,6 +727,7 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	self._canRemoveAble = false;
 	self._AVI = {};
 	self._ALVI = {};
+	self._WVI = {};
 	$.DOM.insertBefore(el, self._open, el.childNodes[0]);
 	$.DOM.append(el, self._close);
 	(self._triggers = [])._ = {};
@@ -783,7 +784,8 @@ ViewInstance.prototype = {
 			handleNodeTree = self.handleNodeTree,
 			NodeList = self.NodeList,
 			AllLayoutViewInstance = self._ALVI,
-			layoutViewInstance,
+			AllWithViewInstance = self._WVI,
+			viewInstance,
 			currentTopNode = NodeList[handleNodeTree.id].currentNode;
 
 		$.forEach(currentTopNode.childNodes, function(child_node) {
@@ -792,8 +794,8 @@ ViewInstance.prototype = {
 		_replaceTopHandleCurrent(self, el);
 
 		$.fastEach(NodeList[handleNodeTree.id].childNodes,function(child_node){
-			if (layoutViewInstance = AllLayoutViewInstance[child_node.id]) {
-				_replaceTopHandleCurrent(layoutViewInstance, el)
+			if (viewInstance = AllLayoutViewInstance[child_node.id]||AllWithViewInstance[child_node.id]) {
+				_replaceTopHandleCurrent(viewInstance, el)
 			}
 		});
 
@@ -804,7 +806,8 @@ ViewInstance.prototype = {
 			handleNodeTree = self.handleNodeTree,
 			NodeList = self.NodeList,
 			AllLayoutViewInstance = self._ALVI,
-			layoutViewInstance,
+			AllWithViewInstance = self._WVI,
+			viewInstance,
 			currentTopNode = NodeList[handleNodeTree.id].currentNode,
 			elParentNode = el.parentNode;
 
@@ -814,8 +817,8 @@ ViewInstance.prototype = {
 		_replaceTopHandleCurrent(self, elParentNode);
 
 		$.fastEach(NodeList[handleNodeTree.id].childNodes,function(child_node){
-			if (layoutViewInstance = AllLayoutViewInstance[child_node.id]) {
-				_replaceTopHandleCurrent(layoutViewInstance, elParentNode)
+			if (viewInstance = AllLayoutViewInstance[child_node.id]||AllWithViewInstance[child_node.id]) {
+				_replaceTopHandleCurrent(viewInstance, elParentNode)
 			}
 		});
 		return self;
@@ -1119,6 +1122,7 @@ var V = global.ViewParser = {
 	modules: {},
 	attrModules: {},
 	eachModules: {},
+	withModules:{},
 	_instances:{}
 };
 V.registerHandle("HTML",function(handle, index, parentHandle){
@@ -1277,6 +1281,57 @@ var layout = function(handle, index, parentHandle) {
 }
 V.registerHandle("#layout", layout);
 V.registerHandle(">", layout);
+var _with_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManager, triggerBy, viewInstance_ID) {
+	var handle = this,
+		parentHandle = handle.parentNode,
+		comment_endwith_id,
+		AllLayoutViewInstance = V._instances[viewInstance_ID]._WVI,
+		withViewInstance = AllLayoutViewInstance[handle.id];
+	$.forEach(parentHandle.childNodes, function(child_handle, index, cs) { //get comment_endwith_id
+		if (child_handle.id === handle.id) {
+			comment_endwith_id = cs[index + 3].id;
+			return false;
+		}
+	});
+	console.log(NodeList_of_ViewInstance[comment_endwith_id].currentNode)
+	if (show_or_hidden) {
+		withViewInstance.insert(NodeList_of_ViewInstance[comment_endwith_id].currentNode)
+	} else {
+		withViewInstance.remove();
+	}
+};
+V.registerHandle("#with", function(handle, index, parentHandle) {
+	//The Nodes between #with and /with will be pulled out , and not to be rendered.
+	//which will be combined into new View module.
+	var _shadowBody = $.DOM.clone(shadowBody),
+		withModuleHandle = ElementHandle(_shadowBody),
+		endIndex = 0;
+
+	// handle.arrViewInstances = [];//Should be at the same level with currentNode
+	handle.len = 0;
+	var layer = 1;
+	$.forEach(parentHandle.childNodes, function(childHandle, index) {
+		endIndex = index;
+		// console.log(childHandle.handleName)
+		if (childHandle.handleName === "#with") {
+			layer += 1
+		}
+		if (childHandle.handleName === "/with") {
+			layer -= 1;
+			if (!layer) {
+				return false
+			}
+		}
+		$.push(withModuleHandle.childNodes, childHandle);
+	}, index + 1);
+	// console.log("----",handle.id,"-------")
+	parentHandle.childNodes.splice(index + 1, endIndex - index - 1); //Pulled out
+	V.withModules[handle.id] = View(withModuleHandle); //Compiled into new View module
+
+	handle.display = _with_display; //Custom rendering function
+	_commentPlaceholder(handle, parentHandle);
+});
+V.registerHandle("/with", placeholderHandle);
 V.registerTrigger("HTML", function(handle, index, parentHandle) {
 	var handleChilds = handle.childNodes,
 		htmlTextHandlesId = handleChilds[0].id,
@@ -1649,6 +1704,33 @@ V.registerTrigger("or", function(handle, index, parentHandle) {
 	}
 	return trigger;
 });
+var withTrigger = function(handle, index, parentHandle) {
+	// console.log(handle)
+	var id = handle.id,
+		dataHandle_id = handle.childNodes[0].id,
+		comment_with_id = parentHandle.childNodes[index + 3].id, //eachHandle --> eachComment --> endeachHandle --> endeachComment
+		trigger;
+		
+	trigger = {
+		event: function(NodeList_of_ViewInstance, dataManager, eventTrigger, isAttr, viewInstance_ID) {
+			var data = NodeList_of_ViewInstance[dataHandle_id]._data,
+				AllLayoutViewInstance = V._instances[viewInstance_ID]._WVI,
+				withViewInstance = AllLayoutViewInstance[id],// || (AllLayoutViewInstance[id] = V.withModules[id](data).insert(NodeList_of_ViewInstance[comment_with_id].currentNode)),
+				inserNew;
+			if (!withViewInstance) {
+				console.log(NodeList_of_ViewInstance[comment_with_id].currentNode)
+				withViewInstance = AllLayoutViewInstance[id] = V.withModules[id]();
+				dataManager.subset(data,withViewInstance)
+				console.log(withViewInstance)
+				withViewInstance.insert(NodeList_of_ViewInstance[comment_with_id].currentNode)
+			}
+			withViewInstance.set(data);
+		}
+	}
+	return trigger;
+}
+
+V.registerTrigger("#with", withTrigger);
 var _testDIV = $.DOM.clone(shadowDIV);
 var _getAttrOuter = Function("n", "return n." + (_hasOwn.call(_testDIV, "textContent") ? "textContent" : "innerText") + "||''")
 var _booleanFalseRegExp = /false|undefined|null|NaN/;

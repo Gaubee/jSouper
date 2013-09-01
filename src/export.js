@@ -122,5 +122,6 @@ var V = global.ViewParser = {
 	modules: {},
 	attrModules: {},
 	eachModules: {},
+	withModules:{},
 	_instances:{}
 };

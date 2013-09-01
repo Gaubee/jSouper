@@ -26,6 +26,7 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	self._canRemoveAble = false;
 	self._AVI = {};
 	self._ALVI = {};
+	self._WVI = {};
 	$.DOM.insertBefore(el, self._open, el.childNodes[0]);
 	$.DOM.append(el, self._close);
 	(self._triggers = [])._ = {};
@@ -82,7 +83,8 @@ ViewInstance.prototype = {
 			handleNodeTree = self.handleNodeTree,
 			NodeList = self.NodeList,
 			AllLayoutViewInstance = self._ALVI,
-			layoutViewInstance,
+			AllWithViewInstance = self._WVI,
+			viewInstance,
 			currentTopNode = NodeList[handleNodeTree.id].currentNode;
 
 		$.forEach(currentTopNode.childNodes, function(child_node) {
@@ -91,8 +93,8 @@ ViewInstance.prototype = {
 		_replaceTopHandleCurrent(self, el);
 
 		$.fastEach(NodeList[handleNodeTree.id].childNodes,function(child_node){
-			if (layoutViewInstance = AllLayoutViewInstance[child_node.id]) {
-				_replaceTopHandleCurrent(layoutViewInstance, el)
+			if (viewInstance = AllLayoutViewInstance[child_node.id]||AllWithViewInstance[child_node.id]) {
+				_replaceTopHandleCurrent(viewInstance, el)
 			}
 		});
 
@@ -103,7 +105,8 @@ ViewInstance.prototype = {
 			handleNodeTree = self.handleNodeTree,
 			NodeList = self.NodeList,
 			AllLayoutViewInstance = self._ALVI,
-			layoutViewInstance,
+			AllWithViewInstance = self._WVI,
+			viewInstance,
 			currentTopNode = NodeList[handleNodeTree.id].currentNode,
 			elParentNode = el.parentNode;
 
@@ -113,8 +116,8 @@ ViewInstance.prototype = {
 		_replaceTopHandleCurrent(self, elParentNode);
 
 		$.fastEach(NodeList[handleNodeTree.id].childNodes,function(child_node){
-			if (layoutViewInstance = AllLayoutViewInstance[child_node.id]) {
-				_replaceTopHandleCurrent(layoutViewInstance, elParentNode)
+			if (viewInstance = AllLayoutViewInstance[child_node.id]||AllWithViewInstance[child_node.id]) {
+				_replaceTopHandleCurrent(viewInstance, elParentNode)
 			}
 		});
 		return self;
