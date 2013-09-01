@@ -325,7 +325,10 @@ DataManager.prototype = {
 		switch (argsLen) {
 			case 0:
 				return;
-			case 1:
+			case 2:
+				// dm.set();
+				key = DataManager.foldObj(key, obj);
+			default:
 				obj = key;
 				if (obj instanceof Object) {
 					hashTable = DataManager.flat(obj);
@@ -336,10 +339,6 @@ DataManager.prototype = {
 					hashTable._data[""] = obj;
 					hashTable._data["$THIS"] = obj;
 				}
-				break;
-			default:
-				// hashTable = DataManager.flat(obj, key);@@ // var cacheHashTable = DataManager.fold(key, obj);@@ // $.fastEach(cacheHashTable, function(key) {@@// 	$.push(hashTable, key)@@ // 	hashTable._data[key] = cacheHashTable._data[key];@@ // });@@ // $.push(hashTable, "$THIS");@@ // hashTable._data["$THIS"] = cacheHashTable._data[""];@@ 
-				return dm.set(DataManager.foldObj(key, obj));
 		}
 
 		$.forEach(hashTable, function(key) {
@@ -1179,7 +1178,7 @@ V.registerHandle("#each", function(handle, index, parentHandle) {
 	var layer = 1;
 	$.forEach(parentHandle.childNodes, function(childHandle, index) {
 		endIndex = index;
-		console.log(childHandle.handleName)
+		// console.log(childHandle.handleName)
 		if (childHandle.handleName === "#each") {
 			layer+=1
 		}
@@ -1191,7 +1190,7 @@ V.registerHandle("#each", function(handle, index, parentHandle) {
 		}
 		$.push(eachModuleHandle.childNodes, childHandle);
 	}, index + 1);
-	console.log("----",handle.id,"-------")
+	// console.log("----",handle.id,"-------")
 	parentHandle.childNodes.splice(index + 1, endIndex - index - 1); //Pulled out
 	V.eachModules[handle.id] = View(eachModuleHandle); //Compiled into new View module
 

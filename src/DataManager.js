@@ -136,7 +136,10 @@ DataManager.prototype = {
 		switch (argsLen) {
 			case 0:
 				return;
-			case 1:
+			case 2:
+				// dm.set();
+				key = DataManager.foldObj(key, obj);
+			default:
 				obj = key;
 				if (obj instanceof Object) {
 					hashTable = DataManager.flat(obj);
@@ -147,10 +150,6 @@ DataManager.prototype = {
 					hashTable._data[""] = obj;
 					hashTable._data["$THIS"] = obj;
 				}
-				break;
-			default:
-				// hashTable = DataManager.flat(obj, key);@@ // var cacheHashTable = DataManager.fold(key, obj);@@ // $.fastEach(cacheHashTable, function(key) {@@// 	$.push(hashTable, key)@@ // 	hashTable._data[key] = cacheHashTable._data[key];@@ // });@@ // $.push(hashTable, "$THIS");@@ // hashTable._data["$THIS"] = cacheHashTable._data[""];@@ 
-				return dm.set(DataManager.foldObj(key, obj));
 		}
 
 		$.forEach(hashTable, function(key) {
