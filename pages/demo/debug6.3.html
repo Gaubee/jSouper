@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>HTML-ViewParse</title>
+	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js"></script>
+	<script type="text/javascript">
+	(function (ie){if(!ie)return;var b=document.createElement("script");b.setAttribute("type","text/javascript");b.setAttribute("src","http://"+location.hostname+"/firebug-lite/build/firebug-lite.js");document.getElementsByTagName("head")[0].appendChild(b)}(!+"\v1")); 
+	</script>
+</head>
+<body>
+<script type="text/template" name="sim">
+	<ol>
+	{#each( {($THIS)} )}
+		<li>{($THIS)}</li>
+	{/each()}
+	</ol>
+	<hr/>
+	<ol>
+	{#each( {($THIS)} )}
+		<li>{($THIS)}</li>
+	{/each()}
+	</ol>
+</script>
+</body>
+</html>
+<script type="text/javascript">
+	ViewParser.scans();
+	var b = document.body,
+		Sim = V.modules["sim"],
+		sim = Sim("Gaubee").append(b);
+		sim.set("Gaubee");
+
+
+	var VV = V._instances;	
+</script>
+<script type="text/javascript">
+
+	// dm1 = DataManager({
+	// 	name:"Gaubee",
+	// 	"name.arr":["one",{gaubee:[1,2,{bangeel:"yes!you find me!"}]}]
+	// });
+	// dm2 = dm1.subset({
+	// 	nickname:"PuYi"
+	// });
+	// console.log(dm1.get("name"),dm2.get("name"));
+	// dm1.set("name","GaubeeX");
+	// console.log(dm1.get("name"),dm2.get("name"));
+	// dm2.set("name","GaubeeY");
+	// console.log(dm1.get("name"),dm2.get("name"));
+	// console.log(dm1.get("name"),dm2.get("$PARENT.name"));
+	// var namestr = "name.arr.1.gaubee.2.bangeel";
+	// console.log(dm1.get(namestr))
+	// console.log(dm2.get(namestr))
+</script>

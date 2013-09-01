@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>HTML-ViewParse</title>
+	<script type="text/javascript" src="../../lib/HTML-ViewParse.min.js"></script>
+	<style type="text/css">
+	</style>
+</head>
+<body>
+	<script type="text/template" name="event">
+		<button attr-event-click="{@(click)}">{(hehe)}</button>
+	</script>
+</body>
+
+
+
+</html>
+
+<script type="text/javascript">
+	ViewParser.scans();
+	(function  (argument) {
+		var b = ViewParser.modules["event"]({
+			click:function(){
+				console.log("????");
+				if (i++===2) {
+					b.set({
+						click:function(){console.log("YYY")},
+						hehe:"Console YYY;"
+					})
+				}
+			},
+			hehe:"Console ????;"
+		}).append(document.body),
+		i=0;
+	})();
+
+</script>

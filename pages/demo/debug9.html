@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>HTML-ViewParse</title>
+	<script type="text/javascript" src="../../lib/HTML-ViewParse.debug.js"></script>
+	<script type="text/javascript" src="../../lib/Controller.beta.js"></script>
+	<style type="text/css">
+	</style>
+</head>
+<body>
+	<script type="text/template" name="controller_1">
+		<h2>Hello,{(fullName)},I am {(age)} years old.</h2>
+		<input value="{(firstName)}">
+		<input value="{(lastName)}">
+		<input value="{(age)}">
+		<hr />
+	</script>
+	<script type="text/template" name="controller_2">
+		<h3>My name is {(name)}</h3>
+		<hr />
+	</script>
+</body>
+
+
+
+</html>
+
+<script type="text/javascript">
+	ViewParser.scans();
+	var model = DataManager({
+			firstName:"Gaubee",
+			lastName:"Bangeel",
+			fullName:null
+		}),
+		model_bak = DataManager({
+			firstName:"gaubee",
+			lastName:"bangeel",
+			age:20
+		}),
+		controller = Controller([model,model_bak],{
+			fullName:function(dm1,dm2){
+				return this.get("firstName")+"  "+dm2.get("lastName");
+			}
+		}),
+		controller_bak = Controller({
+			firstName:"Gaubee",
+			lastName:"Bangeel",
+			fullName:function(){
+				return this.get("firstName")+"  "+this.get("lastName")+"("+model_bak.get("lastName")+")";
+			},
+			age:20
+		}),
+		controller_3 = Controller({
+			firstName:"Gaubee",
+			lastName:"",
+			fullName:"your lover",
+			name:function(dm1,dm2){
+				if (this.get("fullName")) {
+					return this.get("fullName")
+				}else{
+					return this.get("firstName")+"  "+this.get("lastName");
+				}
+			},
+			age:20
+		})
+		;
+	ViewParser.modules["controller_1"](controller.exports()).append(document.body);
+	ViewParser.modules["controller_1"](controller_bak.exports()).append(document.body);
+	ViewParser.modules["controller_2"](controller_3.exports()).append(document.body);
+	setTimeout(function(){
+		model_bak.set("lastName"," is OK!!");
+		controller_bak.set("firstName","Hello");
+	},1000);
+	setTimeout(function(){
+		controller_3.set("fullName","");
+	},2000);
+	setTimeout(function(){
+		controller_3.set("lastName","bangeel");
+	},3000);
+</script>

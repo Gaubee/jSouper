@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>HTML-ViewParse</title>
+	<script type="text/javascript" src="../build/HTML-ViewParse.min.js"></script>
+	<script type="text/javascript">
+	(function (ie){if(!ie)return;var b=document.createElement("script");b.setAttribute("type","text/javascript");b.setAttribute("src","http://"+location.hostname+"/firebug-lite/build/firebug-lite.js");document.getElementsByTagName("head")[0].appendChild(b)}(!+"\v1")); 
+	</script>
+</head>
+<body>
+<script type="text/template" name="sim">
+	<ol>
+	{#each( {($THIS)} )}
+		<li>{($THIS)}</li>
+	{/each()}
+	</ol>
+</script>
+</body>
+</html>
+<script type="text/javascript">
+	ViewParser.scans();
+	var b = document.body,
+		V = ViewParser,
+		Sim = V.modules["sim"],
+		sim = Sim("").append(b);
+		window.onload = function(){
+			// document.open();
+			// document.close();
+			var _title = "Initializes ten thousand lines",
+			i = 10000,
+			s="";
+			console.log(_title)
+			do{s+=Math.random().toString(36)[4]}while(i--)
+			console.time(_title)
+			sim.set(s)
+			console.timeEnd(_title);
+
+			var _title = "reset ten thousand lines",
+			i = 10000,
+			s="";
+			do{s+=Math.random().toString(36)[4]}while(i--)
+			console.time(_title)
+			sim.set(s)
+			console.timeEnd(_title)
+		};
+</script>

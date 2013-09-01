@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>HTML-ViewParse</title>
+	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js"></script>
+	<script type="text/javascript">
+	(function (ie){if(!ie)return;var b=document.createElement("script");b.setAttribute("type","text/javascript");b.setAttribute("src","http://"+location.hostname+"/firebug-lite/build/firebug-lite.js");document.getElementsByTagName("head")[0].appendChild(b)}(!+"\v1")); 
+	</script>
+</head>
+<body>
+<script type="text/template" name="sim">
+	<ol>
+	{#each( {($THIS)} )}
+		<li>{($THIS)}</li>
+		<ul>
+		{#each( {($THIS)} )}
+			<li>{($THIS)}</li>
+		{/each()}
+		</ul>
+	{/each()}
+	</ol>
+</script>
+</body>
+</html>
+<script type="text/javascript">
+	ViewParser.scans();
+	var b = document.body,
+		Sim = V.modules["sim"],
+		sim = Sim(['1', '2', '3', '4', '5', '6']).append(b);
+		// setTimeout(function(){
+		// 	sim.set("123456")
+		// },100)
+		// setTimeout(function(){
+		// 	sim.set(["Gaubee1","Gaubee2","Gaubee3","Gaubee4","Gaubee5"])
+		// },600)
+</script>
