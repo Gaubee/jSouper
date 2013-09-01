@@ -64,26 +64,15 @@ DataManager.touchOffQueue = function(key) {
 	})
 	return result;
 };
-DataManager.fold = function(key,obj){
-	var arrKey = key.split("."),
-		result = [];
-	result._data = {};
-	// $.fastEach(arrKey, function(nodeKey, index) {
-		// var arrKey = $.slice(arrKey),
-		// 	key = arrKey.splice(0, index).join(".")
-		// $.push(result, key);
-		// result._data[key] = 
-		var key = arrKey
-	// })
-	for(var i =arrKey.length,newkey,lastKey,cacheObj={};i>0;i-=1,cacheObj={}){
+// DataManager.fold = function(key, obj) {@@ // 	var arrKey = key.split("."),@@ // 		result = [];@@ // 	result._data = {};@@ @@// 	for (var i = arrKey.length, newkey, lastKey, cacheObj = {}; i > 0; i -= 1, cacheObj = {}) {@@ // 		lastKey = arrKey.pop();@@ // 		newkey = arrKey.join(".")@@ // 		$.push(result, newkey);@@ // 		cacheObj[lastKey] = obj;@@ // 		result._data[newkey] = cacheObj;@@ // 		obj = cacheObj;@@ // 	}@@ // 	return result@@ // };@@ 
+DataManager.foldObj = function(key, obj) {
+	var arrKey = key.split(".");
+	for (var i = arrKey.length, newkey, lastKey, cacheObj = {}; i > 0; i -= 1, cacheObj = {}) {
 		lastKey = arrKey.pop();
-		newkey = arrKey.join(".")
-		$.push(result,newkey);
 		cacheObj[lastKey] = obj;
-		result._data[newkey] = cacheObj;
 		obj = cacheObj;
 	}
-	return result
+	return obj
 };
 var _arrIndexReg = /(\.([0-9]+))\./;
 DataManager.prototype = {
@@ -160,14 +149,8 @@ DataManager.prototype = {
 				}
 				break;
 			default:
-				hashTable = DataManager.flat(obj, key);
-				var cacheHashTable = DataManager.fold(key,obj);
-				$.fastEach(cacheHashTable,function(key){
-					$.push(hashTable,key)
-					hashTable._data[key] = cacheHashTable._data[key];
-				});
-				$.push(hashTable, "$THIS");
-				hashTable._data["$THIS"] = cacheHashTable._data[""];
+				// hashTable = DataManager.flat(obj, key);@@ // var cacheHashTable = DataManager.fold(key, obj);@@ // $.fastEach(cacheHashTable, function(key) {@@// 	$.push(hashTable, key)@@ // 	hashTable._data[key] = cacheHashTable._data[key];@@ // });@@ // $.push(hashTable, "$THIS");@@ // hashTable._data["$THIS"] = cacheHashTable._data[""];@@ 
+				return dm.set(DataManager.foldObj(key, obj));
 		}
 
 		$.forEach(hashTable, function(key) {
@@ -187,7 +170,7 @@ DataManager.prototype = {
 				}
 				// $.push(updataKey, key)
 				// dm._touchOffSubset(key);
-				updataKey.push.apply(updataKey,DataManager.touchOffQueue(key));
+				updataKey.push.apply(updataKey, DataManager.touchOffQueue(key));
 			}
 			$.fastEach(arrayDateManagers, function(arrDM_key) {
 				if (dm._prefix) {
@@ -208,7 +191,7 @@ DataManager.prototype = {
 			if (dm.get(unknownKey) !== undefined) {
 				// $.push(updataKey, unknownKey)
 				// dm._touchOffSubset(unknownKey);
-				updataKey.push.apply(updataKey,DataManager.touchOffQueue(unknownKey));
+				updataKey.push.apply(updataKey, DataManager.touchOffQueue(unknownKey));
 				unKeys.splice(i, 1);
 				len -= 1;
 			} else {
@@ -217,7 +200,7 @@ DataManager.prototype = {
 		}
 		// console.log(updataKey)
 		updataKey = $.unique(updataKey)
-		$.fastEach(updataKey,function(key){
+		$.fastEach(updataKey, function(key) {
 			dm._touchOffSubset(key);
 		});
 		return updataKey;;

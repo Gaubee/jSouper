@@ -2,15 +2,16 @@
 <html>
 <head>
 	<title>HTML-ViewParse</title>
-	<script type="text/javascript">
-	(function (ie){if(!ie)return;var b=document.createElement("script");b.setAttribute("type","text/javascript");b.setAttribute("src","http://"+location.hostname+"/firebug-lite/build/firebug-lite.js");document.getElementsByTagName("head")[0].appendChild(b)}(!+"\v1")); 
-	</script>
+	<script type="text/javascript" src="../build/HTML-ViewParse.min.js"></script>
 </head>
 <body>
-	<h1>Hello World</h1>
+	<script type="text/template" name="min">
+		<h1>Hello World</h1>
+	</script>
 </body>
 </html>
 
 <script type="text/javascript">
-
+	ViewParser.scans();
+	ViewParser.modules['min']().append(document.body)
 </script>

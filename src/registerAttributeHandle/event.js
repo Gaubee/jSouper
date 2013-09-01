@@ -15,10 +15,10 @@ var _addEventListener = function(Element, eventName, eventFun) {
 	_ieEnterPlaceholder = "@" + Math.random().toString(36).substring(2),
 	_ieEnterPlaceholderRegExp = RegExp(_ieEnterPlaceholder,"g"),
 		_elementCache = [],
-	eventListerAttribute = function(key, currentNode, parserNode) {
+	eventListerAttribute = function(key, currentNode, parserNode,vi,dm) {
 		var attrOuter = _getAttrOuter(parserNode),
 			eventName =  key.replace("event-on", "").replace("event-", ""),
-			eventFun = Function("return " + attrOuter.replace(_ieEnterPlaceholderRegExp,"\n"))(),
+			eventFun = dm.get(attrOuter),//Function("return " + attrOuter.replace(_ieEnterPlaceholderRegExp,"\n"))(),
 			index = $.indexOf(_elementCache, currentNode),
 			eventCollection,
 			oldEventFun;

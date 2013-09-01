@@ -46,7 +46,7 @@ function parseRule(str) {
 		.replace(placeholderReg["}"], "}");
 	return parseStr;
 };
-var _matchRule = /\{[\w\w]*?\([\w\W]*?\)[\s]*\}/;
+var _matchRule = /\{[\w\W]*?\([\w\W]*?\)[\s]*\}/;
 /*
  * expores function
  */

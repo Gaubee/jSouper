@@ -117,12 +117,12 @@ var attributeHandle = function(attrStr, node, handle, triggerTable) {
 			waiting for updates the attribute.*/ //(so the trigger of be injecte in mush be unshift)
 			currentNode: null,
 			_attributeHandle: _AttributeHandle(attrKey),
-			setAttribute: function() { /*viewInstance ,dataManager*/
+			setAttribute: function(viewInstance, dataManager) { /*viewInstance ,dataManager*/
 				var self = this,
 					currentNode = self.currentNode;
 				if (currentNode) {
 					// console.log(attrKey,":",parserNode.innerText);//DEBUG
-					self._attributeHandle(attrKey, currentNode, _shadowDIV);
+					self._attributeHandle(attrKey, currentNode, _shadowDIV, viewInstance, dataManager);
 				}
 			}
 		};

@@ -253,26 +253,15 @@ DataManager.touchOffQueue = function(key) {
 	})
 	return result;
 };
-DataManager.fold = function(key,obj){
-	var arrKey = key.split("."),
-		result = [];
-	result._data = {};
-	// $.fastEach(arrKey, function(nodeKey, index) {
-		// var arrKey = $.slice(arrKey),
-		// 	key = arrKey.splice(0, index).join(".")
-		// $.push(result, key);
-		// result._data[key] = 
-		var key = arrKey
-	// })
-	for(var i =arrKey.length,newkey,lastKey,cacheObj={};i>0;i-=1,cacheObj={}){
+// DataManager.fold = function(key, obj) {@@ // 	var arrKey = key.split("."),@@ // 		result = [];@@ // 	result._data = {};@@ @@// 	for (var i = arrKey.length, newkey, lastKey, cacheObj = {}; i > 0; i -= 1, cacheObj = {}) {@@ // 		lastKey = arrKey.pop();@@ // 		newkey = arrKey.join(".")@@ // 		$.push(result, newkey);@@ // 		cacheObj[lastKey] = obj;@@ // 		result._data[newkey] = cacheObj;@@ // 		obj = cacheObj;@@ // 	}@@ // 	return result@@ // };@@ 
+DataManager.foldObj = function(key, obj) {
+	var arrKey = key.split(".");
+	for (var i = arrKey.length, newkey, lastKey, cacheObj = {}; i > 0; i -= 1, cacheObj = {}) {
 		lastKey = arrKey.pop();
-		newkey = arrKey.join(".")
-		$.push(result,newkey);
 		cacheObj[lastKey] = obj;
-		result._data[newkey] = cacheObj;
 		obj = cacheObj;
 	}
-	return result
+	return obj
 };
 var _arrIndexReg = /(\.([0-9]+))\./;
 DataManager.prototype = {
@@ -349,14 +338,8 @@ DataManager.prototype = {
 				}
 				break;
 			default:
-				hashTable = DataManager.flat(obj, key);
-				var cacheHashTable = DataManager.fold(key,obj);
-				$.fastEach(cacheHashTable,function(key){
-					$.push(hashTable,key)
-					hashTable._data[key] = cacheHashTable._data[key];
-				});
-				$.push(hashTable, "$THIS");
-				hashTable._data["$THIS"] = cacheHashTable._data[""];
+				// hashTable = DataManager.flat(obj, key);@@ // var cacheHashTable = DataManager.fold(key, obj);@@ // $.fastEach(cacheHashTable, function(key) {@@// 	$.push(hashTable, key)@@ // 	hashTable._data[key] = cacheHashTable._data[key];@@ // });@@ // $.push(hashTable, "$THIS");@@ // hashTable._data["$THIS"] = cacheHashTable._data[""];@@ 
+				return dm.set(DataManager.foldObj(key, obj));
 		}
 
 		$.forEach(hashTable, function(key) {
@@ -376,7 +359,7 @@ DataManager.prototype = {
 				}
 				// $.push(updataKey, key)
 				// dm._touchOffSubset(key);
-				updataKey.push.apply(updataKey,DataManager.touchOffQueue(key));
+				updataKey.push.apply(updataKey, DataManager.touchOffQueue(key));
 			}
 			$.fastEach(arrayDateManagers, function(arrDM_key) {
 				if (dm._prefix) {
@@ -397,7 +380,7 @@ DataManager.prototype = {
 			if (dm.get(unknownKey) !== undefined) {
 				// $.push(updataKey, unknownKey)
 				// dm._touchOffSubset(unknownKey);
-				updataKey.push.apply(updataKey,DataManager.touchOffQueue(unknownKey));
+				updataKey.push.apply(updataKey, DataManager.touchOffQueue(unknownKey));
 				unKeys.splice(i, 1);
 				len -= 1;
 			} else {
@@ -406,7 +389,7 @@ DataManager.prototype = {
 		}
 		// console.log(updataKey)
 		updataKey = $.unique(updataKey)
-		$.fastEach(updataKey,function(key){
+		$.fastEach(updataKey, function(key) {
 			dm._touchOffSubset(key);
 		});
 		return updataKey;;
@@ -589,12 +572,12 @@ var attributeHandle = function(attrStr, node, handle, triggerTable) {
 			waiting for updates the attribute.*/ //(so the trigger of be injecte in mush be unshift)
 			currentNode: null,
 			_attributeHandle: _AttributeHandle(attrKey),
-			setAttribute: function() { /*viewInstance ,dataManager*/
+			setAttribute: function(viewInstance, dataManager) { /*viewInstance ,dataManager*/
 				var self = this,
 					currentNode = self.currentNode;
 				if (currentNode) {
 					// console.log(attrKey,":",parserNode.innerText);//DEBUG
-					self._attributeHandle(attrKey, currentNode, _shadowDIV);
+					self._attributeHandle(attrKey, currentNode, _shadowDIV, viewInstance, dataManager);
 				}
 			}
 		};
@@ -1061,7 +1044,7 @@ function parseRule(str) {
 		.replace(placeholderReg["}"], "}");
 	return parseStr;
 };
-var _matchRule = /\{[\w\w]*?\([\w\W]*?\)[\s]*\}/;
+var _matchRule = /\{[\w\W]*?\([\w\W]*?\)[\s]*\}/;
 /*
  * expores function
  */
@@ -1240,6 +1223,27 @@ V.registerHandle("", function(handle, index, parentHandle) {
 	} else {
 		if (textHandle) {
 			textHandle.ignore = true;
+		}
+	}
+});
+V.registerHandle("@", function(handle, index, parentHandle) {
+	var textHandle = handle.childNodes[0];
+	var i = 0;
+	do {
+		i += 1;
+		var nextHandle = parentHandle.childNodes[index + i];
+	} while (nextHandle && nextHandle.ignore);
+	if (textHandle) { //textNode as Placeholder
+
+		$.insertAfter(parentHandle.childNodes, handle, textHandle);
+		//Node position calibration
+		//no "$.insert" Avoid sequence error
+
+		return function(NodeList_of_ViewInstance) {
+			var nextNodeInstance = nextHandle && NodeList_of_ViewInstance[nextHandle.id].currentNode,
+				textNodeInstance = NodeList_of_ViewInstance[textHandle.id].currentNode,
+				parentNodeInstance = NodeList_of_ViewInstance[parentHandle.id].currentNode
+				$.DOM.insertBefore(parentNodeInstance, textNodeInstance, nextNodeInstance); //Manually insert node
 		}
 	}
 });
@@ -1430,23 +1434,34 @@ V.registerTrigger("", function(handle, index, parentHandle) {
 		trigger;
 	// console.log("getData:",key)
 	if (parentHandle.type !== "handle") { //as textHandle
-		trigger = {
-			key: key,
-			event: function(NodeList_of_ViewInstance, dataManager, triggerBy, isAttr, vi) { //call by ViewInstance's Node
-				// console.log("getData:",key,":",dataManager)
-				var data;
-				if (isAttr) {
-					if (isAttr.key.indexOf("on")===0) {
-						data = String(dataManager.get(key)).replace(/"/g, '\\"').replace(/'/g, "\\'");
-					}else if(isAttr.key.indexOf("event-")===0&&_isIE){
-						data = String(dataManager.get(key)).replace(/\n/g, _ieEnterPlaceholder);
-					}else{
-						data = dataManager.get(key);
-					}
-				} else {
-					data = dataManager.get(key)
-				};
-				NodeList_of_ViewInstance[textHandleId].currentNode.data = data;
+		if ($.isString(key)) { // single String
+			trigger = { //const 
+				key: ".", //const trigger
+				bubble: true,
+				event: function(NodeList_of_ViewInstance, dataManager) {
+					NodeList_of_ViewInstance[textHandleId].currentNode.data = key.substring(1, key.length - 1);
+					// trigger.event = $.noop;
+				}
+			};
+		} else { //String for databese by key
+			trigger = {
+				key: key,
+				event: function(NodeList_of_ViewInstance, dataManager, triggerBy, isAttr, vi) { //call by ViewInstance's Node
+					// console.log("getData:",key,":",dataManager)
+					var data;
+					if (isAttr) {
+						if (isAttr.key.indexOf("on") === 0) {
+							data = String(dataManager.get(key)).replace(/"/g, '\\"').replace(/'/g, "\\'");
+							// }else if(isAttr.key.indexOf("event-")===0&&_isIE){
+							// 	data = String(dataManager.get(key)).replace(/\n/g, _ieEnterPlaceholder);
+						} else {
+							data = dataManager.get(key);
+						}
+					} else {
+						data = dataManager.get(key)
+					};
+					NodeList_of_ViewInstance[textHandleId].currentNode.data = data;
+				}
 			}
 		}
 	} else { //as stringHandle
@@ -1468,6 +1483,22 @@ V.registerTrigger("", function(handle, index, parentHandle) {
 			};
 		}
 	}
+	return trigger;
+});
+V.registerTrigger("@", function(handle, index, parentHandle) {
+	var textHandle = handle.childNodes[0],
+		textHandleId = textHandle.id,
+		key = textHandle.node.data,
+		trigger;
+
+	trigger = { //const 
+		key: key, //const trigger
+		bubble: true,
+		event: function(NodeList_of_ViewInstance, dataManager) {
+			NodeList_of_ViewInstance[textHandleId].currentNode.data = key;
+			// trigger.event = $.noop;
+		}
+	};
 	return trigger;
 });
 V.registerTrigger("#if", function(handle, index, parentHandle) {
@@ -1559,27 +1590,22 @@ V.registerTrigger("#if", function(handle, index, parentHandle) {
 
 	return trigger;
 });
-layoutTrigger = function(handle, index, parentHandle) {
+var layoutTrigger = function(handle, index, parentHandle) {
 	// console.log(handle)
 	var id = handle.id,
 		childNodes = handle.childNodes,
-		templateHandleKey = childNodes[0].childNodes[0].node.data,
+		templateHandle_id = childNodes[0].id,
 		dataHandle_id = childNodes[1].id,
 		comment_layout_id = parentHandle.childNodes[index + 1].id, //eachHandle --> eachComment --> endeachHandle --> endeachComment
 		trigger;
 		
-	if ($.isString(templateHandleKey)) {
-		templateHandleKey = templateHandleKey.substring(1, templateHandleKey.length - 1);
-	};
 	trigger = {
 		event: function(NodeList_of_ViewInstance, dataManager, eventTrigger, isAttr, viewInstance_ID) {
-			// console.log(NodeList_of_ViewInstance[comment_layout_id].currentNode,templateHandleKey)
 			var data = NodeList_of_ViewInstance[dataHandle_id]._data,
 				AllLayoutViewInstance = V._instances[viewInstance_ID]._ALVI,
-				layoutViewInstance = AllLayoutViewInstance[id] || (AllLayoutViewInstance[id] = V.modules[templateHandleKey](data).insert(NodeList_of_ViewInstance[comment_layout_id].currentNode)),
+				layoutViewInstance = AllLayoutViewInstance[id] || (AllLayoutViewInstance[id] = V.modules[NodeList_of_ViewInstance[templateHandle_id]._data](data).insert(NodeList_of_ViewInstance[comment_layout_id].currentNode)),
 				inserNew;
 			layoutViewInstance.set(data);
-			// layoutViewInstance.NodeList[layoutViewInstance.handleNodeTree.id].currentNode = NodeList_of_ViewInstance[comment_layout_id].currentNode.parentNode
 		}
 	}
 	return trigger;
@@ -1738,10 +1764,10 @@ var _addEventListener = function(Element, eventName, eventFun) {
 	_ieEnterPlaceholder = "@" + Math.random().toString(36).substring(2),
 	_ieEnterPlaceholderRegExp = RegExp(_ieEnterPlaceholder,"g"),
 		_elementCache = [],
-	eventListerAttribute = function(key, currentNode, parserNode) {
+	eventListerAttribute = function(key, currentNode, parserNode,vi,dm) {
 		var attrOuter = _getAttrOuter(parserNode),
 			eventName =  key.replace("event-on", "").replace("event-", ""),
-			eventFun = Function("return " + attrOuter.replace(_ieEnterPlaceholderRegExp,"\n"))(),
+			eventFun = dm.get(attrOuter),//Function("return " + attrOuter.replace(_ieEnterPlaceholderRegExp,"\n"))(),
 			index = $.indexOf(_elementCache, currentNode),
 			eventCollection,
 			oldEventFun;

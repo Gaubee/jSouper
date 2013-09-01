@@ -11,7 +11,7 @@
 </head>
 <body>
 	<script type="text/template" name="event">
-		<button attr-event-click="{(click)}">{(hehe)}</button>
+		<button attr-event-click="{@(click)}">{(hehe)}</button>
 	</script>
 </body>
 
@@ -21,18 +21,20 @@
 
 <script type="text/javascript">
 	ViewParser.scans();
-	var b = ViewParser.modules["event"]({
-		click:function(){
-			console.log("????");
-			if (i++===2) {
-				b.set({
-					click:function(){console.log("YYY")},
-					hehe:"Console YYY;"
-				})
-			}
-		},
-		hehe:"Console ????;"
-	}).append(document.body),
-	i=0;
+	(function  (argument) {
+		var b = ViewParser.modules["event"]({
+			click:function(){
+				console.log("????");
+				if (i++===2) {
+					b.set({
+						click:function(){console.log("YYY")},
+						hehe:"Console YYY;"
+					})
+				}
+			},
+			hehe:"Console ????;"
+		}).append(document.body),
+		i=0;
+	})();
 
 </script>
