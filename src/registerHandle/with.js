@@ -4,13 +4,16 @@ var _with_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManag
 		comment_endwith_id,
 		AllLayoutViewInstance = V._instances[viewInstance_ID]._WVI,
 		withViewInstance = AllLayoutViewInstance[handle.id];
+	if (!withViewInstance) {
+		return;
+	}
 	$.forEach(parentHandle.childNodes, function(child_handle, index, cs) { //get comment_endwith_id
 		if (child_handle.id === handle.id) {
 			comment_endwith_id = cs[index + 3].id;
 			return false;
 		}
 	});
-	console.log(NodeList_of_ViewInstance[comment_endwith_id].currentNode)
+	console.log(show_or_hidden,NodeList_of_ViewInstance[comment_endwith_id].currentNode)
 	if (show_or_hidden) {
 		withViewInstance.insert(NodeList_of_ViewInstance[comment_endwith_id].currentNode)
 	} else {

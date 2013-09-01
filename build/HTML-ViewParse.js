@@ -1257,15 +1257,15 @@ var _layout_display = function(show_or_hidden, NodeList_of_ViewInstance, dataMan
 	var handle = this,
 		commentPlaceholderElement,
 		layoutViewInstance = V._instances[viewInstance_ID]._ALVI[handle.id];
+	if (!layoutViewInstance) {
+		return;
+	}
 	$.forEach(handle.parentNode.childNodes, function(child_handle, index, cs) { //get comment_endeach_id
 		if (child_handle.id === handle.id) {
 			commentPlaceholderElement = NodeList_of_ViewInstance[cs[index + 1].id].currentNode
 			return false;
 		}
 	});
-	if (!layoutViewInstance) {
-		return;
-	}
 	console.log(show_or_hidden,viewInstance_ID,layoutViewInstance)
 	if (show_or_hidden) {
 		layoutViewInstance.insert(commentPlaceholderElement);
@@ -1287,13 +1287,16 @@ var _with_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManag
 		comment_endwith_id,
 		AllLayoutViewInstance = V._instances[viewInstance_ID]._WVI,
 		withViewInstance = AllLayoutViewInstance[handle.id];
+	if (!withViewInstance) {
+		return;
+	}
 	$.forEach(parentHandle.childNodes, function(child_handle, index, cs) { //get comment_endwith_id
 		if (child_handle.id === handle.id) {
 			comment_endwith_id = cs[index + 3].id;
 			return false;
 		}
 	});
-	console.log(NodeList_of_ViewInstance[comment_endwith_id].currentNode)
+	console.log(show_or_hidden,NodeList_of_ViewInstance[comment_endwith_id].currentNode)
 	if (show_or_hidden) {
 		withViewInstance.insert(NodeList_of_ViewInstance[comment_endwith_id].currentNode)
 	} else {

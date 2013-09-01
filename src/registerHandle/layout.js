@@ -2,15 +2,15 @@ var _layout_display = function(show_or_hidden, NodeList_of_ViewInstance, dataMan
 	var handle = this,
 		commentPlaceholderElement,
 		layoutViewInstance = V._instances[viewInstance_ID]._ALVI[handle.id];
+	if (!layoutViewInstance) {
+		return;
+	}
 	$.forEach(handle.parentNode.childNodes, function(child_handle, index, cs) { //get comment_endeach_id
 		if (child_handle.id === handle.id) {
 			commentPlaceholderElement = NodeList_of_ViewInstance[cs[index + 1].id].currentNode
 			return false;
 		}
 	});
-	if (!layoutViewInstance) {
-		return;
-	}
 	console.log(show_or_hidden,viewInstance_ID,layoutViewInstance)
 	if (show_or_hidden) {
 		layoutViewInstance.insert(commentPlaceholderElement);

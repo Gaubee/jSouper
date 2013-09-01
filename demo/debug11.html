@@ -13,7 +13,7 @@
 <body>
 	<script type="text/template" name="with">
 		<h2>{(title)}</h2>
-		{#if(show_with)}
+		{#if({(show_with)})}
 			{#with({(detail)})}
 				{(title)}({(show_with)})
 				</br>
@@ -40,4 +40,7 @@
 	setTimeout(function(){
 		w.set("show_with",false)
 	},1200)
+	setTimeout(function(){
+		w.set("show_with",true)
+	},2400)
 </script>
