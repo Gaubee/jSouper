@@ -25,7 +25,7 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	self._close = $.DOM.Comment(self._id + " _close");
 	self._canRemoveAble = false;
 	self._AVI = {};
-	self.__ALVI = {};
+	self._ALVI = {};
 	$.DOM.insertBefore(el, self._open, el.childNodes[0]);
 	$.DOM.append(el, self._close);
 	(self._triggers = [])._ = {};

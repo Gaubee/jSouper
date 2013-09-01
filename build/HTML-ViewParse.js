@@ -210,6 +210,7 @@ function DataManager(baseData, viewInstance) {
 	// baseData&&self.set(baseData);
 	$.unique(self._database);
 };
+
 global.DataManager = DataManager;
 DataManager.flat = function(obj, prefixKey) {
 	prefixKey = prefixKey || "";
@@ -239,10 +240,39 @@ DataManager.flat = function(obj, prefixKey) {
 		$.push(hashTable, "$THIS");
 		hashTable._data["$THIS"] = obj;
 	}
-	($.indexOf(hashTable,prefixKey)===-1)&&$.push(hashTable, prefixKey);
+	($.indexOf(hashTable, prefixKey) === -1) && $.push(hashTable, prefixKey);
 	hashTable._data[prefixKey] = obj;
 
 	return hashTable;
+};
+DataManager.touchOffQueue = function(key) {
+	var arrKey = key.split("."),
+		result = [key];
+	$.fastEach(arrKey, function(nodeKey, index) {
+		$.push(result, $.slice(arrKey).splice(0, index).join("."));
+	})
+	return result;
+};
+DataManager.fold = function(key,obj){
+	var arrKey = key.split("."),
+		result = [];
+	result._data = {};
+	// $.fastEach(arrKey, function(nodeKey, index) {
+		// var arrKey = $.slice(arrKey),
+		// 	key = arrKey.splice(0, index).join(".")
+		// $.push(result, key);
+		// result._data[key] = 
+		var key = arrKey
+	// })
+	for(var i =arrKey.length,newkey,lastKey,cacheObj={};i>0;i-=1,cacheObj={}){
+		lastKey = arrKey.pop();
+		newkey = arrKey.join(".")
+		$.push(result,newkey);
+		cacheObj[lastKey] = obj;
+		result._data[newkey] = cacheObj;
+		obj = cacheObj;
+	}
+	return result
 };
 var _arrIndexReg = /(\.([0-9]+))\./;
 DataManager.prototype = {
@@ -275,7 +305,7 @@ DataManager.prototype = {
 					if (!(dotKey in dmBak._arrayDateManagers._) && (index in maybeArr)) {
 						maybeDm = dmBak._arrayDateManagers._[dotKey] = DataManager(maybeArr[index]);
 						maybeDm._viewInstances = dmBak._viewInstances;
-						maybeDm._prefix = (dmBak._prefix?dmBak._prefix+".":"")+dotKey;
+						maybeDm._prefix = (dmBak._prefix ? dmBak._prefix + "." : "") + dotKey;
 						$.push(dmBak._arrayDateManagers, dotKey);
 					}
 					if (maybeDm = dmBak._arrayDateManagers._[dotKey]) {
@@ -286,10 +316,10 @@ DataManager.prototype = {
 		} else {
 			result = dm._parentDataManager.get(key.replace(parentDM_mark, ""));
 		}
-		if (result === undefined) {//Unknown key to manually trigger, whether it is unable to update the data.
+		if (result === undefined) { //Unknown key to manually trigger, whether it is unable to update the data.
 			// console.log(dm)
-			if($.indexOf(dmBak._unknownKey,key)===-1){
-				$.push(dmBak._unknownKey,key)
+			if ($.indexOf(dmBak._unknownKey, key) === -1) {
+				$.push(dmBak._unknownKey, key)
 			}
 		}
 		return result;
@@ -299,7 +329,7 @@ DataManager.prototype = {
 			viewInstances,
 			argsLen = arguments.length,
 			hashTable = [],
-			updataKey = [],
+			updataKey = ["$THIS"],
 			database = dm._database,
 			arrayDateManagers = dm._arrayDateManagers;
 
@@ -320,6 +350,13 @@ DataManager.prototype = {
 				break;
 			default:
 				hashTable = DataManager.flat(obj, key);
+				var cacheHashTable = DataManager.fold(key,obj);
+				$.fastEach(cacheHashTable,function(key){
+					$.push(hashTable,key)
+					hashTable._data[key] = cacheHashTable._data[key];
+				});
+				$.push(hashTable, "$THIS");
+				hashTable._data["$THIS"] = cacheHashTable._data[""];
 		}
 
 		$.forEach(hashTable, function(key) {
@@ -333,39 +370,46 @@ DataManager.prototype = {
 				if (dm._prefix) {
 					if (key) {
 						key = dm._prefix + "." + key
-					}else{
+					} else {
 						key = dm._prefix
 					}
 				}
-				$.push(updataKey,key)
-				dm._touchOffSubset(key);
+				// $.push(updataKey, key)
+				// dm._touchOffSubset(key);
+				updataKey.push.apply(updataKey,DataManager.touchOffQueue(key));
 			}
 			$.fastEach(arrayDateManagers, function(arrDM_key) {
 				if (dm._prefix) {
-					key = key.replace(dm._prefix+".","");
+					key = key.replace(dm._prefix + ".", "");
 				}
 				if (arrDM_key.indexOf(key) === 0) {
 					var arrDM = arrayDateManagers._[arrDM_key],
 						index = arrDM_key.substring(key.length + 1);
-					if (database._data[key]){// The structure may be changed
+					if (database._data[key]) { // The structure may be changed
 						arrDM.set(database._data[key][index]); //iteration trigger
 					}
 				}
 			});
 		});
-		var i,unKeys,unknownKey,len;
-		for(i=0,unKeys = dm._unknownKey,unknownKey,len = unKeys.length;i<len;){
+		var i, unKeys, unknownKey, len;
+		for (i = 0, unKeys = dm._unknownKey, unknownKey, len = unKeys.length; i < len;) {
 			unknownKey = unKeys[i];
-			if (dm.get(unknownKey)!==undefined) {
-				$.push(updataKey,unknownKey)
-				dm._touchOffSubset(unknownKey);
-				unKeys.splice(i,1);
-				len-=1;
-			}else{
-				i+=1;
+			if (dm.get(unknownKey) !== undefined) {
+				// $.push(updataKey, unknownKey)
+				// dm._touchOffSubset(unknownKey);
+				updataKey.push.apply(updataKey,DataManager.touchOffQueue(unknownKey));
+				unKeys.splice(i, 1);
+				len -= 1;
+			} else {
+				i += 1;
 			}
 		}
-		return updataKey;//$.unique(updataKey);
+		console.log(updataKey)
+		updataKey = $.unique(updataKey)
+		$.fastEach(updataKey,function(key){
+			dm._touchOffSubset(key);
+		});
+		return updataKey;;
 	},
 	_touchOffSubset: function(key) {
 		$.forEach(this._subsetDataManagers, function(dm) {
@@ -401,7 +445,7 @@ DataManager.prototype = {
 	collect: function(viewInstance) {
 		var dm = this;
 		if ($.indexOf(dm._viewInstances, viewInstance) === -1) {
-			viewInstance.dataManager&&viewInstance.dataManager.remove(viewInstance);
+			viewInstance.dataManager && viewInstance.dataManager.remove(viewInstance);
 			$.push(dm._viewInstances, viewInstance);
 			viewInstance.dataManager = dm;
 		}
@@ -700,7 +744,7 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	self._close = $.DOM.Comment(self._id + " _close");
 	self._canRemoveAble = false;
 	self._AVI = {};
-	self.__ALVI = {};
+	self._ALVI = {};
 	$.DOM.insertBefore(el, self._open, el.childNodes[0]);
 	$.DOM.append(el, self._close);
 	(self._triggers = [])._ = {};
@@ -1497,22 +1541,23 @@ V.registerTrigger("#if", function(handle, index, parentHandle) {
 layoutTrigger = function(handle, index, parentHandle) {
 	// console.log(handle)
 	var id = handle.id,
-		arrDataHandleKey = handle.childNodes[0].childNodes[0].node.data,
+		childNodes = handle.childNodes,
+		templateHandleKey = childNodes[0].childNodes[0].node.data,
+		dataHandle_id = childNodes[1].id,
 		comment_layout_id = parentHandle.childNodes[index + 1].id, //eachHandle --> eachComment --> endeachHandle --> endeachComment
 		trigger;
-	console.log(arrDataHandleKey)
+	console.log("template:",templateHandleKey)
+	if ($.isString(templateHandleKey)) {
+		templateHandleKey = templateHandleKey.substring(1, templateHandleKey.length - 1);
+	};
 	trigger = {
 		event: function(NodeList_of_ViewInstance, dataManager, eventTrigger, isAttr, viewInstance_ID) {
-			var data = dataManager.get(arrDataHandleKey),
-				allArrViewInstances,
-				arrViewInstances, // = NodeList_of_ViewInstance[id].arrViewInstances= NodeList_of_ViewInstance[id].arrViewInstances||[],
-				divideIndex = -1,
+			// console.log(NodeList_of_ViewInstance[comment_layout_id].currentNode,templateHandleKey)
+			var data = NodeList_of_ViewInstance[dataHandle_id]._data,
+				AllLayoutViewInstance = V._instances[viewInstance_ID]._ALVI,
+				layoutViewInstance = AllLayoutViewInstance[id] || (AllLayoutViewInstance[id] = V.modules[templateHandleKey](data).insert(NodeList_of_ViewInstance[comment_layout_id].currentNode)),
 				inserNew;
-			// console.log(viewInstance_ID,id)
-			// AllLayoutViewInstance = V._instances[viewInstance_ID]._ALVI;
-			// layoutViewInstance = AllLayoutViewInstance[id] || (AllLayoutViewInstance[id] = []);
-			// layoutViewInstance.insert(NodeList_of_ViewInstance[comment_layout_id].currentNode)
-			console.log(data);
+			layoutViewInstance.set(data)
 		}
 	}
 	return trigger;

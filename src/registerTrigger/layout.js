@@ -1,22 +1,23 @@
 layoutTrigger = function(handle, index, parentHandle) {
 	// console.log(handle)
 	var id = handle.id,
-		arrDataHandleKey = handle.childNodes[0].childNodes[0].node.data,
+		childNodes = handle.childNodes,
+		templateHandleKey = childNodes[0].childNodes[0].node.data,
+		dataHandle_id = childNodes[1].id,
 		comment_layout_id = parentHandle.childNodes[index + 1].id, //eachHandle --> eachComment --> endeachHandle --> endeachComment
 		trigger;
-	console.log(arrDataHandleKey)
+	console.log("template:",templateHandleKey)
+	if ($.isString(templateHandleKey)) {
+		templateHandleKey = templateHandleKey.substring(1, templateHandleKey.length - 1);
+	};
 	trigger = {
 		event: function(NodeList_of_ViewInstance, dataManager, eventTrigger, isAttr, viewInstance_ID) {
-			var data = dataManager.get(arrDataHandleKey),
-				allArrViewInstances,
-				arrViewInstances, // = NodeList_of_ViewInstance[id].arrViewInstances= NodeList_of_ViewInstance[id].arrViewInstances||[],
-				divideIndex = -1,
+			// console.log(NodeList_of_ViewInstance[comment_layout_id].currentNode,templateHandleKey)
+			var data = NodeList_of_ViewInstance[dataHandle_id]._data,
+				AllLayoutViewInstance = V._instances[viewInstance_ID]._ALVI,
+				layoutViewInstance = AllLayoutViewInstance[id] || (AllLayoutViewInstance[id] = V.modules[templateHandleKey](data).insert(NodeList_of_ViewInstance[comment_layout_id].currentNode)),
 				inserNew;
-			// console.log(viewInstance_ID,id)
-			// AllLayoutViewInstance = V._instances[viewInstance_ID]._ALVI;
-			// layoutViewInstance = AllLayoutViewInstance[id] || (AllLayoutViewInstance[id] = []);
-			// layoutViewInstance.insert(NodeList_of_ViewInstance[comment_layout_id].currentNode)
-			console.log(data);
+			layoutViewInstance.set(data)
 		}
 	}
 	return trigger;

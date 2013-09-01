@@ -13,7 +13,7 @@
 	<script type="text/template" name="layout">
 		<h2>Hello,{(fullName)},I am {(age)} years old.</h2>
 		<hr />
-		{>({('detail')})}
+		{>({('detail')}{($THIS)})}
 	</script>
 	<script type="text/template" name="detail">
 		<input value="{(firstName)}">
@@ -35,5 +35,5 @@
 			age:20
 		});
 	ViewParser.modules["layout"](model).append(document.body);
-
+	model.set("firstName","???")
 </script>
