@@ -81,25 +81,42 @@ ViewInstance.prototype = {
 		var self = this,
 			handleNodeTree = self.handleNodeTree,
 			NodeList = self.NodeList,
+			AllLayoutViewInstance = self._ALVI,
+			layoutViewInstance,
 			currentTopNode = NodeList[handleNodeTree.id].currentNode;
 
 		$.forEach(currentTopNode.childNodes, function(child_node) {
 			$.DOM.append(el, child_node);
 		});
 		_replaceTopHandleCurrent(self, el);
+
+		$.fastEach(NodeList[handleNodeTree.id].childNodes,function(child_node){
+			if (layoutViewInstance = AllLayoutViewInstance[child_node.id]) {
+				_replaceTopHandleCurrent(layoutViewInstance, el)
+			}
+		});
+
 		return self;
 	},
 	insert: function(el) {
 		var self = this,
 			handleNodeTree = self.handleNodeTree,
 			NodeList = self.NodeList,
+			AllLayoutViewInstance = self._ALVI,
+			layoutViewInstance,
 			currentTopNode = NodeList[handleNodeTree.id].currentNode,
 			elParentNode = el.parentNode;
 
 		$.forEach(currentTopNode.childNodes, function(child_node) {
 			$.DOM.insertBefore(elParentNode, child_node, el);
 		});
-		_replaceTopHandleCurrent(self, elParentNode)
+		_replaceTopHandleCurrent(self, elParentNode);
+
+		$.fastEach(NodeList[handleNodeTree.id].childNodes,function(child_node){
+			if (layoutViewInstance = AllLayoutViewInstance[child_node.id]) {
+				_replaceTopHandleCurrent(layoutViewInstance, elParentNode)
+			}
+		});
 		return self;
 	},
 	remove: function() {

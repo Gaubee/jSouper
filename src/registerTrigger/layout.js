@@ -6,7 +6,7 @@ layoutTrigger = function(handle, index, parentHandle) {
 		dataHandle_id = childNodes[1].id,
 		comment_layout_id = parentHandle.childNodes[index + 1].id, //eachHandle --> eachComment --> endeachHandle --> endeachComment
 		trigger;
-	console.log("template:",templateHandleKey)
+		
 	if ($.isString(templateHandleKey)) {
 		templateHandleKey = templateHandleKey.substring(1, templateHandleKey.length - 1);
 	};
@@ -17,7 +17,8 @@ layoutTrigger = function(handle, index, parentHandle) {
 				AllLayoutViewInstance = V._instances[viewInstance_ID]._ALVI,
 				layoutViewInstance = AllLayoutViewInstance[id] || (AllLayoutViewInstance[id] = V.modules[templateHandleKey](data).insert(NodeList_of_ViewInstance[comment_layout_id].currentNode)),
 				inserNew;
-			layoutViewInstance.set(data)
+			layoutViewInstance.set(data);
+			// layoutViewInstance.NodeList[layoutViewInstance.handleNodeTree.id].currentNode = NodeList_of_ViewInstance[comment_layout_id].currentNode.parentNode
 		}
 	}
 	return trigger;

@@ -404,7 +404,7 @@ DataManager.prototype = {
 				i += 1;
 			}
 		}
-		console.log(updataKey)
+		// console.log(updataKey)
 		updataKey = $.unique(updataKey)
 		$.fastEach(updataKey,function(key){
 			dm._touchOffSubset(key);
@@ -800,25 +800,42 @@ ViewInstance.prototype = {
 		var self = this,
 			handleNodeTree = self.handleNodeTree,
 			NodeList = self.NodeList,
+			AllLayoutViewInstance = self._ALVI,
+			layoutViewInstance,
 			currentTopNode = NodeList[handleNodeTree.id].currentNode;
 
 		$.forEach(currentTopNode.childNodes, function(child_node) {
 			$.DOM.append(el, child_node);
 		});
 		_replaceTopHandleCurrent(self, el);
+
+		$.fastEach(NodeList[handleNodeTree.id].childNodes,function(child_node){
+			if (layoutViewInstance = AllLayoutViewInstance[child_node.id]) {
+				_replaceTopHandleCurrent(layoutViewInstance, el)
+			}
+		});
+
 		return self;
 	},
 	insert: function(el) {
 		var self = this,
 			handleNodeTree = self.handleNodeTree,
 			NodeList = self.NodeList,
+			AllLayoutViewInstance = self._ALVI,
+			layoutViewInstance,
 			currentTopNode = NodeList[handleNodeTree.id].currentNode,
 			elParentNode = el.parentNode;
 
 		$.forEach(currentTopNode.childNodes, function(child_node) {
 			$.DOM.insertBefore(elParentNode, child_node, el);
 		});
-		_replaceTopHandleCurrent(self, elParentNode)
+		_replaceTopHandleCurrent(self, elParentNode);
+
+		$.fastEach(NodeList[handleNodeTree.id].childNodes,function(child_node){
+			if (layoutViewInstance = AllLayoutViewInstance[child_node.id]) {
+				_replaceTopHandleCurrent(layoutViewInstance, elParentNode)
+			}
+		});
 		return self;
 	},
 	remove: function() {
@@ -1233,12 +1250,16 @@ var _layout_display = function(show_or_hidden, NodeList_of_ViewInstance, dataMan
 	var handle = this,
 		commentPlaceholderElement,
 		layoutViewInstance = V._instances[viewInstance_ID]._ALVI[handle.id];
-	$.forEach(handle.parentHandle.childNodes, function(child_handle, index, cs) { //get comment_endeach_id
+	$.forEach(handle.parentNode.childNodes, function(child_handle, index, cs) { //get comment_endeach_id
 		if (child_handle.id === handle.id) {
 			commentPlaceholderElement = NodeList_of_ViewInstance[cs[index + 1].id].currentNode
 			return false;
 		}
 	});
+	if (!layoutViewInstance) {
+		return;
+	}
+	console.log(show_or_hidden,viewInstance_ID,layoutViewInstance)
 	if (show_or_hidden) {
 		layoutViewInstance.insert(commentPlaceholderElement);
 	} else {
@@ -1546,7 +1567,7 @@ layoutTrigger = function(handle, index, parentHandle) {
 		dataHandle_id = childNodes[1].id,
 		comment_layout_id = parentHandle.childNodes[index + 1].id, //eachHandle --> eachComment --> endeachHandle --> endeachComment
 		trigger;
-	console.log("template:",templateHandleKey)
+		
 	if ($.isString(templateHandleKey)) {
 		templateHandleKey = templateHandleKey.substring(1, templateHandleKey.length - 1);
 	};
@@ -1557,7 +1578,8 @@ layoutTrigger = function(handle, index, parentHandle) {
 				AllLayoutViewInstance = V._instances[viewInstance_ID]._ALVI,
 				layoutViewInstance = AllLayoutViewInstance[id] || (AllLayoutViewInstance[id] = V.modules[templateHandleKey](data).insert(NodeList_of_ViewInstance[comment_layout_id].currentNode)),
 				inserNew;
-			layoutViewInstance.set(data)
+			layoutViewInstance.set(data);
+			// layoutViewInstance.NodeList[layoutViewInstance.handleNodeTree.id].currentNode = NodeList_of_ViewInstance[comment_layout_id].currentNode.parentNode
 		}
 	}
 	return trigger;

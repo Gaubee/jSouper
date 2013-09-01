@@ -13,9 +13,16 @@
 	<script type="text/template" name="layout">
 		<h2>Hello,{(fullName)},I am {(age)} years old.</h2>
 		<hr />
-		{>({('detail')}{($THIS)})}
+			{>({('detail')}{($THIS)})}
+		{#if({(age)})}
+			{>({('detail')}{($THIS)})}
+			<b>heheh</b>
+		{/if()}
 	</script>
 	<script type="text/template" name="detail">
+		{#if({(age)})}
+			{(age)}
+		{/if()}
 		<input value="{(firstName)}">
 		<input value="{(lastName)}">
 		<hr />
@@ -35,5 +42,8 @@
 			age:20
 		});
 	ViewParser.modules["layout"](model).append(document.body);
-	model.set("firstName","???")
+	// model.set("firstName","???")
+	setTimeout(function(){
+		model.set("age",0)
+	},1000)
 </script>

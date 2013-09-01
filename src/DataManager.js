@@ -215,7 +215,7 @@ DataManager.prototype = {
 				i += 1;
 			}
 		}
-		console.log(updataKey)
+		// console.log(updataKey)
 		updataKey = $.unique(updataKey)
 		$.fastEach(updataKey,function(key){
 			dm._touchOffSubset(key);
