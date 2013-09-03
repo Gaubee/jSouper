@@ -22,3 +22,4 @@ V.registerTrigger("and", function(handle, index, parentHandle) {
 	}
 	return trigger;
 });
+V.registerTrigger("&&",V.triggers["and"]);

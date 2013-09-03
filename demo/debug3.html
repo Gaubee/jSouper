@@ -51,7 +51,11 @@
 	ViewParser.scans();
 
 	var n = ViewParser.modules["people"];
-	var b = n();
+	var b = n({
+		people:[{
+			name:"Gaubee"
+		}]
+	});
 	b.append(document.body);
 
 	b.set("showPeople",true);

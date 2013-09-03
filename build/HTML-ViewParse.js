@@ -207,6 +207,7 @@ function DataManager(baseData, viewInstance) {
 	self._subsetDataManagers = []; //to touch off
 	(self._arrayDateManagers = [])._ = {}; //Chain
 	self._unknownKey = [];
+	self._needKey = [];
 	// baseData&&self.set(baseData);
 	$.unique(self._database);
 };
@@ -253,7 +254,21 @@ DataManager.touchOffQueue = function(key) {
 	})
 	return result;
 };
-// DataManager.fold = function(key, obj) {@@ // 	var arrKey = key.split("."),@@ // 		result = [];@@ // 	result._data = {};@@ @@// 	for (var i = arrKey.length, newkey, lastKey, cacheObj = {}; i > 0; i -= 1, cacheObj = {}) {@@ // 		lastKey = arrKey.pop();@@ // 		newkey = arrKey.join(".")@@ // 		$.push(result, newkey);@@ // 		cacheObj[lastKey] = obj;@@ // 		result._data[newkey] = cacheObj;@@ // 		obj = cacheObj;@@ // 	}@@ // 	return result@@ // };@@ 
+DataManager.fold = function(key, obj) {
+	var arrKey = key.split("."),
+		result = [];
+	result._data = {};
+
+	for (var i = arrKey.length, newkey, lastKey, cacheObj = {}; i > 0; i -= 1, cacheObj = {}) {
+		lastKey = arrKey.pop();
+		newkey = arrKey.join(".")
+		$.push(result, newkey);
+		cacheObj[lastKey] = obj;
+		result._data[newkey] = cacheObj;
+		obj = cacheObj;
+	}
+	return result
+};
 DataManager.foldObj = function(key, obj) {
 	var arrKey = key.split(".");
 	for (var i = arrKey.length, newkey, lastKey, cacheObj = {}; i > 0; i -= 1, cacheObj = {}) {
@@ -263,18 +278,53 @@ DataManager.foldObj = function(key, obj) {
 	}
 	return obj
 };
+DataManager.mix = function(sobj, nobj, coverArry) {
+	if (nobj instanceof Object) {
+		if (sobj instanceof Array) {
+			if (coverArry && nobj instanceof Array) {
+				sobj = nobj;
+			} else {
+				$.forIn(nobj, function(val, key) {
+					// if (key !== "length") {
+					sobj[key] = val;
+					// }
+				})
+			}
+		} else if (sobj instanceof Object) {
+			$.forIn(nobj, function(val, key) {
+				sobj[key] = val;
+			})
+		} else {
+			sobj = nobj;
+		}
+	} else {
+		sobj = nobj;
+	}
+	return sobj;
+};
 var _arrIndexReg = /(\.([0-9]+))\./;
 DataManager.prototype = {
 	get: function(key) {
 		var dm = this,
 			dmBak = dm,
+			needKey = dm._needKey,
 			parentDM_mark = "$PARENT.",
 			key = key || "";
 		// key = key === "$THIS" ? "" : key;
 		// if (!key) {
 		// 	return dm._database._data;
 		// }
-		if (key.indexOf("$PARENT.")) {
+		var lenKey = key.length - 7 //".length".length;
+		if (key.substring(lenKey) === ".length") {
+			result = dmBak.get(key.substring(0, lenKey));
+			// console.log(key, result)
+			if (result) {
+				result = result.length;
+			}
+			if ($.indexOf(needKey, key) === -1) {
+				$.push(needKey, key)
+			}
+		} else if (key.indexOf("$PARENT.")) {
 			do {
 				if (_hasOwn.call(dm._database._data, key)) {
 					return dm._database._data[key];
@@ -307,6 +357,7 @@ DataManager.prototype = {
 		}
 		if (result === undefined) { //Unknown key to manually trigger, whether it is unable to update the data.
 			// console.log(dm)
+
 			if ($.indexOf(dmBak._unknownKey, key) === -1) {
 				$.push(dmBak._unknownKey, key)
 			}
@@ -315,21 +366,24 @@ DataManager.prototype = {
 	},
 	set: function(key, obj) {
 		var dm = this,
+			prefixKeyLen = 0,
 			viewInstances,
 			argsLen = arguments.length,
 			hashTable = [],
 			updataKey = ["$THIS"],
 			database = dm._database,
 			arrayDateManagers = dm._arrayDateManagers;
+		// console.log(key, obj)
 
 		switch (argsLen) {
 			case 0:
 				return;
 			case 2:
-				// dm.set();
+				prefixKey = key.length;
 				key = DataManager.foldObj(key, obj);
 			default:
 				obj = key;
+				// console.log("obj", obj)
 				if (obj instanceof Object) {
 					hashTable = DataManager.flat(obj);
 				} else {
@@ -348,7 +402,10 @@ DataManager.prototype = {
 			}
 
 			if (database._data[key] !== val || (val instanceof Object)) {
-				database._data[key] = val;
+				// database._data[key] = val;
+				// console.log(key, "|", database._data, "|", database._data[key], "|", val)
+				// console.log(key.length, prefixKeyLen)
+				database._data[key] = DataManager.mix(database._data[key], val, key.length > prefixKeyLen);
 				if (dm._prefix) {
 					if (key) {
 						key = dm._prefix + "." + key
@@ -386,6 +443,8 @@ DataManager.prototype = {
 				i += 1;
 			}
 		}
+		updataKey.push.apply(updataKey, dm._needKey);
+		// console.log(dm._needKey)
 		// console.log(updataKey)
 		updataKey = $.unique(updataKey)
 		$.fastEach(updataKey, function(key) {
@@ -1400,6 +1459,7 @@ V.registerTrigger("and", function(handle, index, parentHandle) {
 	}
 	return trigger;
 });
+V.registerTrigger("&&",V.triggers["and"]);
 V.registerTrigger("#each", function(handle, index, parentHandle) {
 	// console.log(handle)
 	var id = handle.id,
@@ -1417,6 +1477,7 @@ V.registerTrigger("#each", function(handle, index, parentHandle) {
 			// console.log(viewInstance_ID,id)
 			allArrViewInstances = V._instances[viewInstance_ID]._AVI;
 			arrViewInstances = allArrViewInstances[id] = allArrViewInstances[id]||[];
+			// console.log(arrDataHandleKey,data)
 			$.forEach(data, function(eachItemData, index) {
 				// console.log(arrViewInstances[index])
 				var viewInstance = arrViewInstances[index];
@@ -1449,10 +1510,11 @@ V.registerTrigger("#each", function(handle, index, parentHandle) {
 			}, divideIndex);
 			var lengthKey = arrDataHandleKey + ".length";
 			// console.log(lengthKey);
-			if (dataManager.get(lengthKey) !== divideIndex) {
-				dataManager.set(lengthKey, divideIndex)
-				handle.len = divideIndex
-			}
+			// divideIndex +=1;
+			// if (dataManager.get(lengthKey) !== divideIndex) {
+			// 	dataManager.set(lengthKey, divideIndex)
+			// 	handle.len = divideIndex
+			// }
 		}
 	}
 	return trigger
@@ -1517,6 +1579,7 @@ V.registerTrigger("", function(handle, index, parentHandle) {
 					} else {
 						data = dataManager.get(key)
 					};
+					// console.log(key,data)
 					NodeList_of_ViewInstance[textHandleId].currentNode.data = data;
 				}
 			}
@@ -1707,6 +1770,8 @@ V.registerTrigger("or", function(handle, index, parentHandle) {
 	}
 	return trigger;
 });
+V.registerTrigger("||",V.triggers["or"]);
+
 var withTrigger = function(handle, index, parentHandle) {
 	// console.log(handle)
 	var id = handle.id,
