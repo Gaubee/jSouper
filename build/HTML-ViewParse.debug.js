@@ -426,7 +426,7 @@ DataManager.prototype = {
 			if (database._data[key] !== val || (val instanceof Object)) {
 				// database._data[key] = val;
 				// console.log(key, "|", database._data, "|", database._data[key], "|", val)
-				// console.log(key.length, prefixKeyLen)
+				console.log(key.length > prefixKeyLen,"key:",key,"prefixKeyLen:",prefixKeyLen);
 				database._data[key] = DataManager.mix(database._data[key], val, key.length > prefixKeyLen);
 				if (dm._prefix) {
 					if (key) {

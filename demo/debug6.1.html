@@ -9,6 +9,7 @@
 </head>
 <body>
 <script type="text/template" name="sim">
+	<h2>{($THIS.length)}</h2>
 	<ol>
 	{#each( {($THIS)} )}
 		<li>{($THIS)}</li>
@@ -26,7 +27,8 @@
 	ViewParser.scans();
 	var b = document.body,
 		Sim = V.modules["sim"],
-		sim = Sim(['1', '2', '3', '4', '5', '6']).append(b);//
+		sim = Sim().append(b);//['1', '2', '3', '4', '5', '6']
+		sim.set(['1', '2', '3', '4', '5', '6'])
 		// setTimeout(function(){
 		// 	sim.set("123456")
 		// },100)
