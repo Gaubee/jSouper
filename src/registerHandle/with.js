@@ -28,7 +28,6 @@ V.registerHandle("#with", function(handle, index, parentHandle) {
 		endIndex = 0;
 
 	// handle.arrViewInstances = [];//Should be at the same level with currentNode
-	handle.len = 0;
 	var layer = 1;
 	$.forEach(parentHandle.childNodes, function(childHandle, index) {
 		endIndex = index;

@@ -10,11 +10,11 @@ V.registerTrigger("#each", function(handle, index, parentHandle) {
 			var data = dataManager.get(arrDataHandleKey),
 				allArrViewInstances,
 				arrViewInstances,// = NodeList_of_ViewInstance[id].arrViewInstances= NodeList_of_ViewInstance[id].arrViewInstances||[],
-				divideIndex = -1,
+				divideIndex = data?data.length:0,
 				inserNew;
 			// console.log(viewInstance_ID,id)
 			allArrViewInstances = V._instances[viewInstance_ID]._AVI;
-			arrViewInstances = allArrViewInstances[id] = allArrViewInstances[id]||[];
+			(arrViewInstances = allArrViewInstances[id]||(allArrViewInstances[id] = [])).len = divideIndex;
 			// console.log(arrDataHandleKey,data)
 			$.forEach(data, function(eachItemData, index) {
 				// console.log(arrViewInstances[index])
@@ -31,15 +31,13 @@ V.registerTrigger("#each", function(handle, index, parentHandle) {
 				// console.log(eachItemData)
 				viewInstance.set(eachItemData);
 
-				if (inserNew) {
+				if (inserNew&&!arrViewInstances.hidden) {
 					viewInstance.insert(NodeList_of_ViewInstance[comment_endeach_id].currentNode)
 					// console.log(NodeList_of_ViewInstance[id]._controllers)
 				}
-				divideIndex = index;
+				// divideIndex = index;
 			});
-			// console.log(divideIndex)
-			divideIndex += 1;
-			// console.log(arrViewInstances)
+
 			$.forEach(arrViewInstances, function(eachItemHandle) {
 				// calibrate the top of handle's currentNode
 				// console.log(eachItemHandle.NodeList[eachItemHandle.handleNodeTree.id].currentNode,NodeList_of_ViewInstance[parentHandle.id].currentNode )

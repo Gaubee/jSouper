@@ -10,20 +10,21 @@ var _each_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManag
 			return false;
 		}
 	});
+	// console.log(comment_endeach_id,viewInstance_ID)
+	arrViewInstances&&(arrViewInstances.hidden = !show_or_hidden);
 	if (show_or_hidden) {
 		$.forEach(arrViewInstances, function(viewInstance, index) {
 			// console.log(comment_endeach_id,NodeList_of_ViewInstance[comment_endeach_id],handle,parentHandle)
 			viewInstance.insert(NodeList_of_ViewInstance[comment_endeach_id].currentNode)
 			// console.log(handle.len)
-			if (handle.len === index + 1) {
+			if (arrViewInstances.len === index + 1) {
 				return false;
 			}
-		})
+		});
 	} else {
 		$.forEach(arrViewInstances, function(viewInstance) {
 			// console.log(viewInstance)
-			// viewInstance.remove();
-			viewInstance.append(allArrViewInstances.space)
+			viewInstance.remove();
 		})
 	}
 };
@@ -35,7 +36,7 @@ V.registerHandle("#each", function(handle, index, parentHandle) {
 		endIndex = 0;
 
 	// handle.arrViewInstances = [];//Should be at the same level with currentNode
-	handle.len = 0;
+	// handle.len = 0;
 	var layer = 1;
 	$.forEach(parentHandle.childNodes, function(childHandle, index) {
 		endIndex = index;

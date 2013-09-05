@@ -660,7 +660,7 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	self._open = $.DOM.Comment(self._id + " _open");
 	self._close = $.DOM.Comment(self._id + " _close");
 	self._canRemoveAble = false;
-	(self._AVI = {}).space = $.DOM.clone(shadowBody);
+	self._AVI = {};
 	self._ALVI = {};
 	self._WVI = {};
 	$.DOM.insertBefore(el, self._open, el.childNodes[0]);
@@ -1094,20 +1094,21 @@ var _each_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManag
 			return false;
 		}
 	});
+	// console.log(comment_endeach_id,viewInstance_ID)
+	arrViewInstances&&(arrViewInstances.hidden = !show_or_hidden);
 	if (show_or_hidden) {
 		$.forEach(arrViewInstances, function(viewInstance, index) {
 			// console.log(comment_endeach_id,NodeList_of_ViewInstance[comment_endeach_id],handle,parentHandle)
 			viewInstance.insert(NodeList_of_ViewInstance[comment_endeach_id].currentNode)
 			// console.log(handle.len)
-			if (handle.len === index + 1) {
+			if (arrViewInstances.len === index + 1) {
 				return false;
 			}
-		})
+		});
 	} else {
 		$.forEach(arrViewInstances, function(viewInstance) {
 			// console.log(viewInstance)
-			// viewInstance.remove();
-			viewInstance.append(allArrViewInstances.space)
+			viewInstance.remove();
 		})
 	}
 };
@@ -1119,7 +1120,7 @@ V.registerHandle("#each", function(handle, index, parentHandle) {
 		endIndex = 0;
 
 	// handle.arrViewInstances = [];//Should be at the same level with currentNode
-	handle.len = 0;
+	// handle.len = 0;
 	var layer = 1;
 	$.forEach(parentHandle.childNodes, function(childHandle, index) {
 		endIndex = index;
@@ -1252,7 +1253,6 @@ V.registerHandle("#with", function(handle, index, parentHandle) {
 		endIndex = 0;
 
 	// handle.arrViewInstances = [];//Should be at the same level with currentNode
-	handle.len = 0;
 	var layer = 1;
 	$.forEach(parentHandle.childNodes, function(childHandle, index) {
 		endIndex = index;
@@ -1354,11 +1354,11 @@ V.registerTrigger("#each", function(handle, index, parentHandle) {
 			var data = dataManager.get(arrDataHandleKey),
 				allArrViewInstances,
 				arrViewInstances,// = NodeList_of_ViewInstance[id].arrViewInstances= NodeList_of_ViewInstance[id].arrViewInstances||[],
-				divideIndex = -1,
+				divideIndex = data?data.length:0,
 				inserNew;
 			// console.log(viewInstance_ID,id)
 			allArrViewInstances = V._instances[viewInstance_ID]._AVI;
-			arrViewInstances = allArrViewInstances[id] = allArrViewInstances[id]||[];
+			(arrViewInstances = allArrViewInstances[id]||(allArrViewInstances[id] = [])).len = divideIndex;
 			// console.log(arrDataHandleKey,data)
 			$.forEach(data, function(eachItemData, index) {
 				// console.log(arrViewInstances[index])
@@ -1375,15 +1375,13 @@ V.registerTrigger("#each", function(handle, index, parentHandle) {
 				// console.log(eachItemData)
 				viewInstance.set(eachItemData);
 
-				if (inserNew) {
+				if (inserNew&&!arrViewInstances.hidden) {
 					viewInstance.insert(NodeList_of_ViewInstance[comment_endeach_id].currentNode)
 					// console.log(NodeList_of_ViewInstance[id]._controllers)
 				}
-				divideIndex = index;
+				// divideIndex = index;
 			});
-			// console.log(divideIndex)
-			divideIndex += 1;
-			// console.log(arrViewInstances)
+
 			$.forEach(arrViewInstances, function(eachItemHandle) {
 				// calibrate the top of handle's currentNode
 				// console.log(eachItemHandle.NodeList[eachItemHandle.handleNodeTree.id].currentNode,NodeList_of_ViewInstance[parentHandle.id].currentNode )
