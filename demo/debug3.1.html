@@ -19,22 +19,13 @@
 </body>
 
 <script type="text/template" name="people">
-	<h1>Here Comes Some People{(people.length)}</h1>
+	<h1>Here Comes Some People{(list.length)}</h1>
 	<hr />
 	<ul>
-	{#if( {(showPeople)} )}
-		{#each( {(people)} )}
+	{#if( {(show)} )}
+		{#each( {(list)} )}
 		<li>
 			{(name)}
-			{#if( {equa({(name)}{("Gaubee")})} )}
-				 is author
-			{/if()}
-		</li>
-		{/each()}
-	{#else()}
-		{#each( {(age)} )}
-		<li>
-			{(name)} is {(age)} year old!
 		</li>
 		{/each()}
 	{/if()}
@@ -58,15 +49,16 @@
 	});
 	b.append(document.body);
 
-	b.set("showPeople",true);
-	b.set("people",[{
+	b.set("show",true);
+
+	b.set("list",[{
 		name:"Gaubee"
 	},{
 		name:"Linda"
 	}]);
 
 	setTimeout(function (argument) {
-		b.set("people",[{
+		b.set("list",[{
 			name:"Bageel"
 		},{
 			name:"Meaner"
@@ -75,40 +67,28 @@
 		},{
 			name:"MVVM??"
 		}]);
-	},1000);
+	},500);
 	
 	setTimeout(function (argument) {
-		b.set("people",[{
+		b.set("list",[{
 			name:"Gaubee"
 		},{
 			name:"MVVM"
 		},{
 			name:"MVW"
 		}]);
+	},1000);
+
+	setTimeout(function (argument) {
+		b.set("show",false);
 	},2000);
 
 	setTimeout(function (argument) {
-		b.set("showPeople",false);
-		b.set("age",[{
-			name:"Gaubee",
-			age:20
+		b.set("list",[{
+			name:"XXXGaubee"
 		},{
-			name:"My lover",
-			age:"NaN (T_T)!"
+			name:"zzzz"
 		}]);
 	},3000);
 
-	setTimeout(function (argument) {
-		b.set("showPeople",true);
-	},4000);
-
-	setTimeout(function (argument) {
-		b.set("people",[{
-			name:"Gaubee"
-		},{
-			name:"MVVM"
-		},{
-			name:"MVWz"
-		}]);
-	},2000);
 </script>

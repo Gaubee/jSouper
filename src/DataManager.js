@@ -29,7 +29,7 @@ DataManager.config = {
 }
 DataManager.prototype = {
 	getNC: function(key) {
-		var arrKey = key.split(".")
+		var arrKey = key.split("."),
 		result = this._database;
 		if (key !== "") {
 			do {

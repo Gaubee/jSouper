@@ -19,7 +19,7 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	self._open = $.DOM.Comment(self._id + " _open");
 	self._close = $.DOM.Comment(self._id + " _close");
 	self._canRemoveAble = false;
-	self._AVI = {};
+	(self._AVI = {}).space = $.DOM.clone(shadowBody);
 	self._ALVI = {};
 	self._WVI = {};
 	$.DOM.insertBefore(el, self._open, el.childNodes[0]);

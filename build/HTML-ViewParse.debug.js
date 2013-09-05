@@ -240,7 +240,7 @@ DataManager.config = {
 }
 DataManager.prototype = {
 	getNC: function(key) {
-		var arrKey = key.split(".")
+		var arrKey = key.split("."),
 		result = this._database;
 		if (key !== "") {
 			do {
@@ -660,7 +660,7 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	self._open = $.DOM.Comment(self._id + " _open");
 	self._close = $.DOM.Comment(self._id + " _close");
 	self._canRemoveAble = false;
-	self._AVI = {};
+	(self._AVI = {}).space = $.DOM.clone(shadowBody);
 	self._ALVI = {};
 	self._WVI = {};
 	$.DOM.insertBefore(el, self._open, el.childNodes[0]);
@@ -1106,7 +1106,8 @@ var _each_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManag
 	} else {
 		$.forEach(arrViewInstances, function(viewInstance) {
 			// console.log(viewInstance)
-			viewInstance.remove();
+			// viewInstance.remove();
+			viewInstance.append(allArrViewInstances.space)
 		})
 	}
 };

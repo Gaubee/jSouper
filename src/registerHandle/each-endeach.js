@@ -22,7 +22,8 @@ var _each_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManag
 	} else {
 		$.forEach(arrViewInstances, function(viewInstance) {
 			// console.log(viewInstance)
-			viewInstance.remove();
+			// viewInstance.remove();
+			viewInstance.append(allArrViewInstances.space)
 		})
 	}
 };
