@@ -41,16 +41,16 @@
 			age:20
 		}),
 		controller = Controller([model,model_bak],{
-			fullName:function(dm1,dm2){
+			fullName:Controller.Observer(function(dm1,dm2){
 				return this.get("firstName")+"  "+dm2.get("lastName");
-			}
+			})
 		}),
 		controller_bak = Controller({
 			firstName:"Gaubee",
 			lastName:"Bangeel",
-			fullName:function(){
+			fullName:Controller.Observer(function(){
 				return this.get("firstName")+"  "+this.get("lastName")+"("+model_bak.get("lastName")+")";
-			},
+			}),
 			age:20
 		}),
 		controller_3 = Controller({

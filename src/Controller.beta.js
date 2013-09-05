@@ -3,7 +3,7 @@ var Controller = function(dataManager, statementRelations) {
 	if (!(self instanceof Controller)) {
 		return new Controller(dataManager, statementRelations);
 	}
-	if (statementRelations===undefined) {
+	if (statementRelations === undefined) {
 		statementRelations = dataManager;
 		dataManager = [];
 	}
@@ -21,66 +21,109 @@ var Controller = function(dataManager, statementRelations) {
 	// });
 
 	var exportsDM = self.exports();
-	console.log(exportsDM.id)
-	$.fastEach(exportsDM._database,function(fnKey){
-		var fn = statementRelations[fnKey];
-		if (typeof fn ==="function") {
-			Controller.relyOn.upPack(fnKey,fn,exportsDM,dataManager)();
-		}
+	// console.log(exportsDM.id, exportsDM._triggerKeys)
+	var observerArr = Controller.flatFn(exportsDM._database);
+	$.fastEach(observerArr, function(fnKey) {
+		console.log("fnKey: ",fnKey)
+		Controller.relyOn.upPack(fnKey, observerArr._[fnKey].get, exportsDM, dataManager)();
 	});
 };
-(function Soap(){//速补——《云图Cloud Atlas》
+Controller.flatFn = function(obj, prefixKey) {
+	prefixKey = prefixKey || "";
+	var hashTable = [];
+	hashTable._ = {};
+	if (obj instanceof Object) {
+		if (obj instanceof Controller.Observer) {
+			$.push(hashTable, prefixKey);
+			hashTable._[prefixKey] = obj;
+		} else if (obj instanceof Array) {
+			$.fastEach(obj,function(item,index){
+				index = prefixKey ? prefixKey + "." + index : index;
+				var substrHashTable = Controller.flatFn(item,index);
+				$.fastEach(substrHashTable,function(substrKey){
+					$.push(hashTable,substrKey);
+					hashTable._[substrKey] = substrHashTable._[substrKey]
+				})
+			});
+		} else {
+			$.forIn(obj, function(val, key) {
+				key = prefixKey ? prefixKey + "." + key : key;
+				var substrHashTable = Controller.flatFn(val,key);
+				$.fastEach(substrHashTable,function(substrKey){
+					$.push(hashTable,substrKey);
+					hashTable._[substrKey] = substrHashTable._[substrKey]
+				})
+			});
+		}
+	}
+	return hashTable;
+};
+Controller.Observer = function(obs) {
+	var self = this;
+	if (!(this instanceof Controller.Observer)) {
+		return new Controller.Observer(obs);
+	}
+	if (obs instanceof Function) {
+		self.get = obs;
+		self.set = $.noop;
+	} else {
+		self.get = obs.get;
+		self.set = obs.set;
+	}
+};
+(function Soap() { //速补——《云图Cloud Atlas》
 	var proto = DataManager.prototype,
 		_set = proto.set,
 		_get = proto.get;
-	proto.set = function(){
+	proto.set = function() {
 		var relys = Controller.relyOn.container[this.id],
-			updataKey = _set.apply(this,$.slice(arguments))
-		relys&&$.fastEach(updataKey,function(key){
-			if (key = relys[key]) {
-				$.fastEach(key,function(fn){
-					fn();
-				})
-			}
-		});
+			updataKey = _set.apply(this, $.slice(arguments))
+			relys && $.fastEach(updataKey, function(key) {
+				if (key = relys[key]) {
+					$.fastEach(key, function(fn) {
+						fn();
+					})
+				}
+			});
 	};
-	proto.get = function(key){
-		key = key||"";
-		var relyOn =Controller.relyOn,
-			id = this.id ;
+	proto.get = function(key) {
+		var relyOn = Controller.relyOn,
+			id = this.id;
 		if (relyOn.status) {
-			$.push(relyOn.cache[id]||(relyOn.cache[id] = []),key);
+			$.push(relyOn.cache[id] || (relyOn.cache[id] = []), key);
 		}
-		return _get.call(this,key)
+		return _get.apply(this, $.slice(arguments))
 	};
 })();
 Controller.relyOn = {
-	status:false,
-	container:{},
-	cache:{},
-	pickUp:function(dm,fun){
+	status: false,
+	container: {},
+	cache: {},
+	pickUp: function(dm, fun) {
 		var self = this;
-		$.forIn(self.cache,function(keys,id){
-			var con = self.container[id]||(self.container[id]={});
-			$.fastEach(keys,function(key){
+		$.forIn(self.cache, function(keys, id) {
+			var con = self.container[id] || (self.container[id] = {});
+			$.fastEach(keys, function(key) {
 				var fns = con[key]
-				if (fns&&$.indexOf(fns,fun)===-1) {
-					$.push(fns,fun)
-				}else{
-					$.push((con[key]=[]),fun)
+				if (fns && $.indexOf(fns, fun) === -1) {
+					$.push(fns, fun)
+				} else {
+					$.push((con[key] = []), fun)
 				}
 			});
 		});
 		self.cache = {};
 	},
-	upPack:function(fnKey,fn,sdm,dms){
+	upPack: function(fnKey, fn, sdm, dms) {
 		var relyOn = this;
-		function upPackFn(){
+
+		function upPackFn() {
 			relyOn.status = true;
-			var result = fn.apply(sdm,dms);
+			var result = fn.apply(sdm, dms);
 			relyOn.status = false;
-			relyOn.pickUp(sdm,upPackFn);
-			sdm.set(fnKey,result);
+			console.log(sdm.id, relyOn.cache)
+			relyOn.pickUp(sdm, upPackFn);
+			sdm.set(fnKey, result);
 			// return result;
 		}
 		return upPackFn;
@@ -116,26 +159,26 @@ Controller.prototype.findOne = function(prefix) {
 Controller.prototype.exports = function() {
 	var self = this,
 		dataManager = self.dataManager,
-		i=dataManager.length-1,
+		i = dataManager.length - 1,
 		result = dataManager[i];
 
-	for(;i>0;i-=1){
-		var cache = $.create(dataManager[i-1])
+	for (; i > 0; i -= 1) {
+		var cache = $.create(dataManager[i - 1])
 		cache._parentDataManager = result;
 		result = cache;
 	}
-	self.exports = function(){
+	self.exports = function() {
 		return result;
 	}
 	return result;
 };
-Controller.prototype.set = function(){
+Controller.prototype.set = function() {
 	var self = this,
 		dm = this.exports();
-	return dm.set.apply(dm,$.slice(arguments));
+	return dm.set.apply(dm, $.slice(arguments));
 }
-Controller.prototype.get = function(){
+Controller.prototype.get = function() {
 	var self = this,
 		dm = this.exports();
-	return dm.get.apply(dm,$.slice(arguments));
+	return dm.get.apply(dm, $.slice(arguments));
 }

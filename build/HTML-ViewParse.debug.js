@@ -222,278 +222,127 @@ function DataManager(baseData, viewInstance) {
 	baseData = baseData || {};
 	// (self._database = [])._data = {};
 	self.id = $.uid();
-	self._database = DataManager.flat(baseData);
-	// console.log(viewInstance)
-	self._viewInstances = viewInstance ? [viewInstance] : []; //to touch off
+	self._database = baseData;
+	self._cacheData = {};
+	// //console.log(viewInstance)
+	self._viewInstances = []; //to touch off
 	self._parentDataManager = null; //to get data
 	self._subsetDataManagers = []; //to touch off
 	(self._arrayDateManagers = [])._ = {}; //Chain
-	self._unknownKey = [];
-	self._needKey = [];
-	// baseData&&self.set(baseData);
-	$.unique(self._database);
+	self._triggerKeys = [];
+	viewInstance && self.collect(viewInstance);
 };
 
 global.DataManager = DataManager;
-DataManager.flat = function(obj, prefixKey) {
-	prefixKey = prefixKey || "";
-	var hashTable = [];
-	hashTable._data = {};
-	if (obj instanceof Object) {
-		if (obj instanceof Array) {
-			var lenKey = prefixKey + ".length"
-			$.push(hashTable, lenKey);
-			hashTable._data[lenKey] = obj.length;
-			// obj = $.create(obj);
-		} else {
-			$.forIn(obj, function(val, key) {
-				key = prefixKey ? prefixKey + "." + key : key;
-				hashTable._data[key] = val;
-				$.push(hashTable, key);
-				if (val instanceof Object) {
-					$.forEach(val = DataManager.flat(val, key), function(key) {
-						hashTable._data[key] = val._data[key];
-						$.push(hashTable, key);
-					})
-				}
-			});
-		}
-	}
-	if (!prefixKey) {
-		$.push(hashTable, "$THIS");
-		hashTable._data["$THIS"] = obj;
-	}
-	($.indexOf(hashTable, prefixKey) === -1) && $.push(hashTable, prefixKey);
-	hashTable._data[prefixKey] = obj;
-
-	return hashTable;
-};
-DataManager.touchOffQueue = function(key) {
-	var arrKey = key.split("."),
-		result = [key];
-	$.fastEach(arrKey, function(nodeKey, index) {
-		$.push(result, $.slice(arrKey).splice(0, index).join("."));
-	})
-	return result;
-};
-DataManager.fold = function(key, obj) {
-	var arrKey = key.split("."),
-		result = [];
-	result._data = {};
-
-	for (var i = arrKey.length, newkey, lastKey, cacheObj = {}; i > 0; i -= 1, cacheObj = {}) {
-		lastKey = arrKey.pop();
-		newkey = arrKey.join(".")
-		$.push(result, newkey);
-		cacheObj[lastKey] = obj;
-		result._data[newkey] = cacheObj;
-		obj = cacheObj;
-	}
-	return result
-};
-DataManager.foldObj = function(key, obj) {
-	var arrKey = key.split(".");
-	for (var i = arrKey.length, newkey, lastKey, cacheObj = {}; i > 0; i -= 1, cacheObj = {}) {
-		lastKey = arrKey.pop();
-		cacheObj[lastKey] = obj;
-		obj = cacheObj;
-	}
-	return obj
-};
-DataManager.mix = function(sobj, nobj, coverArry) {
-	if (nobj instanceof Object) {
-		if (sobj instanceof Array) {
-			if (coverArry && nobj instanceof Array) {
-				sobj = nobj;
-			} else {
-				$.forIn(nobj, function(val, key) {
-					// if (key !== "length") {
-					sobj[key] = val;
-					// }
-				})
-			}
-		} else if (sobj instanceof Object) {
-			$.forIn(nobj, function(val, key) {
-				sobj[key] = val;
-			})
-		} else {
-			sobj = nobj;
-		}
-	} else {
-		sobj = nobj;
-	}
-	return sobj;
-};
-var _arrIndexReg = /(\.([0-9]+))\./;
+DataManager.config = {
+	"$T": "$THIS",
+	"$P": "$PARENT"
+}
 DataManager.prototype = {
-	get: function(key) {
-		var dm = this,
-			dmBak = dm,
-			needKey = dm._needKey,
-			parentDM_mark = "$PARENT.",
-			key = key || "";
-		// key = key === "$THIS" ? "" : key;
-		// if (!key) {
-		// 	return dm._database._data;
-		// }
-		var lenKey = key.length - 7 //".length".length;
-		if (key.substring(lenKey) === ".length") {
-			result = dmBak.get(key.substring(0, lenKey));
-			// console.log(key, result)
-			if (result) {
-				result = result.length;
-			}
-			if ($.indexOf(needKey, key) === -1) {
-				$.push(needKey, key)
-			}
-		} else if (key.indexOf("$PARENT.")) {
+	getNC: function(key) {
+		var arrKey = key.split(".")
+		result = this._database;
+		if (key !== "") {
 			do {
-				if (_hasOwn.call(dm._database._data, key)) {
-					return dm._database._data[key];
-				}
-			} while (dm = dm._parentDataManager);
-			// var keyArr = key.split(_arrIndexReg),
-			var keyArr = key + ".",
-				result;
-			// if (keyArr.length > 1) {
-			keyArr.replace(_arrIndexReg, function(w, dotIndex, index, i) {
-				var preKey = keyArr.substring(0, i),
-					dotKey = preKey + dotIndex,
-					maybeArr = dmBak.get(preKey),
-					maybeDm;
-				if ((maybeArr instanceof Array)) { //Chain
-					// console.log(dotKey,key.substring(i))
-					if (!(dotKey in dmBak._arrayDateManagers._) && (index in maybeArr)) {
-						maybeDm = dmBak._arrayDateManagers._[dotKey] = DataManager(maybeArr[index]);
-						maybeDm._viewInstances = dmBak._viewInstances;
-						maybeDm._prefix = (dmBak._prefix ? dmBak._prefix + "." : "") + dotKey;
-						$.push(dmBak._arrayDateManagers, dotKey);
-					}
-					if (maybeDm = dmBak._arrayDateManagers._[dotKey]) {
-						result = maybeDm.get(key.substring(i + dotIndex.length + 1))
-					}
-				}
-			});
-		} else {
-			result = dm._parentDataManager.get(key.replace(parentDM_mark, ""));
+				result = result[arrKey.splice(0, 1)];
+			} while (result !== undefined && arrKey.length);
 		}
-		if (result === undefined) { //Unknown key to manually trigger, whether it is unable to update the data.
-			// console.log(dm)
-
-			if ($.indexOf(dmBak._unknownKey, key) === -1) {
-				$.push(dmBak._unknownKey, key)
+		return result;
+	},
+	get: function(key, refresh) {
+		var self = this,
+			$T = DataManager.config.$T,
+			$P = DataManager.config.$P,
+			baseData = self._database,
+			cacheData = self._cacheData,
+			result = baseData,
+			formateKey = (key || "");
+		if (!key.indexOf($T)) {
+			var $TLen = $T.length;
+			if (key.charAt($TLen) === ".") {
+				formateKey = key.substring($TLen + 1);
+			} else {
+				formateKey = key.substring($TLen);
 			}
+		} else if (!key.indexOf($P)) {
+			var $PLen = $P.length;
+			if (key.charAt($PLen) === ".") {
+				formateKey = key.substring($PLen + 1);
+			} else {
+				formateKey = key.substring($PLen);
+			}
+			return self._parentDataManager && self._parentDataManager.get(formateKey);
+		}
+		//console.log("get:", formateKey);
+		if (refresh === false) {
+			result = cacheData[formateKey];
+		} else if (refresh === true || (result = cacheData[formateKey]) === undefined) {
+			//console.log("refresh:", formateKey);
+			if ((result = cacheData[formateKey] = self.getNC(formateKey)) === undefined && self._parentDataManager) {
+				return self._parentDataManager.get(formateKey);
+			};
 		}
 		return result;
 	},
 	set: function(key, obj) {
-		var dm = this,
-			prefixKeyLen = 0,
-			viewInstances,
-			argsLen = arguments.length,
-			hashTable = [],
-			updataKey = ["$THIS"],
-			database = dm._database,
-			arrayDateManagers = dm._arrayDateManagers;
-		// console.log(key, obj)
-
-		switch (argsLen) {
+		var self = this,
+			baseData = self._database || {},
+			result = baseData,
+			cacheObj = result,
+			arrKey,
+			itemKey,
+			lastItemKey,
+			cacheItemKey,
+			updateKeys = ["$THIS"];
+		switch (arguments.length) {
 			case 0:
 				return;
+			case 1:
+				self._database = key;
+				key = "";
+				break;
 			case 2:
-				prefixKey = key.length;
-				key = DataManager.foldObj(key, obj);
-			default:
-				obj = key;
-				// console.log("obj", obj)
-				if (obj instanceof Object) {
-					hashTable = DataManager.flat(obj);
-				} else {
-					hashTable._data = {};
-					$.push(hashTable, "");
-					$.push(hashTable, "$THIS");
-					hashTable._data[""] = obj;
-					hashTable._data["$THIS"] = obj;
-				}
+				arrKey = key.split(".");
+				lastItemKey = arrKey.splice(arrKey.length - 1, 1)[0];
+				while ((cacheItemKey = arrKey.splice(0, 1)).length) {
+					itemKey = cacheItemKey[0];
+					// //console.log("itemKey:", itemKey, ":", result[itemKey])
+					if (!((result = result[itemKey]) instanceof Object)) {
+						result = cacheObj[itemKey] = {};
+					};
+					cacheObj = result
+				};
+				// //console.log(cacheObj)
+				result = cacheObj[lastItemKey] = obj;
+				self._database = baseData;
+				break;
 		}
-
-		$.forEach(hashTable, function(key) {
-			var val = hashTable._data[key];
-			if ($.indexOf(database, key) === -1) {
-				$.push(database, key);
+		$.fastEach(self._triggerKeys, function(triggerKey) {
+				//console.warn("indexOf:",key.indexOf(triggerKey)===0||triggerKey.indexOf(key)===0)
+			if (key.indexOf(triggerKey)===0||triggerKey.indexOf(key)===0) {
+				var oldVal = self.get(triggerKey, false),
+					newVal = self.get(triggerKey, true);
+				//console.log("old triggerKey:", oldVal)
+				//console.log("new triggerKey:", newVal)
+				if (oldVal !== newVal || oldVal instanceof Object) {
+					$.push(updateKeys, triggerKey);
+				}
 			}
-
-			if (database._data[key] !== val || (val instanceof Object)) {
-				// database._data[key] = val;
-				// console.log(key, "|", database._data, "|", database._data[key], "|", val)
-				console.log(key.length > prefixKeyLen,"key:",key,"prefixKeyLen:",prefixKeyLen);
-				database._data[key] = DataManager.mix(database._data[key], val, key.length > prefixKeyLen);
-				if (dm._prefix) {
-					if (key) {
-						key = dm._prefix + "." + key
-					} else {
-						key = dm._prefix
-					}
-				}
-				// $.push(updataKey, key)
-				// dm._touchOffSubset(key);
-				updataKey.push.apply(updataKey, DataManager.touchOffQueue(key));
-			}
-			$.fastEach(arrayDateManagers, function(arrDM_key) {
-				if (dm._prefix) {
-					key = key.replace(dm._prefix + ".", "");
-				}
-				if (arrDM_key.indexOf(key) === 0) {
-					var arrDM = arrayDateManagers._[arrDM_key],
-						index = arrDM_key.substring(key.length + 1);
-					if (database._data[key]) { // The structure may be changed
-						arrDM.set(database._data[key][index]); //iteration trigger
-					}
-				}
-			});
 		});
-		var i, unKeys, unknownKey, len;
-		for (i = 0, unKeys = dm._unknownKey, unknownKey, len = unKeys.length; i < len;) {
-			unknownKey = unKeys[i];
-			if (dm.get(unknownKey) !== undefined) {
-				// $.push(updataKey, unknownKey)
-				// dm._touchOffSubset(unknownKey);
-				updataKey.push.apply(updataKey, DataManager.touchOffQueue(unknownKey));
-				unKeys.splice(i, 1);
-				len -= 1;
-			} else {
-				i += 1;
-			}
-		}
-		updataKey.push.apply(updataKey, dm._needKey);
-		// console.log(dm._needKey)
-		// console.log(updataKey)
-		updataKey = $.unique(updataKey)
-		$.fastEach(updataKey, function(key) {
-			dm._touchOffSubset(key);
+		$.fastEach(updateKeys, function(triggerKey) {
+			self._touchOffSubset(triggerKey)
 		});
-		return updataKey;;
+		// //console.log("updateKeys:",updateKeys)
+		return updateKeys;
 	},
 	_touchOffSubset: function(key) {
 		$.forEach(this._subsetDataManagers, function(dm) {
 			dm._touchOffSubset(key);
 		});
-		// $.forEachDyna(this._viewInstances, function(vi) { //use forEachDyna --> attr-vi will be pushin when vi._isAttr.bindHandle files
-		// 	if (vi._isAttr) {
-		// 		// console.log("building attribute value!")//DEBUG
-		// 		$.forEach(vi._triggers, function(key) {
-		// 			vi.touchOff(key);
-		// 		});
-		// 		vi._isAttr.bindHandle(vi, vi.dataManager);
-		// 		vi.dataManager.remove(vi);
-		// 	} else {
-		// 		vi.touchOff(key);
-		// 	}
-		// });
 		var i, vis, vi, len;
 		for (i = 0, vis = this._viewInstances, vi, len = vis.length; vi = vis[i];) {
 			if (vi._isAttr) {
-				// console.log("building attribute value!")//DEBUG
+				// //console.log("building attribute value!")//DEBUG
 				$.forEach(vi._triggers, function(key) {
 					vi.touchOff(key);
 				});
@@ -505,24 +354,33 @@ DataManager.prototype = {
 			}
 		}
 	},
+	_collectTriKey: function(vi) {
+		var dm = this,
+			triggerKeys = dm._triggerKeys;
+		triggerKeys.push.apply(triggerKeys, vi._triggers);
+		$.unique(triggerKeys);
+	},
 	collect: function(viewInstance) {
 		var dm = this;
 		if ($.indexOf(dm._viewInstances, viewInstance) === -1) {
 			viewInstance.dataManager && viewInstance.dataManager.remove(viewInstance);
 			$.push(dm._viewInstances, viewInstance);
 			viewInstance.dataManager = dm;
+			dm._collectTriKey(viewInstance);
 		}
 		return dm;
 	},
 	subset: function(baseData, viewInstance) {
-		var subsetDataManager = DataManager(baseData, viewInstance);
-		subsetDataManager._parentDataManager = this;
+		var dm = this,
+			subsetDataManager = DataManager(baseData, viewInstance);
+		subsetDataManager._parentDataManager = dm;
 		if (viewInstance instanceof ViewInstance) {
 			viewInstance.dataManager = subsetDataManager;
 			viewInstance.reDraw();
+			dm._collectTriKey(viewInstance);
 		}
 		$.push(this._subsetDataManagers, subsetDataManager);
-		return subsetDataManager; //subset(vi).set(basedata);
+		return subsetDataManager; //subset(vi).set(basedata);},
 	},
 	remove: function(viewInstance) {
 		var dm = this,
@@ -533,6 +391,7 @@ DataManager.prototype = {
 		}
 	}
 };
+
 var _isIE = !+"\v1";
 //by RubyLouvre(司徒正美)
 //setAttribute bug:http://www.iefans.net/ie-setattribute-bug/
@@ -790,13 +649,8 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	}
 	var self = this,
 		dataManager;
-	if (data instanceof DataManager) {
-		dataManager = data.collect(self);
-	} else {
-		dataManager = DataManager(data, self);
-	}
 	self._isAttr = false;//if no null --> Storage the attribute key and current.
-	self.dataManager = dataManager;
+	self.dataManager ;//= dataManager;
 	self.handleNodeTree = handleNodeTree;
 	self.DOMArr = $.slice(handleNodeTree.childNodes);
 	self.NodeList = NodeList;
@@ -823,6 +677,11 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	$.forEach(triggerTable["."], function(tiggerFun) { //const value
 		tiggerFun.event(NodeList, dataManager);
 	});
+	if (data instanceof DataManager) {
+		dataManager = data.collect(self);
+	} else {
+		dataManager = DataManager(data, self);
+	}
 	V._instances[self._id] = self;
 	self.reDraw();
 };
@@ -854,7 +713,7 @@ ViewInstance.prototype = {
 	reDraw: function() {
 		var self = this,
 			dataManager = self.dataManager;
-
+			
 		$.forEach(self._triggers, function(key) {
 			dataManager._touchOffSubset(key)
 		});
@@ -1814,6 +1673,7 @@ var withTrigger = function(handle, index, parentHandle) {
 				console.log(withViewInstance)
 				withViewInstance.insert(NodeList_of_ViewInstance[comment_with_id].currentNode)
 			}
+			console.log(data)
 			withViewInstance.set(data);
 		}
 	}

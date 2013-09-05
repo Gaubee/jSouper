@@ -8,13 +8,8 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	}
 	var self = this,
 		dataManager;
-	if (data instanceof DataManager) {
-		dataManager = data.collect(self);
-	} else {
-		dataManager = DataManager(data, self);
-	}
 	self._isAttr = false;//if no null --> Storage the attribute key and current.
-	self.dataManager = dataManager;
+	self.dataManager ;//= dataManager;
 	self.handleNodeTree = handleNodeTree;
 	self.DOMArr = $.slice(handleNodeTree.childNodes);
 	self.NodeList = NodeList;
@@ -41,6 +36,11 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	$.forEach(triggerTable["."], function(tiggerFun) { //const value
 		tiggerFun.event(NodeList, dataManager);
 	});
+	if (data instanceof DataManager) {
+		dataManager = data.collect(self);
+	} else {
+		dataManager = DataManager(data, self);
+	}
 	V._instances[self._id] = self;
 	self.reDraw();
 };
@@ -72,7 +72,7 @@ ViewInstance.prototype = {
 	reDraw: function() {
 		var self = this,
 			dataManager = self.dataManager;
-
+			
 		$.forEach(self._triggers, function(key) {
 			dataManager._touchOffSubset(key)
 		});

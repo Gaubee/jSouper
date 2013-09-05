@@ -1,6 +1,6 @@
 {
   "name": "HTML-ViewParse",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "description": "A separate ViewModel module",
   "dependencies": {
     "grunt": "~0.4.1",

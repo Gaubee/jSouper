@@ -18,6 +18,7 @@ var withTrigger = function(handle, index, parentHandle) {
 				console.log(withViewInstance)
 				withViewInstance.insert(NodeList_of_ViewInstance[comment_with_id].currentNode)
 			}
+			console.log(data)
 			withViewInstance.set(data);
 		}
 	}
