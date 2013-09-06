@@ -1,7 +1,7 @@
 /*
  * DataManager constructor
  */
-var _hasOwn = Object.prototype.hasOwnProperty;
+// var _hasOwn = Object.prototype.hasOwnProperty;
 
 function DataManager(baseData, viewInstance) {
 	var self = this;
@@ -9,15 +9,12 @@ function DataManager(baseData, viewInstance) {
 		return new DataManager(baseData, viewInstance);
 	}
 	baseData = baseData || {};
-	// (self._database = [])._data = {};
 	self.id = $.uid();
 	self._database = baseData;
 	self._cacheData = {};
-	// //console.log(viewInstance)
 	self._viewInstances = []; //to touch off
-	self._parentDataManager = null; //to get data
+	self._parentDataManager = $NULL; //to get data
 	self._subsetDataManagers = []; //to touch off
-	(self._arrayDateManagers = [])._ = {}; //Chain
 	self._triggerKeys = [];
 	viewInstance && self.collect(viewInstance);
 	DataManager._instances[self.id] = self;
@@ -36,11 +33,11 @@ DataManager.prototype = {
 		if (key !== "") { //"" return _database
 			// if (result instanceof Object) {=
 			// if (!(result == undefined || (isNaN(result) && (typeof result === "number")))) { //null|undefined|NaN
-			if (result != undefined) { //null|undefined
+			if (result != $UNDEFINED&&result!==$FALSE) { //null|undefined|false
 				do {
 					// console.log(arrKey[0])
 					result = result[arrKey.splice(0, 1)];
-				} while (result !== undefined && arrKey.length);
+				} while (result !== $UNDEFINED && arrKey.length);
 			}
 			// } else {
 			// 	result =
@@ -56,7 +53,7 @@ DataManager.prototype = {
 			cacheData = self._cacheData,
 			result = baseData,
 			formateKey = (key || "");
-		if (key !== undefined) {
+		if (key !== $UNDEFINED) {
 			if (!key.indexOf($T)) {
 				var $TLen = $T.length;
 				if (key.charAt($TLen) === ".") {
@@ -74,11 +71,11 @@ DataManager.prototype = {
 				return self._parentDataManager && self._parentDataManager.get(formateKey);
 			}
 			//console.log("get:", formateKey);
-			if (refresh === false) {
+			if (refresh === $FALSE) {
 				result = cacheData[formateKey];
-			} else if (refresh === true || (result = cacheData[formateKey]) === undefined) {
+			} else if (refresh === $TRUE || (result = cacheData[formateKey]) === $UNDEFINED) {
 				//console.log("refresh:", formateKey);
-				if ((result = cacheData[formateKey] = self.getNC(formateKey)) === undefined && self._parentDataManager) {
+				if ((result = cacheData[formateKey] = self.getNC(formateKey)) === $UNDEFINED && self._parentDataManager) {
 					return self._parentDataManager.get(formateKey);
 				};
 			}
@@ -118,34 +115,34 @@ DataManager.prototype = {
 				self._database = baseData;
 				break;
 		}
-		$.fastEach(self._triggerKeys, function(triggerKey) {
+		$.ftE(self._triggerKeys, function(triggerKey) {
 			//console.warn("indexOf:",key.indexOf(triggerKey)===0||triggerKey.indexOf(key)===0)
 			// console.log(triggerKey.indexOf(key) === 0)
 			if (key.indexOf(triggerKey) === 0 || triggerKey.indexOf(key) === 0) {
-				var oldVal = self.get(triggerKey, false),
-					newVal = self.get(triggerKey, true);
+				var oldVal = self.get(triggerKey, $FALSE),
+					newVal = self.get(triggerKey, $TRUE);
 				//console.log("old triggerKey:", oldVal)
 				//console.log("new triggerKey:", newVal)
 				if (oldVal !== newVal || oldVal instanceof Object) {
-					$.push(updateKeys, triggerKey);
+					$.p(updateKeys, triggerKey);
 				}
 			}
 		});
-		$.fastEach(updateKeys, function(triggerKey) {
+		$.ftE($.un(updateKeys), function(triggerKey) {
 			self._touchOffSubset(triggerKey)
 		});
 		// //console.log("updateKeys:",updateKeys)
 		return updateKeys;
 	},
 	_touchOffSubset: function(key) {
-		$.forEach(this._subsetDataManagers, function(dm) {
+		$.fE(this._subsetDataManagers, function(dm) {
 			dm._touchOffSubset(key);
 		});
 		var i, vis, vi, len;
 		for (i = 0, vis = this._viewInstances, vi, len = vis.length; vi = vis[i];) {
 			if (vi._isAttr) {
 				// //console.log("building attribute value!")//DEBUG
-				$.forEach(vi._triggers, function(key) {
+				$.fE(vi._triggers, function(key) {
 					vi.touchOff(key);
 				});
 				vi._isAttr.setAttribute(vi, vi.dataManager);
@@ -160,13 +157,13 @@ DataManager.prototype = {
 		var dm = this,
 			triggerKeys = dm._triggerKeys;
 		triggerKeys.push.apply(triggerKeys, vi._triggers);
-		$.unique(triggerKeys);
+		$.un(triggerKeys);
 	},
 	collect: function(viewInstance) {
 		var dm = this;
-		if ($.indexOf(dm._viewInstances, viewInstance) === -1) {
+		if ($.iO(dm._viewInstances, viewInstance) === -1) {
 			viewInstance.dataManager && viewInstance.dataManager.remove(viewInstance);
-			$.push(dm._viewInstances, viewInstance);
+			$.p(dm._viewInstances, viewInstance);
 			viewInstance.dataManager = dm;
 			dm._collectTriKey(viewInstance);
 		}
@@ -184,13 +181,13 @@ DataManager.prototype = {
 		if (arguments.length>1) {
 			subsetDataManager.set(baseData);
 		}
-		$.push(this._subsetDataManagers, subsetDataManager);
+		$.p(this._subsetDataManagers, subsetDataManager);
 		return subsetDataManager; //subset(vi).set(basedata);},
 	},
 	remove: function(viewInstance) {
 		var dm = this,
 			vis = dm._viewInstances,
-			index = $.indexOf(vis, viewInstance);
+			index = $.iO(vis, viewInstance);
 		if (index !== -1) {
 			vis.splice(index, 1);
 		}

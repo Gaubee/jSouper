@@ -6,7 +6,7 @@ V.rt("@", function(handle, index, parentHandle) {
 
 	trigger = { //const 
 		key: key, //const trigger
-		bubble: true,
+		bubble: $TRUE,
 		event: function(NodeList_of_ViewInstance, dataManager) {
 			//trigger but no bind data
 			NodeList_of_ViewInstance[textHandleId].currentNode.data = key;

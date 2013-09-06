@@ -5,10 +5,10 @@ var _layout_display = function(show_or_hidden, NodeList_of_ViewInstance, dataMan
 	if (!layoutViewInstance) {
 		return;
 	}
-	$.forEach(handle.parentNode.childNodes, function(child_handle, index, cs) { //get comment_endeach_id
+	$.fE(handle.parentNode.childNodes, function(child_handle, index, cs) { //get comment_endeach_id
 		if (child_handle.id === handle.id) {
 			commentPlaceholderElement = NodeList_of_ViewInstance[cs[index + 1].id].currentNode
-			return false;
+			return $FALSE;
 		}
 	});
 	console.log(show_or_hidden, viewInstance_ID, layoutViewInstance)

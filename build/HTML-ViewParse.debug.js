@@ -29,190 +29,143 @@ var shadowBody = document.createElement("body"),
 	$TRUE = true,
 	$FALSE = false,
 	$NULL = null,
-	$UNDEFINED = undefined;
-var $ = {
-	id: 100,
-	uidAvator: Math.random().toString(36).substring(2),
-	noop: function noop() {},
-	uid: function() {
-		return this.id = this.id + 1;
-	},
-	isString: function(str) {
-		var start = str.charAt(0);
-		return (start === str.charAt(str.length - 1)) && "\'\"".indexOf(start) !== -1;
-	},
-	trim: function(str) {
-		str = str.replace(/^\s\s*/, '')
-		var ws = /\s/,
-			i = str.length;
-		while (ws.test(str.charAt(--i)));
-		return str.slice(0, i + 1);
-	},
-	push: function(arr, item) {
-		var len = arr.length
-		arr[len] = item;
-		return len;
-	},
-	unshift: function(arr, item) {
-		arr.splice(0, 0, item);
-	},
-	unique: function(array) {
-		var a = array;
-		// var a = $.slice(array);
-		for (var i = 0; i < a.length; ++i) {
-			for (var j = i + 1; j < a.length; ++j) {
-				if (a[i] === a[j])
-					a.splice(j--, 1);
-			}
-		}
-		return a;
-	},
-	slice: function(likeArr) {
-		var array;
-		if (typeof likeArr === "string") {
-			return likeArr.split('');
-		}
-		try {
-			array = Array.prototype.slice.call(likeArr, 0); //non-IE and IE9+
-		} catch (ex) {
-			array = [];
-			for (var i = 0, len = likeArr.length; i < len; i++) {
-				array.push(likeArr[i]);
-			}
-		}
-		return array;
-	},
-	pushByID: function(arr, item) {
-		arr[item.id] = item;
-		return item;
-	},
-	lastItem: function(arr) {
-		return arr[arr.length - 1];
-	},
-	insert: function(arr, index, item) {
-		arr.splice(index, 0, item);
-	},
-	insertAfter: function(arr, afterItem, item) {
-		for (var i = 0; i < arr.length; i += 1) {
-			if (arr[i] === afterItem) {
-				arr.splice(i + 1, 0, item);
-				break;
-			}
-		}
-		return i;
-	},
-	indexOf: function(arr, item) {
-		for (var i = 0; i < arr.length; i += 1) {
-			if (arr[i] === item) {
-				return i;
-			}
-		}
-		return -1;
-	},
-	bind: function(fun, oThis) {
-		if (typeof fun !== "function") {
-			throw new TypeError("Function.prototype.bind - what is trying to be bound is not callable");
-		}
-
-		var aArgs = Array.prototype.slice.call(arguments, 2),
-			fToBind = fun,
-			fn = {},
-			fNOP = fun.constructor.name,
-			fBound = fun.name;
-		fn[fNOP] = function() {};
-		fn[fBound] = function() {
-			return fToBind.apply(this instanceof fn[fNOP] && oThis ? this : oThis,
-				aArgs.concat(Array.prototype.slice.call(arguments)));
-		};
-		fn[fBound].toString = function toString() {
-			return fun.toString()
-		};
-		fn[fNOP].prototype = fun.prototype;
-		fn[fBound].prototype = new fn[fNOP]();
-
-		return fn[fBound];
-	},
-	forIn: function(obj, callback) {
-		for (var i in obj) {
-			callback(obj[i], i, obj);
-		}
-	},
-	fastEach: function(arr, callback, scope) { //Array.prototype.forEach
-		for (var i = 0, len = arr.length; i < len; i += 1) {
-			callback(arr[i], i);
-		}
-	},
-	reverseEach: function(arr, callback, i) {
-		if (!arr) return;
-		return this._each($.slice(arr).reverse(), callback, arr.length - 1 - i)
-	},
-	forEach: function(arr, callback, i) {
-		if (!arr) return;
-		return this._each($.slice(arr), callback, i)
-	},
-	forEachDyna: function(arr, callback, i) {
-		if (!arr) return;
-		for (i = i || 0, len = arr.length; i < arr.length; i += 1) {
-			if (callback(arr[i], i, arr) === false) break;
-			if (len > arr.length) { //arr had been cut
-				i -= len - arr.length;
-			}
-			len = arr.length;
-		}
-	},
-	_each: function(arr, callback, i) {
-		'use strict';
-		for (i = i || 0; i < arr.length; i += 1) {
-			if (callback(arr[i], i, arr) === false) break;
-		}
-	},
-	create: function(proto) {
-		_Object_create_noop.prototype = proto;
-		return new _Object_create_noop;
-	},
-	DOM: {
-		Comment: function(info) {
-			return document.createComment(info)
+	$UNDEFINED = undefined,
+	$ = {
+		id: 9,
+		uidAvator: Math.random().toString(36).substring(2),
+		noop: function noop() {},
+		uid: function() {
+			return this.id = this.id + 1;
 		},
-		insertBefore: function(parentNode, insertNode, beforNode) {
-			// try{
-			parentNode.insertBefore(insertNode, beforNode || null);
-			// }catch(e){}
+		isString: function(str) {
+			var start = str.charAt(0);
+			return (start === str.charAt(str.length - 1)) && "\'\"".indexOf(start) !== -1;
 		},
-		append: function(parentNode, node) {
-			parentNode.appendChild(node);
+		trim: function(str) {
+			str = str.replace(/^\s\s*/, '')
+			var ws = /\s/,
+				i = str.length;
+			while (ws.test(str.charAt(--i)));
+			return str.slice(0, i + 1);
 		},
-		clone: function(node, deep) {
-			return node.cloneNode(deep);
+		p: function(arr, item) {//push
+			var len = arr.length
+			arr[len] = item;
+			return len;
 		},
-		removeChild: function(node, parentNode) {
-			parentNode = parentNode || node.parentNode;
-			if (parentNode) {
-				parentNode.removeChild(node)
+		us: function(arr, item) {//unshift
+			arr.splice(0, 0, item);
+		},
+		un: function(array) {//unique
+			var a = array;
+			for (var i = 0; i < a.length; ++i) {
+				for (var j = i + 1; j < a.length; ++j) {
+					if (a[i] === a[j])
+						a.splice(j--, 1);
+				}
 			}
+			return a;
 		},
-		replace: function(parentNode, new_node, old_node) {
+		s: function(likeArr) {//slice
+			var array;
+			if (typeof likeArr === "string") {
+				return likeArr.split('');
+			}
 			try {
-				parentNode.replaceChild(new_node, old_node);
-			} catch (e) {}
+				array = Array.prototype.slice.call(likeArr, 0); //non-IE and IE9+
+			} catch (ex) {
+				array = [];
+				for (var i = 0, len = likeArr.length; i < len; i++) {
+					array.push(likeArr[i]);
+				}
+			}
+			return array;
 		},
-		traversal: _traversal
-	}
-};
-var _Object_create_noop = function proto() {};
-
-var _traversal = function(node, callback) {
-	for (var i = 0, child_node, childNodes = node.childNodes; child_node = childNodes[i]; i += 1) {
-		var result = callback(child_node, i, node);
-		if (child_node.nodeType === 1 && result !== false) {
-			_traversal(child_node, callback);
+		pI: function(arr, item) { //pushByID
+			arr[item.id] = item;
+			return item;
+		},
+		lI: function(arr) { //lastItem
+			return arr[arr.length - 1];
+		},
+		iA: function(arr, afterItem, item) { //insertAfter
+			for (var i = 0; i < arr.length; i += 1) {
+				if (arr[i] === afterItem) {
+					arr.splice(i + 1, 0, item);
+					break;
+				}
+			}
+			return i;
+		},
+		iO: function(arr, item) { //indexOf
+			for (var i = 0; i < arr.length; i += 1) {
+				if (arr[i] === item) {
+					return i;
+				}
+			}
+			return -1;
+		},
+		fI: function(obj, callback) { //forIn
+			for (var i in obj) {
+				callback(obj[i], i, obj);
+			}
+		},
+		ftE: function(arr, callback, scope) { //fastEach
+			for (var i = 0, len = arr.length; i < len; i += 1) {
+				callback(arr[i], i);
+			}
+		},
+		fE: function(arr, callback, i) { //forEach
+			if (arr) {
+				arr = $.s(arr);
+				// return this._each($.s(arr), callback, i)
+				for (i = i || 0; i < arr.length; i += 1) {
+					if (callback(arr[i], i, arr) === $FALSE) break;
+				}
+			}
+		},
+		c: function(proto) { //create
+			_Object_create_noop.prototype = proto;
+			return new _Object_create_noop;
+		},
+		D: {//DOM
+			C: function(info) { //Comment
+				return document.createComment(info)
+			},
+			iB: function(parentNode, insertNode, beforNode) { //insertBefore
+				// try{
+				parentNode.insertBefore(insertNode, beforNode || $NULL);
+				// }catch(e){}
+			},
+			ap: function(parentNode, node) { //append
+				parentNode.appendChild(node);
+			},
+			cl: function(node, deep) { //clone
+				return node.cloneNode(deep);
+			},
+			rC: function(parentNode, node) { //removeChild
+				parentNode.removeChild(node)
+			},
+			re: function(parentNode, new_node, old_node) { //replace
+				try {
+					parentNode.replaceChild(new_node, old_node);
+				} catch (e) {}
+			}
 		}
-	}
-};
+	},
+	_Object_create_noop = function proto() {},
+	_traversal = function(node, callback) {
+		for (var i = 0, child_node, childNodes = node.childNodes; child_node = childNodes[i]; i += 1) {
+			var result = callback(child_node, i, node);
+			if (child_node.nodeType === 1 && result !== $FALSE) {
+				_traversal(child_node, callback);
+			}
+		}
+	};
 /*
  * DataManager constructor
  */
-var _hasOwn = Object.prototype.hasOwnProperty;
+// var _hasOwn = Object.prototype.hasOwnProperty;
 
 function DataManager(baseData, viewInstance) {
 	var self = this;
@@ -220,15 +173,12 @@ function DataManager(baseData, viewInstance) {
 		return new DataManager(baseData, viewInstance);
 	}
 	baseData = baseData || {};
-	// (self._database = [])._data = {};
 	self.id = $.uid();
 	self._database = baseData;
 	self._cacheData = {};
-	// //console.log(viewInstance)
 	self._viewInstances = []; //to touch off
-	self._parentDataManager = null; //to get data
+	self._parentDataManager = $NULL; //to get data
 	self._subsetDataManagers = []; //to touch off
-	(self._arrayDateManagers = [])._ = {}; //Chain
 	self._triggerKeys = [];
 	viewInstance && self.collect(viewInstance);
 	DataManager._instances[self.id] = self;
@@ -247,11 +197,11 @@ DataManager.prototype = {
 		if (key !== "") { //"" return _database
 			// if (result instanceof Object) {=
 			// if (!(result == undefined || (isNaN(result) && (typeof result === "number")))) { //null|undefined|NaN
-			if (result != undefined) { //null|undefined
+			if (result != $UNDEFINED&&result!==$FALSE) { //null|undefined|false
 				do {
 					// console.log(arrKey[0])
 					result = result[arrKey.splice(0, 1)];
-				} while (result !== undefined && arrKey.length);
+				} while (result !== $UNDEFINED && arrKey.length);
 			}
 			// } else {
 			// 	result =
@@ -267,7 +217,7 @@ DataManager.prototype = {
 			cacheData = self._cacheData,
 			result = baseData,
 			formateKey = (key || "");
-		if (key !== undefined) {
+		if (key !== $UNDEFINED) {
 			if (!key.indexOf($T)) {
 				var $TLen = $T.length;
 				if (key.charAt($TLen) === ".") {
@@ -285,11 +235,11 @@ DataManager.prototype = {
 				return self._parentDataManager && self._parentDataManager.get(formateKey);
 			}
 			//console.log("get:", formateKey);
-			if (refresh === false) {
+			if (refresh === $FALSE) {
 				result = cacheData[formateKey];
-			} else if (refresh === true || (result = cacheData[formateKey]) === undefined) {
+			} else if (refresh === $TRUE || (result = cacheData[formateKey]) === $UNDEFINED) {
 				//console.log("refresh:", formateKey);
-				if ((result = cacheData[formateKey] = self.getNC(formateKey)) === undefined && self._parentDataManager) {
+				if ((result = cacheData[formateKey] = self.getNC(formateKey)) === $UNDEFINED && self._parentDataManager) {
 					return self._parentDataManager.get(formateKey);
 				};
 			}
@@ -329,34 +279,34 @@ DataManager.prototype = {
 				self._database = baseData;
 				break;
 		}
-		$.fastEach(self._triggerKeys, function(triggerKey) {
+		$.ftE(self._triggerKeys, function(triggerKey) {
 			//console.warn("indexOf:",key.indexOf(triggerKey)===0||triggerKey.indexOf(key)===0)
 			// console.log(triggerKey.indexOf(key) === 0)
 			if (key.indexOf(triggerKey) === 0 || triggerKey.indexOf(key) === 0) {
-				var oldVal = self.get(triggerKey, false),
-					newVal = self.get(triggerKey, true);
+				var oldVal = self.get(triggerKey, $FALSE),
+					newVal = self.get(triggerKey, $TRUE);
 				//console.log("old triggerKey:", oldVal)
 				//console.log("new triggerKey:", newVal)
 				if (oldVal !== newVal || oldVal instanceof Object) {
-					$.push(updateKeys, triggerKey);
+					$.p(updateKeys, triggerKey);
 				}
 			}
 		});
-		$.fastEach(updateKeys, function(triggerKey) {
+		$.ftE($.un(updateKeys), function(triggerKey) {
 			self._touchOffSubset(triggerKey)
 		});
 		// //console.log("updateKeys:",updateKeys)
 		return updateKeys;
 	},
 	_touchOffSubset: function(key) {
-		$.forEach(this._subsetDataManagers, function(dm) {
+		$.fE(this._subsetDataManagers, function(dm) {
 			dm._touchOffSubset(key);
 		});
 		var i, vis, vi, len;
 		for (i = 0, vis = this._viewInstances, vi, len = vis.length; vi = vis[i];) {
 			if (vi._isAttr) {
 				// //console.log("building attribute value!")//DEBUG
-				$.forEach(vi._triggers, function(key) {
+				$.fE(vi._triggers, function(key) {
 					vi.touchOff(key);
 				});
 				vi._isAttr.setAttribute(vi, vi.dataManager);
@@ -371,13 +321,13 @@ DataManager.prototype = {
 		var dm = this,
 			triggerKeys = dm._triggerKeys;
 		triggerKeys.push.apply(triggerKeys, vi._triggers);
-		$.unique(triggerKeys);
+		$.un(triggerKeys);
 	},
 	collect: function(viewInstance) {
 		var dm = this;
-		if ($.indexOf(dm._viewInstances, viewInstance) === -1) {
+		if ($.iO(dm._viewInstances, viewInstance) === -1) {
 			viewInstance.dataManager && viewInstance.dataManager.remove(viewInstance);
-			$.push(dm._viewInstances, viewInstance);
+			$.p(dm._viewInstances, viewInstance);
 			viewInstance.dataManager = dm;
 			dm._collectTriKey(viewInstance);
 		}
@@ -395,13 +345,13 @@ DataManager.prototype = {
 		if (arguments.length>1) {
 			subsetDataManager.set(baseData);
 		}
-		$.push(this._subsetDataManagers, subsetDataManager);
+		$.p(this._subsetDataManagers, subsetDataManager);
 		return subsetDataManager; //subset(vi).set(basedata);},
 	},
 	remove: function(viewInstance) {
 		var dm = this,
 			vis = dm._viewInstances,
-			index = $.indexOf(vis, viewInstance);
+			index = $.iO(vis, viewInstance);
 		if (index !== -1) {
 			vis.splice(index, 1);
 		}
@@ -485,11 +435,11 @@ var _AttributeHandle = function(attrKey) {
 	var attrHandles = V.attrHandles,
 		result;
 	// console.log("attrKey:",attrKey)
-	$.forEach(attrHandles, function(attrHandle) {
+	$.fE(attrHandles, function(attrHandle) {
 		// console.log(attrHandle.match)
 		if (attrHandle.match(attrKey)) {
 			result = attrHandle.handle(attrKey);
-			return false
+			return $FALSE
 		}
 	});
 	return result || _AttributeHandleEvent.com;
@@ -514,7 +464,7 @@ var attributeHandle = function(attrStr, node, handle, triggerTable) {
 	if (_matchRule.test(attrValue)) {
 
 		var attrViewInstance = (V.attrModules[handle.id + attrKey] = V.parse(attrValue))(),
-			_shadowDIV = $.DOM.clone(shadowDIV); //parserNode
+			_shadowDIV = $.D.cl(shadowDIV); //parserNode
 		attrViewInstance.append(_shadowDIV);
 		attrViewInstance._isAttr = {
 			key: attrKey,
@@ -524,7 +474,7 @@ var attributeHandle = function(attrStr, node, handle, triggerTable) {
 			it will storage the property value where the currentNode,// and the dataManager, 
 			and lock it into attrViewInstance, 
 			waiting for updates the attribute.*/ //(so the trigger of be injecte in mush be unshift)
-			currentNode: null,
+			currentNode: $NULL,
 			_attributeHandle: _AttributeHandle(attrKey),
 			setAttribute: function(viewInstance, dataManager) { /*viewInstance ,dataManager*/
 				var self = this,
@@ -547,8 +497,8 @@ var attributeHandle = function(attrStr, node, handle, triggerTable) {
 				dataManager.collect(attrViewInstance);
 			}
 		}
-		$.forEach(attrViewInstance._triggers, function(key) {
-			$.unshift((triggerTable[key] || (triggerTable[key] = [])), attrTrigger);
+		$.fE(attrViewInstance._triggers, function(key) {
+			$.us((triggerTable[key] || (triggerTable[key] = [])), attrTrigger);
 		});
 
 	}
@@ -587,8 +537,7 @@ function _buildHandler(handleNodeTree) {
 			var handleFactory = V.handles[item_node.handleName];
 			if (handleFactory) {
 				var handle = handleFactory(item_node, index, handleNodeTree)
-				// handle&&$.push(handles, $.bind(handle,item_node));
-				handle && $.push(handles, handle);
+				handle && $.p(handles, handle);
 			}
 		}
 	});
@@ -609,8 +558,8 @@ function _buildTrigger(handleNodeTree, dataManager) {
 					var key = trigger.key = trigger.key || "";
 					trigger.handleId = trigger.handleId || handle.id;
 					//unshift list and In order to achieve the trigger can be simulated bubble
-					$.unshift((triggerTable[key]||(triggerTable[key]  =  [])), trigger); //Storage as key -> array
-					$.push(handle._triggers, trigger); //Storage as array
+					$.us((triggerTable[key]||(triggerTable[key]  =  [])), trigger); //Storage as key -> array
+					$.p(handle._triggers, trigger); //Storage as array
 				}
 			}
 		} else if (handle.type === "element") {
@@ -618,7 +567,7 @@ function _buildTrigger(handleNodeTree, dataManager) {
 				nodeHTMLStr = node.outerHTML.replace(node.innerHTML, ""),
 				attrs = nodeHTMLStr.match(_attrRegExp);
 
-			$.forEach(attrs, function(attrStr) {
+			$.fE(attrs, function(attrStr) {
 				attributeHandle(attrStr, node, handle, triggerTable);
 
 			});
@@ -629,27 +578,27 @@ function _buildTrigger(handleNodeTree, dataManager) {
 function _create(data) { //data maybe basedata or dataManager
 	var self = this,
 		NodeList_of_ViewInstance = {}, //save newDOM  without the most top of parentNode -- change with append!!
-		topNode = $.create(self.handleNodeTree);
-	topNode.currentNode = $.DOM.clone(shadowBody);
-	$.pushByID(NodeList_of_ViewInstance, topNode);
+		topNode = $.c(self.handleNodeTree);
+	topNode.currentNode = $.D.cl(shadowBody);
+	$.pI(NodeList_of_ViewInstance, topNode);
 
 	_traversal(topNode, function(node, index, parentNode) {
-		node = $.pushByID(NodeList_of_ViewInstance, $.create(node));
+		node = $.pI(NodeList_of_ViewInstance, $.c(node));
 		if (!node.ignore) {
 			var currentParentNode = NodeList_of_ViewInstance[parentNode.id].currentNode || topNode.currentNode;
-			var currentNode = node.currentNode = $.DOM.clone(node.node);
-			$.DOM.append(currentParentNode, currentNode);
+			var currentNode = node.currentNode = $.D.cl(node.node);
+			$.D.ap(currentParentNode, currentNode);
 		} else {
 
 			_traversal(node, function(node) { //ignore Node's childNodes will be ignored too.
-				node = $.pushByID(NodeList_of_ViewInstance, $.create(node));
+				node = $.pI(NodeList_of_ViewInstance, $.c(node));
 			});
-			return false
+			return $FALSE
 		}
 	});
 
 
-	$.forEach(self._handles, function(handle) {
+	$.fE(self._handles, function(handle) {
 		handle.call(self, NodeList_of_ViewInstance);
 	});
 	return ViewInstance(self.handleNodeTree, NodeList_of_ViewInstance, self._triggerTable, data);
@@ -664,32 +613,32 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	}
 	var self = this,
 		dataManager;
-	self._isAttr = false;//if no null --> Storage the attribute key and current.
+	self._isAttr = $FALSE;//if no null --> Storage the attribute key and current.
 	self.dataManager ;//= dataManager;
 	self.handleNodeTree = handleNodeTree;
-	self.DOMArr = $.slice(handleNodeTree.childNodes);
+	self.DOMArr = $.s(handleNodeTree.childNodes);
 	self.NodeList = NodeList;
 	var el = self.topNode();//NodeList[handleNodeTree.id].currentNode;
 	self._packingBag = el;
 	self._id = $.uid();
-	self._open = $.DOM.Comment(self._id + " _open");
-	self._close = $.DOM.Comment(self._id + " _close");
-	self._canRemoveAble = false;
+	self._open = $.D.C(self._id + " _open");
+	self._close = $.D.C(self._id + " _close");
+	self._canRemoveAble = $FALSE;
 	self._AVI = {};
 	self._ALVI = {};
 	self._WVI = {};
-	$.DOM.insertBefore(el, self._open, el.childNodes[0]);
-	$.DOM.append(el, self._close);
+	$.D.iB(el, self._open, el.childNodes[0]);
+	$.D.ap(el, self._close);
 	(self._triggers = [])._ = {};
 	self.TEMP = {};
 
-	$.forIn(triggerTable, function(tiggerCollection, key) {
+	$.fI(triggerTable, function(tiggerCollection, key) {
 		if (key&&key!==".") {
-			$.push(self._triggers,key);
+			$.p(self._triggers,key);
 		}
 		self._triggers._[key] = tiggerCollection;
 	});
-	$.forEach(triggerTable["."], function(tiggerFun) { //const value
+	$.fE(triggerTable["."], function(tiggerFun) { //const value
 		tiggerFun.event(NodeList, dataManager);
 	});
 	if (data instanceof DataManager) {
@@ -703,7 +652,7 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 
 function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {
 	var self = this;
-	$.forEach(tiggerCollection, function(trigger) {
+	$.fE(tiggerCollection, function(trigger) {
 		// if (trigger.key) {//DEBUG
 		// 	console.log("event:",trigger.key," to ",dataManager.get(trigger.key),"fires")
 		// }else{
@@ -720,7 +669,7 @@ function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {
 function _replaceTopHandleCurrent(self, el) {
 	// var handleNodeTree = self.handleNodeTree,
 	// 	NodeList = self.NodeList;
-	self._canRemoveAble = true;
+	self._canRemoveAble = $TRUE;
 	self.topNode(el);
 	// NodeList[handleNodeTree.id].currentNode = el;
 	// self.reDraw();
@@ -730,7 +679,7 @@ ViewInstance.prototype = {
 		var self = this,
 			dataManager = self.dataManager;
 			
-		$.forEach(self._triggers, function(key) {
+		$.fE(self._triggers, function(key) {
 			dataManager._touchOffSubset(key)
 		});
 		return self;
@@ -744,12 +693,12 @@ ViewInstance.prototype = {
 			viewInstance,
 			currentTopNode = NodeList[handleNodeTree.id].currentNode;
 
-		$.forEach(currentTopNode.childNodes, function(child_node) {
-			$.DOM.append(el, child_node);
+		$.fE(currentTopNode.childNodes, function(child_node) {
+			$.D.ap(el, child_node);
 		});
 		_replaceTopHandleCurrent(self, el);
 
-		$.fastEach(NodeList[handleNodeTree.id].childNodes,function(child_node){
+		$.ftE(NodeList[handleNodeTree.id].childNodes,function(child_node){
 			if (viewInstance = AllLayoutViewInstance[child_node.id]||AllWithViewInstance[child_node.id]) {
 				_replaceTopHandleCurrent(viewInstance, el)
 			}
@@ -767,12 +716,12 @@ ViewInstance.prototype = {
 			currentTopNode = self.topNode(),//NodeList[handleNodeTree.id].currentNode,
 			elParentNode = el.parentNode;
 
-		$.forEach(currentTopNode.childNodes, function(child_node) {
-			$.DOM.insertBefore(elParentNode, child_node, el);
+		$.fE(currentTopNode.childNodes, function(child_node) {
+			$.D.iB(elParentNode, child_node, el);
 		});
 		_replaceTopHandleCurrent(self, elParentNode);
 
-		$.fastEach(NodeList[handleNodeTree.id].childNodes,function(child_node){
+		$.ftE(NodeList[handleNodeTree.id].childNodes,function(child_node){
 			if (viewInstance = AllLayoutViewInstance[child_node.id]||AllWithViewInstance[child_node.id]) {
 				_replaceTopHandleCurrent(viewInstance, elParentNode)
 			}
@@ -790,30 +739,30 @@ ViewInstance.prototype = {
 				closeNode = self._close,
 				startIndex = 0;
 
-			$.forEach(currentTopNode.childNodes, function(child_node, index) {
+			$.fE(currentTopNode.childNodes, function(child_node, index) {
 				if (child_node === openNode) {
 					startIndex = index
 				}
 			});
-			$.forEach(currentTopNode.childNodes, function(child_node, index) {
+			$.fE(currentTopNode.childNodes, function(child_node, index) {
 				// console.log(index,child_node,el)
-				$.DOM.append(el, child_node);
+				$.D.ap(el, child_node);
 				if (child_node === closeNode) {
-					return false;
+					return $FALSE;
 				}
 			}, startIndex);
 			_replaceTopHandleCurrent(self, el);
-			this._canRemoveAble = false; //Has being recovered into the _packingBag,can't no be remove again. --> it should be insert
+			this._canRemoveAble = $FALSE; //Has being recovered into the _packingBag,can't no be remove again. --> it should be insert
 		}
 		return self;
 	},
 	get: function get() {
 		var dm = this.dataManager;
-		return dm.get.apply(dm, $.slice(arguments));
+		return dm.get.apply(dm, $.s(arguments));
 	},
 	set: function set() {
 		var dm = this.dataManager;
-		return dm.set.apply(dm, $.slice(arguments))
+		return dm.set.apply(dm, $.s(arguments))
 	},
 	topNode:function(newCurrentTopNode){
 		var self = this,
@@ -842,17 +791,17 @@ var _parse = function(node) {//get all childNodes
 		switch (child_node.nodeType) {
 			case 3:
 				if ($.trim(child_node.data)) {
-					$.push(result, new TextHandle(child_node))
+					$.p(result, new TextHandle(child_node))
 				}
 				break;
 			case 1:
 				if (child_node.tagName.toLowerCase() === "span" && child_node.getAttribute("type") === "handle") {
 					var handleName = child_node.getAttribute("handle");
-					if (handleName !== null) {
-						$.push(result, new TemplateHandle(handleName, child_node))
+					if (handleName !== $NULL) {
+						$.p(result, new TemplateHandle(handleName, child_node))
 					}
 				} else {
-					$.push(result, new ElementHandle(child_node))
+					$.p(result, new ElementHandle(child_node))
 				}
 				break;
 		}
@@ -874,7 +823,7 @@ function Handle(type, opction) {
 	if (type) {
 		self.type = type;
 	}
-	$.forIn(opction, function(val,key) {
+	$.fI(opction, function(val,key) {
 		self[key] = val;
 	});
 };
@@ -882,17 +831,17 @@ Handle.init = function(self,weights){
 	self.id = $.uid();//weights <= 1
 	if (weights<2)return;
 	self._controllers = [];//weights <= 2
-	self._controllers[true] = [];//In the #if block scope
-	self._controllers[false] = [];//In the #else block scope
+	self._controllers[$TRUE] = [];//In the #if block scope
+	self._controllers[$FALSE] = [];//In the #else block scope
 	if (weights<3)return;
 	self._triggers = [];//weights <= 3
 };
 Handle.prototype = {
 	nodeType:0,
-	ignore: false, //ignore Handle --> no currentNode
-	display: false, //function of show or hidden DOM
+	ignore: $FALSE, //ignore Handle --> no currentNode
+	display: $FALSE, //function of show or hidden DOM
 	childNodes:[],
-	parentNode: null,
+	parentNode: $NULL,
 	type: "handle"
 };
 
@@ -910,7 +859,7 @@ function TemplateHandle(handleName, node) {
 	Handle.init(self,3);
 };
 TemplateHandle.prototype = Handle("handle", {
-	ignore: true,
+	ignore: $TRUE,
 	nodeType: 1
 });
 
@@ -1016,12 +965,12 @@ var _matchRule = /\{[\w\W]*?\([\w\W]*?\)[\s]*\}/;
 var V = global.ViewParser = {
 	prefix: "attr-",
 	parse: function(htmlStr) {
-		var _shadowBody = $.DOM.clone(shadowBody);
+		var _shadowBody = $.D.cl(shadowBody);
 		_shadowBody.innerHTML = htmlStr;
 		var insertBefore = [];
 		_traversal(_shadowBody, function(node, index, parentNode) {
 			if (node.nodeType === 3) {
-				$.push(insertBefore, {
+				$.p(insertBefore, {
 					baseNode: node,
 					parentNode: parentNode,
 					insertNodesHTML: parseRule(node.data)
@@ -1029,7 +978,7 @@ var V = global.ViewParser = {
 			}
 		});
 
-		$.forEach(insertBefore, function(item) {
+		$.fE(insertBefore, function(item) {
 			var node = item.baseNode,
 				parentNode = item.parentNode,
 				insertNodesHTML = item.insertNodesHTML;
@@ -1037,17 +986,17 @@ var V = global.ViewParser = {
 			//Using innerHTML rendering is complete immediate operation DOM, 
 			//innerHTML otherwise covered again, the node if it is not, 
 			//then memory leaks, IE can not get to the full node.
-			$.forEach(shadowDIV.childNodes, function(refNode) {
-				$.DOM.insertBefore(parentNode, refNode, node)
+			$.fE(shadowDIV.childNodes, function(refNode) {
+				$.D.iB(parentNode, refNode, node)
 			})
-			parentNode.removeChild(node);
+			$.D.rC(parentNode,node);
 		});
 		_shadowBody.innerHTML = _shadowBody.innerHTML;
 		var result = new ElementHandle(_shadowBody);
 		return View(result);
 	},
 	scans: function() {
-		$.forEach(document.getElementsByTagName("script"), function(scriptNode) {
+		$.fE(document.getElementsByTagName("script"), function(scriptNode) {
 			if (scriptNode.getAttribute("type") === "text/template") {
 				V.modules[scriptNode.getAttribute("name")] = V.parse(scriptNode.innerHTML);
 			}
@@ -1061,7 +1010,7 @@ var V = global.ViewParser = {
 	},
 	ra:function(match,handle){
 		var attrHandle = V.attrHandles[V.attrHandles.length] = {
-			match:null,
+			match:$NULL,
 			handle:handle
 		}
 		if (typeof match==="function") {
@@ -1085,14 +1034,16 @@ V.rh("HTML", function(handle, index, parentHandle) {
 	var endCommentHandle = _commentPlaceholder(handle, parentHandle, "html_end_" + handle.id),
 		startCommentHandle = _commentPlaceholder(handle, parentHandle, "html_start_" + handle.id);
 });
-var _commentPlaceholder = function(handle, parentHandle,commentText) {
+var _commentPlaceholder = function(handle, parentHandle, commentText) {
 	var handleName = handle.handleName,
-		commentText = commentText||(handleName + handle.id),
-		commentNode = $.DOM.Comment(commentText),
+		commentText = commentText || (handleName + handle.id),
+		commentNode = $.D.C(commentText),
 		commentHandle = new CommentHandle(commentNode); // commentHandle as Placeholder
 
-	$.push(handle.childNodes, commentHandle);
-	$.insertAfter(parentHandle.childNodes, handle, commentHandle); //Node position calibration//no "$.insert" Avoid sequence error
+	$.p(handle.childNodes, commentHandle);
+	$.iA(parentHandle.childNodes, handle, commentHandle);
+	//Node position calibration
+	//no "$.insert" Avoid sequence error
 	return commentHandle;
 };
 var placeholderHandle = function(handle, index, parentHandle) {
@@ -1104,25 +1055,25 @@ var _each_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManag
 		comment_endeach_id,
 		allArrViewInstances = V._instances[viewInstance_ID]._AVI,
 		arrViewInstances = allArrViewInstances[handle.id];
-	$.forEach(parentHandle.childNodes, function(child_handle, index, cs) { //get comment_endeach_id
+	$.fE(parentHandle.childNodes, function(child_handle, index, cs) { //get comment_endeach_id
 		if (child_handle.id === handle.id) {
 			comment_endeach_id = cs[index + 3].id;
-			return false;
+			return $FALSE;
 		}
 	});
 	// console.log(comment_endeach_id,viewInstance_ID)
 	arrViewInstances && (arrViewInstances.hidden = !show_or_hidden);
 	if (show_or_hidden) {
-		$.forEach(arrViewInstances, function(viewInstance, index) {
+		$.fE(arrViewInstances, function(viewInstance, index) {
 			// console.log(comment_endeach_id,NodeList_of_ViewInstance[comment_endeach_id],handle,parentHandle)
 			viewInstance.insert(NodeList_of_ViewInstance[comment_endeach_id].currentNode)
 			// console.log(handle.len)
 			if (arrViewInstances.len === index + 1) {
-				return false;
+				return $FALSE;
 			}
 		});
 	} else {
-		$.forEach(arrViewInstances, function(viewInstance) {
+		$.fE(arrViewInstances, function(viewInstance) {
 			// console.log(viewInstance)
 			viewInstance.remove();
 		})
@@ -1131,14 +1082,14 @@ var _each_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManag
 V.rh("#each", function(handle, index, parentHandle) {
 	//The Nodes between #each and /each will be pulled out , and not to be rendered.
 	//which will be combined into new View module.
-	var _shadowBody = $.DOM.clone(shadowBody),
+	var _shadowBody = $.D.cl(shadowBody),
 		eachModuleHandle = new ElementHandle(_shadowBody),
 		endIndex = 0;
 
 	// handle.arrViewInstances = [];//Should be at the same level with currentNode
 	// handle.len = 0;
 	var layer = 1;
-	$.forEach(parentHandle.childNodes, function(childHandle, index) {
+	$.fE(parentHandle.childNodes, function(childHandle, index) {
 		endIndex = index;
 		if (childHandle.handleName === "#each") {
 			layer += 1
@@ -1146,10 +1097,10 @@ V.rh("#each", function(handle, index, parentHandle) {
 		if (childHandle.handleName === "/each") {
 			layer -= 1;
 			if (!layer) {
-				return false
+				return $FALSE
 			}
 		}
-		$.push(eachModuleHandle.childNodes, childHandle);
+		$.p(eachModuleHandle.childNodes, childHandle);
 		// layer && console.log("inner each:", childHandle)
 	}, index + 1);
 	// console.log("----",handle.id,"-------")
@@ -1166,7 +1117,7 @@ V.rh("", function(handle, index, parentHandle) {
 		var nextHandle = _commentPlaceholder(handle, parentHandle, "text " + handle.id);
 		if (textHandle) { //textNode as Placeholder
 
-			$.insertAfter(parentHandle.childNodes, handle, textHandle);
+			$.iA(parentHandle.childNodes, handle, textHandle);
 			//Node position calibration
 			//no "$.insert" Avoid sequence error
 
@@ -1174,13 +1125,13 @@ V.rh("", function(handle, index, parentHandle) {
 				var nextNodeInstance = NodeList_of_ViewInstance[nextHandle.id].currentNode,
 					textNodeInstance = NodeList_of_ViewInstance[textHandle.id].currentNode,
 					parentNodeInstance = NodeList_of_ViewInstance[parentHandle.id].currentNode
-					$.DOM.insertBefore(parentNodeInstance, textNodeInstance, nextNodeInstance); //Manually insert node
+					$.D.iB(parentNodeInstance, textNodeInstance, nextNodeInstance); //Manually insert node
 			}
 		}
 
 	} else {
 		if (textHandle) {
-			textHandle.ignore = true;
+			textHandle.ignore = $TRUE;
 		}
 	}
 });
@@ -1193,7 +1144,7 @@ V.rh("@", function(handle, index, parentHandle) {
 	} while (nextHandle && nextHandle.ignore);
 	if (textHandle) { //textNode as Placeholder
 
-		$.insertAfter(parentHandle.childNodes, handle, textHandle);
+		$.iA(parentHandle.childNodes, handle, textHandle);
 		//Node position calibration
 		//no "$.insert" Avoid sequence error
 
@@ -1201,7 +1152,7 @@ V.rh("@", function(handle, index, parentHandle) {
 			var nextNodeInstance = nextHandle && NodeList_of_ViewInstance[nextHandle.id].currentNode,
 				textNodeInstance = NodeList_of_ViewInstance[textHandle.id].currentNode,
 				parentNodeInstance = NodeList_of_ViewInstance[parentHandle.id].currentNode
-				$.DOM.insertBefore(parentNodeInstance, textNodeInstance, nextNodeInstance); //Manually insert node
+				$.D.iB(parentNodeInstance, textNodeInstance, nextNodeInstance); //Manually insert node
 		}
 	}
 });
@@ -1213,10 +1164,10 @@ var _layout_display = function(show_or_hidden, NodeList_of_ViewInstance, dataMan
 	if (!layoutViewInstance) {
 		return;
 	}
-	$.forEach(handle.parentNode.childNodes, function(child_handle, index, cs) { //get comment_endeach_id
+	$.fE(handle.parentNode.childNodes, function(child_handle, index, cs) { //get comment_endeach_id
 		if (child_handle.id === handle.id) {
 			commentPlaceholderElement = NodeList_of_ViewInstance[cs[index + 1].id].currentNode
-			return false;
+			return $FALSE;
 		}
 	});
 	console.log(show_or_hidden, viewInstance_ID, layoutViewInstance)
@@ -1240,10 +1191,10 @@ var _with_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManag
 	if (!withViewInstance) {
 		return;
 	}
-	$.forEach(parentHandle.childNodes, function(child_handle, index, cs) { //get comment_endwith_id
+	$.fE(parentHandle.childNodes, function(child_handle, index, cs) { //get comment_endwith_id
 		if (child_handle.id === handle.id) {
 			comment_endwith_id = cs[index + 3].id;
-			return false;
+			return $FALSE;
 		}
 	});
 	console.log(show_or_hidden,NodeList_of_ViewInstance[comment_endwith_id].currentNode)
@@ -1256,13 +1207,13 @@ var _with_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManag
 V.rh("#with", function(handle, index, parentHandle) {
 	//The Nodes between #with and /with will be pulled out , and not to be rendered.
 	//which will be combined into new View module.
-	var _shadowBody = $.DOM.clone(shadowBody),
+	var _shadowBody = $.D.cl(shadowBody),
 		withModuleHandle = new ElementHandle(_shadowBody),
 		endIndex = 0;
 
 	// handle.arrViewInstances = [];//Should be at the same level with currentNode
 	var layer = 1;
-	$.forEach(parentHandle.childNodes, function(childHandle, index) {
+	$.fE(parentHandle.childNodes, function(childHandle, index) {
 		endIndex = index;
 		// console.log(childHandle,childHandle.handleName)
 		if (childHandle.handleName === "#with") {
@@ -1271,10 +1222,10 @@ V.rh("#with", function(handle, index, parentHandle) {
 		if (childHandle.handleName === "/with") {
 			layer -= 1;
 			if (!layer) {
-				return false
+				return $FALSE
 			}
 		}
-		$.push(withModuleHandle.childNodes, childHandle);
+		$.p(withModuleHandle.childNodes, childHandle);
 	}, index + 1);
 	// console.log("----",handle.id,"-------")
 	parentHandle.childNodes.splice(index + 1, endIndex - index - 1); //Pulled out
@@ -1294,7 +1245,7 @@ V.rt("HTML", function(handle, index, parentHandle) {
 		// key:"",//default key === ""
 		bubble: true,
 		TEMP: {
-			cacheNode: $.DOM.clone(shadowDIV)
+			cacheNode: $.D.cl(shadowDIV)
 		},
 		event: function(NodeList_of_ViewInstance, dataManager) {
 			var htmlText = NodeList_of_ViewInstance[htmlTextHandlesId]._data,
@@ -1304,22 +1255,22 @@ V.rt("HTML", function(handle, index, parentHandle) {
 				parentNode = endCommentNode.parentNode,
 				brotherNodes = parentNode.childNodes,
 				index = -1;
-			$.forEach(brotherNodes, function(node, i) {
+			$.fE(brotherNodes, function(node, i) {
 				index = i;
 				if (node === startCommentNode) {
-					return false;
+					return $FALSE;
 				}
 			});
 			index = index + 1;
-			$.forEach(brotherNodes, function(node, i) {
+			$.fE(brotherNodes, function(node, i) {
 				if (node === endCommentNode) {
-					return false;
+					return $FALSE;
 				}
-				parentNode.removeChild(node);
+				$.D.rC(parentNode,node);
 			}, index);
 			cacheNode.innerHTML = htmlText;
-			$.forEach(cacheNode.childNodes, function(node, i) {
-				$.DOM.insertBefore(parentNode, node, endCommentNode);
+			$.fE(cacheNode.childNodes, function(node, i) {
+				$.D.iB(parentNode, node, endCommentNode);
 			});
 		}
 	}
@@ -1328,20 +1279,20 @@ V.rt("HTML", function(handle, index, parentHandle) {
 V.rt("&&", V.rt("and", function(handle, index, parentHandle) {
 	var childHandlesId = [],
 		trigger;
-	$.forEach(handle.childNodes, function(child_handle) {
+	$.fE(handle.childNodes, function(child_handle) {
 		if (child_handle.type === "handle") {
-			$.push(childHandlesId, child_handle.id);
+			$.p(childHandlesId, child_handle.id);
 		}
 	});
 	trigger = {
 		// key:"",//default key === ""
-		bubble: true,
+		bubble: $TRUE,
 		event: function(NodeList_of_ViewInstance, dataManager) {
-			var and = true;
-			$.forEach(childHandlesId, function(child_handle_id) { //Compared to other values
+			var and = $TRUE;
+			$.fE(childHandlesId, function(child_handle_id) { //Compared to other values
 				and = !! NodeList_of_ViewInstance[child_handle_id]._data
 				if (!and) {
-					return false; //stop forEach
+					return $FALSE; //stop forEach
 				}
 			});
 			NodeList_of_ViewInstance[this.handleId]._data = and;
@@ -1367,16 +1318,16 @@ V.rt("#each", function(handle, index, parentHandle) {
 
 			(arrViewInstances = allArrViewInstances[id]||(allArrViewInstances[id] = [])).len = divideIndex;
 
-			$.forEach(data, function(eachItemData, index) {
+			$.fE(data, function(eachItemData, index) {
 
 				var viewInstance = arrViewInstances[index];
 				if (!viewInstance) {
 					viewInstance = arrViewInstances[index] = eachModuleConstructor();
 					dataManager.subset(viewInstance); //reset arrViewInstance's dataManager
-					inserNew = true;
+					inserNew = $TRUE;
 				}
 				if (!viewInstance._canRemoveAble) { //had being recovered into the packingBag
-					inserNew = true;
+					inserNew = $TRUE;
 				}
 
 				viewInstance.set(eachItemData);
@@ -1386,7 +1337,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 				}
 			});
 
-			$.forEach(arrViewInstances, function(eachItemHandle) {
+			$.fE(arrViewInstances, function(eachItemHandle) {
 				eachItemHandle.remove();
 			}, divideIndex);
 		}
@@ -1396,21 +1347,21 @@ V.rt("#each", function(handle, index, parentHandle) {
 V.rt("==", V.rt("equa", function(handle, index, parentHandle) { //Equal
 	var childHandlesId = [],
 		trigger;
-	$.forEach(handle.childNodes, function(child_handle) {
+	$.fE(handle.childNodes, function(child_handle) {
 		if (child_handle.type === "handle") {
-			$.push(childHandlesId, child_handle.id);
+			$.p(childHandlesId, child_handle.id);
 		}
 	});
 	trigger = {
 		// key:"",//default key === ""
-		bubble: true,
+		bubble: $TRUE,
 		event: function(NodeList_of_ViewInstance, dataManager) {
 			var equal,
 				val = NodeList_of_ViewInstance[childHandlesId[0]]._data; //first value
-			$.forEach(childHandlesId, function(child_handle_id) { //Compared to other values
+			$.fE(childHandlesId, function(child_handle_id) { //Compared to other values
 				equal = (NodeList_of_ViewInstance[child_handle_id]._data == val);
 				if (equal) {
-					return false; //stop forEach
+					return $FALSE; //stop forEach
 				}
 			}, 1); //start from second;
 			NodeList_of_ViewInstance[this.handleId]._data = !! equal;
@@ -1428,7 +1379,7 @@ V.rt("", function(handle, index, parentHandle) {
 		if ($.isString(key)) { // single String
 			trigger = { //const 
 				key: ".", //const trigger
-				bubble: true,
+				bubble: $TRUE,
 				event: function(NodeList_of_ViewInstance, dataManager) {
 					NodeList_of_ViewInstance[textHandleId].currentNode.data = key.substring(1, key.length - 1);
 					// trigger.event = $.noop;
@@ -1459,7 +1410,7 @@ V.rt("", function(handle, index, parentHandle) {
 		if ($.isString(key)) { // single String
 			trigger = { //const 
 				key: ".", //const trigger
-				bubble: true,
+				bubble: $TRUE,
 				event: function(NodeList_of_ViewInstance, dataManager) {
 					NodeList_of_ViewInstance[this.handleId]._data = key.substring(1, key.length - 1);
 				}
@@ -1467,7 +1418,7 @@ V.rt("", function(handle, index, parentHandle) {
 		} else { //String for databese by key
 			trigger = {
 				key: key,
-				bubble: true,
+				bubble: $TRUE,
 				event: function(NodeList_of_ViewInstance, dataManager) {
 					NodeList_of_ViewInstance[this.handleId]._data = dataManager.get(key);
 				}
@@ -1484,7 +1435,7 @@ V.rt("@", function(handle, index, parentHandle) {
 
 	trigger = { //const 
 		key: key, //const trigger
-		bubble: true,
+		bubble: $TRUE,
 		event: function(NodeList_of_ViewInstance, dataManager) {
 			//trigger but no bind data
 			NodeList_of_ViewInstance[textHandleId].currentNode.data = key;
@@ -1503,28 +1454,28 @@ V.rt("#if", function(handle, index, parentHandle) {
 		comment_endif_id, //#else inserBefore /if
 
 		conditionDOM = handle._controllers,
-		conditionStatus = true, //the #if block scope
+		conditionStatus = $TRUE, //the #if block scope
 		trigger,
 		deep = 0;
 
-	$.forEach(parentHandle.childNodes, function(child_handle, i, childHandles) {
+	$.fE(parentHandle.childNodes, function(child_handle, i, childHandles) {
 
 		if (child_handle.handleName === "#if") {
 			deep += 1
 		} else if (child_handle.handleName === "#else") {
 			if (deep === 1) {
 				conditionStatus = !conditionStatus;
-				comment_else_id = $.lastItem(child_handle.childNodes).id;
+				comment_else_id = $.lI(child_handle.childNodes).id;
 			}
 		} else if (child_handle.handleName === "/if") {
 			deep -= 1
 			if (!deep) {
-				comment_endif_id = $.lastItem(child_handle.childNodes).id;
-				return false;
+				comment_endif_id = $.lI(child_handle.childNodes).id;
+				return $FALSE;
 			}
 		} else if (child_handle.type !== "comment") {
-			$.push(child_handle._controllers, id);
-			$.push(conditionDOM[conditionStatus], child_handle.id);
+			$.p(child_handle._controllers, id);
+			$.p(conditionDOM[conditionStatus], child_handle.id);
 		}
 	}, index); // no (index + 1):scan itself:deep === 0 --> conditionStatus = !conditionStatus;
 
@@ -1543,35 +1494,35 @@ V.rt("#if", function(handle, index, parentHandle) {
 				if (markHandleId) {
 					markHandle = NodeList_of_ViewInstance[markHandleId].currentNode;
 				}
-				$.forEach(conditionDOM[conditionVal], function(id) {
+				$.fE(conditionDOM[conditionVal], function(id) {
 					var currentHandle = NodeList_of_ViewInstance[id],
 						node = currentHandle.currentNode,
-						placeholderNode = (NodeList_of_ViewInstance[id].placeholderNode = NodeList_of_ViewInstance[id].placeholderNode || $.DOM.Comment(id)),
-						display = true;
+						placeholderNode = (NodeList_of_ViewInstance[id].placeholderNode = NodeList_of_ViewInstance[id].placeholderNode || $.D.C(id)),
+						display = $TRUE;
 
-					$.forEach(currentHandle._controllers, function(controller_id) {
+					$.fE(currentHandle._controllers, function(controller_id) {
 						//Traverse all Logic Controller(if-else-endif) to determine whether each Controller are allowed to display it.
 						var controllerHandle = NodeList_of_ViewInstance[controller_id]
-						return display = display && ($.indexOf(controllerHandle._controllers[controllerHandle._data ? true : false], currentHandle.id) !== -1);
+						return display = display && ($.iO(controllerHandle._controllers[controllerHandle._data ? $TRUE : $FALSE], currentHandle.id) !== -1);
 						//when display is false,abort traversing
 					});
 					if (display) {
 						if (currentHandle.display) { //Custom Display Function,default is false
-							currentHandle.display(true, NodeList_of_ViewInstance, dataManager, triggerBy, viewInstance_ID)
+							currentHandle.display($TRUE, NodeList_of_ViewInstance, dataManager, triggerBy, viewInstance_ID)
 						} else if (node) {
-							$.DOM.replace(parentNode, node, placeholderNode)
+							$.D.re(parentNode, node, placeholderNode)
 						}
 					}
 				});
-				$.forEach(conditionDOM[!conditionVal], function(id) {
+				$.fE(conditionDOM[!conditionVal], function(id) {
 					var currentHandle = NodeList_of_ViewInstance[id],
 						node = currentHandle.currentNode,
-						placeholderNode = (currentHandle.placeholderNode = currentHandle.placeholderNode || $.DOM.Comment(id));
+						placeholderNode = (currentHandle.placeholderNode = currentHandle.placeholderNode || $.D.C(id));
 
 					if (currentHandle.display) { //Custom Display Function,default is false
-						currentHandle.display(false, NodeList_of_ViewInstance, dataManager, triggerBy, viewInstance_ID)
+						currentHandle.display($FALSE, NodeList_of_ViewInstance, dataManager, triggerBy, viewInstance_ID)
 					} else if (node) {
-						$.DOM.replace(parentNode, placeholderNode, node)
+						$.D.re(parentNode, placeholderNode, node)
 					}
 				})
 			}
@@ -1605,7 +1556,7 @@ V.rt("!", V.rt("nega", function(handle, index, parentHandle) { //Negate
 		trigger;
 	trigger = {
 		// key:"",//default key === ""
-		bubble: true,
+		bubble: $TRUE,
 		event: function(NodeList_of_ViewInstance, dataManager) {
 			NodeList_of_ViewInstance[this.handleId]._data = !NodeList_of_ViewInstance[nageteHandlesId]._data; //first value
 		}
@@ -1615,20 +1566,20 @@ V.rt("!", V.rt("nega", function(handle, index, parentHandle) { //Negate
 V.rt("||",V.rt("or", function(handle, index, parentHandle) {
 	var childHandlesId = [],
 		trigger;
-	$.forEach(handle.childNodes, function(child_handle) {
+	$.fE(handle.childNodes, function(child_handle) {
 		if (child_handle.type === "handle") {
-			$.push(childHandlesId, child_handle.id);
+			$.p(childHandlesId, child_handle.id);
 		}
 	});
 	trigger = {
 		// key:"",//default key === ""
-		bubble: true,
+		bubble: $TRUE,
 		event: function(NodeList_of_ViewInstance, dataManager) {
 			var handleId = this.handleId;
-			$.forEach(childHandlesId, function(child_handle_id) { //Compared to other values
+			$.fE(childHandlesId, function(child_handle_id) { //Compared to other values
 				if (NodeList_of_ViewInstance[child_handle_id]._data) {
-					NodeList_of_ViewInstance[handleId]._data = true;
-					return false; //stop forEach
+					NodeList_of_ViewInstance[handleId]._data = $TRUE;
+					return $FALSE; //stop forEach
 				}
 			});
 		}
@@ -1659,73 +1610,10 @@ V.rt("#with", function(handle, index, parentHandle) {
 	}
 	return trigger;
 });
-var _testDIV = $.DOM.clone(shadowDIV);
-var _getAttrOuter = Function("n", "return n." + (_hasOwn.call(_testDIV, "textContent") ? "textContent" : "innerText") + "||''")
-var _booleanFalseRegExp = /false|undefined|null|NaN/;
+var _testDIV = $.D.cl(shadowDIV),
+	_getAttrOuter = Function("n", "return n." + (("textContent" in _testDIV) ? "textContent" : "innerText") + "||''"),
+	_booleanFalseRegExp = /false|undefined|null|NaN/;
 
-// var _ti,
-// 	uidKey,
-// 	_asynSetAttribute = function(obj, funName, key, value) {
-// 		uidKey = $.uidAvator + key;
-// 		if (!((_ti = obj[uidKey]) instanceof _asynSetAttributeFactory)) {
-// 			_ti = obj[uidKey] = new _asynSetAttributeFactory(funName, key, value)
-// 		}
-// 		_ti.exports(obj, value);
-// 	},
-// 	_asynSetAttributeFactory = function(funName, key, value) {
-// 		var self = this;
-// 		self.funName = funName;
-// 		self.key = key;
-// 		self.value = value;
-// 		self.exports = self._set;
-// 	},
-// 	_asynAttributeAssignment = function(obj, key, value) { //1450.000ms --> 1250.000ms ==>16% faster
-// 		uidKey = $.uidAvator + key;
-// 		if (!((_ti = obj[uidKey]) instanceof _asynAttributeAssignmentFactory)) {
-// 			_ti = obj[uidKey] = new _asynAttributeAssignmentFactory(key, value)
-// 		}
-// 		_ti.exports(obj, value);
-// 	},
-// 	_asynAttributeAssignmentFactory = function(key, value) {
-// 		var self = this;
-// 		self.key = key;
-// 		self.value = value;
-// 		self.exports = self._set;
-// 	};
-// _asynSetAttributeFactory.prototype = {
-// 	// funName: undefined, //undefined value will be rewrite to attribute but not in prototype
-// 	// ~~obj:undefined,~~ //Avoid circular references, leading to memory leaks.
-// 	// key: undefined,
-// 	// value: undefined,
-// 	// exports: undefined
-// 	_cache: function(obj, newValue) {
-// 		this.value = newValue;
-// 	},
-// 	_set: function(obj, newValue) {
-// 		var self = this,
-// 			funName = self.funName,
-// 			key = self.key;
-// 		setTimeout(function() {
-// 			obj[funName](key, self.value);
-// 			self.exports = self._set;
-// 		}, 0);
-// 		(self.exports = self._cache).call(self, obj, newValue);
-// 	}
-// }
-// _asynAttributeAssignmentFactory.prototype = {
-// 	_cache: function(obj, newValue) {
-// 		this.value = newValue;
-// 	},
-// 	_set: function(obj, newValue) {
-// 		var self = this,
-// 			key = self.key;
-// 		setTimeout(function() {
-// 			obj[key] = self.value;
-// 			self.exports = self._set;
-// 		}, 0);
-// 		(self.exports = self._cache).call(self, obj, newValue);
-// 	}
-// }
 var _AttributeHandleEvent = {
 	event: function(key, currentNode, parserNode) { //on开头的事件绑定，IE需要绑定Function类型，现代浏览器绑定String类型（_AttributeHandleEvent.com）
 		var attrOuter = _getAttrOuter(parserNode);
@@ -1734,41 +1622,33 @@ var _AttributeHandleEvent = {
 		} catch (e) {
 			attrOuterEvent = $.noop; //失败使用空函数替代
 		}
-		// _asynSetAttribute(currentNode, "setAttribute", key, attrOuterEvent)
 		currentNode.setAttribute(key, attrOuterEvent);
 	},
 	style: function(key, currentNode, parserNode) {
 		var attrOuter = _getAttrOuter(parserNode);
-		// _asynSetAttribute(currentNode.style, "setAttribute", 'cssText', attrOuter)
 		currentNode.style.setAttribute('cssText', attrOuter);
 	},
 	com: function(key, currentNode, parserNode) {
 		var attrOuter = _getAttrOuter(parserNode);
-		// _asynSetAttribute(currentNode, "setAttribute", key, attrOuter)
 		currentNode.setAttribute(key, attrOuter)
 	},
 	dir: function(key, currentNode, parserNode) {
 		var attrOuter = _getAttrOuter(parserNode);
-		// _asynAttributeAssignment(currentNode, key, attrOuter);
 		currentNode[key] = attrOuter;
 	},
 	bool: function(key, currentNode, parserNode) {
 		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
 
-		if (attrOuter) {
-			// currentNode.setAttribute(key, key);
-			// _asynAttributeAssignment(currentNode, key, key);
+		if (attrOuter) {// currentNode.setAttribute(key, key);
 			currentNode[key] = key;
-		} else {
-			// currentNode.removeAttribute(key);
-			// _asynAttributeAssignment(currentNode, key, false);
-			currentNode[key] = false;
+		} else {// currentNode.removeAttribute(key);
+			currentNode[key] = $FALSE;
 		}
 	}
 };
 var _boolAssignment = ["checked", "selected", "disabled", "readonly", "multiple", "defer", "declare", "noresize", "nowrap", "noshade", "compact", "truespeed", "async", "typemustmatch", "open", "novalidate", "ismap", "default", "seamless", "autoplay", "controls", "loop", "muted", "reversed", "scoped", "autofocus", "required", "formnovalidate", "editable", "draggable", "hidden"];
 V.ra(function(attrKey){
-	return $.indexOf(_boolAssignment,attrKey) !==-1;
+	return $.iO(_boolAssignment,attrKey) !==-1;
 }, function() {
 	return _AttributeHandleEvent.bool;
 })
@@ -1779,7 +1659,7 @@ var iecheck = function(key, currentNode, parserNode) {
 		_asynAttributeAssignment(currentNode, "defaultChecked", key);
 		// currentNode.defaultChecked = true;
 	} else {
-		_asynAttributeAssignment(currentNode, "defaultChecked", false);
+		_asynAttributeAssignment(currentNode, "defaultChecked", $FALSE);
 		// currentNode.defaultChecked = false;
 	}
 	(this._attributeHandle = _AttributeHandleEvent.bool)(key, currentNode, parserNode);
@@ -1794,10 +1674,10 @@ V.ra(function(attrKey){
 	return _AttributeHandleEvent.dir;
 })
 var _addEventListener = function(Element, eventName, eventFun) {
-	Element.addEventListener(eventName, eventFun, false);
+	Element.addEventListener(eventName, eventFun, $FALSE);
 },
 	_removeEventListener = function(Element, eventName, eventFun) {
-		Element.removeEventListener(eventName, eventFun, false);
+		Element.removeEventListener(eventName, eventFun, $FALSE);
 	},
 	_attachEvent = function(Element, eventName, eventFun) {
 		Element.attachEvent("on" + eventName, eventFun);
@@ -1814,11 +1694,11 @@ var _addEventListener = function(Element, eventName, eventFun) {
 		var attrOuter = _getAttrOuter(parserNode),
 			eventName =  key.replace("event-on", "").replace("event-", ""),
 			eventFun = dm.get(attrOuter),//Function("return " + attrOuter.replace(_ieEnterPlaceholderRegExp,"\n"))(),
-			index = $.indexOf(_elementCache, currentNode),
+			index = $.iO(_elementCache, currentNode),
 			eventCollection,
 			oldEventFun;
 		if (index === -1) {
-			index = $.push(_elementCache, currentNode)
+			index = $.p(_elementCache, currentNode)
 			_elementCache.event[index] = {};
 		};
 		eventCollection = _elementCache.event[index];
@@ -1840,9 +1720,9 @@ var _event_by_fun = (function() {
 
 	_testDIV.setAttribute(attrKey, testEvent);
 	if (typeof _testDIV.getAttribute(attrKey) === "string") {
-		return false;
+		return $FALSE;
 	}
-	return true;
+	return $TRUE;
 }());
 V.ra(function(attrKey){
 	attrKey.indexOf("on") === 0;

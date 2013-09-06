@@ -32,8 +32,7 @@ function _buildHandler(handleNodeTree) {
 			var handleFactory = V.handles[item_node.handleName];
 			if (handleFactory) {
 				var handle = handleFactory(item_node, index, handleNodeTree)
-				// handle&&$.push(handles, $.bind(handle,item_node));
-				handle && $.push(handles, handle);
+				handle && $.p(handles, handle);
 			}
 		}
 	});
@@ -54,8 +53,8 @@ function _buildTrigger(handleNodeTree, dataManager) {
 					var key = trigger.key = trigger.key || "";
 					trigger.handleId = trigger.handleId || handle.id;
 					//unshift list and In order to achieve the trigger can be simulated bubble
-					$.unshift((triggerTable[key]||(triggerTable[key]  =  [])), trigger); //Storage as key -> array
-					$.push(handle._triggers, trigger); //Storage as array
+					$.us((triggerTable[key]||(triggerTable[key]  =  [])), trigger); //Storage as key -> array
+					$.p(handle._triggers, trigger); //Storage as array
 				}
 			}
 		} else if (handle.type === "element") {
@@ -63,7 +62,7 @@ function _buildTrigger(handleNodeTree, dataManager) {
 				nodeHTMLStr = node.outerHTML.replace(node.innerHTML, ""),
 				attrs = nodeHTMLStr.match(_attrRegExp);
 
-			$.forEach(attrs, function(attrStr) {
+			$.fE(attrs, function(attrStr) {
 				attributeHandle(attrStr, node, handle, triggerTable);
 
 			});
@@ -74,27 +73,27 @@ function _buildTrigger(handleNodeTree, dataManager) {
 function _create(data) { //data maybe basedata or dataManager
 	var self = this,
 		NodeList_of_ViewInstance = {}, //save newDOM  without the most top of parentNode -- change with append!!
-		topNode = $.create(self.handleNodeTree);
-	topNode.currentNode = $.DOM.clone(shadowBody);
-	$.pushByID(NodeList_of_ViewInstance, topNode);
+		topNode = $.c(self.handleNodeTree);
+	topNode.currentNode = $.D.cl(shadowBody);
+	$.pI(NodeList_of_ViewInstance, topNode);
 
 	_traversal(topNode, function(node, index, parentNode) {
-		node = $.pushByID(NodeList_of_ViewInstance, $.create(node));
+		node = $.pI(NodeList_of_ViewInstance, $.c(node));
 		if (!node.ignore) {
 			var currentParentNode = NodeList_of_ViewInstance[parentNode.id].currentNode || topNode.currentNode;
-			var currentNode = node.currentNode = $.DOM.clone(node.node);
-			$.DOM.append(currentParentNode, currentNode);
+			var currentNode = node.currentNode = $.D.cl(node.node);
+			$.D.ap(currentParentNode, currentNode);
 		} else {
 
 			_traversal(node, function(node) { //ignore Node's childNodes will be ignored too.
-				node = $.pushByID(NodeList_of_ViewInstance, $.create(node));
+				node = $.pI(NodeList_of_ViewInstance, $.c(node));
 			});
-			return false
+			return $FALSE
 		}
 	});
 
 
-	$.forEach(self._handles, function(handle) {
+	$.fE(self._handles, function(handle) {
 		handle.call(self, NodeList_of_ViewInstance);
 	});
 	return ViewInstance(self.handleNodeTree, NodeList_of_ViewInstance, self._triggerTable, data);

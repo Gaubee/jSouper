@@ -1,8 +1,8 @@
 var _addEventListener = function(Element, eventName, eventFun) {
-	Element.addEventListener(eventName, eventFun, false);
+	Element.addEventListener(eventName, eventFun, $FALSE);
 },
 	_removeEventListener = function(Element, eventName, eventFun) {
-		Element.removeEventListener(eventName, eventFun, false);
+		Element.removeEventListener(eventName, eventFun, $FALSE);
 	},
 	_attachEvent = function(Element, eventName, eventFun) {
 		Element.attachEvent("on" + eventName, eventFun);
@@ -19,11 +19,11 @@ var _addEventListener = function(Element, eventName, eventFun) {
 		var attrOuter = _getAttrOuter(parserNode),
 			eventName =  key.replace("event-on", "").replace("event-", ""),
 			eventFun = dm.get(attrOuter),//Function("return " + attrOuter.replace(_ieEnterPlaceholderRegExp,"\n"))(),
-			index = $.indexOf(_elementCache, currentNode),
+			index = $.iO(_elementCache, currentNode),
 			eventCollection,
 			oldEventFun;
 		if (index === -1) {
-			index = $.push(_elementCache, currentNode)
+			index = $.p(_elementCache, currentNode)
 			_elementCache.event[index] = {};
 		};
 		eventCollection = _elementCache.event[index];

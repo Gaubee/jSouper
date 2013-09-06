@@ -8,17 +8,17 @@ var _parse = function(node) {//get all childNodes
 		switch (child_node.nodeType) {
 			case 3:
 				if ($.trim(child_node.data)) {
-					$.push(result, new TextHandle(child_node))
+					$.p(result, new TextHandle(child_node))
 				}
 				break;
 			case 1:
 				if (child_node.tagName.toLowerCase() === "span" && child_node.getAttribute("type") === "handle") {
 					var handleName = child_node.getAttribute("handle");
-					if (handleName !== null) {
-						$.push(result, new TemplateHandle(handleName, child_node))
+					if (handleName !== $NULL) {
+						$.p(result, new TemplateHandle(handleName, child_node))
 					}
 				} else {
-					$.push(result, new ElementHandle(child_node))
+					$.p(result, new ElementHandle(child_node))
 				}
 				break;
 		}
@@ -40,7 +40,7 @@ function Handle(type, opction) {
 	if (type) {
 		self.type = type;
 	}
-	$.forIn(opction, function(val,key) {
+	$.fI(opction, function(val,key) {
 		self[key] = val;
 	});
 };
@@ -48,17 +48,17 @@ Handle.init = function(self,weights){
 	self.id = $.uid();//weights <= 1
 	if (weights<2)return;
 	self._controllers = [];//weights <= 2
-	self._controllers[true] = [];//In the #if block scope
-	self._controllers[false] = [];//In the #else block scope
+	self._controllers[$TRUE] = [];//In the #if block scope
+	self._controllers[$FALSE] = [];//In the #else block scope
 	if (weights<3)return;
 	self._triggers = [];//weights <= 3
 };
 Handle.prototype = {
 	nodeType:0,
-	ignore: false, //ignore Handle --> no currentNode
-	display: false, //function of show or hidden DOM
+	ignore: $FALSE, //ignore Handle --> no currentNode
+	display: $FALSE, //function of show or hidden DOM
 	childNodes:[],
-	parentNode: null,
+	parentNode: $NULL,
 	type: "handle"
 };
 
@@ -76,7 +76,7 @@ function TemplateHandle(handleName, node) {
 	Handle.init(self,3);
 };
 TemplateHandle.prototype = Handle("handle", {
-	ignore: true,
+	ignore: $TRUE,
 	nodeType: 1
 });
 

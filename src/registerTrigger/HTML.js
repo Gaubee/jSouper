@@ -8,7 +8,7 @@ V.rt("HTML", function(handle, index, parentHandle) {
 		// key:"",//default key === ""
 		bubble: true,
 		TEMP: {
-			cacheNode: $.DOM.clone(shadowDIV)
+			cacheNode: $.D.cl(shadowDIV)
 		},
 		event: function(NodeList_of_ViewInstance, dataManager) {
 			var htmlText = NodeList_of_ViewInstance[htmlTextHandlesId]._data,
@@ -18,22 +18,22 @@ V.rt("HTML", function(handle, index, parentHandle) {
 				parentNode = endCommentNode.parentNode,
 				brotherNodes = parentNode.childNodes,
 				index = -1;
-			$.forEach(brotherNodes, function(node, i) {
+			$.fE(brotherNodes, function(node, i) {
 				index = i;
 				if (node === startCommentNode) {
-					return false;
+					return $FALSE;
 				}
 			});
 			index = index + 1;
-			$.forEach(brotherNodes, function(node, i) {
+			$.fE(brotherNodes, function(node, i) {
 				if (node === endCommentNode) {
-					return false;
+					return $FALSE;
 				}
-				parentNode.removeChild(node);
+				$.D.rC(parentNode,node);
 			}, index);
 			cacheNode.innerHTML = htmlText;
-			$.forEach(cacheNode.childNodes, function(node, i) {
-				$.DOM.insertBefore(parentNode, node, endCommentNode);
+			$.fE(cacheNode.childNodes, function(node, i) {
+				$.D.iB(parentNode, node, endCommentNode);
 			});
 		}
 	}

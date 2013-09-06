@@ -4,16 +4,16 @@ var matchReg = /\{\{([\w\W]+?)\}\}/g,
 	// SingleQuotedString = /'(?:\.|(\\\')|[^\''\n])*'/g, //单引号字符串
 	QuotedString = /"(?:\.|(\\\")|[^\""\n])*"|'(?:\.|(\\\')|[^\''\n])*'/g, //单引号字符串
 	handles = {
-		"#if": true,
-		"#else": false, //no arguments
-		"/if": false,
-		"@": true,
-		"#each": true,
-		"/each": false,
-		"#with": true,
-		"/with": true,
-		"HTML": true,
-		">": true
+		"#if": $TRUE,
+		"#else": $FALSE, //no arguments
+		"/if": $FALSE,
+		"@": $TRUE,
+		"#each": $TRUE,
+		"/each": $FALSE,
+		"#with": $TRUE,
+		"/with": $TRUE,
+		"HTML": $TRUE,
+		">": $TRUE
 	},
 	operatorNum = {
 		"!": 1,
@@ -55,10 +55,10 @@ var matchReg = /\{\{([\w\W]+?)\}\}/g,
 	},
 	parseArg = function(argStr) {
 		var allStack = [],
-			inner = true;
+			inner = $TRUE;
 		// console.log("argStr:", argStr);
 		argStr.replace(/\(([\W\w]+?)\)/, function(matchSliceArgStr, sliceArgStr, index) {
-			inner = false;
+			inner = $FALSE;
 			var stack = parseStr(argStr.substring(0, index));
 			allStack.push.apply(allStack, stack);
 			// console.log();
@@ -119,7 +119,7 @@ var matchReg = /\{\{([\w\W]+?)\}\}/g,
 				// console.log(block.parse, index)
 			}
 			if (!block.value) {
-				block.ignore = true;
+				block.ignore = $TRUE;
 			}
 		});
 		arr.forEach(function(block, index) {
@@ -130,15 +130,15 @@ var matchReg = /\{\{([\w\W]+?)\}\}/g,
 				if (block.num === 1) {
 					if (prev && prev.type === "arg") { //a++
 						block.parse = "{$" + block.value + "(" + prev.parse + ")}";
-						prev.ignore = true;
+						prev.ignore = $TRUE;
 					} else { //++a
 						next.parse = "{" + block.value + "(" + next.parse + ")}"
-						block.ignore = true;
+						block.ignore = $TRUE;
 					}
 				} else if (block.num === 2) {
 					next.parse = "{" + block.value + "(" + prev.parse + next.parse + ")}"
-					prev.ignore = true;
-					block.ignore = true;
+					prev.ignore = $TRUE;
+					block.ignore = $TRUE;
 				} else { //()
 					// console.log(block)
 					throw "Unknown type:" + block.value

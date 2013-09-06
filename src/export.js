@@ -54,12 +54,12 @@ var _matchRule = /\{[\w\W]*?\([\w\W]*?\)[\s]*\}/;
 var V = global.ViewParser = {
 	prefix: "attr-",
 	parse: function(htmlStr) {
-		var _shadowBody = $.DOM.clone(shadowBody);
+		var _shadowBody = $.D.cl(shadowBody);
 		_shadowBody.innerHTML = htmlStr;
 		var insertBefore = [];
 		_traversal(_shadowBody, function(node, index, parentNode) {
 			if (node.nodeType === 3) {
-				$.push(insertBefore, {
+				$.p(insertBefore, {
 					baseNode: node,
 					parentNode: parentNode,
 					insertNodesHTML: parseRule(node.data)
@@ -67,7 +67,7 @@ var V = global.ViewParser = {
 			}
 		});
 
-		$.forEach(insertBefore, function(item) {
+		$.fE(insertBefore, function(item) {
 			var node = item.baseNode,
 				parentNode = item.parentNode,
 				insertNodesHTML = item.insertNodesHTML;
@@ -75,17 +75,17 @@ var V = global.ViewParser = {
 			//Using innerHTML rendering is complete immediate operation DOM, 
 			//innerHTML otherwise covered again, the node if it is not, 
 			//then memory leaks, IE can not get to the full node.
-			$.forEach(shadowDIV.childNodes, function(refNode) {
-				$.DOM.insertBefore(parentNode, refNode, node)
+			$.fE(shadowDIV.childNodes, function(refNode) {
+				$.D.iB(parentNode, refNode, node)
 			})
-			parentNode.removeChild(node);
+			$.D.rC(parentNode,node);
 		});
 		_shadowBody.innerHTML = _shadowBody.innerHTML;
 		var result = new ElementHandle(_shadowBody);
 		return View(result);
 	},
 	scans: function() {
-		$.forEach(document.getElementsByTagName("script"), function(scriptNode) {
+		$.fE(document.getElementsByTagName("script"), function(scriptNode) {
 			if (scriptNode.getAttribute("type") === "text/template") {
 				V.modules[scriptNode.getAttribute("name")] = V.parse(scriptNode.innerHTML);
 			}
@@ -99,7 +99,7 @@ var V = global.ViewParser = {
 	},
 	ra:function(match,handle){
 		var attrHandle = V.attrHandles[V.attrHandles.length] = {
-			match:null,
+			match:$NULL,
 			handle:handle
 		}
 		if (typeof match==="function") {

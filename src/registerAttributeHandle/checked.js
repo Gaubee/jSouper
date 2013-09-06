@@ -5,7 +5,7 @@ var iecheck = function(key, currentNode, parserNode) {
 		_asynAttributeAssignment(currentNode, "defaultChecked", key);
 		// currentNode.defaultChecked = true;
 	} else {
-		_asynAttributeAssignment(currentNode, "defaultChecked", false);
+		_asynAttributeAssignment(currentNode, "defaultChecked", $FALSE);
 		// currentNode.defaultChecked = false;
 	}
 	(this._attributeHandle = _AttributeHandleEvent.bool)(key, currentNode, parserNode);

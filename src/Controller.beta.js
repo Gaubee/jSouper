@@ -3,7 +3,7 @@ var Controller = function(dataManager, statementRelations) {
 	if (!(self instanceof Controller)) {
 		return new Controller(dataManager, statementRelations);
 	}
-	if (statementRelations === undefined) {
+	if (statementRelations === $UNDEFINED) {
 		statementRelations = dataManager;
 		dataManager = [];
 	}
@@ -14,16 +14,16 @@ var Controller = function(dataManager, statementRelations) {
 		dataManager = [dataManager];
 	};
 
-	(self.dataManager = $.slice(dataManager)).unshift(DataManager(statementRelations));
+	(self.dataManager = $.s(dataManager)).unshift(DataManager(statementRelations));
 
-	// $.fastEach(self.dataManager,function(dm){
+	// $.ftE(self.dataManager,function(dm){
 	// 	Controller.Soap(dm);
 	// });
 
 	var exportsDM = self.exports();
 	// console.log(exportsDM.id, exportsDM._triggerKeys)
 	var observerArr = Controller.flatFn(exportsDM._database);
-	$.fastEach(observerArr, function(fnKey) {
+	$.ftE(observerArr, function(fnKey) {
 		console.log("fnKey: ",fnKey)
 		Controller.relyOn.upPack(fnKey, observerArr._[fnKey].get, exportsDM, dataManager)();
 	});
@@ -34,23 +34,23 @@ Controller.flatFn = function(obj, prefixKey) {
 	hashTable._ = {};
 	if (obj instanceof Object) {
 		if (obj instanceof Controller.Observer) {
-			$.push(hashTable, prefixKey);
+			$.p(hashTable, prefixKey);
 			hashTable._[prefixKey] = obj;
 		} else if (obj instanceof Array) {
-			$.fastEach(obj,function(item,index){
+			$.ftE(obj,function(item,index){
 				index = prefixKey ? prefixKey + "." + index : index;
 				var substrHashTable = Controller.flatFn(item,index);
-				$.fastEach(substrHashTable,function(substrKey){
-					$.push(hashTable,substrKey);
+				$.ftE(substrHashTable,function(substrKey){
+					$.p(hashTable,substrKey);
 					hashTable._[substrKey] = substrHashTable._[substrKey]
 				})
 			});
 		} else {
-			$.forIn(obj, function(val, key) {
+			$.fI(obj, function(val, key) {
 				key = prefixKey ? prefixKey + "." + key : key;
 				var substrHashTable = Controller.flatFn(val,key);
-				$.fastEach(substrHashTable,function(substrKey){
-					$.push(hashTable,substrKey);
+				$.ftE(substrHashTable,function(substrKey){
+					$.p(hashTable,substrKey);
 					hashTable._[substrKey] = substrHashTable._[substrKey]
 				})
 			});
@@ -77,10 +77,10 @@ Controller.Observer = function(obs) {
 		_get = proto.get;
 	proto.set = function() {
 		var relys = Controller.relyOn.container[this.id],
-			updataKey = _set.apply(this, $.slice(arguments))
-			relys && $.fastEach(updataKey, function(key) {
+			updataKey = _set.apply(this, $.s(arguments))
+			relys && $.ftE(updataKey, function(key) {
 				if (key = relys[key]) {
-					$.fastEach(key, function(fn) {
+					$.ftE(key, function(fn) {
 						fn();
 					})
 				}
@@ -90,25 +90,25 @@ Controller.Observer = function(obs) {
 		var relyOn = Controller.relyOn,
 			id = this.id;
 		if (relyOn.status) {
-			$.push(relyOn.cache[id] || (relyOn.cache[id] = []), key);
+			$.p(relyOn.cache[id] || (relyOn.cache[id] = []), key);
 		}
-		return _get.apply(this, $.slice(arguments))
+		return _get.apply(this, $.s(arguments))
 	};
 })();
 Controller.relyOn = {
-	status: false,
+	status: $FALSE,
 	container: {},
 	cache: {},
 	pickUp: function(dm, fun) {
 		var self = this;
-		$.forIn(self.cache, function(keys, id) {
+		$.fI(self.cache, function(keys, id) {
 			var con = self.container[id] || (self.container[id] = {});
-			$.fastEach(keys, function(key) {
+			$.ftE(keys, function(key) {
 				var fns = con[key]
-				if (fns && $.indexOf(fns, fun) === -1) {
-					$.push(fns, fun)
+				if (fns && $.iO(fns, fun) === -1) {
+					$.p(fns, fun)
 				} else {
-					$.push((con[key] = []), fun)
+					$.p((con[key] = []), fun)
 				}
 			});
 		});
@@ -118,9 +118,9 @@ Controller.relyOn = {
 		var relyOn = this;
 
 		function upPackFn() {
-			relyOn.status = true;
+			relyOn.status = $TRUE;
 			var result = fn.apply(sdm, dms);
-			relyOn.status = false;
+			relyOn.status = $FALSE;
 			console.log(sdm.id, relyOn.cache)
 			relyOn.pickUp(sdm, upPackFn);
 			sdm.set(fnKey, result);
@@ -134,7 +134,7 @@ Controller.prototype.find = function(prefix) {
 	var self = this,
 		dataManager = self.dataManager,
 		result = [];
-	$.fastEach(dataManager, function(dm) {
+	$.ftE(dataManager, function(dm) {
 		var data = dm.get(prefix);
 		if (data) {
 			if (!(data instanceof Array)) {
@@ -149,9 +149,9 @@ Controller.prototype.findOne = function(prefix) {
 	var self = this,
 		dataManager = self.dataManager,
 		result;
-	$.forEach(dataManager, function(dm) {
+	$.fE(dataManager, function(dm) {
 		if (result = dm.get(prefix)) {
-			return false;
+			return $FALSE;
 		}
 	});
 	return result;
@@ -163,7 +163,7 @@ Controller.prototype.exports = function() {
 		result = dataManager[i];
 
 	for (; i > 0; i -= 1) {
-		var cache = $.create(dataManager[i - 1])
+		var cache = $.c(dataManager[i - 1])
 		cache._parentDataManager = result;
 		result = cache;
 	}
@@ -175,10 +175,10 @@ Controller.prototype.exports = function() {
 Controller.prototype.set = function() {
 	var self = this,
 		dm = this.exports();
-	return dm.set.apply(dm, $.slice(arguments));
+	return dm.set.apply(dm, $.s(arguments));
 }
 Controller.prototype.get = function() {
 	var self = this,
 		dm = this.exports();
-	return dm.get.apply(dm, $.slice(arguments));
+	return dm.get.apply(dm, $.s(arguments));
 }

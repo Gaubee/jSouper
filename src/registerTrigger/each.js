@@ -16,16 +16,16 @@ V.rt("#each", function(handle, index, parentHandle) {
 
 			(arrViewInstances = allArrViewInstances[id]||(allArrViewInstances[id] = [])).len = divideIndex;
 
-			$.forEach(data, function(eachItemData, index) {
+			$.fE(data, function(eachItemData, index) {
 
 				var viewInstance = arrViewInstances[index];
 				if (!viewInstance) {
 					viewInstance = arrViewInstances[index] = eachModuleConstructor();
 					dataManager.subset(viewInstance); //reset arrViewInstance's dataManager
-					inserNew = true;
+					inserNew = $TRUE;
 				}
 				if (!viewInstance._canRemoveAble) { //had being recovered into the packingBag
-					inserNew = true;
+					inserNew = $TRUE;
 				}
 
 				viewInstance.set(eachItemData);
@@ -35,7 +35,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 				}
 			});
 
-			$.forEach(arrViewInstances, function(eachItemHandle) {
+			$.fE(arrViewInstances, function(eachItemHandle) {
 				eachItemHandle.remove();
 			}, divideIndex);
 		}

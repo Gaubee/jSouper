@@ -7,10 +7,10 @@ var _with_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManag
 	if (!withViewInstance) {
 		return;
 	}
-	$.forEach(parentHandle.childNodes, function(child_handle, index, cs) { //get comment_endwith_id
+	$.fE(parentHandle.childNodes, function(child_handle, index, cs) { //get comment_endwith_id
 		if (child_handle.id === handle.id) {
 			comment_endwith_id = cs[index + 3].id;
-			return false;
+			return $FALSE;
 		}
 	});
 	console.log(show_or_hidden,NodeList_of_ViewInstance[comment_endwith_id].currentNode)
@@ -23,13 +23,13 @@ var _with_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManag
 V.rh("#with", function(handle, index, parentHandle) {
 	//The Nodes between #with and /with will be pulled out , and not to be rendered.
 	//which will be combined into new View module.
-	var _shadowBody = $.DOM.clone(shadowBody),
+	var _shadowBody = $.D.cl(shadowBody),
 		withModuleHandle = new ElementHandle(_shadowBody),
 		endIndex = 0;
 
 	// handle.arrViewInstances = [];//Should be at the same level with currentNode
 	var layer = 1;
-	$.forEach(parentHandle.childNodes, function(childHandle, index) {
+	$.fE(parentHandle.childNodes, function(childHandle, index) {
 		endIndex = index;
 		// console.log(childHandle,childHandle.handleName)
 		if (childHandle.handleName === "#with") {
@@ -38,10 +38,10 @@ V.rh("#with", function(handle, index, parentHandle) {
 		if (childHandle.handleName === "/with") {
 			layer -= 1;
 			if (!layer) {
-				return false
+				return $FALSE
 			}
 		}
-		$.push(withModuleHandle.childNodes, childHandle);
+		$.p(withModuleHandle.childNodes, childHandle);
 	}, index + 1);
 	// console.log("----",handle.id,"-------")
 	parentHandle.childNodes.splice(index + 1, endIndex - index - 1); //Pulled out

@@ -76,11 +76,11 @@ var _AttributeHandle = function(attrKey) {
 	var attrHandles = V.attrHandles,
 		result;
 	// console.log("attrKey:",attrKey)
-	$.forEach(attrHandles, function(attrHandle) {
+	$.fE(attrHandles, function(attrHandle) {
 		// console.log(attrHandle.match)
 		if (attrHandle.match(attrKey)) {
 			result = attrHandle.handle(attrKey);
-			return false
+			return $FALSE
 		}
 	});
 	return result || _AttributeHandleEvent.com;
@@ -105,7 +105,7 @@ var attributeHandle = function(attrStr, node, handle, triggerTable) {
 	if (_matchRule.test(attrValue)) {
 
 		var attrViewInstance = (V.attrModules[handle.id + attrKey] = V.parse(attrValue))(),
-			_shadowDIV = $.DOM.clone(shadowDIV); //parserNode
+			_shadowDIV = $.D.cl(shadowDIV); //parserNode
 		attrViewInstance.append(_shadowDIV);
 		attrViewInstance._isAttr = {
 			key: attrKey,
@@ -115,7 +115,7 @@ var attributeHandle = function(attrStr, node, handle, triggerTable) {
 			it will storage the property value where the currentNode,// and the dataManager, 
 			and lock it into attrViewInstance, 
 			waiting for updates the attribute.*/ //(so the trigger of be injecte in mush be unshift)
-			currentNode: null,
+			currentNode: $NULL,
 			_attributeHandle: _AttributeHandle(attrKey),
 			setAttribute: function(viewInstance, dataManager) { /*viewInstance ,dataManager*/
 				var self = this,
@@ -138,8 +138,8 @@ var attributeHandle = function(attrStr, node, handle, triggerTable) {
 				dataManager.collect(attrViewInstance);
 			}
 		}
-		$.forEach(attrViewInstance._triggers, function(key) {
-			$.unshift((triggerTable[key] || (triggerTable[key] = [])), attrTrigger);
+		$.fE(attrViewInstance._triggers, function(key) {
+			$.us((triggerTable[key] || (triggerTable[key] = [])), attrTrigger);
 		});
 
 	}

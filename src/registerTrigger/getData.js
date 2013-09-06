@@ -8,7 +8,7 @@ V.rt("", function(handle, index, parentHandle) {
 		if ($.isString(key)) { // single String
 			trigger = { //const 
 				key: ".", //const trigger
-				bubble: true,
+				bubble: $TRUE,
 				event: function(NodeList_of_ViewInstance, dataManager) {
 					NodeList_of_ViewInstance[textHandleId].currentNode.data = key.substring(1, key.length - 1);
 					// trigger.event = $.noop;
@@ -39,7 +39,7 @@ V.rt("", function(handle, index, parentHandle) {
 		if ($.isString(key)) { // single String
 			trigger = { //const 
 				key: ".", //const trigger
-				bubble: true,
+				bubble: $TRUE,
 				event: function(NodeList_of_ViewInstance, dataManager) {
 					NodeList_of_ViewInstance[this.handleId]._data = key.substring(1, key.length - 1);
 				}
@@ -47,7 +47,7 @@ V.rt("", function(handle, index, parentHandle) {
 		} else { //String for databese by key
 			trigger = {
 				key: key,
-				bubble: true,
+				bubble: $TRUE,
 				event: function(NodeList_of_ViewInstance, dataManager) {
 					NodeList_of_ViewInstance[this.handleId]._data = dataManager.get(key);
 				}

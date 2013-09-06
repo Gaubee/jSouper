@@ -4,9 +4,9 @@ var _event_by_fun = (function() {
 
 	_testDIV.setAttribute(attrKey, testEvent);
 	if (typeof _testDIV.getAttribute(attrKey) === "string") {
-		return false;
+		return $FALSE;
 	}
-	return true;
+	return $TRUE;
 }());
 V.ra(function(attrKey){
 	attrKey.indexOf("on") === 0;

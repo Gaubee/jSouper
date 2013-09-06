@@ -1,11 +1,13 @@
-var _commentPlaceholder = function(handle, parentHandle,commentText) {
+var _commentPlaceholder = function(handle, parentHandle, commentText) {
 	var handleName = handle.handleName,
-		commentText = commentText||(handleName + handle.id),
-		commentNode = $.DOM.Comment(commentText),
+		commentText = commentText || (handleName + handle.id),
+		commentNode = $.D.C(commentText),
 		commentHandle = new CommentHandle(commentNode); // commentHandle as Placeholder
 
-	$.push(handle.childNodes, commentHandle);
-	$.insertAfter(parentHandle.childNodes, handle, commentHandle); //Node position calibration//no "$.insert" Avoid sequence error
+	$.p(handle.childNodes, commentHandle);
+	$.iA(parentHandle.childNodes, handle, commentHandle);
+	//Node position calibration
+	//no "$.insert" Avoid sequence error
 	return commentHandle;
 };
 var placeholderHandle = function(handle, index, parentHandle) {

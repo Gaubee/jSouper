@@ -8,32 +8,32 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	}
 	var self = this,
 		dataManager;
-	self._isAttr = false;//if no null --> Storage the attribute key and current.
+	self._isAttr = $FALSE;//if no null --> Storage the attribute key and current.
 	self.dataManager ;//= dataManager;
 	self.handleNodeTree = handleNodeTree;
-	self.DOMArr = $.slice(handleNodeTree.childNodes);
+	self.DOMArr = $.s(handleNodeTree.childNodes);
 	self.NodeList = NodeList;
 	var el = self.topNode();//NodeList[handleNodeTree.id].currentNode;
 	self._packingBag = el;
 	self._id = $.uid();
-	self._open = $.DOM.Comment(self._id + " _open");
-	self._close = $.DOM.Comment(self._id + " _close");
-	self._canRemoveAble = false;
+	self._open = $.D.C(self._id + " _open");
+	self._close = $.D.C(self._id + " _close");
+	self._canRemoveAble = $FALSE;
 	self._AVI = {};
 	self._ALVI = {};
 	self._WVI = {};
-	$.DOM.insertBefore(el, self._open, el.childNodes[0]);
-	$.DOM.append(el, self._close);
+	$.D.iB(el, self._open, el.childNodes[0]);
+	$.D.ap(el, self._close);
 	(self._triggers = [])._ = {};
 	self.TEMP = {};
 
-	$.forIn(triggerTable, function(tiggerCollection, key) {
+	$.fI(triggerTable, function(tiggerCollection, key) {
 		if (key&&key!==".") {
-			$.push(self._triggers,key);
+			$.p(self._triggers,key);
 		}
 		self._triggers._[key] = tiggerCollection;
 	});
-	$.forEach(triggerTable["."], function(tiggerFun) { //const value
+	$.fE(triggerTable["."], function(tiggerFun) { //const value
 		tiggerFun.event(NodeList, dataManager);
 	});
 	if (data instanceof DataManager) {
@@ -47,7 +47,7 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 
 function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {
 	var self = this;
-	$.forEach(tiggerCollection, function(trigger) {
+	$.fE(tiggerCollection, function(trigger) {
 		// if (trigger.key) {//DEBUG
 		// 	console.log("event:",trigger.key," to ",dataManager.get(trigger.key),"fires")
 		// }else{
@@ -64,7 +64,7 @@ function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {
 function _replaceTopHandleCurrent(self, el) {
 	// var handleNodeTree = self.handleNodeTree,
 	// 	NodeList = self.NodeList;
-	self._canRemoveAble = true;
+	self._canRemoveAble = $TRUE;
 	self.topNode(el);
 	// NodeList[handleNodeTree.id].currentNode = el;
 	// self.reDraw();
@@ -74,7 +74,7 @@ ViewInstance.prototype = {
 		var self = this,
 			dataManager = self.dataManager;
 			
-		$.forEach(self._triggers, function(key) {
+		$.fE(self._triggers, function(key) {
 			dataManager._touchOffSubset(key)
 		});
 		return self;
@@ -88,12 +88,12 @@ ViewInstance.prototype = {
 			viewInstance,
 			currentTopNode = NodeList[handleNodeTree.id].currentNode;
 
-		$.forEach(currentTopNode.childNodes, function(child_node) {
-			$.DOM.append(el, child_node);
+		$.fE(currentTopNode.childNodes, function(child_node) {
+			$.D.ap(el, child_node);
 		});
 		_replaceTopHandleCurrent(self, el);
 
-		$.fastEach(NodeList[handleNodeTree.id].childNodes,function(child_node){
+		$.ftE(NodeList[handleNodeTree.id].childNodes,function(child_node){
 			if (viewInstance = AllLayoutViewInstance[child_node.id]||AllWithViewInstance[child_node.id]) {
 				_replaceTopHandleCurrent(viewInstance, el)
 			}
@@ -111,12 +111,12 @@ ViewInstance.prototype = {
 			currentTopNode = self.topNode(),//NodeList[handleNodeTree.id].currentNode,
 			elParentNode = el.parentNode;
 
-		$.forEach(currentTopNode.childNodes, function(child_node) {
-			$.DOM.insertBefore(elParentNode, child_node, el);
+		$.fE(currentTopNode.childNodes, function(child_node) {
+			$.D.iB(elParentNode, child_node, el);
 		});
 		_replaceTopHandleCurrent(self, elParentNode);
 
-		$.fastEach(NodeList[handleNodeTree.id].childNodes,function(child_node){
+		$.ftE(NodeList[handleNodeTree.id].childNodes,function(child_node){
 			if (viewInstance = AllLayoutViewInstance[child_node.id]||AllWithViewInstance[child_node.id]) {
 				_replaceTopHandleCurrent(viewInstance, elParentNode)
 			}
@@ -134,30 +134,30 @@ ViewInstance.prototype = {
 				closeNode = self._close,
 				startIndex = 0;
 
-			$.forEach(currentTopNode.childNodes, function(child_node, index) {
+			$.fE(currentTopNode.childNodes, function(child_node, index) {
 				if (child_node === openNode) {
 					startIndex = index
 				}
 			});
-			$.forEach(currentTopNode.childNodes, function(child_node, index) {
+			$.fE(currentTopNode.childNodes, function(child_node, index) {
 				// console.log(index,child_node,el)
-				$.DOM.append(el, child_node);
+				$.D.ap(el, child_node);
 				if (child_node === closeNode) {
-					return false;
+					return $FALSE;
 				}
 			}, startIndex);
 			_replaceTopHandleCurrent(self, el);
-			this._canRemoveAble = false; //Has being recovered into the _packingBag,can't no be remove again. --> it should be insert
+			this._canRemoveAble = $FALSE; //Has being recovered into the _packingBag,can't no be remove again. --> it should be insert
 		}
 		return self;
 	},
 	get: function get() {
 		var dm = this.dataManager;
-		return dm.get.apply(dm, $.slice(arguments));
+		return dm.get.apply(dm, $.s(arguments));
 	},
 	set: function set() {
 		var dm = this.dataManager;
-		return dm.set.apply(dm, $.slice(arguments))
+		return dm.set.apply(dm, $.s(arguments))
 	},
 	topNode:function(newCurrentTopNode){
 		var self = this,
