@@ -10,7 +10,7 @@
 <script type="text/javascript">
 	stress = ViewParser.parse('<h1>{(stress)}')().append(document.body);
 	console.time("attr");
-	var i = 100000;
+	var i = 1000000;
 	do{
 		stress.set("stress",i)
 	}while(i--);

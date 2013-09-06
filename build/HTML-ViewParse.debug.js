@@ -1438,18 +1438,20 @@ V.rt("", function(handle, index, parentHandle) {
 			trigger = {
 				key: key,
 				event: function(NodeList_of_ViewInstance, dataManager, triggerBy, isAttr, vi) { //call by ViewInstance's Node
-					var data= dataManager.get(key),
+					var data = dataManager.get(key),
 						currentNode = NodeList_of_ViewInstance[textHandleId].currentNode;
 					if (isAttr) {
 						//IE浏览器直接编译，故不需要转义，其他浏览器需要以字符串绑定到属性中。需要转义，否则会出现引号冲突
-						if (isAttr.key.indexOf("on") === 0&&!_isIE) {
+						if (isAttr.key.indexOf("on") === 0 && !_isIE) {
 							data = String(data).replace(/"/g, '\\"').replace(/'/g, "\\'");
 						}
-						currentNode.data = data;
-					}else{
-						_asynAttributeAssignment(currentNode,"data",data);//1300.000ms --> 23% faster
-						// currentNode.data = data;//1600.000ms
+						// 	currentNode.data = data;
+						// }else{
+						// 	_asynAttributeAssignment(currentNode,"data",data);//1300.000ms --> 23% faster
+						// 	// currentNode.data = data;//1600.000ms
+						// }
 					}
+					currentNode.data = data;
 				}
 			}
 		}
@@ -1661,69 +1663,69 @@ var _testDIV = $.DOM.clone(shadowDIV);
 var _getAttrOuter = Function("n", "return n." + (_hasOwn.call(_testDIV, "textContent") ? "textContent" : "innerText") + "||''")
 var _booleanFalseRegExp = /false|undefined|null|NaN/;
 
-var _ti,
-	uidKey,
-	_asynSetAttribute = function(obj, funName, key, value) {
-		uidKey = $.uidAvator + key;
-		if (!((_ti = obj[uidKey]) instanceof _asynSetAttributeFactory)) {
-			_ti = obj[uidKey] = new _asynSetAttributeFactory(obj, funName, key, value)
-		}
-		_ti.exports(obj, value);
-	},
-	_asynSetAttributeFactory = function(obj, funName, key, value) {
-		var self = this;
-		self.funName = funName;
-		self.key = key;
-		self.value = value;
-		self.exports = self._set;
-	},
-	_asynAttributeAssignment = function(obj, key, value) { //1450.000ms --> 1250.000ms ==>16% faster
-		uidKey = $.uidAvator + key;
-		if (!((_ti = obj[uidKey]) instanceof _asynAttributeAssignmentFactory)) {
-			_ti = obj[uidKey] = new _asynAttributeAssignmentFactory(obj, key, value)
-		}
-		_ti.exports(obj, value);
-	},
-	_asynAttributeAssignmentFactory = function(obj, key, value) {
-		var self = this;
-		self.key = key;
-		self.value = value;
-		self.exports = self._set;
-	};
-_asynSetAttributeFactory.prototype = {
-	// funName: undefined, //undefined value will be rewrite to attribute but not in prototype
-	// ~~obj:undefined,~~ //Avoid circular references, leading to memory leaks.
-	// key: undefined,
-	// value: undefined,
-	// exports: undefined
-	_cache: function(obj, newValue) {
-		this.value = newValue;
-	},
-	_set: function(obj, newValue) {
-		var self = this,
-			funName = self.funName,
-			key = self.key;
-		setTimeout(function() {
-			obj[funName](key, self.value);
-			self.exports = self._set;
-		}, 0);
-		(self.exports = self._cache).call(self, obj, newValue);
-	}
-}
-_asynAttributeAssignmentFactory.prototype = {
-	_cache: function(obj, newValue) {
-		this.value = newValue;
-	},
-	_set: function(obj, newValue) {
-		var self = this,
-			key = self.key;
-		setTimeout(function() {
-			obj[key] = self.value;
-			self.exports = self._set;
-		}, 0);
-		(self.exports = self._cache).call(self, obj, newValue);
-	}
-}
+// var _ti,
+// 	uidKey,
+// 	_asynSetAttribute = function(obj, funName, key, value) {
+// 		uidKey = $.uidAvator + key;
+// 		if (!((_ti = obj[uidKey]) instanceof _asynSetAttributeFactory)) {
+// 			_ti = obj[uidKey] = new _asynSetAttributeFactory(funName, key, value)
+// 		}
+// 		_ti.exports(obj, value);
+// 	},
+// 	_asynSetAttributeFactory = function(funName, key, value) {
+// 		var self = this;
+// 		self.funName = funName;
+// 		self.key = key;
+// 		self.value = value;
+// 		self.exports = self._set;
+// 	},
+// 	_asynAttributeAssignment = function(obj, key, value) { //1450.000ms --> 1250.000ms ==>16% faster
+// 		uidKey = $.uidAvator + key;
+// 		if (!((_ti = obj[uidKey]) instanceof _asynAttributeAssignmentFactory)) {
+// 			_ti = obj[uidKey] = new _asynAttributeAssignmentFactory(key, value)
+// 		}
+// 		_ti.exports(obj, value);
+// 	},
+// 	_asynAttributeAssignmentFactory = function(key, value) {
+// 		var self = this;
+// 		self.key = key;
+// 		self.value = value;
+// 		self.exports = self._set;
+// 	};
+// _asynSetAttributeFactory.prototype = {
+// 	// funName: undefined, //undefined value will be rewrite to attribute but not in prototype
+// 	// ~~obj:undefined,~~ //Avoid circular references, leading to memory leaks.
+// 	// key: undefined,
+// 	// value: undefined,
+// 	// exports: undefined
+// 	_cache: function(obj, newValue) {
+// 		this.value = newValue;
+// 	},
+// 	_set: function(obj, newValue) {
+// 		var self = this,
+// 			funName = self.funName,
+// 			key = self.key;
+// 		setTimeout(function() {
+// 			obj[funName](key, self.value);
+// 			self.exports = self._set;
+// 		}, 0);
+// 		(self.exports = self._cache).call(self, obj, newValue);
+// 	}
+// }
+// _asynAttributeAssignmentFactory.prototype = {
+// 	_cache: function(obj, newValue) {
+// 		this.value = newValue;
+// 	},
+// 	_set: function(obj, newValue) {
+// 		var self = this,
+// 			key = self.key;
+// 		setTimeout(function() {
+// 			obj[key] = self.value;
+// 			self.exports = self._set;
+// 		}, 0);
+// 		(self.exports = self._cache).call(self, obj, newValue);
+// 	}
+// }
 var _AttributeHandleEvent = {
 	event: function(key, currentNode, parserNode) { //on开头的事件绑定，IE需要绑定Function类型，现代浏览器绑定String类型（_AttributeHandleEvent.com）
 		var attrOuter = _getAttrOuter(parserNode);
@@ -1732,35 +1734,35 @@ var _AttributeHandleEvent = {
 		} catch (e) {
 			attrOuterEvent = $.noop; //失败使用空函数替代
 		}
-		_asynSetAttribute(currentNode, "setAttribute", key, attrOuterEvent)
-		// currentNode.setAttribute(key, attrOuterEvent);
+		// _asynSetAttribute(currentNode, "setAttribute", key, attrOuterEvent)
+		currentNode.setAttribute(key, attrOuterEvent);
 	},
 	style: function(key, currentNode, parserNode) {
 		var attrOuter = _getAttrOuter(parserNode);
-		_asynSetAttribute(currentNode.style, "setAttribute", 'cssText', attrOuter)
-		// currentNode.style.setAttribute('cssText', attrOuter);
+		// _asynSetAttribute(currentNode.style, "setAttribute", 'cssText', attrOuter)
+		currentNode.style.setAttribute('cssText', attrOuter);
 	},
 	com: function(key, currentNode, parserNode) {
 		var attrOuter = _getAttrOuter(parserNode);
-		_asynSetAttribute(currentNode, "setAttribute", key, attrOuter)
-		// currentNode.setAttribute(key, attrOuter)
+		// _asynSetAttribute(currentNode, "setAttribute", key, attrOuter)
+		currentNode.setAttribute(key, attrOuter)
 	},
 	dir: function(key, currentNode, parserNode) {
 		var attrOuter = _getAttrOuter(parserNode);
-		_asynAttributeAssignment(currentNode, key, attrOuter);
-		// currentNode[key] = attrOuter;
+		// _asynAttributeAssignment(currentNode, key, attrOuter);
+		currentNode[key] = attrOuter;
 	},
 	bool: function(key, currentNode, parserNode) {
 		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
 
 		if (attrOuter) {
 			// currentNode.setAttribute(key, key);
-			_asynAttributeAssignment(currentNode, key, key);
-			// currentNode[key] = key;
+			// _asynAttributeAssignment(currentNode, key, key);
+			currentNode[key] = key;
 		} else {
 			// currentNode.removeAttribute(key);
-			_asynAttributeAssignment(currentNode, key, false);
-			// currentNode[key] = false;
+			// _asynAttributeAssignment(currentNode, key, false);
+			currentNode[key] = false;
 		}
 	}
 };

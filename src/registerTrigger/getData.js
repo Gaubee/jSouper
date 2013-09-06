@@ -18,18 +18,20 @@ V.rt("", function(handle, index, parentHandle) {
 			trigger = {
 				key: key,
 				event: function(NodeList_of_ViewInstance, dataManager, triggerBy, isAttr, vi) { //call by ViewInstance's Node
-					var data= dataManager.get(key),
+					var data = dataManager.get(key),
 						currentNode = NodeList_of_ViewInstance[textHandleId].currentNode;
 					if (isAttr) {
 						//IE浏览器直接编译，故不需要转义，其他浏览器需要以字符串绑定到属性中。需要转义，否则会出现引号冲突
-						if (isAttr.key.indexOf("on") === 0&&!_isIE) {
+						if (isAttr.key.indexOf("on") === 0 && !_isIE) {
 							data = String(data).replace(/"/g, '\\"').replace(/'/g, "\\'");
 						}
-						currentNode.data = data;
-					}else{
-						_asynAttributeAssignment(currentNode,"data",data);//1300.000ms --> 23% faster
-						// currentNode.data = data;//1600.000ms
+						// 	currentNode.data = data;
+						// }else{
+						// 	_asynAttributeAssignment(currentNode,"data",data);//1300.000ms --> 23% faster
+						// 	// currentNode.data = data;//1600.000ms
+						// }
 					}
+					currentNode.data = data;
 				}
 			}
 		}
