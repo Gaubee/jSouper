@@ -13,7 +13,7 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	self.handleNodeTree = handleNodeTree;
 	self.DOMArr = $.slice(handleNodeTree.childNodes);
 	self.NodeList = NodeList;
-	var el = NodeList[handleNodeTree.id].currentNode;
+	var el = self.topNode();//NodeList[handleNodeTree.id].currentNode;
 	self._packingBag = el;
 	self._id = $.uid();
 	self._open = $.DOM.Comment(self._id + " _open");
@@ -62,10 +62,11 @@ function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {
 };
 
 function _replaceTopHandleCurrent(self, el) {
-	var handleNodeTree = self.handleNodeTree,
-		NodeList = self.NodeList;
+	// var handleNodeTree = self.handleNodeTree,
+	// 	NodeList = self.NodeList;
 	self._canRemoveAble = true;
-	NodeList[handleNodeTree.id].currentNode = el;
+	self.topNode(el);
+	// NodeList[handleNodeTree.id].currentNode = el;
 	// self.reDraw();
 };
 ViewInstance.prototype = {
@@ -107,7 +108,7 @@ ViewInstance.prototype = {
 			AllLayoutViewInstance = self._ALVI,
 			AllWithViewInstance = self._WVI,
 			viewInstance,
-			currentTopNode = NodeList[handleNodeTree.id].currentNode,
+			currentTopNode = self.topNode(),//NodeList[handleNodeTree.id].currentNode,
 			elParentNode = el.parentNode;
 
 		$.forEach(currentTopNode.childNodes, function(child_node) {
@@ -128,7 +129,7 @@ ViewInstance.prototype = {
 		if (self._canRemoveAble) {
 			var handleNodeTree = self.handleNodeTree,
 				NodeList = self.NodeList,
-				currentTopNode = NodeList[handleNodeTree.id].currentNode,
+				currentTopNode = self.topNode(),//NodeList[handleNodeTree.id].currentNode,
 				openNode = self._open,
 				closeNode = self._close,
 				startIndex = 0;
@@ -150,16 +151,22 @@ ViewInstance.prototype = {
 		}
 		return self;
 	},
-	get: function get(key) {
+	get: function get() {
 		var dm = this.dataManager;
-		return dm.get.call(dm, key);
+		return dm.get.apply(dm, $.slice(arguments));
 	},
-	set: function set(key,obj) {
+	set: function set() {
 		var dm = this.dataManager;
-		if (arguments.length===2) {
-			return dm.set.call(dm, key,obj);
+		return dm.set.apply(dm, $.slice(arguments))
+	},
+	topNode:function(newCurrentTopNode){
+		var self = this,
+			handleNodeTree = self.handleNodeTree,
+			NodeList = self.NodeList;
+		if (newCurrentTopNode) {
+			NodeList[handleNodeTree.id].currentNode = newCurrentTopNode
 		}else{
-			return dm.set.call(dm, key);
+			return NodeList[handleNodeTree.id].currentNode
 		}
 	},
 	touchOff: function(key) {

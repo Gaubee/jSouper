@@ -8,17 +8,17 @@ var _parse = function(node) {//get all childNodes
 		switch (child_node.nodeType) {
 			case 3:
 				if ($.trim(child_node.data)) {
-					$.push(result, TextHandle(child_node))
+					$.push(result, new TextHandle(child_node))
 				}
 				break;
 			case 1:
 				if (child_node.tagName.toLowerCase() === "span" && child_node.getAttribute("type") === "handle") {
 					var handleName = child_node.getAttribute("handle");
 					if (handleName !== null) {
-						$.push(result, TemplateHandle(handleName, child_node))
+						$.push(result, new TemplateHandle(handleName, child_node))
 					}
 				} else {
-					$.push(result, ElementHandle(child_node))
+					$.push(result, new ElementHandle(child_node))
 				}
 				break;
 		}
@@ -68,9 +68,9 @@ Handle.prototype = {
 
 function TemplateHandle(handleName, node) {
 	var self = this;
-	if (!(self instanceof TemplateHandle)) {
-		return new TemplateHandle(handleName, node);
-	}
+	// if (!(self instanceof TemplateHandle)) {
+	// 	return new TemplateHandle(handleName, node);
+	// }
 	self.handleName = $.trim(handleName);
 	self.childNodes = _parse(node);
 	Handle.init(self,3);
@@ -86,9 +86,9 @@ TemplateHandle.prototype = Handle("handle", {
 
 function ElementHandle(node) {
 	var self = this;
-	if (!(self instanceof ElementHandle)) {
-		return new ElementHandle(node);
-	}
+	// if (!(self instanceof ElementHandle)) {
+	// 	return new ElementHandle(node);
+	// }
 	self.node = node;
 	self.childNodes = _parse(node);
 	Handle.init(self,3);
@@ -102,9 +102,9 @@ ElementHandle.prototype = Handle("element", {
 
 function TextHandle(node) {
 	var self = this;
-	if (!(self instanceof TextHandle)) {
-		return new TextHandle(node);
-	}
+	// if (!(self instanceof TextHandle)) {
+	// 	return new TextHandle(node);
+	// }
 	self.node = node;
 	Handle.init(self,2);
 };
@@ -117,9 +117,9 @@ TextHandle.prototype = Handle("text", {
 
 function CommentHandle(node) {
 	var self = this;
-	if (!(self instanceof CommentHandle)) {
-		return new CommentHandle(node);
-	}
+	// if (!(self instanceof CommentHandle)) {
+	// 	return new CommentHandle(node);
+	// }
 	self.node = node;
 	Handle.init(self,1);
 };

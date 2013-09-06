@@ -139,7 +139,7 @@ var attributeHandle = function(attrStr, node, handle, triggerTable) {
 			}
 		}
 		$.forEach(attrViewInstance._triggers, function(key) {
-			$.unshift((triggerTable[key] = triggerTable[key] || []), attrTrigger);
+			$.unshift((triggerTable[key] || (triggerTable[key] = [])), attrTrigger);
 		});
 
 	}

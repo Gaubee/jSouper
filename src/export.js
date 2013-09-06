@@ -81,7 +81,7 @@ var V = global.ViewParser = {
 			parentNode.removeChild(node);
 		});
 		_shadowBody.innerHTML = _shadowBody.innerHTML;
-		var result = ElementHandle(_shadowBody);
+		var result = new ElementHandle(_shadowBody);
 		return View(result);
 	},
 	scans: function() {

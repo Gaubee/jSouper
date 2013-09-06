@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>HTML-ViewParse</title>
+	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js"></script>	
+	<script type="text/javascript" src="../src/Controller.beta.js"></script>	
+	<script type="text/javascript">
+		(function (ie){if(!ie)return;var b=document.createElement("script");b.setAttribute("type","text/javascript");b.setAttribute("src","http://"+location.hostname+"/firebug-lite/build/firebug-lite.js");document.getElementsByTagName("head")[0].appendChild(b)}(!+"\v1")); 
+	</script>
+	<style type="text/css">
+	</style>
+</head>
+<body>
+	<script type="text/template" name="with">
+		{#with({(title)})}
+			{(title)}
+			<br/>
+			{#with( {($THIS)} )}{($title)}
+				{#each( {($title)} )}
+
+				{#with( {($THIS)} )}
+					
+					{#each( {($title)} )}
+					
+						{($THIS)}|
+					{/each()}
+				{/with()}
+
+				{/each()}
+			{/with()}
+			<br/>
+			{($THIS)}
+			<br/>
+
+		{/with()}
+		<hr />
+	</script>
+</body>
+
+
+
+</html>
+
+<script type="text/javascript">
+	ViewParser.scans();
+	w = ViewParser.modules["with"]({
+		title:"Hehehe"
+	}).append(document.body)
+	setTimeout(function(){
+		w.set("title","Bababa")
+	},1200)
+	setTimeout(function(){
+		w.set("title","Mamama")
+	},2400)
+</script>

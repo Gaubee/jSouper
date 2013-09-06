@@ -12,13 +12,13 @@ var withTrigger = function(handle, index, parentHandle) {
 				withViewInstance = AllLayoutViewInstance[id],// || (AllLayoutViewInstance[id] = V.withModules[id](data).insert(NodeList_of_ViewInstance[comment_with_id].currentNode)),
 				inserNew;
 			if (!withViewInstance) {
-				console.log(NodeList_of_ViewInstance[comment_with_id].currentNode)
+				// console.log(NodeList_of_ViewInstance[comment_with_id].currentNode)
 				withViewInstance = AllLayoutViewInstance[id] = V.withModules[id]();
 				dataManager.subset(data,withViewInstance)
-				console.log(withViewInstance)
+				// console.log(withViewInstance)
 				withViewInstance.insert(NodeList_of_ViewInstance[comment_with_id].currentNode)
 			}
-			console.log(data)
+			// console.log(data)
 			withViewInstance.set(data);
 		}
 	}

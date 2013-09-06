@@ -30,8 +30,8 @@ DataManager.config = {
 DataManager.prototype = {
 	getNC: function(key) {
 		var arrKey = key.split("."),
-		result = this._database;
-		if (key !== "") {
+			result = this._database;
+		if (key !== ""&&result instanceof Object) {
 			do {
 				result = result[arrKey.splice(0, 1)];
 			} while (result !== undefined && arrKey.length);
@@ -46,30 +46,32 @@ DataManager.prototype = {
 			cacheData = self._cacheData,
 			result = baseData,
 			formateKey = (key || "");
-		if (!key.indexOf($T)) {
-			var $TLen = $T.length;
-			if (key.charAt($TLen) === ".") {
-				formateKey = key.substring($TLen + 1);
-			} else {
-				formateKey = key.substring($TLen);
+		if (key !== undefined) {
+			if (!key.indexOf($T)) {
+				var $TLen = $T.length;
+				if (key.charAt($TLen) === ".") {
+					formateKey = key.substring($TLen + 1);
+				} else {
+					formateKey = key.substring($TLen);
+				}
+			} else if (!key.indexOf($P)) {
+				var $PLen = $P.length;
+				if (key.charAt($PLen) === ".") {
+					formateKey = key.substring($PLen + 1);
+				} else {
+					formateKey = key.substring($PLen);
+				}
+				return self._parentDataManager && self._parentDataManager.get(formateKey);
 			}
-		} else if (!key.indexOf($P)) {
-			var $PLen = $P.length;
-			if (key.charAt($PLen) === ".") {
-				formateKey = key.substring($PLen + 1);
-			} else {
-				formateKey = key.substring($PLen);
+			//console.log("get:", formateKey);
+			if (refresh === false) {
+				result = cacheData[formateKey];
+			} else if (refresh === true || (result = cacheData[formateKey]) === undefined) {
+				//console.log("refresh:", formateKey);
+				if ((result = cacheData[formateKey] = self.getNC(formateKey)) === undefined && self._parentDataManager) {
+					return self._parentDataManager.get(formateKey);
+				};
 			}
-			return self._parentDataManager && self._parentDataManager.get(formateKey);
-		}
-		//console.log("get:", formateKey);
-		if (refresh === false) {
-			result = cacheData[formateKey];
-		} else if (refresh === true || (result = cacheData[formateKey]) === undefined) {
-			//console.log("refresh:", formateKey);
-			if ((result = cacheData[formateKey] = self.getNC(formateKey)) === undefined && self._parentDataManager) {
-				return self._parentDataManager.get(formateKey);
-			};
 		}
 		return result;
 	},
@@ -107,8 +109,9 @@ DataManager.prototype = {
 				break;
 		}
 		$.fastEach(self._triggerKeys, function(triggerKey) {
-				//console.warn("indexOf:",key.indexOf(triggerKey)===0||triggerKey.indexOf(key)===0)
-			if (key.indexOf(triggerKey)===0||triggerKey.indexOf(key)===0) {
+			//console.warn("indexOf:",key.indexOf(triggerKey)===0||triggerKey.indexOf(key)===0)
+			// console.log(triggerKey.indexOf(key) === 0)
+			if (key.indexOf(triggerKey) === 0 || triggerKey.indexOf(key) === 0) {
 				var oldVal = self.get(triggerKey, false),
 					newVal = self.get(triggerKey, true);
 				//console.log("old triggerKey:", oldVal)

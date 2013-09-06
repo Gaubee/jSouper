@@ -2,7 +2,7 @@ var _commentPlaceholder = function(handle, parentHandle,commentText) {
 	var handleName = handle.handleName,
 		commentText = commentText||(handleName + handle.id),
 		commentNode = $.DOM.Comment(commentText),
-		commentHandle = CommentHandle(commentNode); // commentHandle as Placeholder
+		commentHandle = new CommentHandle(commentNode); // commentHandle as Placeholder
 
 	$.push(handle.childNodes, commentHandle);
 	$.insertAfter(parentHandle.childNodes, handle, commentHandle); //Node position calibration//no "$.insert" Avoid sequence error

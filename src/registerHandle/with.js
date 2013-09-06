@@ -24,7 +24,7 @@ V.registerHandle("#with", function(handle, index, parentHandle) {
 	//The Nodes between #with and /with will be pulled out , and not to be rendered.
 	//which will be combined into new View module.
 	var _shadowBody = $.DOM.clone(shadowBody),
-		withModuleHandle = ElementHandle(_shadowBody),
+		withModuleHandle = new ElementHandle(_shadowBody),
 		endIndex = 0;
 
 	// handle.arrViewInstances = [];//Should be at the same level with currentNode

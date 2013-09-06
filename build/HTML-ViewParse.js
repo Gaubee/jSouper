@@ -219,8 +219,8 @@ DataManager.config = {
 DataManager.prototype = {
 	getNC: function(key) {
 		var arrKey = key.split("."),
-		result = this._database;
-		if (key !== "") {
+			result = this._database;
+		if (key !== ""&&result instanceof Object) {
 			do {
 				result = result[arrKey.splice(0, 1)];
 			} while (result !== undefined && arrKey.length);
@@ -235,30 +235,32 @@ DataManager.prototype = {
 			cacheData = self._cacheData,
 			result = baseData,
 			formateKey = (key || "");
-		if (!key.indexOf($T)) {
-			var $TLen = $T.length;
-			if (key.charAt($TLen) === ".") {
-				formateKey = key.substring($TLen + 1);
-			} else {
-				formateKey = key.substring($TLen);
+		if (key !== undefined) {
+			if (!key.indexOf($T)) {
+				var $TLen = $T.length;
+				if (key.charAt($TLen) === ".") {
+					formateKey = key.substring($TLen + 1);
+				} else {
+					formateKey = key.substring($TLen);
+				}
+			} else if (!key.indexOf($P)) {
+				var $PLen = $P.length;
+				if (key.charAt($PLen) === ".") {
+					formateKey = key.substring($PLen + 1);
+				} else {
+					formateKey = key.substring($PLen);
+				}
+				return self._parentDataManager && self._parentDataManager.get(formateKey);
 			}
-		} else if (!key.indexOf($P)) {
-			var $PLen = $P.length;
-			if (key.charAt($PLen) === ".") {
-				formateKey = key.substring($PLen + 1);
-			} else {
-				formateKey = key.substring($PLen);
+			//console.log("get:", formateKey);
+			if (refresh === false) {
+				result = cacheData[formateKey];
+			} else if (refresh === true || (result = cacheData[formateKey]) === undefined) {
+				//console.log("refresh:", formateKey);
+				if ((result = cacheData[formateKey] = self.getNC(formateKey)) === undefined && self._parentDataManager) {
+					return self._parentDataManager.get(formateKey);
+				};
 			}
-			return self._parentDataManager && self._parentDataManager.get(formateKey);
-		}
-		//console.log("get:", formateKey);
-		if (refresh === false) {
-			result = cacheData[formateKey];
-		} else if (refresh === true || (result = cacheData[formateKey]) === undefined) {
-			//console.log("refresh:", formateKey);
-			if ((result = cacheData[formateKey] = self.getNC(formateKey)) === undefined && self._parentDataManager) {
-				return self._parentDataManager.get(formateKey);
-			};
 		}
 		return result;
 	},
@@ -296,8 +298,9 @@ DataManager.prototype = {
 				break;
 		}
 		$.fastEach(self._triggerKeys, function(triggerKey) {
-				//console.warn("indexOf:",key.indexOf(triggerKey)===0||triggerKey.indexOf(key)===0)
-			if (key.indexOf(triggerKey)===0||triggerKey.indexOf(key)===0) {
+			//console.warn("indexOf:",key.indexOf(triggerKey)===0||triggerKey.indexOf(key)===0)
+			// console.log(triggerKey.indexOf(key) === 0)
+			if (key.indexOf(triggerKey) === 0 || triggerKey.indexOf(key) === 0) {
 				var oldVal = self.get(triggerKey, false),
 					newVal = self.get(triggerKey, true);
 				//console.log("old triggerKey:", oldVal)
@@ -369,7 +372,6 @@ DataManager.prototype = {
 		}
 	}
 };
-
 var _isIE = !+"\v1";
 //by RubyLouvre(司徒正美)
 //setAttribute bug:http://www.iefans.net/ie-setattribute-bug/
@@ -511,7 +513,7 @@ var attributeHandle = function(attrStr, node, handle, triggerTable) {
 			}
 		}
 		$.forEach(attrViewInstance._triggers, function(key) {
-			$.unshift((triggerTable[key] = triggerTable[key] || []), attrTrigger);
+			$.unshift((triggerTable[key] || (triggerTable[key] = [])), attrTrigger);
 		});
 
 	}
@@ -572,7 +574,7 @@ function _buildTrigger(handleNodeTree, dataManager) {
 					var key = trigger.key = trigger.key || "";
 					trigger.handleId = trigger.handleId || handle.id;
 					//unshift list and In order to achieve the trigger can be simulated bubble
-					$.unshift((triggerTable[key] = triggerTable[key] || []), trigger); //Storage as key -> array
+					$.unshift((triggerTable[key]||(triggerTable[key]  =  [])), trigger); //Storage as key -> array
 					$.push(handle._triggers, trigger); //Storage as array
 				}
 			}
@@ -632,7 +634,7 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	self.handleNodeTree = handleNodeTree;
 	self.DOMArr = $.slice(handleNodeTree.childNodes);
 	self.NodeList = NodeList;
-	var el = NodeList[handleNodeTree.id].currentNode;
+	var el = self.topNode();//NodeList[handleNodeTree.id].currentNode;
 	self._packingBag = el;
 	self._id = $.uid();
 	self._open = $.DOM.Comment(self._id + " _open");
@@ -681,10 +683,11 @@ function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {
 };
 
 function _replaceTopHandleCurrent(self, el) {
-	var handleNodeTree = self.handleNodeTree,
-		NodeList = self.NodeList;
+	// var handleNodeTree = self.handleNodeTree,
+	// 	NodeList = self.NodeList;
 	self._canRemoveAble = true;
-	NodeList[handleNodeTree.id].currentNode = el;
+	self.topNode(el);
+	// NodeList[handleNodeTree.id].currentNode = el;
 	// self.reDraw();
 };
 ViewInstance.prototype = {
@@ -726,7 +729,7 @@ ViewInstance.prototype = {
 			AllLayoutViewInstance = self._ALVI,
 			AllWithViewInstance = self._WVI,
 			viewInstance,
-			currentTopNode = NodeList[handleNodeTree.id].currentNode,
+			currentTopNode = self.topNode(),//NodeList[handleNodeTree.id].currentNode,
 			elParentNode = el.parentNode;
 
 		$.forEach(currentTopNode.childNodes, function(child_node) {
@@ -747,7 +750,7 @@ ViewInstance.prototype = {
 		if (self._canRemoveAble) {
 			var handleNodeTree = self.handleNodeTree,
 				NodeList = self.NodeList,
-				currentTopNode = NodeList[handleNodeTree.id].currentNode,
+				currentTopNode = self.topNode(),//NodeList[handleNodeTree.id].currentNode,
 				openNode = self._open,
 				closeNode = self._close,
 				startIndex = 0;
@@ -769,16 +772,22 @@ ViewInstance.prototype = {
 		}
 		return self;
 	},
-	get: function get(key) {
+	get: function get() {
 		var dm = this.dataManager;
-		return dm.get.call(dm, key);
+		return dm.get.apply(dm, $.slice(arguments));
 	},
-	set: function set(key,obj) {
+	set: function set() {
 		var dm = this.dataManager;
-		if (arguments.length===2) {
-			return dm.set.call(dm, key,obj);
+		return dm.set.apply(dm, $.slice(arguments))
+	},
+	topNode:function(newCurrentTopNode){
+		var self = this,
+			handleNodeTree = self.handleNodeTree,
+			NodeList = self.NodeList;
+		if (newCurrentTopNode) {
+			NodeList[handleNodeTree.id].currentNode = newCurrentTopNode
 		}else{
-			return dm.set.call(dm, key);
+			return NodeList[handleNodeTree.id].currentNode
 		}
 	},
 	touchOff: function(key) {
@@ -798,17 +807,17 @@ var _parse = function(node) {//get all childNodes
 		switch (child_node.nodeType) {
 			case 3:
 				if ($.trim(child_node.data)) {
-					$.push(result, TextHandle(child_node))
+					$.push(result, new TextHandle(child_node))
 				}
 				break;
 			case 1:
 				if (child_node.tagName.toLowerCase() === "span" && child_node.getAttribute("type") === "handle") {
 					var handleName = child_node.getAttribute("handle");
 					if (handleName !== null) {
-						$.push(result, TemplateHandle(handleName, child_node))
+						$.push(result, new TemplateHandle(handleName, child_node))
 					}
 				} else {
-					$.push(result, ElementHandle(child_node))
+					$.push(result, new ElementHandle(child_node))
 				}
 				break;
 		}
@@ -858,9 +867,9 @@ Handle.prototype = {
 
 function TemplateHandle(handleName, node) {
 	var self = this;
-	if (!(self instanceof TemplateHandle)) {
-		return new TemplateHandle(handleName, node);
-	}
+	// if (!(self instanceof TemplateHandle)) {
+	// 	return new TemplateHandle(handleName, node);
+	// }
 	self.handleName = $.trim(handleName);
 	self.childNodes = _parse(node);
 	Handle.init(self,3);
@@ -876,9 +885,9 @@ TemplateHandle.prototype = Handle("handle", {
 
 function ElementHandle(node) {
 	var self = this;
-	if (!(self instanceof ElementHandle)) {
-		return new ElementHandle(node);
-	}
+	// if (!(self instanceof ElementHandle)) {
+	// 	return new ElementHandle(node);
+	// }
 	self.node = node;
 	self.childNodes = _parse(node);
 	Handle.init(self,3);
@@ -892,9 +901,9 @@ ElementHandle.prototype = Handle("element", {
 
 function TextHandle(node) {
 	var self = this;
-	if (!(self instanceof TextHandle)) {
-		return new TextHandle(node);
-	}
+	// if (!(self instanceof TextHandle)) {
+	// 	return new TextHandle(node);
+	// }
 	self.node = node;
 	Handle.init(self,2);
 };
@@ -907,9 +916,9 @@ TextHandle.prototype = Handle("text", {
 
 function CommentHandle(node) {
 	var self = this;
-	if (!(self instanceof CommentHandle)) {
-		return new CommentHandle(node);
-	}
+	// if (!(self instanceof CommentHandle)) {
+	// 	return new CommentHandle(node);
+	// }
 	self.node = node;
 	Handle.init(self,1);
 };
@@ -999,7 +1008,7 @@ var V = global.ViewParser = {
 			parentNode.removeChild(node);
 		});
 		_shadowBody.innerHTML = _shadowBody.innerHTML;
-		var result = ElementHandle(_shadowBody);
+		var result = new ElementHandle(_shadowBody);
 		return View(result);
 	},
 	scans: function() {
@@ -1051,7 +1060,7 @@ var _commentPlaceholder = function(handle, parentHandle,commentText) {
 	var handleName = handle.handleName,
 		commentText = commentText||(handleName + handle.id),
 		commentNode = $.DOM.Comment(commentText),
-		commentHandle = CommentHandle(commentNode); // commentHandle as Placeholder
+		commentHandle = new CommentHandle(commentNode); // commentHandle as Placeholder
 
 	$.push(handle.childNodes, commentHandle);
 	$.insertAfter(parentHandle.childNodes, handle, commentHandle); //Node position calibration//no "$.insert" Avoid sequence error
@@ -1094,7 +1103,7 @@ V.registerHandle("#each", function(handle, index, parentHandle) {
 	//The Nodes between #each and /each will be pulled out , and not to be rendered.
 	//which will be combined into new View module.
 	var _shadowBody = $.DOM.clone(shadowBody),
-		eachModuleHandle = ElementHandle(_shadowBody),
+		eachModuleHandle = new ElementHandle(_shadowBody),
 		endIndex = 0;
 
 	// handle.arrViewInstances = [];//Should be at the same level with currentNode
@@ -1227,7 +1236,7 @@ V.registerHandle("#with", function(handle, index, parentHandle) {
 	//The Nodes between #with and /with will be pulled out , and not to be rendered.
 	//which will be combined into new View module.
 	var _shadowBody = $.DOM.clone(shadowBody),
-		withModuleHandle = ElementHandle(_shadowBody),
+		withModuleHandle = new ElementHandle(_shadowBody),
 		endIndex = 0;
 
 	// handle.arrViewInstances = [];//Should be at the same level with currentNode
@@ -1644,13 +1653,13 @@ var withTrigger = function(handle, index, parentHandle) {
 				withViewInstance = AllLayoutViewInstance[id],// || (AllLayoutViewInstance[id] = V.withModules[id](data).insert(NodeList_of_ViewInstance[comment_with_id].currentNode)),
 				inserNew;
 			if (!withViewInstance) {
-				console.log(NodeList_of_ViewInstance[comment_with_id].currentNode)
+				// console.log(NodeList_of_ViewInstance[comment_with_id].currentNode)
 				withViewInstance = AllLayoutViewInstance[id] = V.withModules[id]();
 				dataManager.subset(data,withViewInstance)
-				console.log(withViewInstance)
+				// console.log(withViewInstance)
 				withViewInstance.insert(NodeList_of_ViewInstance[comment_with_id].currentNode)
 			}
-			console.log(data)
+			// console.log(data)
 			withViewInstance.set(data);
 		}
 	}

@@ -32,7 +32,7 @@ V.registerHandle("#each", function(handle, index, parentHandle) {
 	//The Nodes between #each and /each will be pulled out , and not to be rendered.
 	//which will be combined into new View module.
 	var _shadowBody = $.DOM.clone(shadowBody),
-		eachModuleHandle = ElementHandle(_shadowBody),
+		eachModuleHandle = new ElementHandle(_shadowBody),
 		endIndex = 0;
 
 	// handle.arrViewInstances = [];//Should be at the same level with currentNode
