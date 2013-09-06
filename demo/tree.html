@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>HTML-ViewParse</title>
+	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js"></script>	
+	<script type="text/javascript">
+		(function (ie){if(!ie)return;var b=document.createElement("script");b.setAttribute("type","text/javascript");b.setAttribute("src","http://"+location.hostname+"/firebug-lite/build/firebug-lite.js");document.getElementsByTagName("head")[0].appendChild(b)}(!+"\v1")); 
+	</script>
+	<style type="text/css">
+	</style>
+</head>
+<body>
+	<ul id="tree"></ul>
+	<script type="text/template" name="tree">
+		{#each( {(list)} )}
+			{#if( {==({(type)}{('folder')})} )}
+				<li><p>{(title)}</p></li>
+				<ul>
+					{>( {('tree')} {($THIS)} )}
+				</ul>
+			{#else()}
+				<li><a attr-href="#{(title)}">{(title)}</a></li>
+			{/if()}
+		{/each()}
+	</script>
+</body>
+
+
+
+</html>
+
+<script type="text/javascript">
+	ViewParser.scans();
+	var model = DataManager({
+			title:"Unknown",
+			list:[{
+				title:"hehe",
+				type:"folder",
+				list:[{
+					title:"....",
+					type:"unknown type"
+				}]
+			},{
+				title:"jser",
+				type:"folder"
+			},{
+				title:"丙正正",
+				type:"joke"
+			},{
+				title:"lover",
+				type:"girl friend"
+			},{
+				type:"unknown type"
+			}]
+		});
+	ViewParser.modules["tree"](model).append(document.getElementById('tree'));
+	setTimeout(function(){
+		model.set("list.0.list",[{
+					title:"....",
+					type:"folder",
+					list:[{},{},{},{}]
+				},{
+					title:"....??",
+					type:"unknown type"
+				},{
+					title:"....????",
+					type:"unknown type"
+				}])
+	},1000);
+	setTimeout(function(){
+		model.set("list.0.list.0.list.0",{
+					title:"..??",
+					type:"folder",
+					list:[{},{},{},{}]
+				})
+	},2000);
+
+</script>

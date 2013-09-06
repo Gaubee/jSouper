@@ -26,10 +26,10 @@
 var global = global || this;
 var shadowBody = document.createElement("body"),
 	shadowDIV = document.createElement("div"),
-	$TRUE = true,
-	$FALSE = false,
 	$NULL = null,
-	$UNDEFINED = undefined,
+	$UNDEFINED,
+	$TRUE = !$UNDEFINED,
+	$FALSE = !$TRUE,
 	$ = {
 		id: 9,
 		uidAvator: Math.random().toString(36).substring(2),
