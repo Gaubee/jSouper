@@ -40,7 +40,6 @@ V.registerHandle("#each", function(handle, index, parentHandle) {
 	var layer = 1;
 	$.forEach(parentHandle.childNodes, function(childHandle, index) {
 		endIndex = index;
-		// console.log(childHandle.handleName)
 		if (childHandle.handleName === "#each") {
 			layer+=1
 		}
@@ -51,6 +50,7 @@ V.registerHandle("#each", function(handle, index, parentHandle) {
 			}
 		}
 		$.push(eachModuleHandle.childNodes, childHandle);
+		layer&&console.log("inner each:",childHandle)
 	}, index + 1);
 	// console.log("----",handle.id,"-------")
 	parentHandle.childNodes.splice(index + 1, endIndex - index - 1); //Pulled out

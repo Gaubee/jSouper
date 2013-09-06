@@ -31,7 +31,7 @@ V.registerTrigger("", function(handle, index, parentHandle) {
 					} else {
 						data = dataManager.get(key)
 					};
-					// console.log(key,data)
+					// console.log(key,data,dataManager)
 					NodeList_of_ViewInstance[textHandleId].currentNode.data = data;
 				}
 			}

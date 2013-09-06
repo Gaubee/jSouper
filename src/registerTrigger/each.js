@@ -21,7 +21,7 @@ V.registerTrigger("#each", function(handle, index, parentHandle) {
 				var viewInstance = arrViewInstances[index];
 				if (!viewInstance) {
 					viewInstance = arrViewInstances[index] = V.eachModules[id]();
-					dataManager.subset({}, viewInstance); //reset arrViewInstance's dataManager
+					dataManager.subset(viewInstance); //reset arrViewInstance's dataManager
 					inserNew = true;
 				}
 				if (!viewInstance._canRemoveAble) { //had being recovered into the packingBag

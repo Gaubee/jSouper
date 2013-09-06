@@ -31,7 +31,7 @@ V.registerHandle("#with", function(handle, index, parentHandle) {
 	var layer = 1;
 	$.forEach(parentHandle.childNodes, function(childHandle, index) {
 		endIndex = index;
-		// console.log(childHandle.handleName)
+		// console.log(childHandle,childHandle.handleName)
 		if (childHandle.handleName === "#with") {
 			layer += 1
 		}

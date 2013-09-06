@@ -12,13 +12,11 @@
 </head>
 <body>
 	<script type="text/template" name="with">
-		{#with({(title)})}
-			{#with( {($THIS)} )}
-				{#each({($THIS)})}
-					-{($THIS)}({(title)})
-				{/each()}
-			{/with()}
-		{/with()}
+		{(title.length)}
+		
+		{#each({(title)})}
+			-{($THIS)}({(title)})
+		{/each()}
 	</script>
 </body>
 

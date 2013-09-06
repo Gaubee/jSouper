@@ -1146,7 +1146,6 @@ V.registerHandle("#each", function(handle, index, parentHandle) {
 	var layer = 1;
 	$.forEach(parentHandle.childNodes, function(childHandle, index) {
 		endIndex = index;
-		// console.log(childHandle.handleName)
 		if (childHandle.handleName === "#each") {
 			layer+=1
 		}
@@ -1157,6 +1156,7 @@ V.registerHandle("#each", function(handle, index, parentHandle) {
 			}
 		}
 		$.push(eachModuleHandle.childNodes, childHandle);
+		layer&&console.log("inner each:",childHandle)
 	}, index + 1);
 	// console.log("----",handle.id,"-------")
 	parentHandle.childNodes.splice(index + 1, endIndex - index - 1); //Pulled out
@@ -1169,11 +1169,7 @@ V.registerHandle("/each", placeholderHandle);
 V.registerHandle("", function(handle, index, parentHandle) {
 	var textHandle = handle.childNodes[0];
 	if (parentHandle.type !== "handle") {//is textNode
-		var i = 0;
-		do {
-			i += 1;
-			var nextHandle = parentHandle.childNodes[index + i];
-		} while (nextHandle && nextHandle.ignore);
+		var nextHandle = _commentPlaceholder(handle, parentHandle,"text "+handle.id);
 		if (textHandle) { //textNode as Placeholder
 
 			$.insertAfter(parentHandle.childNodes, handle, textHandle);
@@ -1181,12 +1177,13 @@ V.registerHandle("", function(handle, index, parentHandle) {
 			//no "$.insert" Avoid sequence error
 
 			return function(NodeList_of_ViewInstance) {
-				var nextNodeInstance = nextHandle && NodeList_of_ViewInstance[nextHandle.id].currentNode,
+				var nextNodeInstance = NodeList_of_ViewInstance[nextHandle.id].currentNode,
 					textNodeInstance = NodeList_of_ViewInstance[textHandle.id].currentNode,
 					parentNodeInstance = NodeList_of_ViewInstance[parentHandle.id].currentNode
 					$.DOM.insertBefore(parentNodeInstance, textNodeInstance, nextNodeInstance); //Manually insert node
 			}
 		}
+
 	} else {
 		if (textHandle) {
 			textHandle.ignore = true;
@@ -1394,7 +1391,7 @@ V.registerTrigger("#each", function(handle, index, parentHandle) {
 					inserNew = true;
 				}
 
-				console.log(eachItemData)
+				// console.log(eachItemData)
 				viewInstance.set(eachItemData);
 
 				if (inserNew&&!arrViewInstances.hidden) {
