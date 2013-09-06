@@ -20,9 +20,11 @@ function DataManager(baseData, viewInstance) {
 	(self._arrayDateManagers = [])._ = {}; //Chain
 	self._triggerKeys = [];
 	viewInstance && self.collect(viewInstance);
+	DataManager._instances[self.id] = self;
 };
 
 global.DataManager = DataManager;
+DataManager._instances = {};
 DataManager.config = {
 	"$T": "$THIS",
 	"$P": "$PARENT"
@@ -36,7 +38,7 @@ DataManager.prototype = {
 			// if (!(result == undefined || (isNaN(result) && (typeof result === "number")))) { //null|undefined|NaN
 			if (result != undefined) { //null|undefined
 				do {
-					console.log(arrKey[0])
+					// console.log(arrKey[0])
 					result = result[arrKey.splice(0, 1)];
 				} while (result !== undefined && arrKey.length);
 			}
@@ -170,14 +172,17 @@ DataManager.prototype = {
 		}
 		return dm;
 	},
-	subset: function(baseData, viewInstance) {
+	subset: function(viewInstance,baseData) {
 		var dm = this,
-			subsetDataManager = DataManager(baseData, viewInstance);
+			subsetDataManager = viewInstance.dataManager;//DataManager(baseData, viewInstance);
 		subsetDataManager._parentDataManager = dm;
 		if (viewInstance instanceof ViewInstance) {
 			viewInstance.dataManager = subsetDataManager;
 			viewInstance.reDraw();
 			dm._collectTriKey(viewInstance);
+		}
+		if (arguments.length>1) {
+			subsetDataManager.set(baseData);
 		}
 		$.push(this._subsetDataManagers, subsetDataManager);
 		return subsetDataManager; //subset(vi).set(basedata);},

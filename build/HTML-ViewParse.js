@@ -209,9 +209,11 @@ function DataManager(baseData, viewInstance) {
 	(self._arrayDateManagers = [])._ = {}; //Chain
 	self._triggerKeys = [];
 	viewInstance && self.collect(viewInstance);
+	DataManager._instances[self.id] = self;
 };
 
 global.DataManager = DataManager;
+DataManager._instances = {};
 DataManager.config = {
 	"$T": "$THIS",
 	"$P": "$PARENT"
@@ -220,10 +222,18 @@ DataManager.prototype = {
 	getNC: function(key) {
 		var arrKey = key.split("."),
 			result = this._database;
-		if (key !== ""&&result instanceof Object) {
-			do {
-				result = result[arrKey.splice(0, 1)];
-			} while (result !== undefined && arrKey.length);
+		if (key !== "") { //"" return _database
+			// if (result instanceof Object) {=
+			// if (!(result == undefined || (isNaN(result) && (typeof result === "number")))) { //null|undefined|NaN
+			if (result != undefined) { //null|undefined
+				do {
+					// console.log(arrKey[0])
+					result = result[arrKey.splice(0, 1)];
+				} while (result !== undefined && arrKey.length);
+			}
+			// } else {
+			// 	result =
+			// }
 		}
 		return result;
 	},
@@ -351,14 +361,17 @@ DataManager.prototype = {
 		}
 		return dm;
 	},
-	subset: function(baseData, viewInstance) {
+	subset: function(viewInstance,baseData) {
 		var dm = this,
-			subsetDataManager = DataManager(baseData, viewInstance);
+			subsetDataManager = viewInstance.dataManager;//DataManager(baseData, viewInstance);
 		subsetDataManager._parentDataManager = dm;
 		if (viewInstance instanceof ViewInstance) {
 			viewInstance.dataManager = subsetDataManager;
 			viewInstance.reDraw();
 			dm._collectTriKey(viewInstance);
+		}
+		if (arguments.length>1) {
+			subsetDataManager.set(baseData);
 		}
 		$.push(this._subsetDataManagers, subsetDataManager);
 		return subsetDataManager; //subset(vi).set(basedata);},
@@ -1243,7 +1256,7 @@ V.registerHandle("#with", function(handle, index, parentHandle) {
 	var layer = 1;
 	$.forEach(parentHandle.childNodes, function(childHandle, index) {
 		endIndex = index;
-		// console.log(childHandle.handleName)
+		// console.log(childHandle,childHandle.handleName)
 		if (childHandle.handleName === "#with") {
 			layer += 1
 		}
@@ -1352,14 +1365,14 @@ V.registerTrigger("#each", function(handle, index, parentHandle) {
 				var viewInstance = arrViewInstances[index];
 				if (!viewInstance) {
 					viewInstance = arrViewInstances[index] = V.eachModules[id]();
-					dataManager.subset({}, viewInstance); //reset arrViewInstance's dataManager
+					dataManager.subset(viewInstance); //reset arrViewInstance's dataManager
 					inserNew = true;
 				}
 				if (!viewInstance._canRemoveAble) { //had being recovered into the packingBag
 					inserNew = true;
 				}
 
-				// console.log(eachItemData)
+				console.log(eachItemData)
 				viewInstance.set(eachItemData);
 
 				if (inserNew&&!arrViewInstances.hidden) {
@@ -1446,7 +1459,7 @@ V.registerTrigger("", function(handle, index, parentHandle) {
 					} else {
 						data = dataManager.get(key)
 					};
-					// console.log(key,data)
+					// console.log(key,data,dataManager)
 					NodeList_of_ViewInstance[textHandleId].currentNode.data = data;
 				}
 			}
@@ -1654,12 +1667,13 @@ var withTrigger = function(handle, index, parentHandle) {
 				inserNew;
 			if (!withViewInstance) {
 				// console.log(NodeList_of_ViewInstance[comment_with_id].currentNode)
-				withViewInstance = AllLayoutViewInstance[id] = V.withModules[id]();
-				dataManager.subset(data,withViewInstance)
+				withViewInstance = AllLayoutViewInstance[id] = V.withModules[id](data);
+				dataManager.subset(withViewInstance)
+				// console.log(withViewInstance.dataManager)
 				// console.log(withViewInstance)
 				withViewInstance.insert(NodeList_of_ViewInstance[comment_with_id].currentNode)
 			}
-			// console.log(data)
+			// console.log("with database : ",data)
 			withViewInstance.set(data);
 		}
 	}
