@@ -31,10 +31,18 @@ DataManager.prototype = {
 	getNC: function(key) {
 		var arrKey = key.split("."),
 			result = this._database;
-		if (key !== ""&&result instanceof Object) {
-			do {
-				result = result[arrKey.splice(0, 1)];
-			} while (result !== undefined && arrKey.length);
+		if (key !== "") { //"" return _database
+			// if (result instanceof Object) {=
+			// if (!(result == undefined || (isNaN(result) && (typeof result === "number")))) { //null|undefined|NaN
+			if (result != undefined) { //null|undefined
+				do {
+					console.log(arrKey[0])
+					result = result[arrKey.splice(0, 1)];
+				} while (result !== undefined && arrKey.length);
+			}
+			// } else {
+			// 	result =
+			// }
 		}
 		return result;
 	},
