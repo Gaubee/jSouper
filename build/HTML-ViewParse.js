@@ -1031,19 +1031,13 @@ var V = global.ViewParser = {
 			}
 		});
 	},
-	registerTrigger: function(handleName, triggerFactory) {
-		// if (V.triggers[handleName]) {
-		// 	throw handleName + " trigger already exists.";
-		// }
-		V.triggers[handleName] = triggerFactory;
+	rt: function(handleName, triggerFactory) {
+		return V.triggers[handleName] = triggerFactory;
 	},
-	registerHandle: function(handleName, handle) {
-		// if (V.handles[handleName]) {
-		// 	throw handleName + " handler already exists.";
-		// }
-		V.handles[handleName] = handle
+	rh: function(handleName, handle) {
+		return V.handles[handleName] = handle
 	},
-	registerAttrHandle:function(match,handle){
+	ra:function(match,handle){
 		var attrHandle = V.attrHandles[V.attrHandles.length] = {
 			match:null,
 			handle:handle
@@ -1065,9 +1059,9 @@ var V = global.ViewParser = {
 	withModules:{},
 	_instances:{}
 };
-V.registerHandle("HTML",function(handle, index, parentHandle){
-	var endCommentHandle = _commentPlaceholder(handle, parentHandle,"html_end_"+handle.id),
-		startCommentHandle = _commentPlaceholder(handle, parentHandle,"html_start_"+handle.id);
+V.rh("HTML", function(handle, index, parentHandle) {
+	var endCommentHandle = _commentPlaceholder(handle, parentHandle, "html_end_" + handle.id),
+		startCommentHandle = _commentPlaceholder(handle, parentHandle, "html_start_" + handle.id);
 });
 var _commentPlaceholder = function(handle, parentHandle,commentText) {
 	var handleName = handle.handleName,
@@ -1082,7 +1076,7 @@ var _commentPlaceholder = function(handle, parentHandle,commentText) {
 var placeholderHandle = function(handle, index, parentHandle) {
 	var commentHandle = _commentPlaceholder(handle, parentHandle);
 };
-var _each_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManager, triggerBy,viewInstance_ID) {
+var _each_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManager, triggerBy, viewInstance_ID) {
 	var handle = this,
 		parentHandle = handle.parentNode,
 		comment_endeach_id,
@@ -1095,7 +1089,7 @@ var _each_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManag
 		}
 	});
 	// console.log(comment_endeach_id,viewInstance_ID)
-	arrViewInstances&&(arrViewInstances.hidden = !show_or_hidden);
+	arrViewInstances && (arrViewInstances.hidden = !show_or_hidden);
 	if (show_or_hidden) {
 		$.forEach(arrViewInstances, function(viewInstance, index) {
 			// console.log(comment_endeach_id,NodeList_of_ViewInstance[comment_endeach_id],handle,parentHandle)
@@ -1112,7 +1106,7 @@ var _each_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManag
 		})
 	}
 };
-V.registerHandle("#each", function(handle, index, parentHandle) {
+V.rh("#each", function(handle, index, parentHandle) {
 	//The Nodes between #each and /each will be pulled out , and not to be rendered.
 	//which will be combined into new View module.
 	var _shadowBody = $.DOM.clone(shadowBody),
@@ -1125,16 +1119,16 @@ V.registerHandle("#each", function(handle, index, parentHandle) {
 	$.forEach(parentHandle.childNodes, function(childHandle, index) {
 		endIndex = index;
 		if (childHandle.handleName === "#each") {
-			layer+=1
+			layer += 1
 		}
 		if (childHandle.handleName === "/each") {
-			layer-=1;
+			layer -= 1;
 			if (!layer) {
 				return false
 			}
 		}
 		$.push(eachModuleHandle.childNodes, childHandle);
-		layer&&console.log("inner each:",childHandle)
+		// layer && console.log("inner each:", childHandle)
 	}, index + 1);
 	// console.log("----",handle.id,"-------")
 	parentHandle.childNodes.splice(index + 1, endIndex - index - 1); //Pulled out
@@ -1143,11 +1137,11 @@ V.registerHandle("#each", function(handle, index, parentHandle) {
 	handle.display = _each_display; //Custom rendering function
 	_commentPlaceholder(handle, parentHandle);
 });
-V.registerHandle("/each", placeholderHandle);
-V.registerHandle("", function(handle, index, parentHandle) {
+V.rh("/each", placeholderHandle);
+V.rh("", function(handle, index, parentHandle) {
 	var textHandle = handle.childNodes[0];
-	if (parentHandle.type !== "handle") {//is textNode
-		var nextHandle = _commentPlaceholder(handle, parentHandle,"text "+handle.id);
+	if (parentHandle.type !== "handle") { //is textNode
+		var nextHandle = _commentPlaceholder(handle, parentHandle, "text " + handle.id);
 		if (textHandle) { //textNode as Placeholder
 
 			$.insertAfter(parentHandle.childNodes, handle, textHandle);
@@ -1168,7 +1162,7 @@ V.registerHandle("", function(handle, index, parentHandle) {
 		}
 	}
 });
-V.registerHandle("@", function(handle, index, parentHandle) {
+V.rh("@", function(handle, index, parentHandle) {
 	var textHandle = handle.childNodes[0];
 	var i = 0;
 	do {
@@ -1189,10 +1183,8 @@ V.registerHandle("@", function(handle, index, parentHandle) {
 		}
 	}
 });
-V.registerHandle("#if", placeholderHandle);
-V.registerHandle("#else", placeholderHandle);
-V.registerHandle("/if", placeholderHandle);
-var _layout_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManager, triggerBy,viewInstance_ID) {
+V.rh("/if", V.rh("#else", V.rh("#if", placeholderHandle)));
+var _layout_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManager, triggerBy, viewInstance_ID) {
 	var handle = this,
 		commentPlaceholderElement,
 		layoutViewInstance = V._instances[viewInstance_ID]._ALVI[handle.id];
@@ -1205,7 +1197,7 @@ var _layout_display = function(show_or_hidden, NodeList_of_ViewInstance, dataMan
 			return false;
 		}
 	});
-	console.log(show_or_hidden,viewInstance_ID,layoutViewInstance)
+	console.log(show_or_hidden, viewInstance_ID, layoutViewInstance)
 	if (show_or_hidden) {
 		layoutViewInstance.insert(commentPlaceholderElement);
 	} else {
@@ -1213,13 +1205,10 @@ var _layout_display = function(show_or_hidden, NodeList_of_ViewInstance, dataMan
 	}
 
 };
-var layout = function(handle, index, parentHandle) {
-
+V.rh(">", V.rh("#layout", function(handle, index, parentHandle) {
 	handle.display = _layout_display; //Custom rendering function
 	_commentPlaceholder(handle, parentHandle);
-}
-V.registerHandle("#layout", layout);
-V.registerHandle(">", layout);
+}));
 var _with_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManager, triggerBy, viewInstance_ID) {
 	var handle = this,
 		parentHandle = handle.parentNode,
@@ -1242,7 +1231,7 @@ var _with_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManag
 		withViewInstance.remove();
 	}
 };
-V.registerHandle("#with", function(handle, index, parentHandle) {
+V.rh("#with", function(handle, index, parentHandle) {
 	//The Nodes between #with and /with will be pulled out , and not to be rendered.
 	//which will be combined into new View module.
 	var _shadowBody = $.DOM.clone(shadowBody),
@@ -1272,8 +1261,8 @@ V.registerHandle("#with", function(handle, index, parentHandle) {
 	handle.display = _with_display; //Custom rendering function
 	_commentPlaceholder(handle, parentHandle);
 });
-V.registerHandle("/with", placeholderHandle);
-V.registerTrigger("HTML", function(handle, index, parentHandle) {
+V.rh("/with", placeholderHandle);
+V.rt("HTML", function(handle, index, parentHandle) {
 	var handleChilds = handle.childNodes,
 		htmlTextHandlesId = handleChilds[0].id,
 		beginCommentId = handleChilds[handleChilds.length - 1].id,
@@ -1314,7 +1303,7 @@ V.registerTrigger("HTML", function(handle, index, parentHandle) {
 	}
 	return trigger;
 });
-V.registerTrigger("and", function(handle, index, parentHandle) {
+V.rt("&&", V.rt("and", function(handle, index, parentHandle) {
 	var childHandlesId = [],
 		trigger;
 	$.forEach(handle.childNodes, function(child_handle) {
@@ -1337,10 +1326,8 @@ V.registerTrigger("and", function(handle, index, parentHandle) {
 		}
 	}
 	return trigger;
-});
-V.registerTrigger("&&",V.triggers["and"]);
-V.registerTrigger("#each", function(handle, index, parentHandle) {
-	// console.log(handle)
+}));
+V.rt("#each", function(handle, index, parentHandle) {
 	var id = handle.id,
 		arrDataHandleKey = handle.childNodes[0].childNodes[0].node.data,
 		comment_endeach_id = parentHandle.childNodes[index + 3].id, //eachHandle --> eachComment --> endeachHandle --> endeachComment
@@ -1349,19 +1336,20 @@ V.registerTrigger("#each", function(handle, index, parentHandle) {
 	trigger = {
 		event: function(NodeList_of_ViewInstance, dataManager,eventTrigger,isAttr,viewInstance_ID) {
 			var data = dataManager.get(arrDataHandleKey),
-				allArrViewInstances,
-				arrViewInstances,// = NodeList_of_ViewInstance[id].arrViewInstances= NodeList_of_ViewInstance[id].arrViewInstances||[],
+				allArrViewInstances = V._instances[viewInstance_ID]._AVI,
+				arrViewInstances,
 				divideIndex = data?data.length:0,
-				inserNew;
-			// console.log(viewInstance_ID,id)
-			allArrViewInstances = V._instances[viewInstance_ID]._AVI;
+				eachModuleConstructor = V.eachModules[id],
+				inserNew,
+				comment_endeach_node = NodeList_of_ViewInstance[comment_endeach_id].currentNode;
+
 			(arrViewInstances = allArrViewInstances[id]||(allArrViewInstances[id] = [])).len = divideIndex;
-			// console.log(arrDataHandleKey,data)
+
 			$.forEach(data, function(eachItemData, index) {
-				// console.log(arrViewInstances[index])
+
 				var viewInstance = arrViewInstances[index];
 				if (!viewInstance) {
-					viewInstance = arrViewInstances[index] = V.eachModules[id]();
+					viewInstance = arrViewInstances[index] = eachModuleConstructor();
 					dataManager.subset(viewInstance); //reset arrViewInstance's dataManager
 					inserNew = true;
 				}
@@ -1369,34 +1357,21 @@ V.registerTrigger("#each", function(handle, index, parentHandle) {
 					inserNew = true;
 				}
 
-				// console.log(eachItemData)
 				viewInstance.set(eachItemData);
 
 				if (inserNew&&!arrViewInstances.hidden) {
-					viewInstance.insert(NodeList_of_ViewInstance[comment_endeach_id].currentNode)
-					// console.log(NodeList_of_ViewInstance[id]._controllers)
+					viewInstance.insert(comment_endeach_node)
 				}
-				// divideIndex = index;
 			});
 
 			$.forEach(arrViewInstances, function(eachItemHandle) {
-				// calibrate the top of handle's currentNode
-				// console.log(eachItemHandle.NodeList[eachItemHandle.handleNodeTree.id].currentNode,NodeList_of_ViewInstance[parentHandle.id].currentNode )
-				// eachItemHandle.NodeList[eachItemHandle.handleNodeTree.id].currentNode = NodeList_of_ViewInstance[parentHandle.id].currentNode;
 				eachItemHandle.remove();
 			}, divideIndex);
-			var lengthKey = arrDataHandleKey + ".length";
-			// console.log(lengthKey);
-			// divideIndex +=1;
-			// if (dataManager.get(lengthKey) !== divideIndex) {
-			// 	dataManager.set(lengthKey, divideIndex)
-			// 	handle.len = divideIndex
-			// }
 		}
 	}
 	return trigger
 });
-var _equal = function(handle, index, parentHandle) { //Equal
+V.rt("==", V.rt("equa", function(handle, index, parentHandle) { //Equal
 	var childHandlesId = [],
 		trigger;
 	$.forEach(handle.childNodes, function(child_handle) {
@@ -1420,15 +1395,13 @@ var _equal = function(handle, index, parentHandle) { //Equal
 		}
 	}
 	return trigger;
-};
-V.registerTrigger("equa", _equal);
-V.registerTrigger("==", _equal);
-V.registerTrigger("", function(handle, index, parentHandle) {
+}));
+V.rt("", function(handle, index, parentHandle) {
 	var textHandle = handle.childNodes[0],
 		textHandleId = textHandle.id,
 		key = textHandle.node.data,
 		trigger;
-	// console.log("getData:",key)
+
 	if (parentHandle.type !== "handle") { //as textHandle
 		if ($.isString(key)) { // single String
 			trigger = { //const 
@@ -1443,21 +1416,18 @@ V.registerTrigger("", function(handle, index, parentHandle) {
 			trigger = {
 				key: key,
 				event: function(NodeList_of_ViewInstance, dataManager, triggerBy, isAttr, vi) { //call by ViewInstance's Node
-					// console.log("getData:",key,":",dataManager)
-					var data;
+					var data= dataManager.get(key),
+						currentNode = NodeList_of_ViewInstance[textHandleId].currentNode;
 					if (isAttr) {
-						if (isAttr.key.indexOf("on") === 0) {
-							data = String(dataManager.get(key)).replace(/"/g, '\\"').replace(/'/g, "\\'");
-							// }else if(isAttr.key.indexOf("event-")===0&&_isIE){
-							// 	data = String(dataManager.get(key)).replace(/\n/g, _ieEnterPlaceholder);
-						} else {
-							data = dataManager.get(key);
+						//IE浏览器直接编译，故不需要转义，其他浏览器需要以字符串绑定到属性中。需要转义，否则会出现引号冲突
+						if (isAttr.key.indexOf("on") === 0&&!_isIE) {
+							data = String(data).replace(/"/g, '\\"').replace(/'/g, "\\'");
 						}
-					} else {
-						data = dataManager.get(key)
-					};
-					// console.log(key,data,dataManager)
-					NodeList_of_ViewInstance[textHandleId].currentNode.data = data;
+						currentNode.data = data;
+					}else{
+						_asynAttributeAssignment(currentNode,"data",data);//1300.000ms --> 23% faster
+						// currentNode.data = data;//1600.000ms
+					}
 				}
 			}
 		}
@@ -1482,7 +1452,7 @@ V.registerTrigger("", function(handle, index, parentHandle) {
 	}
 	return trigger;
 });
-V.registerTrigger("@", function(handle, index, parentHandle) {
+V.rt("@", function(handle, index, parentHandle) {
 	var textHandle = handle.childNodes[0],
 		textHandleId = textHandle.id,
 		key = textHandle.node.data,
@@ -1492,13 +1462,13 @@ V.registerTrigger("@", function(handle, index, parentHandle) {
 		key: key, //const trigger
 		bubble: true,
 		event: function(NodeList_of_ViewInstance, dataManager) {
+			//trigger but no bind data
 			NodeList_of_ViewInstance[textHandleId].currentNode.data = key;
-			// trigger.event = $.noop;
 		}
 	};
 	return trigger;
 });
-V.registerTrigger("#if", function(handle, index, parentHandle) {
+V.rt("#if", function(handle, index, parentHandle) {
 	// console.log(handle)
 	var id = handle.id,
 		ignoreHandleType = /handle|comment/,
@@ -1512,7 +1482,7 @@ V.registerTrigger("#if", function(handle, index, parentHandle) {
 		conditionStatus = true, //the #if block scope
 		trigger,
 		deep = 0;
-	// console.log(parentHandle, index)
+
 	$.forEach(parentHandle.childNodes, function(child_handle, i, childHandles) {
 
 		if (child_handle.handleName === "#if") {
@@ -1536,8 +1506,7 @@ V.registerTrigger("#if", function(handle, index, parentHandle) {
 
 	trigger = {
 		// key:"",//default is ""
-		// chain: true,
-		event: function(NodeList_of_ViewInstance, dataManager, triggerBy,isAttr,viewInstance_ID) {
+		event: function(NodeList_of_ViewInstance, dataManager, triggerBy, isAttr, viewInstance_ID) {
 			var conditionVal = !! NodeList_of_ViewInstance[conditionHandleId]._data,
 				parentNode = NodeList_of_ViewInstance[parentHandleId].currentNode,
 				markHandleId = comment_else_id, //if(true)
@@ -1564,7 +1533,7 @@ V.registerTrigger("#if", function(handle, index, parentHandle) {
 					});
 					if (display) {
 						if (currentHandle.display) { //Custom Display Function,default is false
-							currentHandle.display(true, NodeList_of_ViewInstance, dataManager, triggerBy,viewInstance_ID)
+							currentHandle.display(true, NodeList_of_ViewInstance, dataManager, triggerBy, viewInstance_ID)
 						} else if (node) {
 							$.DOM.replace(parentNode, node, placeholderNode)
 						}
@@ -1576,7 +1545,7 @@ V.registerTrigger("#if", function(handle, index, parentHandle) {
 						placeholderNode = (currentHandle.placeholderNode = currentHandle.placeholderNode || $.DOM.Comment(id));
 
 					if (currentHandle.display) { //Custom Display Function,default is false
-						currentHandle.display(false, NodeList_of_ViewInstance, dataManager, triggerBy,viewInstance_ID)
+						currentHandle.display(false, NodeList_of_ViewInstance, dataManager, triggerBy, viewInstance_ID)
 					} else if (node) {
 						$.DOM.replace(parentNode, placeholderNode, node)
 					}
@@ -1587,7 +1556,7 @@ V.registerTrigger("#if", function(handle, index, parentHandle) {
 
 	return trigger;
 });
-var layoutTrigger = function(handle, index, parentHandle) {
+V.rt(">", V.rt("#layout", function(handle, index, parentHandle) {
 	// console.log(handle)
 	var id = handle.id,
 		childNodes = handle.childNodes,
@@ -1595,7 +1564,7 @@ var layoutTrigger = function(handle, index, parentHandle) {
 		dataHandle_id = childNodes[1].id,
 		comment_layout_id = parentHandle.childNodes[index + 1].id, //eachHandle --> eachComment --> endeachHandle --> endeachComment
 		trigger;
-		
+
 	trigger = {
 		event: function(NodeList_of_ViewInstance, dataManager, eventTrigger, isAttr, viewInstance_ID) {
 			var data = NodeList_of_ViewInstance[dataHandle_id]._data,
@@ -1606,11 +1575,8 @@ var layoutTrigger = function(handle, index, parentHandle) {
 		}
 	}
 	return trigger;
-}
-
-V.registerTrigger("#layout", layoutTrigger);
-V.registerTrigger(">", layoutTrigger);
-var _nagete = function(handle, index, parentHandle) { //Negate
+}));
+V.rt("!", V.rt("nega", function(handle, index, parentHandle) { //Negate
 	var nageteHandlesId = handle.childNodes[0].id,
 		trigger;
 	trigger = {
@@ -1621,10 +1587,8 @@ var _nagete = function(handle, index, parentHandle) { //Negate
 		}
 	}
 	return trigger;
-};
-V.registerTrigger("nega", _nagete);
-V.registerTrigger("!", _nagete);
-V.registerTrigger("or", function(handle, index, parentHandle) {
+}));
+V.rt("||",V.rt("or", function(handle, index, parentHandle) {
 	var childHandlesId = [],
 		trigger;
 	$.forEach(handle.childNodes, function(child_handle) {
@@ -1646,38 +1610,31 @@ V.registerTrigger("or", function(handle, index, parentHandle) {
 		}
 	}
 	return trigger;
-});
-V.registerTrigger("||",V.triggers["or"]);
+}));
 
-var withTrigger = function(handle, index, parentHandle) {
+V.rt("#with", function(handle, index, parentHandle) {
 	// console.log(handle)
 	var id = handle.id,
 		dataHandle_id = handle.childNodes[0].id,
 		comment_with_id = parentHandle.childNodes[index + 3].id, //eachHandle --> eachComment --> endeachHandle --> endeachComment
 		trigger;
-		
+
 	trigger = {
 		event: function(NodeList_of_ViewInstance, dataManager, eventTrigger, isAttr, viewInstance_ID) {
 			var data = NodeList_of_ViewInstance[dataHandle_id]._data,
 				AllLayoutViewInstance = V._instances[viewInstance_ID]._WVI,
-				withViewInstance = AllLayoutViewInstance[id],// || (AllLayoutViewInstance[id] = V.withModules[id](data).insert(NodeList_of_ViewInstance[comment_with_id].currentNode)),
+				withViewInstance = AllLayoutViewInstance[id], // || (AllLayoutViewInstance[id] = V.withModules[id](data).insert(NodeList_of_ViewInstance[comment_with_id].currentNode)),
 				inserNew;
 			if (!withViewInstance) {
-				// console.log(NodeList_of_ViewInstance[comment_with_id].currentNode)
 				withViewInstance = AllLayoutViewInstance[id] = V.withModules[id](data);
-				dataManager.subset(withViewInstance)
-				// console.log(withViewInstance.dataManager)
-				// console.log(withViewInstance)
-				withViewInstance.insert(NodeList_of_ViewInstance[comment_with_id].currentNode)
+				dataManager.subset(withViewInstance);
+				withViewInstance.insert(NodeList_of_ViewInstance[comment_with_id].currentNode);
 			}
-			// console.log("with database : ",data)
 			withViewInstance.set(data);
 		}
 	}
 	return trigger;
-}
-
-V.registerTrigger("#with", withTrigger);
+});
 var _testDIV = $.DOM.clone(shadowDIV);
 var _getAttrOuter = Function("n", "return n." + (_hasOwn.call(_testDIV, "textContent") ? "textContent" : "innerText") + "||''")
 var _booleanFalseRegExp = /false|undefined|null|NaN/;
@@ -1685,71 +1642,108 @@ var _booleanFalseRegExp = /false|undefined|null|NaN/;
 var _ti,
 	uidKey,
 	_asynSetAttribute = function(obj, funName, key, value) {
-		var uidKey = $.uidAvator + key;
-		if (_ti = obj[uidKey]) {
-			clearTimeout(_ti)
+		uidKey = $.uidAvator + key;
+		if (!((_ti = obj[uidKey]) instanceof _asynSetAttributeFactory)) {
+			_ti = obj[uidKey] = new _asynSetAttributeFactory(obj, funName, key, value)
 		}
-		obj[uidKey] = setTimeout(function() {
-			obj[funName](key, value);
-			obj[$.uidAvator] = 0;
-		}, 0)
+		_ti.exports(obj, value);
 	},
-	_asynAttributeAssignment = function(obj, key, value) {
-		var uidKey = $.uidAvator + key;
-		if (_ti = obj[uidKey]) {
-			clearTimeout(_ti)
+	_asynSetAttributeFactory = function(obj, funName, key, value) {
+		var self = this;
+		self.funName = funName;
+		self.key = key;
+		self.value = value;
+		self.exports = self._set;
+	},
+	_asynAttributeAssignment = function(obj, key, value) { //1450.000ms --> 1250.000ms ==>16% faster
+		uidKey = $.uidAvator + key;
+		if (!((_ti = obj[uidKey]) instanceof _asynAttributeAssignmentFactory)) {
+			_ti = obj[uidKey] = new _asynAttributeAssignmentFactory(obj, key, value)
 		}
-		obj[uidKey] = setTimeout(function() {
-			obj[key] = value;
-		}, 0)
+		_ti.exports(obj, value);
+	},
+	_asynAttributeAssignmentFactory = function(obj, key, value) {
+		var self = this;
+		self.key = key;
+		self.value = value;
+		self.exports = self._set;
 	};
-
+_asynSetAttributeFactory.prototype = {
+	// funName: undefined, //undefined value will be rewrite to attribute but not in prototype
+	// ~~obj:undefined,~~ //Avoid circular references, leading to memory leaks.
+	// key: undefined,
+	// value: undefined,
+	// exports: undefined
+	_cache: function(obj, newValue) {
+		this.value = newValue;
+	},
+	_set: function(obj, newValue) {
+		var self = this,
+			funName = self.funName,
+			key = self.key;
+		setTimeout(function() {
+			obj[funName](key, self.value);
+			self.exports = self._set;
+		}, 0);
+		(self.exports = self._cache).call(self, obj, newValue);
+	}
+}
+_asynAttributeAssignmentFactory.prototype = {
+	_cache: function(obj, newValue) {
+		this.value = newValue;
+	},
+	_set: function(obj, newValue) {
+		var self = this,
+			key = self.key;
+		setTimeout(function() {
+			obj[key] = self.value;
+			self.exports = self._set;
+		}, 0);
+		(self.exports = self._cache).call(self, obj, newValue);
+	}
+}
 var _AttributeHandleEvent = {
-	event: function(key, currentNode, parserNode) {
+	event: function(key, currentNode, parserNode) { //on开头的事件绑定，IE需要绑定Function类型，现代浏览器绑定String类型（_AttributeHandleEvent.com）
 		var attrOuter = _getAttrOuter(parserNode);
 		try {
-			// console.log("event building:",attrOuter)//DEBUG
-			var attrOuterEvent = Function(attrOuter);
-			// console.log("event build success!")//DEBUG
+			var attrOuterEvent = Function(attrOuter); //尝试编译String类型数据
 		} catch (e) {
-			// console.log("event build error !")//DEBUG
-			attrOuterEvent = $.noop;
+			attrOuterEvent = $.noop; //失败使用空函数替代
 		}
-		// _asynSetAttribute(currentNode, "setAttribute", key, attrOuterEvent)
-		currentNode.setAttribute(key, attrOuterEvent);
+		_asynSetAttribute(currentNode, "setAttribute", key, attrOuterEvent)
+		// currentNode.setAttribute(key, attrOuterEvent);
 	},
 	style: function(key, currentNode, parserNode) {
 		var attrOuter = _getAttrOuter(parserNode);
-		// _asynSetAttribute(currentNode.style, "setAttribute", 'cssText', attrOuter)
-		currentNode.style.setAttribute('cssText', attrOuter);
+		_asynSetAttribute(currentNode.style, "setAttribute", 'cssText', attrOuter)
+		// currentNode.style.setAttribute('cssText', attrOuter);
 	},
 	com: function(key, currentNode, parserNode) {
 		var attrOuter = _getAttrOuter(parserNode);
-		_asynSetAttribute(currentNode,"setAttribute",key, attrOuter)
+		_asynSetAttribute(currentNode, "setAttribute", key, attrOuter)
 		// currentNode.setAttribute(key, attrOuter)
 	},
-	//---------
 	dir: function(key, currentNode, parserNode) {
 		var attrOuter = _getAttrOuter(parserNode);
-		// _asynAttributeAssignment(currentNode, key, attrOuter);
-		currentNode[key] = attrOuter;
+		_asynAttributeAssignment(currentNode, key, attrOuter);
+		// currentNode[key] = attrOuter;
 	},
 	bool: function(key, currentNode, parserNode) {
 		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
 
 		if (attrOuter) {
 			// currentNode.setAttribute(key, key);
-			// _asynAttributeAssignment(currentNode, key, key);
-			currentNode[key] = key;
+			_asynAttributeAssignment(currentNode, key, key);
+			// currentNode[key] = key;
 		} else {
 			// currentNode.removeAttribute(key);
-			// _asynAttributeAssignment(currentNode, key, false);
-			currentNode[key] = false;
+			_asynAttributeAssignment(currentNode, key, false);
+			// currentNode[key] = false;
 		}
 	}
 };
 var _boolAssignment = ["checked", "selected", "disabled", "readonly", "multiple", "defer", "declare", "noresize", "nowrap", "noshade", "compact", "truespeed", "async", "typemustmatch", "open", "novalidate", "ismap", "default", "seamless", "autoplay", "controls", "loop", "muted", "reversed", "scoped", "autofocus", "required", "formnovalidate", "editable", "draggable", "hidden"];
-V.registerAttrHandle(function(attrKey){
+V.ra(function(attrKey){
 	return $.indexOf(_boolAssignment,attrKey) !==-1;
 }, function() {
 	return _AttributeHandleEvent.bool;
@@ -1766,12 +1760,12 @@ var iecheck = function(key, currentNode, parserNode) {
 	}
 	(this._attributeHandle = _AttributeHandleEvent.bool)(key, currentNode, parserNode);
 }
-V.registerAttrHandle("checked", function() {
+V.ra("checked", function() {
 	return _isIE ? iecheck : _AttributeHandleEvent.com;
 })
-var _dirAssignment = ["className","value"];
-V.registerAttrHandle(function(attrKey){
-	return $.indexOf(_dirAssignment,attrKey) !==-1;
+var _dirAssignment = RegExp(["className","value"].join("|"),"gi")
+V.ra(function(attrKey){
+	return _dirAssignment.test(attrKey);
 }, function() {
 	return _AttributeHandleEvent.dir;
 })
@@ -1811,7 +1805,7 @@ var _addEventListener = function(Element, eventName, eventFun) {
 		eventCollection[eventName] = eventFun;
 	};
 _elementCache.event = {};
-V.registerAttrHandle(function(attrKey) {
+V.ra(function(attrKey) {
 	return attrKey.indexOf("event-") === 0;
 }, function(attrKey) {
 	return eventListerAttribute;
@@ -1826,12 +1820,12 @@ var _event_by_fun = (function() {
 	}
 	return true;
 }());
-V.registerAttrHandle(function(attrKey){
+V.ra(function(attrKey){
 	attrKey.indexOf("on") === 0;
 },function () {
 	return _event_by_fun&&_AttributeHandleEvent.event;
 })
-V.registerAttrHandle("style",function () {
+V.ra("style",function () {
 	return _isIE&&_AttributeHandleEvent.style;
 })
 

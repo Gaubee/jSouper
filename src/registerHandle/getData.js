@@ -1,7 +1,7 @@
-V.registerHandle("", function(handle, index, parentHandle) {
+V.rh("", function(handle, index, parentHandle) {
 	var textHandle = handle.childNodes[0];
-	if (parentHandle.type !== "handle") {//is textNode
-		var nextHandle = _commentPlaceholder(handle, parentHandle,"text "+handle.id);
+	if (parentHandle.type !== "handle") { //is textNode
+		var nextHandle = _commentPlaceholder(handle, parentHandle, "text " + handle.id);
 		if (textHandle) { //textNode as Placeholder
 
 			$.insertAfter(parentHandle.childNodes, handle, textHandle);

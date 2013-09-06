@@ -34,7 +34,7 @@ var _addEventListener = function(Element, eventName, eventFun) {
 		eventCollection[eventName] = eventFun;
 	};
 _elementCache.event = {};
-V.registerAttrHandle(function(attrKey) {
+V.ra(function(attrKey) {
 	return attrKey.indexOf("event-") === 0;
 }, function(attrKey) {
 	return eventListerAttribute;

@@ -1,4 +1,4 @@
-V.registerTrigger("and", function(handle, index, parentHandle) {
+V.rt("&&", V.rt("and", function(handle, index, parentHandle) {
 	var childHandlesId = [],
 		trigger;
 	$.forEach(handle.childNodes, function(child_handle) {
@@ -21,5 +21,4 @@ V.registerTrigger("and", function(handle, index, parentHandle) {
 		}
 	}
 	return trigger;
-});
-V.registerTrigger("&&",V.triggers["and"]);
+}));

@@ -1,4 +1,4 @@
-var _each_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManager, triggerBy,viewInstance_ID) {
+var _each_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManager, triggerBy, viewInstance_ID) {
 	var handle = this,
 		parentHandle = handle.parentNode,
 		comment_endeach_id,
@@ -11,7 +11,7 @@ var _each_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManag
 		}
 	});
 	// console.log(comment_endeach_id,viewInstance_ID)
-	arrViewInstances&&(arrViewInstances.hidden = !show_or_hidden);
+	arrViewInstances && (arrViewInstances.hidden = !show_or_hidden);
 	if (show_or_hidden) {
 		$.forEach(arrViewInstances, function(viewInstance, index) {
 			// console.log(comment_endeach_id,NodeList_of_ViewInstance[comment_endeach_id],handle,parentHandle)
@@ -28,7 +28,7 @@ var _each_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManag
 		})
 	}
 };
-V.registerHandle("#each", function(handle, index, parentHandle) {
+V.rh("#each", function(handle, index, parentHandle) {
 	//The Nodes between #each and /each will be pulled out , and not to be rendered.
 	//which will be combined into new View module.
 	var _shadowBody = $.DOM.clone(shadowBody),
@@ -41,16 +41,16 @@ V.registerHandle("#each", function(handle, index, parentHandle) {
 	$.forEach(parentHandle.childNodes, function(childHandle, index) {
 		endIndex = index;
 		if (childHandle.handleName === "#each") {
-			layer+=1
+			layer += 1
 		}
 		if (childHandle.handleName === "/each") {
-			layer-=1;
+			layer -= 1;
 			if (!layer) {
 				return false
 			}
 		}
 		$.push(eachModuleHandle.childNodes, childHandle);
-		layer&&console.log("inner each:",childHandle)
+		// layer && console.log("inner each:", childHandle)
 	}, index + 1);
 	// console.log("----",handle.id,"-------")
 	parentHandle.childNodes.splice(index + 1, endIndex - index - 1); //Pulled out
@@ -59,4 +59,4 @@ V.registerHandle("#each", function(handle, index, parentHandle) {
 	handle.display = _each_display; //Custom rendering function
 	_commentPlaceholder(handle, parentHandle);
 });
-V.registerHandle("/each", placeholderHandle);
+V.rh("/each", placeholderHandle);

@@ -1,4 +1,4 @@
-var layoutTrigger = function(handle, index, parentHandle) {
+V.rt(">", V.rt("#layout", function(handle, index, parentHandle) {
 	// console.log(handle)
 	var id = handle.id,
 		childNodes = handle.childNodes,
@@ -6,7 +6,7 @@ var layoutTrigger = function(handle, index, parentHandle) {
 		dataHandle_id = childNodes[1].id,
 		comment_layout_id = parentHandle.childNodes[index + 1].id, //eachHandle --> eachComment --> endeachHandle --> endeachComment
 		trigger;
-		
+
 	trigger = {
 		event: function(NodeList_of_ViewInstance, dataManager, eventTrigger, isAttr, viewInstance_ID) {
 			var data = NodeList_of_ViewInstance[dataHandle_id]._data,
@@ -17,7 +17,4 @@ var layoutTrigger = function(handle, index, parentHandle) {
 		}
 	}
 	return trigger;
-}
-
-V.registerTrigger("#layout", layoutTrigger);
-V.registerTrigger(">", layoutTrigger);
+}));

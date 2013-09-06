@@ -1,3 +1,1 @@
-V.registerHandle("#if", placeholderHandle);
-V.registerHandle("#else", placeholderHandle);
-V.registerHandle("/if", placeholderHandle);
+V.rh("/if", V.rh("#else", V.rh("#if", placeholderHandle)));

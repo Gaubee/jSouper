@@ -91,19 +91,13 @@ var V = global.ViewParser = {
 			}
 		});
 	},
-	registerTrigger: function(handleName, triggerFactory) {
-		// if (V.triggers[handleName]) {
-		// 	throw handleName + " trigger already exists.";
-		// }
-		V.triggers[handleName] = triggerFactory;
+	rt: function(handleName, triggerFactory) {
+		return V.triggers[handleName] = triggerFactory;
 	},
-	registerHandle: function(handleName, handle) {
-		// if (V.handles[handleName]) {
-		// 	throw handleName + " handler already exists.";
-		// }
-		V.handles[handleName] = handle
+	rh: function(handleName, handle) {
+		return V.handles[handleName] = handle
 	},
-	registerAttrHandle:function(match,handle){
+	ra:function(match,handle){
 		var attrHandle = V.attrHandles[V.attrHandles.length] = {
 			match:null,
 			handle:handle

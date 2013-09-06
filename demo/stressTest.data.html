@@ -1,0 +1,18 @@
+<html>
+<head>
+	<title>Stress Test of innerHTML</title>
+	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js"></script>	
+</head>
+<body>
+	
+</body>
+</html>
+<script type="text/javascript">
+	stress = ViewParser.parse('<h1>{(stress)}')().append(document.body);
+	console.time("attr");
+	var i = 100000;
+	do{
+		stress.set("stress",i)
+	}while(i--);
+	console.timeEnd("attr");
+</script>

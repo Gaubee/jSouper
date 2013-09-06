@@ -1,4 +1,4 @@
-var _equal = function(handle, index, parentHandle) { //Equal
+V.rt("==", V.rt("equa", function(handle, index, parentHandle) { //Equal
 	var childHandlesId = [],
 		trigger;
 	$.forEach(handle.childNodes, function(child_handle) {
@@ -22,6 +22,4 @@ var _equal = function(handle, index, parentHandle) { //Equal
 		}
 	}
 	return trigger;
-};
-V.registerTrigger("equa", _equal);
-V.registerTrigger("==", _equal);
+}));

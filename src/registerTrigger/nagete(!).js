@@ -1,4 +1,4 @@
-var _nagete = function(handle, index, parentHandle) { //Negate
+V.rt("!", V.rt("nega", function(handle, index, parentHandle) { //Negate
 	var nageteHandlesId = handle.childNodes[0].id,
 		trigger;
 	trigger = {
@@ -9,6 +9,4 @@ var _nagete = function(handle, index, parentHandle) { //Negate
 		}
 	}
 	return trigger;
-};
-V.registerTrigger("nega", _nagete);
-V.registerTrigger("!", _nagete);
+}));

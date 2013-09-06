@@ -8,7 +8,7 @@ var _event_by_fun = (function() {
 	}
 	return true;
 }());
-V.registerAttrHandle(function(attrKey){
+V.ra(function(attrKey){
 	attrKey.indexOf("on") === 0;
 },function () {
 	return _event_by_fun&&_AttributeHandleEvent.event;

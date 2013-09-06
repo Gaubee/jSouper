@@ -1,4 +1,4 @@
-V.registerTrigger("or", function(handle, index, parentHandle) {
+V.rt("||",V.rt("or", function(handle, index, parentHandle) {
 	var childHandlesId = [],
 		trigger;
 	$.forEach(handle.childNodes, function(child_handle) {
@@ -20,5 +20,4 @@ V.registerTrigger("or", function(handle, index, parentHandle) {
 		}
 	}
 	return trigger;
-});
-V.registerTrigger("||",V.triggers["or"]);
+}));

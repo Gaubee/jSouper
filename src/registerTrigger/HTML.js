@@ -1,4 +1,4 @@
-V.registerTrigger("HTML", function(handle, index, parentHandle) {
+V.rt("HTML", function(handle, index, parentHandle) {
 	var handleChilds = handle.childNodes,
 		htmlTextHandlesId = handleChilds[0].id,
 		beginCommentId = handleChilds[handleChilds.length - 1].id,

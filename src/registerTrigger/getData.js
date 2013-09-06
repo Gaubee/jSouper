@@ -1,9 +1,9 @@
-V.registerTrigger("", function(handle, index, parentHandle) {
+V.rt("", function(handle, index, parentHandle) {
 	var textHandle = handle.childNodes[0],
 		textHandleId = textHandle.id,
 		key = textHandle.node.data,
 		trigger;
-	// console.log("getData:",key)
+
 	if (parentHandle.type !== "handle") { //as textHandle
 		if ($.isString(key)) { // single String
 			trigger = { //const 
@@ -18,21 +18,18 @@ V.registerTrigger("", function(handle, index, parentHandle) {
 			trigger = {
 				key: key,
 				event: function(NodeList_of_ViewInstance, dataManager, triggerBy, isAttr, vi) { //call by ViewInstance's Node
-					// console.log("getData:",key,":",dataManager)
-					var data;
+					var data= dataManager.get(key),
+						currentNode = NodeList_of_ViewInstance[textHandleId].currentNode;
 					if (isAttr) {
-						if (isAttr.key.indexOf("on") === 0) {
-							data = String(dataManager.get(key)).replace(/"/g, '\\"').replace(/'/g, "\\'");
-							// }else if(isAttr.key.indexOf("event-")===0&&_isIE){
-							// 	data = String(dataManager.get(key)).replace(/\n/g, _ieEnterPlaceholder);
-						} else {
-							data = dataManager.get(key);
+						//IE浏览器直接编译，故不需要转义，其他浏览器需要以字符串绑定到属性中。需要转义，否则会出现引号冲突
+						if (isAttr.key.indexOf("on") === 0&&!_isIE) {
+							data = String(data).replace(/"/g, '\\"').replace(/'/g, "\\'");
 						}
-					} else {
-						data = dataManager.get(key)
-					};
-					// console.log(key,data,dataManager)
-					NodeList_of_ViewInstance[textHandleId].currentNode.data = data;
+						currentNode.data = data;
+					}else{
+						_asynAttributeAssignment(currentNode,"data",data);//1300.000ms --> 23% faster
+						// currentNode.data = data;//1600.000ms
+					}
 				}
 			}
 		}

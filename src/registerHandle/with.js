@@ -20,7 +20,7 @@ var _with_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManag
 		withViewInstance.remove();
 	}
 };
-V.registerHandle("#with", function(handle, index, parentHandle) {
+V.rh("#with", function(handle, index, parentHandle) {
 	//The Nodes between #with and /with will be pulled out , and not to be rendered.
 	//which will be combined into new View module.
 	var _shadowBody = $.DOM.clone(shadowBody),
@@ -50,4 +50,4 @@ V.registerHandle("#with", function(handle, index, parentHandle) {
 	handle.display = _with_display; //Custom rendering function
 	_commentPlaceholder(handle, parentHandle);
 });
-V.registerHandle("/with", placeholderHandle);
+V.rh("/with", placeholderHandle);

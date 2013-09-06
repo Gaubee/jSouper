@@ -10,6 +10,6 @@ var iecheck = function(key, currentNode, parserNode) {
 	}
 	(this._attributeHandle = _AttributeHandleEvent.bool)(key, currentNode, parserNode);
 }
-V.registerAttrHandle("checked", function() {
+V.ra("checked", function() {
 	return _isIE ? iecheck : _AttributeHandleEvent.com;
 })
