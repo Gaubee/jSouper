@@ -11,8 +11,13 @@ V.rt(">", V.rt("#layout", function(handle, index, parentHandle) {
 		event: function(NodeList_of_ViewInstance, dataManager, eventTrigger, isAttr, viewInstance_ID) {
 			var data = NodeList_of_ViewInstance[dataHandle_id]._data,
 				AllLayoutViewInstance = V._instances[viewInstance_ID]._ALVI,
-				layoutViewInstance = AllLayoutViewInstance[id] || (AllLayoutViewInstance[id] = V.modules[NodeList_of_ViewInstance[templateHandle_id]._data](data).insert(NodeList_of_ViewInstance[comment_layout_id].currentNode)),
+				layoutViewInstance = AllLayoutViewInstance[id],
 				inserNew;
+			if (!layoutViewInstance) {
+				layoutViewInstance = AllLayoutViewInstance[id] = V.modules[NodeList_of_ViewInstance[templateHandle_id]._data]().insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
+				console.log("layout:", "父级：", dataManager.id, "子集：", layoutViewInstance.dataManager.id)
+				dataManager.subset(layoutViewInstance);
+			}
 			layoutViewInstance.set(data);
 		}
 	}

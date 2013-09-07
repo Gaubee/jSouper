@@ -155,7 +155,7 @@ function DataManager(baseData, viewInstance) {
 	self._database = baseData;
 	self._cacheData = {};
 	self._viewInstances = []; //to touch off
-	self._parentDataManager = $NULL; //to get data
+	self._parentDataManager = $UNDEFINED; //to get data
 	self._subsetDataManagers = []; //to touch off
 	self._triggerKeys = [];
 	viewInstance && self.collect(viewInstance);
@@ -173,14 +173,13 @@ DataManager.prototype = {
 	getNC: function(key) {
 		var arrKey = key.split("."),
 			result = this._database;
-		if (key !== "") { //"" return _database
-			if (result != $UNDEFINED && result !== $FALSE) { //null|undefined|false
-				do {
-					// console.log(arrKey[0])
-					result = result[arrKey.splice(0, 1)];
-				} while (result !== $UNDEFINED && arrKey.length);
-			}
+		// if (key !== "") { //"" return _database
+		if (result != $UNDEFINED && result !== $FALSE) { //null|undefined|false
+			do {
+				result = result[arrKey.splice(0, 1)];
+			} while (result !== $UNDEFINED && arrKey.length);
 		}
+		// }
 		return result;
 	},
 	get: function(key, refresh) {
@@ -191,17 +190,18 @@ DataManager.prototype = {
 			baseData = self._database,
 			cacheData = self._cacheData,
 			result = baseData,
-			formateKey = String(key);
+			formateKey;
 		if (key !== $UNDEFINED) {
-			if (!key.indexOf($T)) {//$THIS
+			formateKey = key = String(key);
+			if (!key.indexOf($T)) { //$THIS
 				var $TLen = $T.length;
 				if (key.charAt($TLen) === ".") {
 					formateKey = key.substring($TLen + 1);
 				} else {
-					formateKey = key.substring($TLen);
+					return result; //formateKey = key.substring($TLen); // ==> {($THIS)}
 				}
 				$T = false; //Prohibit bubbling get the data.
-			} else if (!key.indexOf($P)) {//$PARENT
+			} else if (!key.indexOf($P)) { //$PARENT
 				var $PLen = $P.length;
 				if (key.charAt($PLen) === ".") {
 					formateKey = key.substring($PLen + 1);
@@ -209,7 +209,7 @@ DataManager.prototype = {
 					formateKey = key.substring($PLen);
 				}
 				return self._parentDataManager && self._parentDataManager.get(formateKey);
-			}else if (!key.indexOf($A)){//$TOP
+			} else if (!key.indexOf($A)) { //$TOP
 				var $ALen = $A.length,
 					parent;
 				if (key.charAt($ALen) === ".") {
@@ -217,14 +217,15 @@ DataManager.prototype = {
 				} else {
 					formateKey = key.substring($ALen);
 				}
-				while(parent = self._parentDataManager){
+				while (parent = self._parentDataManager) {
 					self = parent;
 				}
 			}
 			if (refresh === $FALSE) {
-				result = cacheData[formateKey];
-			} else if (refresh === $TRUE || (result = cacheData[formateKey]) === $UNDEFINED) {
-				if ($T && (result = cacheData[formateKey] = self.getNC(formateKey)) === $UNDEFINED && self._parentDataManager) {
+				result = cacheData[key];
+			} else if (refresh === $TRUE || (result = cacheData[key]) === $UNDEFINED) {
+				if ((result = cacheData[key] = self.getNC(formateKey)) === $UNDEFINED && $T && self._parentDataManager) {
+					//顺序很重要
 					return self._parentDataManager.get(formateKey);
 				};
 			}
@@ -253,25 +254,19 @@ DataManager.prototype = {
 				lastItemKey = arrKey.splice(arrKey.length - 1, 1)[0];
 				while ((cacheItemKey = arrKey.splice(0, 1)).length) {
 					itemKey = cacheItemKey[0];
-					// //console.log("itemKey:", itemKey, ":", result[itemKey])
 					if (!((result = result[itemKey]) instanceof Object)) {
 						result = cacheObj[itemKey] = {};
 					};
 					cacheObj = result
 				};
-				// //console.log(cacheObj)
 				result = cacheObj[lastItemKey] = obj;
 				self._database = baseData;
 				break;
 		}
 		$.ftE(self._triggerKeys, function(triggerKey) {
-			//console.warn("indexOf:",key.indexOf(triggerKey)===0||triggerKey.indexOf(key)===0)
-			// console.log(triggerKey.indexOf(key) === 0)
 			if (key.indexOf(triggerKey) === 0 || triggerKey.indexOf(key) === 0) {
 				var oldVal = self.get(triggerKey, $FALSE),
 					newVal = self.get(triggerKey, $TRUE);
-				//console.log("old triggerKey:", oldVal)
-				//console.log("new triggerKey:", newVal)
 				if (oldVal !== newVal || oldVal instanceof Object) {
 					$.p(updateKeys, triggerKey);
 				}
@@ -280,7 +275,6 @@ DataManager.prototype = {
 		$.ftE($.un(updateKeys), function(triggerKey) {
 			self._touchOffSubset(triggerKey)
 		});
-		// //console.log("updateKeys:",updateKeys)
 		return updateKeys;
 	},
 	_touchOffSubset: function(key) {
@@ -290,7 +284,6 @@ DataManager.prototype = {
 		var i, vis, vi, len;
 		for (i = 0, vis = this._viewInstances, vi, len = vis.length; vi = vis[i];) {
 			if (vi._isAttr) {
-				// //console.log("building attribute value!")//DEBUG
 				$.fE(vi._triggers, function(key) {
 					vi.touchOff(key);
 				});
@@ -1239,16 +1232,16 @@ V.rt("#each", function(handle, index, parentHandle) {
 		trigger;
 
 	trigger = {
-		event: function(NodeList_of_ViewInstance, dataManager,eventTrigger,isAttr,viewInstance_ID) {
+		event: function(NodeList_of_ViewInstance, dataManager, eventTrigger, isAttr, viewInstance_ID) {
 			var data = dataManager.get(arrDataHandleKey),
 				allArrViewInstances = V._instances[viewInstance_ID]._AVI,
 				arrViewInstances,
-				divideIndex = data?data.length:0,
+				divideIndex = data ? data.length : 0,
 				eachModuleConstructor = V.eachModules[id],
 				inserNew,
 				comment_endeach_node = NodeList_of_ViewInstance[comment_endeach_id].currentNode;
 
-			(arrViewInstances = allArrViewInstances[id]||(allArrViewInstances[id] = [])).len = divideIndex;
+			(arrViewInstances = allArrViewInstances[id] || (allArrViewInstances[id] = [])).len = divideIndex;
 
 			$.fE(data, function(eachItemData, index) {
 
@@ -1256,6 +1249,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 				if (!viewInstance) {
 					viewInstance = arrViewInstances[index] = eachModuleConstructor();
 					dataManager.subset(viewInstance); //reset arrViewInstance's dataManager
+					console.log("each:", "父级：", dataManager.id, "子集：", viewInstance.dataManager.id)
 					inserNew = $TRUE;
 				}
 				if (!viewInstance._canRemoveAble) { //had being recovered into the packingBag
@@ -1264,7 +1258,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 
 				viewInstance.set(eachItemData);
 
-				if (inserNew&&!arrViewInstances.hidden) {
+				if (inserNew && !arrViewInstances.hidden) {
 					viewInstance.insert(comment_endeach_node)
 				}
 			});
@@ -1470,8 +1464,13 @@ V.rt(">", V.rt("#layout", function(handle, index, parentHandle) {
 		event: function(NodeList_of_ViewInstance, dataManager, eventTrigger, isAttr, viewInstance_ID) {
 			var data = NodeList_of_ViewInstance[dataHandle_id]._data,
 				AllLayoutViewInstance = V._instances[viewInstance_ID]._ALVI,
-				layoutViewInstance = AllLayoutViewInstance[id] || (AllLayoutViewInstance[id] = V.modules[NodeList_of_ViewInstance[templateHandle_id]._data](data).insert(NodeList_of_ViewInstance[comment_layout_id].currentNode)),
+				layoutViewInstance = AllLayoutViewInstance[id],
 				inserNew;
+			if (!layoutViewInstance) {
+				layoutViewInstance = AllLayoutViewInstance[id] = V.modules[NodeList_of_ViewInstance[templateHandle_id]._data]().insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
+				console.log("layout:", "父级：", dataManager.id, "子集：", layoutViewInstance.dataManager.id)
+				dataManager.subset(layoutViewInstance);
+			}
 			layoutViewInstance.set(data);
 		}
 	}

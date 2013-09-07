@@ -5,16 +5,16 @@ V.rt("#each", function(handle, index, parentHandle) {
 		trigger;
 
 	trigger = {
-		event: function(NodeList_of_ViewInstance, dataManager,eventTrigger,isAttr,viewInstance_ID) {
+		event: function(NodeList_of_ViewInstance, dataManager, eventTrigger, isAttr, viewInstance_ID) {
 			var data = dataManager.get(arrDataHandleKey),
 				allArrViewInstances = V._instances[viewInstance_ID]._AVI,
 				arrViewInstances,
-				divideIndex = data?data.length:0,
+				divideIndex = data ? data.length : 0,
 				eachModuleConstructor = V.eachModules[id],
 				inserNew,
 				comment_endeach_node = NodeList_of_ViewInstance[comment_endeach_id].currentNode;
 
-			(arrViewInstances = allArrViewInstances[id]||(allArrViewInstances[id] = [])).len = divideIndex;
+			(arrViewInstances = allArrViewInstances[id] || (allArrViewInstances[id] = [])).len = divideIndex;
 
 			$.fE(data, function(eachItemData, index) {
 
@@ -22,6 +22,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 				if (!viewInstance) {
 					viewInstance = arrViewInstances[index] = eachModuleConstructor();
 					dataManager.subset(viewInstance); //reset arrViewInstance's dataManager
+					console.log("each:", "父级：", dataManager.id, "子集：", viewInstance.dataManager.id)
 					inserNew = $TRUE;
 				}
 				if (!viewInstance._canRemoveAble) { //had being recovered into the packingBag
@@ -30,7 +31,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 
 				viewInstance.set(eachItemData);
 
-				if (inserNew&&!arrViewInstances.hidden) {
+				if (inserNew && !arrViewInstances.hidden) {
 					viewInstance.insert(comment_endeach_node)
 				}
 			});
