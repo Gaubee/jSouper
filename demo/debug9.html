@@ -57,13 +57,18 @@
 			firstName:"Gaubee",
 			lastName:"",
 			fullName:"your lover",
-			name:function(dm1,dm2){
-				if (this.get("fullName")) {
-					return this.get("fullName")
-				}else{
-					return this.get("firstName")+"  "+this.get("lastName");
+			name:Controller.Observer({
+				get:function(dm1,dm2){
+					if (this.get("fullName")) {
+						return this.get("fullName")
+					}else{
+						return this.get("firstName")+"  "+this.get("lastName");
+					}
+				},
+				set:function(dm1,dm2){
+					console.log("???")
 				}
-			},
+			}),
 			age:20
 		})
 		;

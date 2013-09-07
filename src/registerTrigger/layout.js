@@ -15,7 +15,6 @@ V.rt(">", V.rt("#layout", function(handle, index, parentHandle) {
 				inserNew;
 			if (!layoutViewInstance) {
 				layoutViewInstance = AllLayoutViewInstance[id] = V.modules[NodeList_of_ViewInstance[templateHandle_id]._data]().insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
-				console.log("layout:", "父级：", dataManager.id, "子集：", layoutViewInstance.dataManager.id)
 				dataManager.subset(layoutViewInstance);
 			}
 			layoutViewInstance.set(data);

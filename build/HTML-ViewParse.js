@@ -1249,7 +1249,6 @@ V.rt("#each", function(handle, index, parentHandle) {
 				if (!viewInstance) {
 					viewInstance = arrViewInstances[index] = eachModuleConstructor();
 					dataManager.subset(viewInstance); //reset arrViewInstance's dataManager
-					console.log("each:", "父级：", dataManager.id, "子集：", viewInstance.dataManager.id)
 					inserNew = $TRUE;
 				}
 				if (!viewInstance._canRemoveAble) { //had being recovered into the packingBag
@@ -1468,7 +1467,6 @@ V.rt(">", V.rt("#layout", function(handle, index, parentHandle) {
 				inserNew;
 			if (!layoutViewInstance) {
 				layoutViewInstance = AllLayoutViewInstance[id] = V.modules[NodeList_of_ViewInstance[templateHandle_id]._data]().insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
-				console.log("layout:", "父级：", dataManager.id, "子集：", layoutViewInstance.dataManager.id)
 				dataManager.subset(layoutViewInstance);
 			}
 			layoutViewInstance.set(data);

@@ -22,7 +22,6 @@ V.rt("#each", function(handle, index, parentHandle) {
 				if (!viewInstance) {
 					viewInstance = arrViewInstances[index] = eachModuleConstructor();
 					dataManager.subset(viewInstance); //reset arrViewInstance's dataManager
-					console.log("each:", "父级：", dataManager.id, "子集：", viewInstance.dataManager.id)
 					inserNew = $TRUE;
 				}
 				if (!viewInstance._canRemoveAble) { //had being recovered into the packingBag

@@ -16,16 +16,11 @@ var Controller = function(dataManager, statementRelations) {
 
 	(self.dataManager = $.s(dataManager)).unshift(DataManager(statementRelations));
 
-	// $.ftE(self.dataManager,function(dm){
-	// 	Controller.Soap(dm);
-	// });
-
 	var exportsDM = self.exports();
-	// console.log(exportsDM.id, exportsDM._triggerKeys)
+
 	var observerArr = Controller.flatFn(exportsDM._database);
 	$.ftE(observerArr, function(fnKey) {
-		console.log("fnKey: ",fnKey)
-		Controller.relyOn.upPack(fnKey, observerArr._[fnKey].get, exportsDM, dataManager)();
+		Controller.relyOn.upPack(fnKey, observerArr._[fnKey], exportsDM, dataManager)();
 	});
 };
 Controller.flatFn = function(obj, prefixKey) {
@@ -37,20 +32,20 @@ Controller.flatFn = function(obj, prefixKey) {
 			$.p(hashTable, prefixKey);
 			hashTable._[prefixKey] = obj;
 		} else if (obj instanceof Array) {
-			$.ftE(obj,function(item,index){
+			$.ftE(obj, function(item, index) {
 				index = prefixKey ? prefixKey + "." + index : index;
-				var substrHashTable = Controller.flatFn(item,index);
-				$.ftE(substrHashTable,function(substrKey){
-					$.p(hashTable,substrKey);
+				var substrHashTable = Controller.flatFn(item, index);
+				$.ftE(substrHashTable, function(substrKey) {
+					$.p(hashTable, substrKey);
 					hashTable._[substrKey] = substrHashTable._[substrKey]
 				})
 			});
 		} else {
 			$.fI(obj, function(val, key) {
 				key = prefixKey ? prefixKey + "." + key : key;
-				var substrHashTable = Controller.flatFn(val,key);
-				$.ftE(substrHashTable,function(substrKey){
-					$.p(hashTable,substrKey);
+				var substrHashTable = Controller.flatFn(val, key);
+				$.ftE(substrHashTable, function(substrKey) {
+					$.p(hashTable, substrKey);
 					hashTable._[substrKey] = substrHashTable._[substrKey]
 				})
 			});
@@ -76,12 +71,19 @@ Controller.Observer = function(obs) {
 		_set = proto.set,
 		_get = proto.get;
 	proto.set = function() {
-		var relys = Controller.relyOn.container[this.id],
-			updataKey = _set.apply(this, $.s(arguments))
+		var self = this,
+			relys = Controller.relyOn.container[this.id],
+			args = $.s(arguments),
+			updataKey = _set.apply(self, args);
 			relys && $.ftE(updataKey, function(key) {
-				if (key = relys[key]) {
-					$.ftE(key, function(fn) {
-						fn();
+				var observerArr;
+				if (observerArr = relys[key]) {
+					$.ftE(observerArr, function(observerObj) {
+						observerObj.get();
+						var relyDataManagers = observerObj.relyDM||[];
+						relyDataManagers.push.apply(relyDataManagers,args);
+						relyDataManagers.push(updataKey);
+						observerObj.set.apply(self,relyDataManagers);
 					})
 				}
 			});
@@ -99,31 +101,34 @@ Controller.relyOn = {
 	status: $FALSE,
 	container: {},
 	cache: {},
-	pickUp: function(dm, fun) {
+	pickUp: function(dm, observerObj) { //拾取依赖的关键字
 		var self = this;
 		$.fI(self.cache, function(keys, id) {
 			var con = self.container[id] || (self.container[id] = {});
 			$.ftE(keys, function(key) {
 				var fns = con[key]
-				if (fns && $.iO(fns, fun) === -1) {
-					$.p(fns, fun)
+				if (fns && $.iO(fns, observerObj) === -1) {
+					$.p(fns, observerObj)
 				} else {
-					$.p((con[key] = []), fun)
+					$.p((con[key] = []), observerObj)
 				}
 			});
 		});
 		self.cache = {};
 	},
-	upPack: function(fnKey, fn, sdm, dms) {
+	upPack: function(fnKey, observerObj, sourceDatabase, relyDataManagers) { //打包的触发器
 		var relyOn = this;
 
 		function upPackFn() {
 			relyOn.status = $TRUE;
-			var result = fn.apply(sdm, dms);
+			var result = observerObj.get.apply(sourceDatabase, relyDataManagers);
 			relyOn.status = $FALSE;
-			console.log(sdm.id, relyOn.cache)
-			relyOn.pickUp(sdm, upPackFn);
-			sdm.set(fnKey, result);
+			relyOn.pickUp(sourceDatabase, {
+				get: upPackFn,
+				set: observerObj.set,
+				relyDM:relyDataManagers
+			});
+			sourceDatabase.set(fnKey, result);
 			// return result;
 		}
 		return upPackFn;
