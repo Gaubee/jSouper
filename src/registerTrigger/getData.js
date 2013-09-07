@@ -11,7 +11,6 @@ V.rt("", function(handle, index, parentHandle) {
 				bubble: $TRUE,
 				event: function(NodeList_of_ViewInstance, dataManager) {
 					NodeList_of_ViewInstance[textHandleId].currentNode.data = key.substring(1, key.length - 1);
-					// trigger.event = $.noop;
 				}
 			};
 		} else { //String for databese by key
@@ -25,11 +24,6 @@ V.rt("", function(handle, index, parentHandle) {
 						if (isAttr.key.indexOf("on") === 0 && !_isIE) {
 							data = String(data).replace(/"/g, '\\"').replace(/'/g, "\\'");
 						}
-						// 	currentNode.data = data;
-						// }else{
-						// 	_asynAttributeAssignment(currentNode,"data",data);//1300.000ms --> 23% faster
-						// 	// currentNode.data = data;//1600.000ms
-						// }
 					}
 					currentNode.data = data;
 				}

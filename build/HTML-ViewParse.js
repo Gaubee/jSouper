@@ -1092,26 +1092,13 @@ V.rh("/each", placeholderHandle);
 V.rh("", function(handle, index, parentHandle) {
 	var textHandle = handle.childNodes[0];
 	if (parentHandle.type !== "handle") { //is textNode
-		var nextHandle = _commentPlaceholder(handle, parentHandle, "text " + handle.id);
-		if (textHandle) { //textNode as Placeholder
-
+		if (textHandle) {
 			$.iA(parentHandle.childNodes, handle, textHandle);
 			//Node position calibration
-			//no "$.insert" Avoid sequence error
-
-			return function(NodeList_of_ViewInstance) {
-				var nextNodeInstance = NodeList_of_ViewInstance[nextHandle.id].currentNode,
-					textNodeInstance = NodeList_of_ViewInstance[textHandle.id].currentNode,
-					parentNodeInstance = NodeList_of_ViewInstance[parentHandle.id].currentNode
-					$.D.iB(parentNodeInstance, textNodeInstance, nextNodeInstance); //Manually insert node
-			}
+			//textHandle's parentNode will be rewrited. (by using $.insertAfter)
+			return $.noop;
 		}
-
-	} else {
-		if (textHandle) {
-			textHandle.ignore = $TRUE;
-		}
-	}
+	}// else {console.log("ignore:",textHandle) if (textHandle) {textHandle.ignore = $TRUE; } }  //==> ignore Node's childNodes will be ignored too.
 });
 V.rh("@", function(handle, index, parentHandle) {
 	var textHandle = handle.childNodes[0];
@@ -1360,7 +1347,6 @@ V.rt("", function(handle, index, parentHandle) {
 				bubble: $TRUE,
 				event: function(NodeList_of_ViewInstance, dataManager) {
 					NodeList_of_ViewInstance[textHandleId].currentNode.data = key.substring(1, key.length - 1);
-					// trigger.event = $.noop;
 				}
 			};
 		} else { //String for databese by key
@@ -1374,11 +1360,6 @@ V.rt("", function(handle, index, parentHandle) {
 						if (isAttr.key.indexOf("on") === 0 && !_isIE) {
 							data = String(data).replace(/"/g, '\\"').replace(/'/g, "\\'");
 						}
-						// 	currentNode.data = data;
-						// }else{
-						// 	_asynAttributeAssignment(currentNode,"data",data);//1300.000ms --> 23% faster
-						// 	// currentNode.data = data;//1600.000ms
-						// }
 					}
 					currentNode.data = data;
 				}
