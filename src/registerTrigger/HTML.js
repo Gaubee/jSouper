@@ -3,16 +3,13 @@ V.rt("HTML", function(handle, index, parentHandle) {
 		htmlTextHandlesId = handleChilds[0].id,
 		beginCommentId = handleChilds[handleChilds.length - 1].id,
 		endCommentId = handleChilds[handleChilds.length - 2].id,
+		cacheNode =  $.D.cl(shadowDIV),
 		trigger;
 	trigger = {
 		// key:"",//default key === ""
 		bubble: true,
-		TEMP: {
-			cacheNode: $.D.cl(shadowDIV)
-		},
 		event: function(NodeList_of_ViewInstance, dataManager) {
 			var htmlText = NodeList_of_ViewInstance[htmlTextHandlesId]._data,
-				cacheNode = this.TEMP.cacheNode,
 				startCommentNode = NodeList_of_ViewInstance[beginCommentId].currentNode,
 				endCommentNode = NodeList_of_ViewInstance[endCommentId].currentNode,
 				parentNode = endCommentNode.parentNode,
@@ -29,7 +26,7 @@ V.rt("HTML", function(handle, index, parentHandle) {
 				if (node === endCommentNode) {
 					return $FALSE;
 				}
-				$.D.rC(parentNode,node);
+				$.D.rC(parentNode,node);//remove
 			}, index);
 			cacheNode.innerHTML = htmlText;
 			$.fE(cacheNode.childNodes, function(node, i) {

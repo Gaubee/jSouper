@@ -166,24 +166,20 @@ global.DataManager = DataManager;
 DataManager._instances = {};
 DataManager.config = {
 	"$T": "$THIS",
-	"$P": "$PARENT"
+	"$P": "$PARENT",
+	"$A": "$TOP"
 }
 DataManager.prototype = {
 	getNC: function(key) {
 		var arrKey = key.split("."),
 			result = this._database;
 		if (key !== "") { //"" return _database
-			// if (result instanceof Object) {=
-			// if (!(result == undefined || (isNaN(result) && (typeof result === "number")))) { //null|undefined|NaN
-			if (result != $UNDEFINED&&result!==$FALSE) { //null|undefined|false
+			if (result != $UNDEFINED && result !== $FALSE) { //null|undefined|false
 				do {
 					// console.log(arrKey[0])
 					result = result[arrKey.splice(0, 1)];
 				} while (result !== $UNDEFINED && arrKey.length);
 			}
-			// } else {
-			// 	result =
-			// }
 		}
 		return result;
 	},
@@ -191,19 +187,21 @@ DataManager.prototype = {
 		var self = this,
 			$T = DataManager.config.$T,
 			$P = DataManager.config.$P,
+			$A = DataManager.config.$A,
 			baseData = self._database,
 			cacheData = self._cacheData,
 			result = baseData,
-			formateKey = (key || "");
+			formateKey = String(key);
 		if (key !== $UNDEFINED) {
-			if (!key.indexOf($T)) {
+			if (!key.indexOf($T)) {//$THIS
 				var $TLen = $T.length;
 				if (key.charAt($TLen) === ".") {
 					formateKey = key.substring($TLen + 1);
 				} else {
 					formateKey = key.substring($TLen);
 				}
-			} else if (!key.indexOf($P)) {
+				$T = false; //Prohibit bubbling get the data.
+			} else if (!key.indexOf($P)) {//$PARENT
 				var $PLen = $P.length;
 				if (key.charAt($PLen) === ".") {
 					formateKey = key.substring($PLen + 1);
@@ -211,13 +209,22 @@ DataManager.prototype = {
 					formateKey = key.substring($PLen);
 				}
 				return self._parentDataManager && self._parentDataManager.get(formateKey);
+			}else if (!key.indexOf($A)){//$TOP
+				var $ALen = $A.length,
+					parent;
+				if (key.charAt($ALen) === ".") {
+					formateKey = key.substring($ALen + 1);
+				} else {
+					formateKey = key.substring($ALen);
+				}
+				while(parent = self._parentDataManager){
+					self = parent;
+				}
 			}
-			//console.log("get:", formateKey);
 			if (refresh === $FALSE) {
 				result = cacheData[formateKey];
 			} else if (refresh === $TRUE || (result = cacheData[formateKey]) === $UNDEFINED) {
-				//console.log("refresh:", formateKey);
-				if ((result = cacheData[formateKey] = self.getNC(formateKey)) === $UNDEFINED && self._parentDataManager) {
+				if ($T && (result = cacheData[formateKey] = self.getNC(formateKey)) === $UNDEFINED && self._parentDataManager) {
 					return self._parentDataManager.get(formateKey);
 				};
 			}
@@ -311,16 +318,16 @@ DataManager.prototype = {
 		}
 		return dm;
 	},
-	subset: function(viewInstance,baseData) {
+	subset: function(viewInstance, baseData) {
 		var dm = this,
-			subsetDataManager = viewInstance.dataManager;//DataManager(baseData, viewInstance);
+			subsetDataManager = viewInstance.dataManager; //DataManager(baseData, viewInstance);
 		subsetDataManager._parentDataManager = dm;
 		if (viewInstance instanceof ViewInstance) {
 			viewInstance.dataManager = subsetDataManager;
 			viewInstance.reDraw();
 			dm._collectTriKey(viewInstance);
 		}
-		if (arguments.length>1) {
+		if (arguments.length > 1) {
 			subsetDataManager.set(baseData);
 		}
 		$.p(this._subsetDataManagers, subsetDataManager);
@@ -335,36 +342,36 @@ DataManager.prototype = {
 		}
 	}
 };
-var _isIE = !+"\v1";
-//by RubyLouvre(司徒正美)
-//setAttribute bug:http://www.iefans.net/ie-setattribute-bug/
-var IEfix = {
-	acceptcharset: "acceptCharset",
-	accesskey: "accessKey",
-	allowtransparency: "allowTransparency",
-	bgcolor: "bgColor",
-	cellpadding: "cellPadding",
-	cellspacing: "cellSpacing",
-	"class": "className",
-	colspan: "colSpan",
-	// checked: "defaultChecked",
-	selected: "defaultSelected",
-	"for": "htmlFor",
-	frameborder: "frameBorder",
-	hspace: "hSpace",
-	longdesc: "longDesc",
-	maxlength: "maxLength",
-	marginwidth: "marginWidth",
-	marginheight: "marginHeight",
-	noresize: "noResize",
-	noshade: "noShade",
-	readonly: "readOnly",
-	rowspan: "rowSpan",
-	tabindex: "tabIndex",
-	valign: "vAlign",
-	vspace: "vSpace"
-};
-/*
+var _isIE = !+"\v1",
+	//by RubyLouvre(司徒正美)
+	//setAttribute bug:http://www.iefans.net/ie-setattribute-bug/
+	IEfix = {
+		acceptcharset: "acceptCharset",
+		accesskey: "accessKey",
+		allowtransparency: "allowTransparency",
+		bgcolor: "bgColor",
+		cellpadding: "cellPadding",
+		cellspacing: "cellSpacing",
+		"class": "className",
+		colspan: "colSpan",
+		// checked: "defaultChecked",
+		selected: "defaultSelected",
+		"for": "htmlFor",
+		frameborder: "frameBorder",
+		hspace: "hSpace",
+		longdesc: "longDesc",
+		maxlength: "maxLength",
+		marginwidth: "marginWidth",
+		marginheight: "marginHeight",
+		noresize: "noResize",
+		noshade: "noShade",
+		readonly: "readOnly",
+		rowspan: "rowSpan",
+		tabindex: "tabIndex",
+		valign: "vAlign",
+		vspace: "vSpace"
+	},
+	/*
 The full list of boolean attributes in HTML 4.01 (and hence XHTML 1.0) is (with property names where they differ in case):
 
 checked             (input type=checkbox/radio)
@@ -407,80 +414,61 @@ marquee: truespeed
 editable
 draggable
 */
+	_AttributeHandle = function(attrKey) {
+		var assign;
+		var attrHandles = V.attrHandles,
+			result;
+		// console.log("attrKey:",attrKey)
+		$.fE(attrHandles, function(attrHandle) {
+			// console.log(attrHandle.match)
+			if (attrHandle.match(attrKey)) {
+				result = attrHandle.handle(attrKey);
+				return $FALSE
+			}
+		});
+		return result || _AttributeHandleEvent.com;
+	},
+	attributeHandle = function(attrStr, node, handle, triggerTable) {
+		var attrKey = $.trim(attrStr.substring(0, attrStr.search("="))),
+			attrValue = node.getAttribute(attrKey);
+		attrKey = attrKey.toLowerCase()
+		attrKey = attrKey.indexOf(V.prefix) ? attrKey : attrKey.replace(V.prefix, "")
+		attrKey = (_isIE && IEfix[attrKey]) || attrKey
+		if (_matchRule.test(attrValue)) {
 
-var _AttributeHandle = function(attrKey) {
-	var assign;
-	var attrHandles = V.attrHandles,
-		result;
-	// console.log("attrKey:",attrKey)
-	$.fE(attrHandles, function(attrHandle) {
-		// console.log(attrHandle.match)
-		if (attrHandle.match(attrKey)) {
-			result = attrHandle.handle(attrKey);
-			return $FALSE
-		}
-	});
-	return result || _AttributeHandleEvent.com;
-};
-// var setAttribute = function() { /*viewInstance ,dataManager*/
-// 	var self = this,
-// 		attrKey = self.key,
-// 		currentNode = self.currentNode,
-// 		parserNode = self.parserNode;
-// 	if (currentNode) {
-// 		// console.log(attrKey,":",parserNode.innerText);//DEBUG
-// 		self._attributeHandle(attrKey, currentNode, parserNode);
-// 	}
-// };
-
-var attributeHandle = function(attrStr, node, handle, triggerTable) {
-	var attrKey = $.trim(attrStr.substring(0, attrStr.search("="))),
-		attrValue = node.getAttribute(attrKey);
-	attrKey = attrKey.toLowerCase()
-	attrKey = attrKey.indexOf(V.prefix) ? attrKey : attrKey.replace(V.prefix, "")
-	attrKey = (_isIE && IEfix[attrKey]) || attrKey
-	if (_matchRule.test(attrValue)) {
-
-		var attrViewInstance = (V.attrModules[handle.id + attrKey] = V.parse(attrValue))(),
-			_shadowDIV = $.D.cl(shadowDIV); //parserNode
-		attrViewInstance.append(_shadowDIV);
-		attrViewInstance._isAttr = {
-			key: attrKey,
-			// parserNode: _shadowDIV,
-			/*
+			var attrViewInstance = (V.attrModules[handle.id + attrKey] = V.parse(attrValue))(),
+				_shadowDIV = $.D.cl(shadowDIV); //parserNode
+			attrViewInstance.append(_shadowDIV);
+			attrViewInstance._isAttr = {
+				key: attrKey,
+				/*
 			When the trigger of be injecte in the View instance being fired (triggered by the ViewInstance instance), 
 			it will storage the property value where the currentNode,// and the dataManager, 
 			and lock it into attrViewInstance, 
 			waiting for updates the attribute.*/ //(so the trigger of be injecte in mush be unshift)
-			currentNode: $NULL,
-			_attributeHandle: _AttributeHandle(attrKey),
-			setAttribute: function(viewInstance, dataManager) { /*viewInstance ,dataManager*/
-				var self = this,
-					currentNode = self.currentNode;
-				if (currentNode) {
-					// console.log(attrKey,":",parserNode.innerText);//DEBUG
-					self._attributeHandle(attrKey, currentNode, _shadowDIV, viewInstance, dataManager);
+				currentNode: $NULL,
+				_attributeHandle: _AttributeHandle(attrKey),
+				setAttribute: function(viewInstance, dataManager) { /*viewInstance ,dataManager*/
+					var self = this,
+						currentNode = self.currentNode;
+					if (currentNode) {
+						self._attributeHandle(attrKey, currentNode, _shadowDIV, viewInstance, dataManager);
+					}
+				}
+			};
+
+			var attrTrigger = {
+				event: function(NodeList, dataManager, eventTrigger) {
+					attrViewInstance._isAttr.currentNode = NodeList[handle.id].currentNode;
+					dataManager.collect(attrViewInstance);
 				}
 			}
-		};
+			$.fE(attrViewInstance._triggers, function(key) {
+				$.us(triggerTable[key] || (triggerTable[key] = []), attrTrigger);
+			});
 
-		var attrTrigger = {
-			// key:"$ATTR",
-			// TEMP: {
-			// 	belongsNodeId: handle.id,
-			// 	self: attrViewInstance
-			// },
-			event: function(NodeList, dataManager, eventTrigger) {
-				attrViewInstance._isAttr.currentNode = NodeList[handle.id].currentNode;
-				dataManager.collect(attrViewInstance);
-			}
 		}
-		$.fE(attrViewInstance._triggers, function(key) {
-			$.us((triggerTable[key] || (triggerTable[key] = [])), attrTrigger);
-		});
-
-	}
-}
+	};
 /*
  * View constructor
  */
@@ -787,12 +775,9 @@ var _parse = function(node) {//get all childNodes
 	return result;
 };
 
-
-
 /*
  * Handle constructor
  */
-
 function Handle(type, opction) {
 	var self = this;
 	if (!(self instanceof Handle)) {
@@ -826,12 +811,8 @@ Handle.prototype = {
 /*
  * TemplateHandle constructor
  */
-
 function TemplateHandle(handleName, node) {
 	var self = this;
-	// if (!(self instanceof TemplateHandle)) {
-	// 	return new TemplateHandle(handleName, node);
-	// }
 	self.handleName = $.trim(handleName);
 	self.childNodes = _parse(node);
 	Handle.init(self,3);
@@ -839,17 +820,13 @@ function TemplateHandle(handleName, node) {
 TemplateHandle.prototype = Handle("handle", {
 	ignore: $TRUE,
 	nodeType: 1
-});
+})
 
 /*
  * ElementHandle constructor
  */
-
 function ElementHandle(node) {
 	var self = this;
-	// if (!(self instanceof ElementHandle)) {
-	// 	return new ElementHandle(node);
-	// }
 	self.node = node;
 	self.childNodes = _parse(node);
 	Handle.init(self,3);
@@ -857,30 +834,24 @@ function ElementHandle(node) {
 ElementHandle.prototype = Handle("element", {
 	nodeType: 1
 })
+
 /*
  * TextHandle constructor
  */
-
 function TextHandle(node) {
 	var self = this;
-	// if (!(self instanceof TextHandle)) {
-	// 	return new TextHandle(node);
-	// }
 	self.node = node;
 	Handle.init(self,2);
 };
 TextHandle.prototype = Handle("text", {
 	nodeType: 3
 })
+
 /*
  * CommentHandle constructor
  */
-
 function CommentHandle(node) {
 	var self = this;
-	// if (!(self instanceof CommentHandle)) {
-	// 	return new CommentHandle(node);
-	// }
 	self.node = node;
 	Handle.init(self,1);
 };
@@ -892,122 +863,121 @@ CommentHandle.prototype = Handle("comment", {
  */
 var _placeholder = function() {
 	return "@" + Math.random().toString(36).substring(2)
-}
-var placeholder = {
-	"<": "&lt;",
-	">": "&gt;",
-	"{": _placeholder(),
-	"(": _placeholder(),
-	")": _placeholder(),
-	"}": _placeholder()
-}
-var _Rg = function(s) {
-	return RegExp(s, "g")
-}
-var placeholderReg = {
-	"<": /</g,
-	">": />/g,
-	"/{": /\\\{/g,
-	"{": _Rg(placeholder["{"]),
-	"/(": /\\\(/g,
-	"(": _Rg(placeholder["("]),
-	"/)": /\\\)/g,
-	")": _Rg(placeholder[")"]),
-	"/}": /\\\}/g,
-	"}": _Rg(placeholder["}"])
-}
-var _head = /\{([\w\W]*?)\(/g,
-	_footer = /\)[\s]*\}/g;
+},
+	placeholder = {
+		"<": "&lt;",
+		">": "&gt;",
+		"{": _placeholder(),
+		"(": _placeholder(),
+		")": _placeholder(),
+		"}": _placeholder()
+	},
+	_Rg = function(s) {
+		return RegExp(s, "g")
+	},
+	placeholderReg = {
+		"<": /</g,
+		">": />/g,
+		"/{": /\\\{/g,
+		"{": _Rg(placeholder["{"]),
+		"/(": /\\\(/g,
+		"(": _Rg(placeholder["("]),
+		"/)": /\\\)/g,
+		")": _Rg(placeholder[")"]),
+		"/}": /\\\}/g,
+		"}": _Rg(placeholder["}"])
+	}, _head = /\{([\w\W]*?)\(/g,
+	_footer = /\)[\s]*\}/g,
+	parseRule = function(str) {
+		var parseStr = str
+			.replace(/</g, placeholder["<"])
+			.replace(/>/g, placeholder[">"])
+			.replace(placeholderReg["/{"], placeholder["{"])
+			.replace(placeholderReg["/("], placeholder["("])
+			.replace(placeholderReg["/)"], placeholder[")"])
+			.replace(placeholderReg["/}"], placeholder["}"])
+			.replace(_head, "<span type='handle' handle='$1'>")
+			.replace(_footer, "</span>")
+			.replace(placeholderReg["{"], "{")
+			.replace(placeholderReg["("], "(")
+			.replace(placeholderReg[")"], ")")
+			.replace(placeholderReg["}"], "}");
+		return parseStr;
+	},
+	_matchRule = /\{[\w\W]*?\([\w\W]*?\)[\s]*\}/,
+	/*
+	 * expores function
+	 */
 
-function parseRule(str) {
-	var parseStr = str
-		.replace(/</g, placeholder["<"])
-		.replace(/>/g, placeholder[">"])
-		.replace(placeholderReg["/{"], placeholder["{"])
-		.replace(placeholderReg["/("], placeholder["("])
-		.replace(placeholderReg["/)"], placeholder[")"])
-		.replace(placeholderReg["/}"], placeholder["}"])
-		.replace(_head, "<span type='handle' handle='$1'>")
-		.replace(_footer, "</span>")
-		.replace(placeholderReg["{"], "{")
-		.replace(placeholderReg["("], "(")
-		.replace(placeholderReg[")"], ")")
-		.replace(placeholderReg["}"], "}");
-	return parseStr;
-};
-var _matchRule = /\{[\w\W]*?\([\w\W]*?\)[\s]*\}/;
-/*
- * expores function
- */
+	V = {
+		prefix: "attr-",
+		parse: function(htmlStr) {
+			var _shadowBody = $.D.cl(shadowBody);
+			_shadowBody.innerHTML = htmlStr;
+			var insertBefore = [];
+			_traversal(_shadowBody, function(node, index, parentNode) {
+				if (node.nodeType === 3) {
+					$.p(insertBefore, {
+						baseNode: node,
+						parentNode: parentNode,
+						insertNodesHTML: parseRule(node.data)
+					});
+				}
+			});
 
-var V = global.ViewParser = {
-	prefix: "attr-",
-	parse: function(htmlStr) {
-		var _shadowBody = $.D.cl(shadowBody);
-		_shadowBody.innerHTML = htmlStr;
-		var insertBefore = [];
-		_traversal(_shadowBody, function(node, index, parentNode) {
-			if (node.nodeType === 3) {
-				$.p(insertBefore, {
-					baseNode: node,
-					parentNode: parentNode,
-					insertNodesHTML: parseRule(node.data)
-				});
+			$.fE(insertBefore, function(item) {
+				var node = item.baseNode,
+					parentNode = item.parentNode,
+					insertNodesHTML = item.insertNodesHTML;
+				shadowDIV.innerHTML = insertNodesHTML;
+				//Using innerHTML rendering is complete immediate operation DOM, 
+				//innerHTML otherwise covered again, the node if it is not, 
+				//then memory leaks, IE can not get to the full node.
+				$.fE(shadowDIV.childNodes, function(refNode) {
+					$.D.iB(parentNode, refNode, node)
+				})
+				$.D.rC(parentNode, node);
+			});
+			_shadowBody.innerHTML = _shadowBody.innerHTML;
+			var result = new ElementHandle(_shadowBody);
+			return View(result);
+		},
+		scans: function() {
+			$.fE(document.getElementsByTagName("script"), function(scriptNode) {
+				if (scriptNode.getAttribute("type") === "text/template") {
+					V.modules[scriptNode.getAttribute("name")] = V.parse(scriptNode.innerHTML);
+				}
+			});
+		},
+		rt: function(handleName, triggerFactory) {
+			return V.triggers[handleName] = triggerFactory;
+		},
+		rh: function(handleName, handle) {
+			return V.handles[handleName] = handle
+		},
+		ra: function(match, handle) {
+			var attrHandle = V.attrHandles[V.attrHandles.length] = {
+				match: $NULL,
+				handle: handle
 			}
-		});
-
-		$.fE(insertBefore, function(item) {
-			var node = item.baseNode,
-				parentNode = item.parentNode,
-				insertNodesHTML = item.insertNodesHTML;
-			shadowDIV.innerHTML = insertNodesHTML;
-			//Using innerHTML rendering is complete immediate operation DOM, 
-			//innerHTML otherwise covered again, the node if it is not, 
-			//then memory leaks, IE can not get to the full node.
-			$.fE(shadowDIV.childNodes, function(refNode) {
-				$.D.iB(parentNode, refNode, node)
-			})
-			$.D.rC(parentNode,node);
-		});
-		_shadowBody.innerHTML = _shadowBody.innerHTML;
-		var result = new ElementHandle(_shadowBody);
-		return View(result);
-	},
-	scans: function() {
-		$.fE(document.getElementsByTagName("script"), function(scriptNode) {
-			if (scriptNode.getAttribute("type") === "text/template") {
-				V.modules[scriptNode.getAttribute("name")] = V.parse(scriptNode.innerHTML);
+			if (typeof match === "function") {
+				attrHandle.match = match;
+			} else {
+				attrHandle.match = function(attrKey) {
+					return attrKey === match;
+				}
 			}
-		});
-	},
-	rt: function(handleName, triggerFactory) {
-		return V.triggers[handleName] = triggerFactory;
-	},
-	rh: function(handleName, handle) {
-		return V.handles[handleName] = handle
-	},
-	ra:function(match,handle){
-		var attrHandle = V.attrHandles[V.attrHandles.length] = {
-			match:$NULL,
-			handle:handle
-		}
-		if (typeof match==="function") {
-			attrHandle.match = match;
-		}else{
-			attrHandle.match = function(attrKey){
-				return attrKey===match;
-			}
-		}
-	},
-	triggers: {},
-	handles: {},
-	attrHandles:[],
-	modules: {},
-	attrModules: {},
-	eachModules: {},
-	withModules:{},
-	_instances:{}
-};
+		},
+		triggers: {},
+		handles: {},
+		attrHandles: [],
+		modules: {},
+		attrModules: {},
+		eachModules: {},
+		withModules: {},
+		_instances: {}
+	};
+global.ViewParser = V;
 V.rh("HTML", function(handle, index, parentHandle) {
 	var endCommentHandle = _commentPlaceholder(handle, parentHandle, "html_end_" + handle.id),
 		startCommentHandle = _commentPlaceholder(handle, parentHandle, "html_start_" + handle.id);
@@ -1205,16 +1175,13 @@ V.rt("HTML", function(handle, index, parentHandle) {
 		htmlTextHandlesId = handleChilds[0].id,
 		beginCommentId = handleChilds[handleChilds.length - 1].id,
 		endCommentId = handleChilds[handleChilds.length - 2].id,
+		cacheNode =  $.D.cl(shadowDIV),
 		trigger;
 	trigger = {
 		// key:"",//default key === ""
 		bubble: true,
-		TEMP: {
-			cacheNode: $.D.cl(shadowDIV)
-		},
 		event: function(NodeList_of_ViewInstance, dataManager) {
 			var htmlText = NodeList_of_ViewInstance[htmlTextHandlesId]._data,
-				cacheNode = this.TEMP.cacheNode,
 				startCommentNode = NodeList_of_ViewInstance[beginCommentId].currentNode,
 				endCommentNode = NodeList_of_ViewInstance[endCommentId].currentNode,
 				parentNode = endCommentNode.parentNode,
@@ -1231,7 +1198,7 @@ V.rt("HTML", function(handle, index, parentHandle) {
 				if (node === endCommentNode) {
 					return $FALSE;
 				}
-				$.D.rC(parentNode,node);
+				$.D.rC(parentNode,node);//remove
 			}, index);
 			cacheNode.innerHTML = htmlText;
 			$.fE(cacheNode.childNodes, function(node, i) {

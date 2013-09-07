@@ -24,24 +24,20 @@ global.DataManager = DataManager;
 DataManager._instances = {};
 DataManager.config = {
 	"$T": "$THIS",
-	"$P": "$PARENT"
+	"$P": "$PARENT",
+	"$A": "$TOP"
 }
 DataManager.prototype = {
 	getNC: function(key) {
 		var arrKey = key.split("."),
 			result = this._database;
 		if (key !== "") { //"" return _database
-			// if (result instanceof Object) {=
-			// if (!(result == undefined || (isNaN(result) && (typeof result === "number")))) { //null|undefined|NaN
-			if (result != $UNDEFINED&&result!==$FALSE) { //null|undefined|false
+			if (result != $UNDEFINED && result !== $FALSE) { //null|undefined|false
 				do {
 					// console.log(arrKey[0])
 					result = result[arrKey.splice(0, 1)];
 				} while (result !== $UNDEFINED && arrKey.length);
 			}
-			// } else {
-			// 	result =
-			// }
 		}
 		return result;
 	},
@@ -49,19 +45,21 @@ DataManager.prototype = {
 		var self = this,
 			$T = DataManager.config.$T,
 			$P = DataManager.config.$P,
+			$A = DataManager.config.$A,
 			baseData = self._database,
 			cacheData = self._cacheData,
 			result = baseData,
-			formateKey = (key || "");
+			formateKey = String(key);
 		if (key !== $UNDEFINED) {
-			if (!key.indexOf($T)) {
+			if (!key.indexOf($T)) {//$THIS
 				var $TLen = $T.length;
 				if (key.charAt($TLen) === ".") {
 					formateKey = key.substring($TLen + 1);
 				} else {
 					formateKey = key.substring($TLen);
 				}
-			} else if (!key.indexOf($P)) {
+				$T = false; //Prohibit bubbling get the data.
+			} else if (!key.indexOf($P)) {//$PARENT
 				var $PLen = $P.length;
 				if (key.charAt($PLen) === ".") {
 					formateKey = key.substring($PLen + 1);
@@ -69,13 +67,22 @@ DataManager.prototype = {
 					formateKey = key.substring($PLen);
 				}
 				return self._parentDataManager && self._parentDataManager.get(formateKey);
+			}else if (!key.indexOf($A)){//$TOP
+				var $ALen = $A.length,
+					parent;
+				if (key.charAt($ALen) === ".") {
+					formateKey = key.substring($ALen + 1);
+				} else {
+					formateKey = key.substring($ALen);
+				}
+				while(parent = self._parentDataManager){
+					self = parent;
+				}
 			}
-			//console.log("get:", formateKey);
 			if (refresh === $FALSE) {
 				result = cacheData[formateKey];
 			} else if (refresh === $TRUE || (result = cacheData[formateKey]) === $UNDEFINED) {
-				//console.log("refresh:", formateKey);
-				if ((result = cacheData[formateKey] = self.getNC(formateKey)) === $UNDEFINED && self._parentDataManager) {
+				if ($T && (result = cacheData[formateKey] = self.getNC(formateKey)) === $UNDEFINED && self._parentDataManager) {
 					return self._parentDataManager.get(formateKey);
 				};
 			}
@@ -169,16 +176,16 @@ DataManager.prototype = {
 		}
 		return dm;
 	},
-	subset: function(viewInstance,baseData) {
+	subset: function(viewInstance, baseData) {
 		var dm = this,
-			subsetDataManager = viewInstance.dataManager;//DataManager(baseData, viewInstance);
+			subsetDataManager = viewInstance.dataManager; //DataManager(baseData, viewInstance);
 		subsetDataManager._parentDataManager = dm;
 		if (viewInstance instanceof ViewInstance) {
 			viewInstance.dataManager = subsetDataManager;
 			viewInstance.reDraw();
 			dm._collectTriKey(viewInstance);
 		}
-		if (arguments.length>1) {
+		if (arguments.length > 1) {
 			subsetDataManager.set(baseData);
 		}
 		$.p(this._subsetDataManagers, subsetDataManager);

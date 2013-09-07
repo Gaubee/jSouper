@@ -26,12 +26,9 @@ var _parse = function(node) {//get all childNodes
 	return result;
 };
 
-
-
 /*
  * Handle constructor
  */
-
 function Handle(type, opction) {
 	var self = this;
 	if (!(self instanceof Handle)) {
@@ -65,12 +62,8 @@ Handle.prototype = {
 /*
  * TemplateHandle constructor
  */
-
 function TemplateHandle(handleName, node) {
 	var self = this;
-	// if (!(self instanceof TemplateHandle)) {
-	// 	return new TemplateHandle(handleName, node);
-	// }
 	self.handleName = $.trim(handleName);
 	self.childNodes = _parse(node);
 	Handle.init(self,3);
@@ -78,17 +71,13 @@ function TemplateHandle(handleName, node) {
 TemplateHandle.prototype = Handle("handle", {
 	ignore: $TRUE,
 	nodeType: 1
-});
+})
 
 /*
  * ElementHandle constructor
  */
-
 function ElementHandle(node) {
 	var self = this;
-	// if (!(self instanceof ElementHandle)) {
-	// 	return new ElementHandle(node);
-	// }
 	self.node = node;
 	self.childNodes = _parse(node);
 	Handle.init(self,3);
@@ -96,30 +85,24 @@ function ElementHandle(node) {
 ElementHandle.prototype = Handle("element", {
 	nodeType: 1
 })
+
 /*
  * TextHandle constructor
  */
-
 function TextHandle(node) {
 	var self = this;
-	// if (!(self instanceof TextHandle)) {
-	// 	return new TextHandle(node);
-	// }
 	self.node = node;
 	Handle.init(self,2);
 };
 TextHandle.prototype = Handle("text", {
 	nodeType: 3
 })
+
 /*
  * CommentHandle constructor
  */
-
 function CommentHandle(node) {
 	var self = this;
-	// if (!(self instanceof CommentHandle)) {
-	// 	return new CommentHandle(node);
-	// }
 	self.node = node;
 	Handle.init(self,1);
 };

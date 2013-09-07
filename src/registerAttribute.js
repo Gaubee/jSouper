@@ -1,33 +1,33 @@
-var _isIE = !+"\v1";
-//by RubyLouvre(司徒正美)
-//setAttribute bug:http://www.iefans.net/ie-setattribute-bug/
-var IEfix = {
-	acceptcharset: "acceptCharset",
-	accesskey: "accessKey",
-	allowtransparency: "allowTransparency",
-	bgcolor: "bgColor",
-	cellpadding: "cellPadding",
-	cellspacing: "cellSpacing",
-	"class": "className",
-	colspan: "colSpan",
-	// checked: "defaultChecked",
-	selected: "defaultSelected",
-	"for": "htmlFor",
-	frameborder: "frameBorder",
-	hspace: "hSpace",
-	longdesc: "longDesc",
-	maxlength: "maxLength",
-	marginwidth: "marginWidth",
-	marginheight: "marginHeight",
-	noresize: "noResize",
-	noshade: "noShade",
-	readonly: "readOnly",
-	rowspan: "rowSpan",
-	tabindex: "tabIndex",
-	valign: "vAlign",
-	vspace: "vSpace"
-};
-/*
+var _isIE = !+"\v1",
+	//by RubyLouvre(司徒正美)
+	//setAttribute bug:http://www.iefans.net/ie-setattribute-bug/
+	IEfix = {
+		acceptcharset: "acceptCharset",
+		accesskey: "accessKey",
+		allowtransparency: "allowTransparency",
+		bgcolor: "bgColor",
+		cellpadding: "cellPadding",
+		cellspacing: "cellSpacing",
+		"class": "className",
+		colspan: "colSpan",
+		// checked: "defaultChecked",
+		selected: "defaultSelected",
+		"for": "htmlFor",
+		frameborder: "frameBorder",
+		hspace: "hSpace",
+		longdesc: "longDesc",
+		maxlength: "maxLength",
+		marginwidth: "marginWidth",
+		marginheight: "marginHeight",
+		noresize: "noResize",
+		noshade: "noShade",
+		readonly: "readOnly",
+		rowspan: "rowSpan",
+		tabindex: "tabIndex",
+		valign: "vAlign",
+		vspace: "vSpace"
+	},
+	/*
 The full list of boolean attributes in HTML 4.01 (and hence XHTML 1.0) is (with property names where they differ in case):
 
 checked             (input type=checkbox/radio)
@@ -70,77 +70,58 @@ marquee: truespeed
 editable
 draggable
 */
+	_AttributeHandle = function(attrKey) {
+		var assign;
+		var attrHandles = V.attrHandles,
+			result;
+		// console.log("attrKey:",attrKey)
+		$.fE(attrHandles, function(attrHandle) {
+			// console.log(attrHandle.match)
+			if (attrHandle.match(attrKey)) {
+				result = attrHandle.handle(attrKey);
+				return $FALSE
+			}
+		});
+		return result || _AttributeHandleEvent.com;
+	},
+	attributeHandle = function(attrStr, node, handle, triggerTable) {
+		var attrKey = $.trim(attrStr.substring(0, attrStr.search("="))),
+			attrValue = node.getAttribute(attrKey);
+		attrKey = attrKey.toLowerCase()
+		attrKey = attrKey.indexOf(V.prefix) ? attrKey : attrKey.replace(V.prefix, "")
+		attrKey = (_isIE && IEfix[attrKey]) || attrKey
+		if (_matchRule.test(attrValue)) {
 
-var _AttributeHandle = function(attrKey) {
-	var assign;
-	var attrHandles = V.attrHandles,
-		result;
-	// console.log("attrKey:",attrKey)
-	$.fE(attrHandles, function(attrHandle) {
-		// console.log(attrHandle.match)
-		if (attrHandle.match(attrKey)) {
-			result = attrHandle.handle(attrKey);
-			return $FALSE
-		}
-	});
-	return result || _AttributeHandleEvent.com;
-};
-// var setAttribute = function() { /*viewInstance ,dataManager*/
-// 	var self = this,
-// 		attrKey = self.key,
-// 		currentNode = self.currentNode,
-// 		parserNode = self.parserNode;
-// 	if (currentNode) {
-// 		// console.log(attrKey,":",parserNode.innerText);//DEBUG
-// 		self._attributeHandle(attrKey, currentNode, parserNode);
-// 	}
-// };
-
-var attributeHandle = function(attrStr, node, handle, triggerTable) {
-	var attrKey = $.trim(attrStr.substring(0, attrStr.search("="))),
-		attrValue = node.getAttribute(attrKey);
-	attrKey = attrKey.toLowerCase()
-	attrKey = attrKey.indexOf(V.prefix) ? attrKey : attrKey.replace(V.prefix, "")
-	attrKey = (_isIE && IEfix[attrKey]) || attrKey
-	if (_matchRule.test(attrValue)) {
-
-		var attrViewInstance = (V.attrModules[handle.id + attrKey] = V.parse(attrValue))(),
-			_shadowDIV = $.D.cl(shadowDIV); //parserNode
-		attrViewInstance.append(_shadowDIV);
-		attrViewInstance._isAttr = {
-			key: attrKey,
-			// parserNode: _shadowDIV,
-			/*
+			var attrViewInstance = (V.attrModules[handle.id + attrKey] = V.parse(attrValue))(),
+				_shadowDIV = $.D.cl(shadowDIV); //parserNode
+			attrViewInstance.append(_shadowDIV);
+			attrViewInstance._isAttr = {
+				key: attrKey,
+				/*
 			When the trigger of be injecte in the View instance being fired (triggered by the ViewInstance instance), 
 			it will storage the property value where the currentNode,// and the dataManager, 
 			and lock it into attrViewInstance, 
 			waiting for updates the attribute.*/ //(so the trigger of be injecte in mush be unshift)
-			currentNode: $NULL,
-			_attributeHandle: _AttributeHandle(attrKey),
-			setAttribute: function(viewInstance, dataManager) { /*viewInstance ,dataManager*/
-				var self = this,
-					currentNode = self.currentNode;
-				if (currentNode) {
-					// console.log(attrKey,":",parserNode.innerText);//DEBUG
-					self._attributeHandle(attrKey, currentNode, _shadowDIV, viewInstance, dataManager);
+				currentNode: $NULL,
+				_attributeHandle: _AttributeHandle(attrKey),
+				setAttribute: function(viewInstance, dataManager) { /*viewInstance ,dataManager*/
+					var self = this,
+						currentNode = self.currentNode;
+					if (currentNode) {
+						self._attributeHandle(attrKey, currentNode, _shadowDIV, viewInstance, dataManager);
+					}
+				}
+			};
+
+			var attrTrigger = {
+				event: function(NodeList, dataManager, eventTrigger) {
+					attrViewInstance._isAttr.currentNode = NodeList[handle.id].currentNode;
+					dataManager.collect(attrViewInstance);
 				}
 			}
-		};
+			$.fE(attrViewInstance._triggers, function(key) {
+				$.us(triggerTable[key] || (triggerTable[key] = []), attrTrigger);
+			});
 
-		var attrTrigger = {
-			// key:"$ATTR",
-			// TEMP: {
-			// 	belongsNodeId: handle.id,
-			// 	self: attrViewInstance
-			// },
-			event: function(NodeList, dataManager, eventTrigger) {
-				attrViewInstance._isAttr.currentNode = NodeList[handle.id].currentNode;
-				dataManager.collect(attrViewInstance);
-			}
 		}
-		$.fE(attrViewInstance._triggers, function(key) {
-			$.us((triggerTable[key] || (triggerTable[key] = [])), attrTrigger);
-		});
-
-	}
-}
+	};
