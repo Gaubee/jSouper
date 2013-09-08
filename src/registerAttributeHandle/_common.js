@@ -18,18 +18,22 @@ var _AttributeHandleEvent = {
 	},
 	com: function(key, currentNode, parserNode) {
 		var attrOuter = _getAttrOuter(parserNode);
-		currentNode.setAttribute(key, attrOuter)
+		if (currentNode.getAttribute(key) !== attrOuter) {
+			currentNode.setAttribute(key, attrOuter)
+		}
 	},
 	dir: function(key, currentNode, parserNode) {
 		var attrOuter = _getAttrOuter(parserNode);
-		currentNode[key] = attrOuter;
+		if (currentNode[key] !== attrOuter) {
+			currentNode[key] = attrOuter;
+		}
 	},
 	bool: function(key, currentNode, parserNode) {
 		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
 
-		if (attrOuter) {// currentNode.setAttribute(key, key);
+		if (attrOuter) { // currentNode.setAttribute(key, key);
 			currentNode[key] = key;
-		} else {// currentNode.removeAttribute(key);
+		} else { // currentNode.removeAttribute(key);
 			currentNode[key] = $FALSE;
 		}
 	}

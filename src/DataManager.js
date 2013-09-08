@@ -28,16 +28,24 @@ DataManager.config = {
 	"$A": "$TOP"
 }
 DataManager.prototype = {
-	getNC: function(key) {
+	getS:function(key){
 		var arrKey = key.split("."),
 			result = this._database;
-		// if (key !== "") { //"" return _database
 		if (result != $UNDEFINED && result !== $FALSE) { //null|undefined|false
 			do {
 				result = result[arrKey.splice(0, 1)];
 			} while (result !== $UNDEFINED && arrKey.length);
 		}
-		// }
+		return result;
+	},
+	getNC: function(key) {
+		var arrKey = key.split("."),
+			result = this._database;
+		if (result != $UNDEFINED && result !== $FALSE) { //null|undefined|false
+			do {
+				result = $.valueOf(result[arrKey.splice(0, 1)]);
+			} while (result !== $UNDEFINED && arrKey.length);
+		}
 		return result;
 	},
 	get: function(key, refresh) {
@@ -79,7 +87,9 @@ DataManager.prototype = {
 					self = parent;
 				}
 			}
-			if (refresh === $FALSE) {
+			if (refresh === $NULL) {//获取原始对象，不经过valueOf提取的
+				result  = self.getS(formateKey);
+			}else if (refresh === $FALSE) {
 				result = cacheData[key];
 			} else if (refresh === $TRUE || (result = cacheData[key]) === $UNDEFINED) {
 				if ((result = cacheData[key] = self.getNC(formateKey)) === $UNDEFINED && $T && self._parentDataManager) {
@@ -93,7 +103,7 @@ DataManager.prototype = {
 	set: function(key, obj) {
 		var self = this,
 			baseData = self._database || {},
-			result = baseData,
+			result = $.valueOf(baseData),
 			cacheObj = result,
 			arrKey,
 			itemKey,
@@ -112,12 +122,18 @@ DataManager.prototype = {
 				lastItemKey = arrKey.splice(arrKey.length - 1, 1)[0];
 				while ((cacheItemKey = arrKey.splice(0, 1)).length) {
 					itemKey = cacheItemKey[0];
-					if (!((result = result[itemKey]) instanceof Object)) {
+					if (!((result = $.valueOf(result[itemKey])) instanceof Object)) {
 						result = cacheObj[itemKey] = {};
 					};
 					cacheObj = result
 				};
-				result = cacheObj[lastItemKey] = obj;
+				if (cacheObj[lastItemKey] instanceof Proto) {
+					result = cacheObj[lastItemKey];
+					result.value = obj;
+					result.set.call(self,obj);
+				} else {
+					/*result = */cacheObj[lastItemKey] = obj;
+				}
 				self._database = baseData;
 				break;
 		}

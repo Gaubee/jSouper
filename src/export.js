@@ -115,6 +115,9 @@ var _placeholder = function() {
 		attrModules: {},
 		eachModules: {},
 		withModules: {},
-		_instances: {}
+		_instances: {},
+
+		Proto:Proto,
+		Model:DataManager
 	};
-global.ViewParser = V;
+global.ViewParser = $.c(V);

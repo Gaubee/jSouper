@@ -10,6 +10,12 @@ var shadowBody = document.createElement("body"),
 		id: 9,
 		uidAvator: Math.random().toString(36).substring(2),
 		noop: function noop() {},
+		valueOf:function(Obj){
+			if (Obj) {
+				Obj = Obj.valueOf()
+			}
+			return Obj
+		},
 		uid: function() {
 			return this.id = this.id + 1;
 		},

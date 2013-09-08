@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>HTML-ViewParse</title>
+	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js"></script>	
+	<script type="text/javascript">
+		(function (ie){if(!ie)return;var b=document.createElement("script");b.setAttribute("type","text/javascript");b.setAttribute("src","http://"+location.hostname+"/firebug-lite/build/firebug-lite.js");document.getElementsByTagName("head")[0].appendChild(b)}(!+"\v1")); 
+	</script>
+	<style type="text/css">
+	</style>
+</head>
+<body>
+	<script type="text/template" name="controller">
+		<h2>Hello every one,I am {(fullName)}.</h2>
+		<input value="{(firstName)}">
+		<input value="{(lastName)}">
+		<input value="{(fullName)}" bind-form="{@(fullName)}">
+		<hr />
+	</script>
+</body>
+
+
+
+</html>
+
+<script type="text/javascript">
+	var VP = ViewParser;
+	VP.scans();
+	var model = VP.Model({
+			firstName:"Gaubee",
+			lastName:"Bangeel",
+			fullName:VP.Proto({
+				get:function(){//call VP.Proto
+					return model.get("firstName")+" "+model.get("lastName");
+				},
+				set:function(newValue){//call VP.Proto
+					var fullName = String(newValue),
+						name = fullName.split(" ");
+					firstName = model.set("firstName",name[0]);
+					lastName = model.set("lastName",name[name.length-1]);
+					return firstName+" "+lastName;
+				},
+				form:function(e,newValue){//call Element
+					return newValue
+				}
+			})
+		});
+	var view = VP.modules["controller"](model).append(document.body);
+
+</script>

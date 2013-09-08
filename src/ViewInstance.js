@@ -8,12 +8,12 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	}
 	var self = this,
 		dataManager;
-	self._isAttr = $FALSE;//if no null --> Storage the attribute key and current.
-	self.dataManager ;//= dataManager;
+	self._isAttr = $FALSE; //if no null --> Storage the attribute key and current.
+	self.dataManager; //= dataManager;
 	self.handleNodeTree = handleNodeTree;
 	self.DOMArr = $.s(handleNodeTree.childNodes);
 	self.NodeList = NodeList;
-	var el = self.topNode();//NodeList[handleNodeTree.id].currentNode;
+	var el = self.topNode(); //NodeList[handleNodeTree.id].currentNode;
 	self._packingBag = el;
 	self._id = $.uid();
 	self._open = $.D.C(self._id + " _open");
@@ -28,8 +28,8 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	self.TEMP = {};
 
 	$.fI(triggerTable, function(tiggerCollection, key) {
-		if (key&&key!==".") {
-			$.p(self._triggers,key);
+		if (key && key !== ".") {
+			$.p(self._triggers, key);
 		}
 		self._triggers._[key] = tiggerCollection;
 	});
@@ -48,12 +48,7 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {
 	var self = this;
 	$.fE(tiggerCollection, function(trigger) {
-		// if (trigger.key) {//DEBUG
-		// 	console.log("event:",trigger.key," to ",dataManager.get(trigger.key),"fires")
-		// }else{
-		// 	console.log("event","bubble")
-		// }
-		trigger.event(NodeList, dataManager, eventTrigger,self._isAttr,self._id);
+		trigger.event(NodeList, dataManager, eventTrigger, self._isAttr, self._id);
 		if (trigger.bubble) {
 			var parentNode = NodeList[trigger.handleId].parentNode;
 			parentNode && _bubbleTrigger.call(self, parentNode._triggers, NodeList, dataManager, trigger);
@@ -62,18 +57,14 @@ function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {
 };
 
 function _replaceTopHandleCurrent(self, el) {
-	// var handleNodeTree = self.handleNodeTree,
-	// 	NodeList = self.NodeList;
 	self._canRemoveAble = $TRUE;
 	self.topNode(el);
-	// NodeList[handleNodeTree.id].currentNode = el;
-	// self.reDraw();
 };
 ViewInstance.prototype = {
 	reDraw: function() {
 		var self = this,
 			dataManager = self.dataManager;
-			
+
 		$.fE(self._triggers, function(key) {
 			dataManager._touchOffSubset(key)
 		});
@@ -93,8 +84,8 @@ ViewInstance.prototype = {
 		});
 		_replaceTopHandleCurrent(self, el);
 
-		$.ftE(NodeList[handleNodeTree.id].childNodes,function(child_node){
-			if (viewInstance = AllLayoutViewInstance[child_node.id]||AllWithViewInstance[child_node.id]) {
+		$.ftE(NodeList[handleNodeTree.id].childNodes, function(child_node) {
+			if (viewInstance = AllLayoutViewInstance[child_node.id] || AllWithViewInstance[child_node.id]) {
 				_replaceTopHandleCurrent(viewInstance, el)
 			}
 		});
@@ -108,7 +99,7 @@ ViewInstance.prototype = {
 			AllLayoutViewInstance = self._ALVI,
 			AllWithViewInstance = self._WVI,
 			viewInstance,
-			currentTopNode = self.topNode(),//NodeList[handleNodeTree.id].currentNode,
+			currentTopNode = self.topNode(), //NodeList[handleNodeTree.id].currentNode,
 			elParentNode = el.parentNode;
 
 		$.fE(currentTopNode.childNodes, function(child_node) {
@@ -116,8 +107,8 @@ ViewInstance.prototype = {
 		});
 		_replaceTopHandleCurrent(self, elParentNode);
 
-		$.ftE(NodeList[handleNodeTree.id].childNodes,function(child_node){
-			if (viewInstance = AllLayoutViewInstance[child_node.id]||AllWithViewInstance[child_node.id]) {
+		$.ftE(NodeList[handleNodeTree.id].childNodes, function(child_node) {
+			if (viewInstance = AllLayoutViewInstance[child_node.id] || AllWithViewInstance[child_node.id]) {
 				_replaceTopHandleCurrent(viewInstance, elParentNode)
 			}
 		});
@@ -129,7 +120,7 @@ ViewInstance.prototype = {
 		if (self._canRemoveAble) {
 			var handleNodeTree = self.handleNodeTree,
 				NodeList = self.NodeList,
-				currentTopNode = self.topNode(),//NodeList[handleNodeTree.id].currentNode,
+				currentTopNode = self.topNode(), //NodeList[handleNodeTree.id].currentNode,
 				openNode = self._open,
 				closeNode = self._close,
 				startIndex = 0;
@@ -159,13 +150,13 @@ ViewInstance.prototype = {
 		var dm = this.dataManager;
 		return dm.set.apply(dm, $.s(arguments))
 	},
-	topNode:function(newCurrentTopNode){
+	topNode: function(newCurrentTopNode) {
 		var self = this,
 			handleNodeTree = self.handleNodeTree,
 			NodeList = self.NodeList;
 		if (newCurrentTopNode) {
 			NodeList[handleNodeTree.id].currentNode = newCurrentTopNode
-		}else{
+		} else {
 			return NodeList[handleNodeTree.id].currentNode
 		}
 	},

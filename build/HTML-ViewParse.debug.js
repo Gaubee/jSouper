@@ -34,6 +34,12 @@ var shadowBody = document.createElement("body"),
 		id: 9,
 		uidAvator: Math.random().toString(36).substring(2),
 		noop: function noop() {},
+		valueOf:function(Obj){
+			if (Obj) {
+				Obj = Obj.valueOf()
+			}
+			return Obj
+		},
 		uid: function() {
 			return this.id = this.id + 1;
 		},
@@ -192,16 +198,24 @@ DataManager.config = {
 	"$A": "$TOP"
 }
 DataManager.prototype = {
-	getNC: function(key) {
+	getS:function(key){
 		var arrKey = key.split("."),
 			result = this._database;
-		// if (key !== "") { //"" return _database
 		if (result != $UNDEFINED && result !== $FALSE) { //null|undefined|false
 			do {
 				result = result[arrKey.splice(0, 1)];
 			} while (result !== $UNDEFINED && arrKey.length);
 		}
-		// }
+		return result;
+	},
+	getNC: function(key) {
+		var arrKey = key.split("."),
+			result = this._database;
+		if (result != $UNDEFINED && result !== $FALSE) { //null|undefined|false
+			do {
+				result = $.valueOf(result[arrKey.splice(0, 1)]);
+			} while (result !== $UNDEFINED && arrKey.length);
+		}
 		return result;
 	},
 	get: function(key, refresh) {
@@ -243,7 +257,9 @@ DataManager.prototype = {
 					self = parent;
 				}
 			}
-			if (refresh === $FALSE) {
+			if (refresh === $NULL) {//获取原始对象，不经过valueOf提取的
+				result  = self.getS(formateKey);
+			}else if (refresh === $FALSE) {
 				result = cacheData[key];
 			} else if (refresh === $TRUE || (result = cacheData[key]) === $UNDEFINED) {
 				if ((result = cacheData[key] = self.getNC(formateKey)) === $UNDEFINED && $T && self._parentDataManager) {
@@ -257,7 +273,7 @@ DataManager.prototype = {
 	set: function(key, obj) {
 		var self = this,
 			baseData = self._database || {},
-			result = baseData,
+			result = $.valueOf(baseData),
 			cacheObj = result,
 			arrKey,
 			itemKey,
@@ -276,12 +292,18 @@ DataManager.prototype = {
 				lastItemKey = arrKey.splice(arrKey.length - 1, 1)[0];
 				while ((cacheItemKey = arrKey.splice(0, 1)).length) {
 					itemKey = cacheItemKey[0];
-					if (!((result = result[itemKey]) instanceof Object)) {
+					if (!((result = $.valueOf(result[itemKey])) instanceof Object)) {
 						result = cacheObj[itemKey] = {};
 					};
 					cacheObj = result
 				};
-				result = cacheObj[lastItemKey] = obj;
+				if (cacheObj[lastItemKey] instanceof Proto) {
+					result = cacheObj[lastItemKey];
+					result.value = obj;
+					result.set.call(self,obj);
+				} else {
+					/*result = */cacheObj[lastItemKey] = obj;
+				}
 				self._database = baseData;
 				break;
 		}
@@ -357,6 +379,42 @@ DataManager.prototype = {
 		}
 	}
 };
+/*
+ * Controller constructor
+ */
+// var _hasOwn = Object.prototype.hasOwnProperty;
+
+function Controller(baseData, viewInstance) {};
+Controller._initGetData = function(){
+	var self = this;
+	self.valueOf = self.toString;
+	return self.value = self.get();
+};
+Controller._getData = function() {
+	return this.value
+};
+
+var _defaultFormHandle = function(e,node,newValue){
+
+},
+	Proto = Controller.Observer = function(obs) {
+		var self = this;
+		if (!(this instanceof Controller.Observer)) {
+			return new Controller.Observer(obs);
+		}
+		if (obs instanceof Function) {
+			self.get = obs;
+			self.set = $.noop;//默认更新value并触发更新
+			self.form = $NULL;
+		} else {
+			self.get = obs.get||function(){return self.value};
+			self.set = obs.set||$.noop;
+			self.form = obs.form||$NULL;
+		}
+		self.value;
+		self.valueOf = Controller._initGetData;
+		self.toString = Controller._getData;
+	};
 var _isIE = !+"\v1",
 	//by RubyLouvre(司徒正美)
 	//setAttribute bug:http://www.iefans.net/ie-setattribute-bug/
@@ -594,12 +652,12 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	}
 	var self = this,
 		dataManager;
-	self._isAttr = $FALSE;//if no null --> Storage the attribute key and current.
-	self.dataManager ;//= dataManager;
+	self._isAttr = $FALSE; //if no null --> Storage the attribute key and current.
+	self.dataManager; //= dataManager;
 	self.handleNodeTree = handleNodeTree;
 	self.DOMArr = $.s(handleNodeTree.childNodes);
 	self.NodeList = NodeList;
-	var el = self.topNode();//NodeList[handleNodeTree.id].currentNode;
+	var el = self.topNode(); //NodeList[handleNodeTree.id].currentNode;
 	self._packingBag = el;
 	self._id = $.uid();
 	self._open = $.D.C(self._id + " _open");
@@ -614,8 +672,8 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	self.TEMP = {};
 
 	$.fI(triggerTable, function(tiggerCollection, key) {
-		if (key&&key!==".") {
-			$.p(self._triggers,key);
+		if (key && key !== ".") {
+			$.p(self._triggers, key);
 		}
 		self._triggers._[key] = tiggerCollection;
 	});
@@ -634,12 +692,7 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {
 	var self = this;
 	$.fE(tiggerCollection, function(trigger) {
-		// if (trigger.key) {//DEBUG
-		// 	console.log("event:",trigger.key," to ",dataManager.get(trigger.key),"fires")
-		// }else{
-		// 	console.log("event","bubble")
-		// }
-		trigger.event(NodeList, dataManager, eventTrigger,self._isAttr,self._id);
+		trigger.event(NodeList, dataManager, eventTrigger, self._isAttr, self._id);
 		if (trigger.bubble) {
 			var parentNode = NodeList[trigger.handleId].parentNode;
 			parentNode && _bubbleTrigger.call(self, parentNode._triggers, NodeList, dataManager, trigger);
@@ -648,18 +701,14 @@ function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {
 };
 
 function _replaceTopHandleCurrent(self, el) {
-	// var handleNodeTree = self.handleNodeTree,
-	// 	NodeList = self.NodeList;
 	self._canRemoveAble = $TRUE;
 	self.topNode(el);
-	// NodeList[handleNodeTree.id].currentNode = el;
-	// self.reDraw();
 };
 ViewInstance.prototype = {
 	reDraw: function() {
 		var self = this,
 			dataManager = self.dataManager;
-			
+
 		$.fE(self._triggers, function(key) {
 			dataManager._touchOffSubset(key)
 		});
@@ -679,8 +728,8 @@ ViewInstance.prototype = {
 		});
 		_replaceTopHandleCurrent(self, el);
 
-		$.ftE(NodeList[handleNodeTree.id].childNodes,function(child_node){
-			if (viewInstance = AllLayoutViewInstance[child_node.id]||AllWithViewInstance[child_node.id]) {
+		$.ftE(NodeList[handleNodeTree.id].childNodes, function(child_node) {
+			if (viewInstance = AllLayoutViewInstance[child_node.id] || AllWithViewInstance[child_node.id]) {
 				_replaceTopHandleCurrent(viewInstance, el)
 			}
 		});
@@ -694,7 +743,7 @@ ViewInstance.prototype = {
 			AllLayoutViewInstance = self._ALVI,
 			AllWithViewInstance = self._WVI,
 			viewInstance,
-			currentTopNode = self.topNode(),//NodeList[handleNodeTree.id].currentNode,
+			currentTopNode = self.topNode(), //NodeList[handleNodeTree.id].currentNode,
 			elParentNode = el.parentNode;
 
 		$.fE(currentTopNode.childNodes, function(child_node) {
@@ -702,8 +751,8 @@ ViewInstance.prototype = {
 		});
 		_replaceTopHandleCurrent(self, elParentNode);
 
-		$.ftE(NodeList[handleNodeTree.id].childNodes,function(child_node){
-			if (viewInstance = AllLayoutViewInstance[child_node.id]||AllWithViewInstance[child_node.id]) {
+		$.ftE(NodeList[handleNodeTree.id].childNodes, function(child_node) {
+			if (viewInstance = AllLayoutViewInstance[child_node.id] || AllWithViewInstance[child_node.id]) {
 				_replaceTopHandleCurrent(viewInstance, elParentNode)
 			}
 		});
@@ -715,7 +764,7 @@ ViewInstance.prototype = {
 		if (self._canRemoveAble) {
 			var handleNodeTree = self.handleNodeTree,
 				NodeList = self.NodeList,
-				currentTopNode = self.topNode(),//NodeList[handleNodeTree.id].currentNode,
+				currentTopNode = self.topNode(), //NodeList[handleNodeTree.id].currentNode,
 				openNode = self._open,
 				closeNode = self._close,
 				startIndex = 0;
@@ -745,13 +794,13 @@ ViewInstance.prototype = {
 		var dm = this.dataManager;
 		return dm.set.apply(dm, $.s(arguments))
 	},
-	topNode:function(newCurrentTopNode){
+	topNode: function(newCurrentTopNode) {
 		var self = this,
 			handleNodeTree = self.handleNodeTree,
 			NodeList = self.NodeList;
 		if (newCurrentTopNode) {
 			NodeList[handleNodeTree.id].currentNode = newCurrentTopNode
-		}else{
+		} else {
 			return NodeList[handleNodeTree.id].currentNode
 		}
 	},
@@ -990,9 +1039,13 @@ var _placeholder = function() {
 		attrModules: {},
 		eachModules: {},
 		withModules: {},
-		_instances: {}
+		_instances: {},
+
+		Proto:Proto,
+		Model:DataManager
 	};
-global.ViewParser = V;
+global.ViewParser = $.c(V);
+
 V.rh("HTML", function(handle, index, parentHandle) {
 	var endCommentHandle = _commentPlaceholder(handle, parentHandle, "html_end_" + handle.id),
 		startCommentHandle = _commentPlaceholder(handle, parentHandle, "html_start_" + handle.id);
@@ -1575,18 +1628,22 @@ var _AttributeHandleEvent = {
 	},
 	com: function(key, currentNode, parserNode) {
 		var attrOuter = _getAttrOuter(parserNode);
-		currentNode.setAttribute(key, attrOuter)
+		if (currentNode.getAttribute(key) !== attrOuter) {
+			currentNode.setAttribute(key, attrOuter)
+		}
 	},
 	dir: function(key, currentNode, parserNode) {
 		var attrOuter = _getAttrOuter(parserNode);
-		currentNode[key] = attrOuter;
+		if (currentNode[key] !== attrOuter) {
+			currentNode[key] = attrOuter;
+		}
 	},
 	bool: function(key, currentNode, parserNode) {
 		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
 
-		if (attrOuter) {// currentNode.setAttribute(key, key);
+		if (attrOuter) { // currentNode.setAttribute(key, key);
 			currentNode[key] = key;
-		} else {// currentNode.removeAttribute(key);
+		} else { // currentNode.removeAttribute(key);
 			currentNode[key] = $FALSE;
 		}
 	}
@@ -1657,58 +1714,65 @@ V.ra(function(attrKey) {
 }, function(attrKey) {
 	return eventListerAttribute;
 })
-var _formKey = {
-	"input": function(node) {
-		var result = "value";
-		// switch (node.type.toLowerCase()) {
-		// 	case "button":
-		// 	case "reset":
-		// 	case "submit":
-		// }
-		return {
-			attributeName: "value",
-			eventName: "keyup"
-		};
+/*
+ *form-bind只做绑定form处理事件，value绑定需要另外通过attr-value={(XX)}来绑定，避免重复
+ */
+var _formCache = [],
+	_formKey = {
+		"input": function(node) {
+			var result = "value";
+			// switch (node.type.toLowerCase()) {
+			// 	case "button":
+			// 	case "reset":
+			// 	case "submit":
+			// }
+			return {
+				attributeName: "value",
+				eventName: "keyup"
+			};
+		},
+		"button": "innerHTML"
+	}, _noopFormHandle = function(e, newValue) {
+		return newValue
 	},
-	"button": "innerHTML"
-},
 	formListerAttribute = function(key, currentNode, parserNode, vi, dm, handle, triggerTable) {
 		var attrOuter = _getAttrOuter(parserNode),
 			eventConfig = _formKey[currentNode.tagName.toLowerCase()] || {
 				attributeName: "innerHTML",
 				eventName: "click"
 			},
-			uidAvator = "form-" + $.uidAvator,
-			eventFun = dm.get(attrOuter);
+			eventName,
+			index = $.iO(_formCache, currentNode),
+			formCollection,
+			oldFormHandle,
+			newFormHandle,
+			obj = dm.get(attrOuter, $NULL);
 		typeof eventConfig === "function" && (eventConfig = eventConfig(currentNode));
-		if (currentNode[uidAvator]) {
-			if (currentNode[eventConfig.attributeName] !== eventFun.valueOf()) {
-				currentNode[eventConfig.attributeName] = eventFun.valueOf();
-			}
-			return;
+		eventName = eventConfig.eventName;
+		
+		if (index === -1) {
+			index = $.p(_formCache, currentNode)
+			_formCache.event[index] = {};
+		};
+		formCollection = _formCache.event[index];
+		if (oldFormHandle = formCollection[eventName]) {
+			_cancelEvent(currentNode, eventName, oldFormHandle)
 		}
-		if (typeof eventFun === "string") {
-			_registerEvent(currentNode, eventConfig.eventName, function(e) {
+		if (obj instanceof Proto) {
+			var baseFormHandle = obj.form === $NULL ? _noopFormHandle : obj.form;
+			newFormHandle = function(e) {
+				dm.set(attrOuter, baseFormHandle(e, this[eventConfig.attributeName]))
+			};
+			_registerEvent(currentNode, eventName, newFormHandle);
+		} else if (typeof obj === "string") {
+			newFormHandle = function(e) {
 				dm.set(attrOuter, this[eventConfig.attributeName])
-			}, $FALSE);
-			currentNode[eventConfig.attributeName] = eventFun.valueOf();
+			};
+			_registerEvent(currentNode, eventName, newFormHandle);
 		}
-		currentNode[uidAvator] = true;
-		// 	eventName = key.replace("event-on", "").replace("event-", ""),
-		// 	index = $.iO(_elementCache, currentNode),
-		// 	eventCollection,
-		// 	oldEventFun;
-		// if (index === -1) {
-		// 	index = $.p(_elementCache, currentNode)
-		// 	_elementCache.event[index] = {};
-		// };
-		// eventCollection = _elementCache.event[index];
-		// if (oldEventFun = eventCollection[eventName]) {
-		// 	_cancelEvent(currentNode, eventName, oldEventFun)
-		// }
-		// _registerEvent(currentNode, eventName, eventFun);
-		// eventCollection[eventName] = eventFun;
+		formCollection[eventName] = newFormHandle;
 	};
+_formCache.event = {};
 V.ra("bind-form", function(attrKey) {
 	return formListerAttribute;
 })
