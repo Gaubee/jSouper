@@ -177,8 +177,8 @@ function DataManager(baseData, viewInstance) {
 };
 
 global.DataManager = DataManager;
-DataManager.__formateKey;//最后一次get处理完成的formateKey
-DataManager.__id;//最后一次get的id对象
+DataManager.__formateKey; //最后一次get处理完成的formateKey
+DataManager.__id; //最后一次get的id对象
 DataManager._instances = {};
 DataManager.config = {
 	"$T": "$THIS",
@@ -186,7 +186,7 @@ DataManager.config = {
 	"$A": "$TOP"
 }
 DataManager.prototype = {
-	getS:function(key){
+	getS: function(key) {
 		var arrKey = key.split("."),
 			result = this._database;
 		if (result != $UNDEFINED && result !== $FALSE) { //null|undefined|false
@@ -247,9 +247,9 @@ DataManager.prototype = {
 					self = parent;
 				}
 			}
-			if (refresh === $NULL) {//获取原始对象，不经过valueOf提取的
-				result  = self.getS(formateKey);
-			}else if (refresh === $FALSE) {
+			if (refresh === $NULL) { //获取原始对象，不经过valueOf提取的
+				result = self.getS(formateKey);
+			} else if (refresh === $FALSE) {
 				result = cacheData[key];
 			} else if (refresh === $TRUE || (result = cacheData[key]) === $UNDEFINED) {
 				if ((result = cacheData[key] = self.getNC(formateKey)) === $UNDEFINED && $T && self._parentDataManager) {
@@ -292,9 +292,10 @@ DataManager.prototype = {
 				if (cacheObj[lastItemKey] instanceof Proto) {
 					result = cacheObj[lastItemKey];
 					result.value = obj;
-					result.set.call(self,obj);
+					result.set.call(self, obj);
 				} else {
-					/*result = */cacheObj[lastItemKey] = obj;
+					/*result = */
+					cacheObj[lastItemKey] = obj;
 				}
 				self._database = baseData;
 				break;
@@ -411,8 +412,25 @@ var relyOn = Controller.relyOn = {
 	setStack: [],
 	container: {}, //{  relyDM.id:{ keys:[key],DM:source_dataManager.id,key:triggerKey }  }
 	cache: {},
-	pickUp: function() { //拾取依赖的关键字
+	pickUp: function(leader, leader_key, relyKeys) { //拾取依赖的关键字
+		var result = {},
+			leader_id = leader.id,
+			container = relyOn.container;
 
+		$.ftE(relyKeys, function(observerObj) {
+			var id = observerObj.id,
+				observerKey = observerObj.key,
+				observerContainer = container[id] || (container[id] = []);
+
+			if (!(leader_id === id && leader_key === observerKey)) { //避免直接的循环依赖
+
+				$.p(result[observerKey] || (result[observerKey] = []), {
+					dm: leader,
+					key: leader_key
+				})
+			}
+		});
+		relyOn.container[leader_id] = result;
 	}
 };
 /*
@@ -423,36 +441,52 @@ var relyOn = Controller.relyOn = {
 */
 (function Soap() { //速补——《云图Cloud Atlas》
 	var proto = DataManager.prototype,
-		_set = proto.set,
-		_get = proto.get;
+		_set = proto._set = proto.set,
+		_get = proto._get = proto.get;
 	proto.set = function() {
 		var self = this,
 			setStack = relyOn.setStack,
-			// relys = relyOn.container[this.id],
-			updataKeys,
-			relyKeys;
-
-		$.p(setStack, []); //开始收集
+			relys = relyOn.container[this.id]||(relyOn.container[this.id]={});
 
 		updataKeys = _set.apply(self, $.s(arguments));
-
-		relyKeys = setStack.pop(); //获取收集结果
-
-		// console.log(relyKeys);
-
-		updataKeys
+		$.ftE(updataKeys, function(updataKey) { //触发依赖
+			var leaderArr;
+			if (leaderArr = relys[updataKey]) {
+				$.ftE(leaderArr, function(leaderObj) {
+					// if((observerObj = leaderObj.dm._get(leaderObj.key,$NULL)) instanceof Proto){
+					leaderObj.dm._touchOffSubset(leaderObj.key)
+					// }
+				})
+			}
+		})
 	};
 	proto.get = function(key) {
-		var relyOn = Controller.relyOn,
-			id = this.id,
-			result = _get.apply(this, $.s(arguments)),
-			relyKeys = $.lI(relyOn.setStack);
-		// if (relyOn.status) {
+		var self = this,
+			relyOn = Controller.relyOn,
+			id = self.id,
+			setStack = relyOn.setStack,
+			args = $.s(arguments),
+			observerObj,
+			result,
+			updataKeys,
+			relyKeys = $.lI(setStack);
+		if ((observerObj = _get.call(self, key, $NULL)) instanceof Proto) { //是监听处理器，则进行收集
+			$.p(setStack, []); //开始收集
+
+			result = observerObj.get();
+
+			relyKeys = setStack.pop(); //获取收集结果
+
+			relyKeys.length && relyOn.pickUp(self, key, relyKeys);
+			relyKeys = $NULL;
+		} else {
+			result = _get.apply(self, args);
+		}
 		relyKeys && $.p(relyKeys, {
 			id: id,
 			key: DataManager.__formateKey
 		});
-		// }
+
 		return result
 	};
 })();

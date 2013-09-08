@@ -21,6 +21,8 @@ function DataManager(baseData, viewInstance) {
 };
 
 global.DataManager = DataManager;
+DataManager.__formateKey; //最后一次get处理完成的formateKey
+DataManager.__id; //最后一次get的id对象
 DataManager._instances = {};
 DataManager.config = {
 	"$T": "$THIS",
@@ -28,7 +30,7 @@ DataManager.config = {
 	"$A": "$TOP"
 }
 DataManager.prototype = {
-	getS:function(key){
+	getS: function(key) {
 		var arrKey = key.split("."),
 			result = this._database;
 		if (result != $UNDEFINED && result !== $FALSE) { //null|undefined|false
@@ -64,6 +66,7 @@ DataManager.prototype = {
 				if (key.charAt($TLen) === ".") {
 					formateKey = key.substring($TLen + 1);
 				} else {
+					DataManager.__formateKey = formateKey;
 					return result; //formateKey = key.substring($TLen); // ==> {($THIS)}
 				}
 				$T = false; //Prohibit bubbling get the data.
@@ -74,6 +77,7 @@ DataManager.prototype = {
 				} else {
 					formateKey = key.substring($PLen);
 				}
+				DataManager.__formateKey = formateKey;
 				return self._parentDataManager && self._parentDataManager.get(formateKey);
 			} else if (!key.indexOf($A)) { //$TOP
 				var $ALen = $A.length,
@@ -87,9 +91,9 @@ DataManager.prototype = {
 					self = parent;
 				}
 			}
-			if (refresh === $NULL) {//获取原始对象，不经过valueOf提取的
-				result  = self.getS(formateKey);
-			}else if (refresh === $FALSE) {
+			if (refresh === $NULL) { //获取原始对象，不经过valueOf提取的
+				result = self.getS(formateKey);
+			} else if (refresh === $FALSE) {
 				result = cacheData[key];
 			} else if (refresh === $TRUE || (result = cacheData[key]) === $UNDEFINED) {
 				if ((result = cacheData[key] = self.getNC(formateKey)) === $UNDEFINED && $T && self._parentDataManager) {
@@ -98,6 +102,8 @@ DataManager.prototype = {
 				};
 			}
 		}
+		DataManager.__id = self.id;
+		DataManager.__formateKey = formateKey;
 		return result;
 	},
 	set: function(key, obj) {
@@ -130,9 +136,10 @@ DataManager.prototype = {
 				if (cacheObj[lastItemKey] instanceof Proto) {
 					result = cacheObj[lastItemKey];
 					result.value = obj;
-					result.set.call(self,obj);
+					result.set.call(self, obj);
 				} else {
-					/*result = */cacheObj[lastItemKey] = obj;
+					/*result = */
+					cacheObj[lastItemKey] = obj;
 				}
 				self._database = baseData;
 				break;
