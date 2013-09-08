@@ -10,7 +10,7 @@ var shadowBody = document.createElement("body"),
 		id: 9,
 		uidAvator: Math.random().toString(36).substring(2),
 		hashCode:function(obj,prefix){
-			var uidAvator = prefix||""+$.uidAvator,
+			var uidAvator = (prefix||"")+$.uidAvator,
 				codeID;
 			if (!(codeID = obj[uidAvator])) {
 				codeID = obj[uidAvator] = $.uid();

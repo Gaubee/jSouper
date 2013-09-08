@@ -34,7 +34,7 @@ var shadowBody = document.createElement("body"),
 		id: 9,
 		uidAvator: Math.random().toString(36).substring(2),
 		hashCode:function(obj,prefix){
-			var uidAvator = prefix||""+$.uidAvator,
+			var uidAvator = (prefix||"")+$.uidAvator,
 				codeID;
 			if (!(codeID = obj[uidAvator])) {
 				codeID = obj[uidAvator] = $.uid();
@@ -199,6 +199,8 @@ function DataManager(baseData, viewInstance) {
 };
 
 global.DataManager = DataManager;
+DataManager.__formateKey;//最后一次get处理完成的formateKey
+DataManager.__id;//最后一次get的id对象
 DataManager._instances = {};
 DataManager.config = {
 	"$T": "$THIS",
@@ -242,6 +244,7 @@ DataManager.prototype = {
 				if (key.charAt($TLen) === ".") {
 					formateKey = key.substring($TLen + 1);
 				} else {
+					DataManager.__formateKey = formateKey;
 					return result; //formateKey = key.substring($TLen); // ==> {($THIS)}
 				}
 				$T = false; //Prohibit bubbling get the data.
@@ -252,6 +255,7 @@ DataManager.prototype = {
 				} else {
 					formateKey = key.substring($PLen);
 				}
+				DataManager.__formateKey = formateKey;
 				return self._parentDataManager && self._parentDataManager.get(formateKey);
 			} else if (!key.indexOf($A)) { //$TOP
 				var $ALen = $A.length,
@@ -276,6 +280,8 @@ DataManager.prototype = {
 				};
 			}
 		}
+		DataManager.__id = self.id;
+		DataManager.__formateKey = formateKey;
 		return result;
 	},
 	set: function(key, obj) {
@@ -422,74 +428,56 @@ var Proto = Controller.Observer = function(obs) {
 	self.valueOf = Controller._initGetData;
 	self.toString = Controller._getData;
 };
-/*
 var relyOn = Controller.relyOn = {
-	status: $FALSE,//true --> For pick up Dependent keyword.
-	container: {},//{  DM.id:{ relyDM.id:[key] }  }
+	// status: $FALSE,//true --> For pick up Dependent keyword.
+	setStack: [],
+	container: {}, //{  relyDM.id:{ keys:[key],DM:source_dataManager.id,key:triggerKey }  }
 	cache: {},
-	pickUp: function(dm, observerObj) { //拾取依赖的关键字
-		var self = this;
-		$.fI(self.cache, function(keys, id) {
-			var con = self.container[id] || (self.container[id] = {});
-			$.ftE(keys, function(key) {
-				var fns = con[key]
-				if (fns && $.iO(fns, observerObj) === -1) {
-					$.p(fns, observerObj)
-				} else {
-					$.p((con[key] = []), observerObj)
-				}
-			});
-		});
-		self.cache = {};
-	},
-	upPack: function(fnKey, observerObj, sourceDatabase, relyDataManagers) { //打包的触发器
-		function upPackFn() {
-			relyOn.status = $TRUE;
-			var result = observerObj.get.apply(sourceDatabase, relyDataManagers);
-			relyOn.status = $FALSE;
-			relyOn.pickUp(sourceDatabase, {
-				get: upPackFn,
-				set: observerObj.set,
-				relyDM: relyDataManagers
-			});
-			sourceDatabase.set(fnKey, result);
-			// return result;
-		}
-		return upPackFn;
+	pickUp: function() { //拾取依赖的关键字
+
 	}
 };
+/*
+通过AOP重写set\get函数，每次set的前开启关键字收集，完成set后关闭收集、并处理收集器，生成“依赖缓存”，
+这样在set函数中的所有相关到get的字符都会被获取到。
+
+这些被获取的字符在被set的时候将会通过“依赖缓存”来得知依赖者，然后再set完成后去更新依赖者的get。
+*/
 (function Soap() { //速补——《云图Cloud Atlas》
 	var proto = DataManager.prototype,
 		_set = proto.set,
 		_get = proto.get;
 	proto.set = function() {
 		var self = this,
-			relys = relyOn.container[this.id],
-			args = $.s(arguments),
-			updataKey = _set.apply(self, args);
-		relys && $.ftE(updataKey, function(key) {
-			var observerArr;
-			if (observerArr = relys[key]) {
-				$.ftE(observerArr, function(observerObj) {
-					observerObj.get();
-					var relyDataManagers = observerObj.relyDM || [];
-					relyDataManagers.push.apply(relyDataManagers, args);
-					relyDataManagers.push(updataKey);
-					observerObj.set.apply(self, relyDataManagers);
-				})
-			}
-		});
+			setStack = relyOn.setStack,
+			// relys = relyOn.container[this.id],
+			updataKeys,
+			relyKeys;
+
+		$.p(setStack, []); //开始收集
+
+		updataKeys = _set.apply(self, $.s(arguments));
+
+		relyKeys = setStack.pop(); //获取收集结果
+
+		// console.log(relyKeys);
+
+		updataKeys
 	};
 	proto.get = function(key) {
 		var relyOn = Controller.relyOn,
-			id = this.id;
-		if (relyOn.status) {
-			$.p(relyOn.cache[id] || (relyOn.cache[id] = []), key);
-		}
-		return _get.apply(this, $.s(arguments))
+			id = this.id,
+			result = _get.apply(this, $.s(arguments)),
+			relyKeys = $.lI(relyOn.setStack);
+		// if (relyOn.status) {
+		relyKeys && $.p(relyKeys, {
+			id: id,
+			key: DataManager.__formateKey
+		});
+		// }
+		return result
 	};
 })();
-*/
 var _isIE = !+"\v1",
 	//by RubyLouvre(司徒正美)
 	//setAttribute bug:http://www.iefans.net/ie-setattribute-bug/
