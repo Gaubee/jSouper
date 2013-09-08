@@ -108,7 +108,7 @@ draggable
 					var self = this,
 						currentNode = self.currentNode;
 					if (currentNode) {
-						self._attributeHandle(attrKey, currentNode, _shadowDIV, viewInstance, dataManager);
+						self._attributeHandle(attrKey, currentNode, _shadowDIV, viewInstance, dataManager, handle, triggerTable);
 					}
 				}
 			};

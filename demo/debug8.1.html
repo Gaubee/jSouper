@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>HTML-ViewParse</title>
+	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js"></script>	
+	<script type="text/javascript">
+		(function (ie){if(!ie)return;var b=document.createElement("script");b.setAttribute("type","text/javascript");b.setAttribute("src","http://"+location.hostname+"/firebug-lite/build/firebug-lite.js");document.getElementsByTagName("head")[0].appendChild(b)}(!+"\v1")); 
+	</script>
+	<style type="text/css">
+	</style>
+</head>
+<body>
+	<script type="text/template" name="event">
+		my name is {(myname)}
+		<hr/>
+		<input bind-form="{@(myname)}">
+	</script>
+</body>
+
+
+
+</html>
+
+<script type="text/javascript">
+	ViewParser.scans();
+	var b = ViewParser.modules["event"]({
+		myname:"??? - Gaubee - ???;"
+	}).append(document.body)
+
+</script>
