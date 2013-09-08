@@ -45,23 +45,16 @@ var relyOn = Controller.relyOn = {
 			cache;
 
 		$.ftE(relyKeys, function(observerObj) {
-			var id = observerObj.id,
+			var observerId = observerObj.id,
 				observerKey = observerObj.key,
-				observerContainer = container[id] || (container[id] = []);
+				observerContainer = container[observerId] || (container[observerId] = {});
 
-			if (!(leader_id === id && leader_key === observerKey)) { //避免直接的循环依赖
-				cache = result[observerKey];
-				if (!cache) {
-					cache = result[observerKey] = [];
-					cache._ = {};
-				}
-				if (cache._[leader_key] !== leader) {
-					$.p(cache, {
-						dm: leader,
-						key: leader_key
-					});
-					cache._[leader_key] = leader;
-				}
+			if (!(leader_id === observerId && leader_key === observerKey)) { //避免直接的循环依赖
+				cache = observerContainer[observerKey] = []; //重新建立依赖关系，只保留逻辑最顶层的依赖关系
+				$.p(cache, {
+					dm: leader,
+					key: leader_key
+				});
 			}
 		});
 	}
@@ -79,16 +72,25 @@ var relyOn = Controller.relyOn = {
 	proto.set = function() {
 		var self = this,
 			setStack = relyOn.setStack,
-			relys = relyOn.container[this.id] || (relyOn.container[this.id] = {});
+			relys = relyOn.container[this.id]; // || (relyOn.container[this.id] = {});
 
 		updataKeys = _set.apply(self, $.s(arguments));
-		$.ftE(updataKeys, function(updataKey) { //触发依赖
+
+		relys && $.ftE(updataKeys, function(updataKey) { //触发依赖
 			var leaderArr;
 			if (leaderArr = relys[updataKey]) {
 				$.ftE(leaderArr, function(leaderObj) {
 					// if((observerObj = leaderObj.dm._get(leaderObj.key,$NULL)) instanceof Proto){
-					leaderObj.dm._touchOffSubset(leaderObj.key)
-					// }
+					var dm = leaderObj.dm,
+						key = leaderObj.key,
+						computerValue;
+					console.log(key,dm._get(key, $TRUE))
+					if ((computerValue = dm._get(key, $NULL)) instanceof Proto) {
+						// computerValue.value = computerValue.get()
+						// console.log(key,computerValue.value)
+						// dm._set(key, )
+					}
+					dm._touchOffSubset(leaderObj.key)
 				})
 			}
 		})
@@ -102,22 +104,24 @@ var relyOn = Controller.relyOn = {
 			observerObj,
 			result,
 			updataKeys,
-			relyKeys = $.lI(setStack);
+			relyKeys = $.lI(setStack),
+			innerRelyKeys;
 		if ((observerObj = _get.call(self, key, $NULL)) instanceof Proto) { //是监听处理器，则进行收集
 			$.p(setStack, []); //开始收集
 
-			result = observerObj.get();
+			observerObj.get();
 
-			relyKeys = setStack.pop(); //获取收集结果
+			innerRelyKeys = setStack.pop(); //获取收集结果
 
-			relyKeys.length && relyOn.pickUp(self, key, relyKeys);
-			relyKeys = $NULL;
-		} else {
-			result = _get.apply(self, args);
+			// key==="name"&&console.log(key, innerRelyKeys)
+
+			innerRelyKeys.length && relyOn.pickUp(self, key, innerRelyKeys);
 		}
+		result = _get.apply(self, args); //保持原本语义 
+
 		relyKeys && $.p(relyKeys, {
 			id: id,
-			key: DataManager.__formateKey
+			key: key //DataManager.__formateKey
 		});
 
 		return result

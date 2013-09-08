@@ -66,7 +66,7 @@ DataManager.prototype = {
 				if (key.charAt($TLen) === ".") {
 					formateKey = key.substring($TLen + 1);
 				} else {
-					DataManager.__formateKey = formateKey;
+					// DataManager.__formateKey = formateKey;
 					return result; //formateKey = key.substring($TLen); // ==> {($THIS)}
 				}
 				$T = false; //Prohibit bubbling get the data.
@@ -77,7 +77,7 @@ DataManager.prototype = {
 				} else {
 					formateKey = key.substring($PLen);
 				}
-				DataManager.__formateKey = formateKey;
+				// DataManager.__formateKey = formateKey;
 				return self._parentDataManager && self._parentDataManager.get(formateKey);
 			} else if (!key.indexOf($A)) { //$TOP
 				var $ALen = $A.length,
@@ -92,7 +92,10 @@ DataManager.prototype = {
 				}
 			}
 			if (refresh === $NULL) { //获取原始对象，不经过valueOf提取的
-				result = self.getS(formateKey);
+				// result = self.getS(formateKey);
+				if ((result = self.getS(formateKey)) === $UNDEFINED && $T && self._parentDataManager) {
+					return self._parentDataManager.get(formateKey);
+				};
 			} else if (refresh === $FALSE) {
 				result = cacheData[key];
 			} else if (refresh === $TRUE || (result = cacheData[key]) === $UNDEFINED) {
@@ -102,8 +105,8 @@ DataManager.prototype = {
 				};
 			}
 		}
-		DataManager.__id = self.id;
-		DataManager.__formateKey = formateKey;
+		// DataManager.__id = self.id;
+		// DataManager.__formateKey = formateKey;
 		return result;
 	},
 	set: function(key, obj) {
@@ -147,8 +150,9 @@ DataManager.prototype = {
 		$.ftE(self._triggerKeys, function(triggerKey) {
 			if (key.indexOf(triggerKey) === 0 || triggerKey.indexOf(key) === 0) {
 				var oldVal = self.get(triggerKey, $FALSE),
-					newVal = self.get(triggerKey, $TRUE);
-				if (oldVal !== newVal || oldVal instanceof Object) {
+					newVal = self.get(triggerKey, $NULL);
+				// console.log(newVal)
+				if (oldVal !== newVal || newVal instanceof Object) {
 					$.p(updateKeys, triggerKey);
 				}
 			}

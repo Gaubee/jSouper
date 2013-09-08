@@ -17,6 +17,11 @@
 		<input value="{(fullName)}" bind-form="{@(fullName)}">
 		<hr />
 	</script>
+	<script type="text/template" name="controller_other">
+		<h2>Hello every one,my center name is {(name)}.</h2>
+		<input value="{(name)}" bind-form="{@(name)}">
+		<hr />
+	</script>
 </body>
 
 
@@ -47,4 +52,10 @@
 		});
 	var view = VP.modules["controller"](model).append(document.body);
 
+	var center = VP.modules["controller_other"]({
+		name:VP.Proto(function(){
+			console.log('model.get("fullName"):',model.get("fullName"))
+			return model.get("fullName");
+		})
+	}).append(document.body);
 </script>
