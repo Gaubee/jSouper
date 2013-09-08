@@ -11,8 +11,8 @@ var shadowBody = document.createElement("body"),
 	$ = {
 		id: 9,
 		uidAvator: Math.random().toString(36).substring(2),
-		hashCode:function(obj){
-			var uidAvator = $.uidAvator,
+		hashCode:function(obj,prefix){
+			var uidAvator = prefix||""+$.uidAvator,
 				codeID;
 			if (!(codeID = obj[uidAvator])) {
 				codeID = obj[uidAvator] = $.uid();
@@ -400,7 +400,74 @@ var Proto = Controller.Observer = function(obs) {
 	self.valueOf = Controller._initGetData;
 	self.toString = Controller._getData;
 };
-
+/*
+var relyOn = Controller.relyOn = {
+	status: $FALSE,//true --> For pick up Dependent keyword.
+	container: {},//{  DM.id:{ relyDM.id:[key] }  }
+	cache: {},
+	pickUp: function(dm, observerObj) { //拾取依赖的关键字
+		var self = this;
+		$.fI(self.cache, function(keys, id) {
+			var con = self.container[id] || (self.container[id] = {});
+			$.ftE(keys, function(key) {
+				var fns = con[key]
+				if (fns && $.iO(fns, observerObj) === -1) {
+					$.p(fns, observerObj)
+				} else {
+					$.p((con[key] = []), observerObj)
+				}
+			});
+		});
+		self.cache = {};
+	},
+	upPack: function(fnKey, observerObj, sourceDatabase, relyDataManagers) { //打包的触发器
+		function upPackFn() {
+			relyOn.status = $TRUE;
+			var result = observerObj.get.apply(sourceDatabase, relyDataManagers);
+			relyOn.status = $FALSE;
+			relyOn.pickUp(sourceDatabase, {
+				get: upPackFn,
+				set: observerObj.set,
+				relyDM: relyDataManagers
+			});
+			sourceDatabase.set(fnKey, result);
+			// return result;
+		}
+		return upPackFn;
+	}
+};
+(function Soap() { //速补——《云图Cloud Atlas》
+	var proto = DataManager.prototype,
+		_set = proto.set,
+		_get = proto.get;
+	proto.set = function() {
+		var self = this,
+			relys = relyOn.container[this.id],
+			args = $.s(arguments),
+			updataKey = _set.apply(self, args);
+		relys && $.ftE(updataKey, function(key) {
+			var observerArr;
+			if (observerArr = relys[key]) {
+				$.ftE(observerArr, function(observerObj) {
+					observerObj.get();
+					var relyDataManagers = observerObj.relyDM || [];
+					relyDataManagers.push.apply(relyDataManagers, args);
+					relyDataManagers.push(updataKey);
+					observerObj.set.apply(self, relyDataManagers);
+				})
+			}
+		});
+	};
+	proto.get = function(key) {
+		var relyOn = Controller.relyOn,
+			id = this.id;
+		if (relyOn.status) {
+			$.p(relyOn.cache[id] || (relyOn.cache[id] = []), key);
+		}
+		return _get.apply(this, $.s(arguments))
+	};
+})();
+*/
 var _isIE = !+"\v1",
 	//by RubyLouvre(司徒正美)
 	//setAttribute bug:http://www.iefans.net/ie-setattribute-bug/
@@ -1669,37 +1736,34 @@ var _addEventListener = function(Element, eventName, eventFun) {
 	},
 	_IE_event_cache = {},
 	_attachEvent = function(Element, eventName, eventFun) {
-		var wrapEventFun = _IE_event_cache[$.hashCode(eventFun)] = function(){
-			eventFun.apply(Element,$.s(arguments))
+		var wrapEventFun = _IE_event_cache[$.hashCode(eventFun)] = function() {
+			eventFun.apply(Element, $.s(arguments))
 		};
 		Element.attachEvent("on" + eventName, wrapEventFun);
 	},
 	_detachEvent = function(Element, eventName, eventFun) {
 		var wrapEventFun = _IE_event_cache[$.hashCode(eventFun)];
-		eventFun&&Element.detachEvent("on" + eventName, wrapEventFun);
+		eventFun && Element.detachEvent("on" + eventName, wrapEventFun);
 	},
 	_registerEvent = _isIE ? _attachEvent : _addEventListener,
 	_cancelEvent = _isIE ? _detachEvent : _removeEventListener,
-	_elementCache = [],
+	_elementCache = {},
 	eventListerAttribute = function(key, currentNode, parserNode, vi, dm) {
 		var attrOuter = _getAttrOuter(parserNode),
 			eventName = key.replace("event-on", "").replace("event-", ""),
 			eventFun = dm.get(attrOuter), //Function("return " + attrOuter.replace(_ieEnterPlaceholderRegExp,"\n"))(),
-			index = $.iO(_elementCache, currentNode),
+			index = $.hashCode(currentNode),
 			eventCollection,
 			oldEventFun;
-		if (index === -1) {
-			index = $.p(_elementCache, currentNode)
-			_elementCache.event[index] = {};
-		};
-		eventCollection = _elementCache.event[index];
+
+		eventCollection = _elementCache[index] || (_elementCache[index] = {});
 		if (oldEventFun = eventCollection[eventName]) {
 			_cancelEvent(currentNode, eventName, oldEventFun)
 		}
 		_registerEvent(currentNode, eventName, eventFun);
 		eventCollection[eventName] = eventFun;
 	};
-_elementCache.event = {};
+
 V.ra(function(attrKey) {
 	return attrKey.indexOf("event-") === 0;
 }, function(attrKey) {
@@ -1708,7 +1772,7 @@ V.ra(function(attrKey) {
 /*
  *form-bind只做绑定form处理事件，value绑定需要另外通过attr-value={(XX)}来绑定，避免重复
  */
-var _formCache = [],
+var _formCache = {},
 	_formKey = {
 		"input": function(node) {
 			var result = "value";
@@ -1733,7 +1797,7 @@ var _formCache = [],
 				eventNames: ["click"]
 			},
 			eventNames,
-			index = $.iO(_formCache, currentNode),
+			index = $.hashCode(currentNode,"form"),
 			formCollection,
 			oldFormHandle,
 			newFormHandle,
@@ -1741,11 +1805,7 @@ var _formCache = [],
 		typeof eventConfig === "function" && (eventConfig = eventConfig(currentNode));
 		eventNames = eventConfig.eventNames;
 
-		if (index === -1) {
-			index = $.p(_formCache, currentNode)
-			_formCache.event[index] = {};
-		};
-		formCollection = _formCache.event[index];
+		formCollection = _formCache[index]||(_formCache[index]={});
 		$.ftE(eventNames, function(eventName) {
 			if (oldFormHandle = formCollection[eventName]) {
 				_cancelEvent(currentNode, eventName, oldFormHandle)
@@ -1765,7 +1825,6 @@ var _formCache = [],
 			formCollection[eventName] = newFormHandle;
 		});
 	};
-_formCache.event = {};
 V.ra("bind-form", function(attrKey) {
 	return formListerAttribute;
 })

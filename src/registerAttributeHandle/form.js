@@ -1,7 +1,7 @@
 /*
  *form-bind只做绑定form处理事件，value绑定需要另外通过attr-value={(XX)}来绑定，避免重复
  */
-var _formCache = [],
+var _formCache = {},
 	_formKey = {
 		"input": function(node) {
 			var result = "value";
@@ -26,7 +26,7 @@ var _formCache = [],
 				eventNames: ["click"]
 			},
 			eventNames,
-			index = $.iO(_formCache, currentNode),
+			index = $.hashCode(currentNode,"form"),
 			formCollection,
 			oldFormHandle,
 			newFormHandle,
@@ -34,11 +34,7 @@ var _formCache = [],
 		typeof eventConfig === "function" && (eventConfig = eventConfig(currentNode));
 		eventNames = eventConfig.eventNames;
 
-		if (index === -1) {
-			index = $.p(_formCache, currentNode)
-			_formCache.event[index] = {};
-		};
-		formCollection = _formCache.event[index];
+		formCollection = _formCache[index]||(_formCache[index]={});
 		$.ftE(eventNames, function(eventName) {
 			if (oldFormHandle = formCollection[eventName]) {
 				_cancelEvent(currentNode, eventName, oldFormHandle)
@@ -58,7 +54,6 @@ var _formCache = [],
 			formCollection[eventName] = newFormHandle;
 		});
 	};
-_formCache.event = {};
 V.ra("bind-form", function(attrKey) {
 	return formListerAttribute;
 })
