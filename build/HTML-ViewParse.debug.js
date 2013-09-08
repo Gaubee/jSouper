@@ -435,9 +435,10 @@ var relyOn = Controller.relyOn = {
 	container: {}, //{  relyDM.id:{ keys:[key],DM:source_dataManager.id,key:triggerKey }  }
 	cache: {},
 	pickUp: function(leader, leader_key, relyKeys) { //拾取依赖的关键字
-		var result = {},
-			leader_id = leader.id,
-			container = relyOn.container;
+		var leader_id = leader.id,
+			result = relyOn.container[leader_id] || (relyOn.container[leader_id] = {}),
+			container = relyOn.container,
+			cache;
 
 		$.ftE(relyKeys, function(observerObj) {
 			var id = observerObj.id,
@@ -445,14 +446,20 @@ var relyOn = Controller.relyOn = {
 				observerContainer = container[id] || (container[id] = []);
 
 			if (!(leader_id === id && leader_key === observerKey)) { //避免直接的循环依赖
-
-				$.p(result[observerKey] || (result[observerKey] = []), {
-					dm: leader,
-					key: leader_key
-				})
+				cache = result[observerKey];
+				if (!cache) {
+					cache = result[observerKey] = [];
+					cache._ = {};
+				}
+				if (cache._[leader_key] !== leader) {
+					$.p(cache, {
+						dm: leader,
+						key: leader_key
+					});
+					cache._[leader_key] = leader
+				}
 			}
 		});
-		relyOn.container[leader_id] = result;
 	}
 };
 /*
@@ -468,7 +475,7 @@ var relyOn = Controller.relyOn = {
 	proto.set = function() {
 		var self = this,
 			setStack = relyOn.setStack,
-			relys = relyOn.container[this.id]||(relyOn.container[this.id]={});
+			relys = relyOn.container[this.id] || (relyOn.container[this.id] = {});
 
 		updataKeys = _set.apply(self, $.s(arguments));
 		$.ftE(updataKeys, function(updataKey) { //触发依赖
