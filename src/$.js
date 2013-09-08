@@ -9,6 +9,14 @@ var shadowBody = document.createElement("body"),
 	$ = {
 		id: 9,
 		uidAvator: Math.random().toString(36).substring(2),
+		hashCode:function(obj){
+			var uidAvator = $.uidAvator,
+				codeID;
+			if (!(codeID = obj[uidAvator])) {
+				codeID = obj[uidAvator] = $.uid();
+			}
+			return codeID;
+		},
 		noop: function noop() {},
 		valueOf:function(Obj){
 			if (Obj) {

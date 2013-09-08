@@ -12,8 +12,8 @@
 <body>
 	<script type="text/template" name="controller">
 		<h2>Hello every one,I am {(fullName)}.</h2>
-		<input value="{(firstName)}">
-		<input value="{(lastName)}">
+		<input value="{(firstName)}" bind-form="{@(firstName)}">
+		<input value="{(lastName)}" bind-form="{@(lastName)}">
 		<input value="{(fullName)}" bind-form="{@(fullName)}">
 		<hr />
 	</script>

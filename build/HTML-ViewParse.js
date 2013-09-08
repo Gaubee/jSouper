@@ -11,6 +11,14 @@ var shadowBody = document.createElement("body"),
 	$ = {
 		id: 9,
 		uidAvator: Math.random().toString(36).substring(2),
+		hashCode:function(obj){
+			var uidAvator = $.uidAvator,
+				codeID;
+			if (!(codeID = obj[uidAvator])) {
+				codeID = obj[uidAvator] = $.uid();
+			}
+			return codeID;
+		},
 		noop: function noop() {},
 		valueOf:function(Obj){
 			if (Obj) {
@@ -363,7 +371,7 @@ DataManager.prototype = {
 // var _hasOwn = Object.prototype.hasOwnProperty;
 
 function Controller(baseData, viewInstance) {};
-Controller._initGetData = function(){
+Controller._initGetData = function() {
 	var self = this;
 	self.valueOf = self.toString;
 	return self.value = self.get();
@@ -372,27 +380,27 @@ Controller._getData = function() {
 	return this.value
 };
 
-var _defaultFormHandle = function(e,node,newValue){
+var Proto = Controller.Observer = function(obs) {
+	var self = this;
+	if (!(this instanceof Controller.Observer)) {
+		return new Controller.Observer(obs);
+	}
+	if (obs instanceof Function) {
+		self.get = obs;
+		self.set = $.noop; //默认更新value并触发更新
+		self.form = $NULL;
+	} else {
+		self.get = obs.get || function() {
+			return self.value
+		};
+		self.set = obs.set || $.noop;
+		self.form = obs.form || $NULL;
+	}
+	self.value;
+	self.valueOf = Controller._initGetData;
+	self.toString = Controller._getData;
+};
 
-},
-	Proto = Controller.Observer = function(obs) {
-		var self = this;
-		if (!(this instanceof Controller.Observer)) {
-			return new Controller.Observer(obs);
-		}
-		if (obs instanceof Function) {
-			self.get = obs;
-			self.set = $.noop;//默认更新value并触发更新
-			self.form = $NULL;
-		} else {
-			self.get = obs.get||function(){return self.value};
-			self.set = obs.set||$.noop;
-			self.form = obs.form||$NULL;
-		}
-		self.value;
-		self.valueOf = Controller._initGetData;
-		self.toString = Controller._getData;
-	};
 var _isIE = !+"\v1",
 	//by RubyLouvre(司徒正美)
 	//setAttribute bug:http://www.iefans.net/ie-setattribute-bug/
@@ -1659,11 +1667,16 @@ var _addEventListener = function(Element, eventName, eventFun) {
 	_removeEventListener = function(Element, eventName, eventFun) {
 		Element.removeEventListener(eventName, eventFun, $FALSE);
 	},
+	_IE_event_cache = {},
 	_attachEvent = function(Element, eventName, eventFun) {
-		Element.attachEvent("on" + eventName, eventFun);
+		var wrapEventFun = _IE_event_cache[$.hashCode(eventFun)] = function(){
+			eventFun.apply(Element,$.s(arguments))
+		};
+		Element.attachEvent("on" + eventName, wrapEventFun);
 	},
 	_detachEvent = function(Element, eventName, eventFun) {
-		Element.detachEvent("on" + eventName, eventFun);
+		var wrapEventFun = _IE_event_cache[$.hashCode(eventFun)];
+		eventFun&&Element.detachEvent("on" + eventName, wrapEventFun);
 	},
 	_registerEvent = _isIE ? _attachEvent : _addEventListener,
 	_cancelEvent = _isIE ? _detachEvent : _removeEventListener,
@@ -1706,7 +1719,7 @@ var _formCache = [],
 			// }
 			return {
 				attributeName: "value",
-				eventName: "keyup"
+				eventNames: ["keyup", "change"]
 			};
 		},
 		"button": "innerHTML"
@@ -1717,38 +1730,40 @@ var _formCache = [],
 		var attrOuter = _getAttrOuter(parserNode),
 			eventConfig = _formKey[currentNode.tagName.toLowerCase()] || {
 				attributeName: "innerHTML",
-				eventName: "click"
+				eventNames: ["click"]
 			},
-			eventName,
+			eventNames,
 			index = $.iO(_formCache, currentNode),
 			formCollection,
 			oldFormHandle,
 			newFormHandle,
 			obj = dm.get(attrOuter, $NULL);
 		typeof eventConfig === "function" && (eventConfig = eventConfig(currentNode));
-		eventName = eventConfig.eventName;
-		
+		eventNames = eventConfig.eventNames;
+
 		if (index === -1) {
 			index = $.p(_formCache, currentNode)
 			_formCache.event[index] = {};
 		};
 		formCollection = _formCache.event[index];
-		if (oldFormHandle = formCollection[eventName]) {
-			_cancelEvent(currentNode, eventName, oldFormHandle)
-		}
-		if (obj instanceof Proto) {
-			var baseFormHandle = obj.form === $NULL ? _noopFormHandle : obj.form;
-			newFormHandle = function(e) {
-				dm.set(attrOuter, baseFormHandle(e, this[eventConfig.attributeName]))
-			};
-			_registerEvent(currentNode, eventName, newFormHandle);
-		} else if (typeof obj === "string") {
-			newFormHandle = function(e) {
-				dm.set(attrOuter, this[eventConfig.attributeName])
-			};
-			_registerEvent(currentNode, eventName, newFormHandle);
-		}
-		formCollection[eventName] = newFormHandle;
+		$.ftE(eventNames, function(eventName) {
+			if (oldFormHandle = formCollection[eventName]) {
+				_cancelEvent(currentNode, eventName, oldFormHandle)
+			}
+			if (obj instanceof Proto) {
+				var baseFormHandle = obj.form === $NULL ? _noopFormHandle : obj.form;
+				newFormHandle = function(e) {
+					dm.set(attrOuter, baseFormHandle(e, this[eventConfig.attributeName]))
+				};
+				_registerEvent(currentNode, eventName, newFormHandle);
+			} else if (typeof obj === "string") {
+				newFormHandle = function(e) {
+					dm.set(attrOuter, this[eventConfig.attributeName])
+				};
+				_registerEvent(currentNode, eventName, newFormHandle);
+			}
+			formCollection[eventName] = newFormHandle;
+		});
 	};
 _formCache.event = {};
 V.ra("bind-form", function(attrKey) {
