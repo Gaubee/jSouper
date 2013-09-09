@@ -54,11 +54,23 @@
 	var view = VP.modules["controller"](model).append(document.body);
 
 	var center = VP.modules["controller_other"]({
-		name:VP.Proto(function(){
-			return model.get("fullName");
+		name:VP.Proto({
+			get:function(){
+				return model.get("fullName");
+			},
+			set:function(newValue){
+				model.set("fullName",newValue);
+				return newValue;
+			}
 		}),
-		N:VP.Proto(function(){
-			return model.get("fullName");
+		N:VP.Proto({
+			get:function(){
+				return model.get("fullName");
+			},
+			set:function(newValue){
+				model.set("fullName",newValue);
+				return newValue;
+			}
 		})
 	}).append(document.body);
 </script>
