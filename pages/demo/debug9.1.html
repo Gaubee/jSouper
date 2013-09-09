@@ -14,6 +14,12 @@
 		<input value="{(fullName)}" bind-form="{@(fullName)}">
 		<hr />
 	</script>
+	<script type="text/template" name="controller_other">
+		<h2>Hello every one,my center name is {(name)}.</h2>
+		<input value="{(name)}" bind-form="{@(name)}">
+		<input value="{(N)}" bind-form="{@(N)}">
+		<hr />
+	</script>
 </body>
 
 
@@ -44,4 +50,24 @@
 		});
 	var view = VP.modules["controller"](model).append(document.body);
 
+	var center = VP.modules["controller_other"]({
+		name:VP.Proto({
+			get:function(){
+				return model.get("fullName");
+			},
+			set:function(newValue){
+				model.set("fullName",newValue);
+				return newValue;
+			}
+		}),
+		N:VP.Proto({
+			get:function(){
+				return model.get("fullName");
+			},
+			set:function(newValue){
+				model.set("fullName",newValue);
+				return newValue;
+			}
+		})
+	}).append(document.body);
 </script>
