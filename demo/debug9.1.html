@@ -20,6 +20,7 @@
 	<script type="text/template" name="controller_other">
 		<h2>Hello every one,my center name is {(name)}.</h2>
 		<input value="{(name)}" bind-form="{@(name)}">
+		<input value="{(N)}" bind-form="{@(N)}">
 		<hr />
 	</script>
 </body>
@@ -54,7 +55,9 @@
 
 	var center = VP.modules["controller_other"]({
 		name:VP.Proto(function(){
-			console.log('model.get("fullName"):',model.get("fullName"))
+			return model.get("fullName");
+		}),
+		N:VP.Proto(function(){
 			return model.get("fullName");
 		})
 	}).append(document.body);

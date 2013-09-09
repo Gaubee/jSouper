@@ -269,11 +269,17 @@ DataManager.prototype = {
 					self = parent;
 				}
 			}
-			if (refresh === $NULL) { //获取原始对象，不经过valueOf提取的
-				// result = self.getS(formateKey);
+			if (refresh === $.noop) {//获取原始对象 and not update cacheData
 				if ((result = self.getS(formateKey)) === $UNDEFINED && $T && self._parentDataManager) {
 					return self._parentDataManager.get(formateKey);
 				};
+			}else if (refresh === $NULL) { //获取原始对象，不经过valueOf提取的
+				if ((result = self.getS(formateKey)) === $UNDEFINED && $T && self._parentDataManager) {
+					return self._parentDataManager.get(formateKey);
+				};
+				if (result instanceof Proto) {
+					cacheData[key] = result.get()
+				}
 			} else if (refresh === $FALSE) {
 				result = cacheData[key];
 			} else if (refresh === $TRUE || (result = cacheData[key]) === $UNDEFINED) {
@@ -328,9 +334,8 @@ DataManager.prototype = {
 		$.ftE(self._triggerKeys, function(triggerKey) {
 			if (key.indexOf(triggerKey) === 0 || triggerKey.indexOf(key) === 0) {
 				var oldVal = self.get(triggerKey, $FALSE),
-					newVal = self.get(triggerKey, $NULL);
-				// console.log(newVal)
-				if (oldVal !== newVal || newVal instanceof Object) {
+					newVal = self.get(triggerKey, $TRUE); //updata cacheData
+				if (oldVal !== newVal || newVal instanceof Object || self.get(triggerKey, $NULL)/*updata cacheData*/ instanceof Object) {
 					$.p(updateKeys, triggerKey);
 				}
 			}
@@ -450,11 +455,20 @@ var relyOn = Controller.relyOn = {
 				observerContainer = container[observerId] || (container[observerId] = {});
 
 			if (!(leader_id === observerId && leader_key === observerKey)) { //避免直接的循环依赖
-				cache = observerContainer[observerKey] = []; //重新建立依赖关系，只保留逻辑最顶层的依赖关系
-				$.p(cache, {
-					dm: leader,
-					key: leader_key
-				});
+				cache = observerContainer[observerKey];
+				if (!cache) {
+					cache = observerContainer[observerKey] = [];
+					cache._ = {};
+				}
+				var cache_key = cache._[leader_key] || (cache._[leader_key] = "|");
+
+				if (cache_key.indexOf("|" + leader_id + "|") === -1) {
+					$.p(cache, {
+						dm: leader,
+						key: leader_key
+					});
+					cache._[leader_key] += leader_id + "|";
+				}
 			}
 		});
 	}
@@ -468,32 +482,27 @@ var relyOn = Controller.relyOn = {
 (function Soap() { //速补——《云图Cloud Atlas》
 	var proto = DataManager.prototype,
 		_set = proto._set = proto.set,
-		_get = proto._get = proto.get;
+		_get = proto._get = proto.get,
+		chain_update_rely = function(id, updataKeys) {
+			var relys = relyOn.container[id]; // || (relyOn.container[this.id] = {});
+
+			relys && $.ftE(updataKeys, function(updataKey) { //触发依赖
+				var leaderArr;
+				if (leaderArr = relys[updataKey]) {
+					$.ftE(leaderArr, function(leaderObj) {
+						var dm = leaderObj.dm,
+							key = leaderObj.key;
+						dm._touchOffSubset(key);
+						chain_update_rely(dm.id,[key])//递归:链式更新
+					})
+				}
+			})
+		};
 	proto.set = function() {
 		var self = this,
 			setStack = relyOn.setStack,
-			relys = relyOn.container[this.id]; // || (relyOn.container[this.id] = {});
-
 		updataKeys = _set.apply(self, $.s(arguments));
-
-		relys && $.ftE(updataKeys, function(updataKey) { //触发依赖
-			var leaderArr;
-			if (leaderArr = relys[updataKey]) {
-				$.ftE(leaderArr, function(leaderObj) {
-					// if((observerObj = leaderObj.dm._get(leaderObj.key,$NULL)) instanceof Proto){
-					var dm = leaderObj.dm,
-						key = leaderObj.key,
-						computerValue;
-					console.log(key,dm._get(key, $TRUE))
-					if ((computerValue = dm._get(key, $NULL)) instanceof Proto) {
-						// computerValue.value = computerValue.get()
-						// console.log(key,computerValue.value)
-						// dm._set(key, )
-					}
-					dm._touchOffSubset(leaderObj.key)
-				})
-			}
-		})
+		chain_update_rely(self.id,updataKeys)//开始链式更新
 	};
 	proto.get = function(key) {
 		var self = this,
@@ -506,14 +515,13 @@ var relyOn = Controller.relyOn = {
 			updataKeys,
 			relyKeys = $.lI(setStack),
 			innerRelyKeys;
-		if ((observerObj = _get.call(self, key, $NULL)) instanceof Proto) { //是监听处理器，则进行收集
+		if ((observerObj = _get.call(self, key, $.noop)) instanceof Proto) { //是监听处理器，则进行收集
+
 			$.p(setStack, []); //开始收集
 
 			observerObj.get();
 
 			innerRelyKeys = setStack.pop(); //获取收集结果
-
-			// key==="name"&&console.log(key, innerRelyKeys)
 
 			innerRelyKeys.length && relyOn.pickUp(self, key, innerRelyKeys);
 		}
