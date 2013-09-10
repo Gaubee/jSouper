@@ -23,7 +23,7 @@
 	<hr />
 	<ul>
 	{#if( {(showPeople)} )}
-		{#each( {(people)} )}
+		{#each( {(people)} )}(index:{($INDEX)})
 		<li>
 			{(name)}
 			{#if( {equa({(name)}{("Gaubee")})} )}

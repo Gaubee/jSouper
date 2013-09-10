@@ -1420,6 +1420,9 @@ V.rt("&&", V.rt("and", function(handle, index, parentHandle) {
 	}
 	return trigger;
 }));
+var eachConfig = {
+	$I:"$INDEX"
+}
 V.rt("#each", function(handle, index, parentHandle) {
 	var id = handle.id,
 		arrDataHandleKey = handle.childNodes[0].childNodes[0].node.data,
@@ -1451,6 +1454,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 				}
 
 				viewInstance.set(eachItemData);
+				viewInstance.set(eachConfig.$I,index)
 
 				if (inserNew && !arrViewInstances.hidden) {
 					viewInstance.insert(comment_endeach_node)
@@ -1795,21 +1799,32 @@ V.ra(function(attrKey){
 }, function() {
 	return _AttributeHandleEvent.dir;
 })
-var _addEventListener = function(Element, eventName, eventFun) {
-	Element.addEventListener(eventName, eventFun, $FALSE);
-},
+var _event_cache = {},
+	_addEventListener = function(Element, eventName, eventFun) {
+		var args = $.s(arguments).splice(3),
+			wrapEventFun = _event_cache[$.hashCode(eventFun)] = function() {
+				var wrapArgs = $.s(arguments);
+				Array.prototype.push.apply(wrapArgs, args);
+				eventFun.apply(Element, wrapArgs)
+			};
+		Element.addEventListener(eventName, wrapEventFun, $FALSE);
+	},
 	_removeEventListener = function(Element, eventName, eventFun) {
+		var wrapEventFun = _event_cache[$.hashCode(eventFun)];
+		console.log(eventName,$.hashCode(eventFun),wrapEventFun)
 		Element.removeEventListener(eventName, eventFun, $FALSE);
 	},
-	_IE_event_cache = {},
 	_attachEvent = function(Element, eventName, eventFun) {
-		var wrapEventFun = _IE_event_cache[$.hashCode(eventFun)] = function() {
-			eventFun.apply(Element, $.s(arguments))
-		};
+		var args = $.s(arguments).splice(3),
+			wrapEventFun = _event_cache[$.hashCode(eventFun)] = function() {
+				var wrapArgs = $.s(arguments);
+				Array.prototype.push.apply(wrapArgs, args);
+				eventFun.apply(Element, wrapArgs)
+			};
 		Element.attachEvent("on" + eventName, wrapEventFun);
 	},
 	_detachEvent = function(Element, eventName, eventFun) {
-		var wrapEventFun = _IE_event_cache[$.hashCode(eventFun)];
+		var wrapEventFun = _event_cache[$.hashCode(eventFun)];
 		eventFun && Element.detachEvent("on" + eventName, wrapEventFun);
 	},
 	_registerEvent = _isIE ? _attachEvent : _addEventListener,
@@ -1827,7 +1842,7 @@ var _addEventListener = function(Element, eventName, eventFun) {
 		if (oldEventFun = eventCollection[eventName]) {
 			_cancelEvent(currentNode, eventName, oldEventFun)
 		}
-		_registerEvent(currentNode, eventName, eventFun);
+		_registerEvent(currentNode, eventName, eventFun,vi);
 		eventCollection[eventName] = eventFun;
 	};
 
@@ -1876,11 +1891,11 @@ var _formCache = {},
 		$.ftE(eventNames, function(eventName) {
 			if (oldFormHandle = formCollection[eventName]) {
 				_cancelEvent(currentNode, eventName, oldFormHandle)
-			}
+			}else{
 			if (obj instanceof Proto) {
 				var baseFormHandle = obj.form === $NULL ? _noopFormHandle : obj.form;
 				newFormHandle = function(e) {
-					dm.set(attrOuter, baseFormHandle(e, this[eventConfig.attributeName]))
+					dm.set(attrOuter, baseFormHandle.call(this,e, this[eventConfig.attributeName],vi))
 				};
 				_registerEvent(currentNode, eventName, newFormHandle);
 			} else if (typeof obj === "string") {
@@ -1890,6 +1905,7 @@ var _formCache = {},
 				_registerEvent(currentNode, eventName, newFormHandle);
 			}
 			formCollection[eventName] = newFormHandle;
+			}
 		});
 	};
 V.ra("bind-form", function(attrKey) {

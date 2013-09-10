@@ -46,7 +46,8 @@
 					lastName = model.set("lastName",name[name.length-1]);
 					return firstName+" "+lastName;
 				},
-				form:function(e,newValue){//call Element
+				form:function(e,newValue,vi){//call Element
+					console.log(vi)
 					return newValue
 				}
 			})

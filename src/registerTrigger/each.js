@@ -1,3 +1,6 @@
+var eachConfig = {
+	$I:"$INDEX"
+}
 V.rt("#each", function(handle, index, parentHandle) {
 	var id = handle.id,
 		arrDataHandleKey = handle.childNodes[0].childNodes[0].node.data,
@@ -29,6 +32,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 				}
 
 				viewInstance.set(eachItemData);
+				viewInstance.set(eachConfig.$I,index)
 
 				if (inserNew && !arrViewInstances.hidden) {
 					viewInstance.insert(comment_endeach_node)

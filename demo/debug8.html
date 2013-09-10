@@ -23,8 +23,8 @@
 	ViewParser.scans();
 	(function  (argument) {
 		var b = ViewParser.modules["event"]({
-			click:function(){
-				console.log("????");
+			click:function(e,vi){
+				console.log("????",arguments);
 				if (i++===2) {
 					b.set({
 						click:function(){console.log("YYY")},
