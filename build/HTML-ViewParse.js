@@ -313,7 +313,8 @@ DataManager.prototype = {
 			if (key.indexOf(triggerKey) === 0 || triggerKey.indexOf(key) === 0) {
 				var oldVal = self.get(triggerKey, $FALSE),
 					newVal = self.get(triggerKey, $TRUE); //updata cacheData
-				if (oldVal !== newVal || newVal instanceof Object || self.get(triggerKey, $NULL)/*updata cacheData*/ instanceof Object) {
+
+				if (oldVal !== newVal || newVal instanceof Object || self.get(triggerKey, $NULL)/*updata cacheData*/ instanceof Proto) {
 					$.p(updateKeys, triggerKey);
 				}
 			}
@@ -470,8 +471,8 @@ var relyOn = Controller.relyOn = {
 					$.ftE(leaderArr, function(leaderObj) {
 						var dm = leaderObj.dm,
 							key = leaderObj.key;
-						dm._touchOffSubset(key);
-						chain_update_rely(dm.id,[key])//递归:链式更新
+						// dm._touchOffSubset(key);
+						chain_update_rely(dm.id, dm._set(key,dm._get(key,$.noop).get()))//get->$NULL will miss selfKey while set//递归:链式更新
 					})
 				}
 			})
@@ -479,8 +480,8 @@ var relyOn = Controller.relyOn = {
 	proto.set = function() {
 		var self = this,
 			setStack = relyOn.setStack,
-		updataKeys = _set.apply(self, $.s(arguments));
-		chain_update_rely(self.id,updataKeys)//开始链式更新
+			updataKeys = _set.apply(self, $.s(arguments));
+		chain_update_rely(self.id, updataKeys) //开始链式更新
 	};
 	proto.get = function(key) {
 		var self = this,
@@ -1842,7 +1843,7 @@ var _formCache = {},
 			// }
 			return {
 				attributeName: "value",
-				eventNames: ["keyup", "change"]
+				eventNames: _isIE ? ["propertychange", "keyup"] : ["input", "keyup"]
 			};
 		},
 		"button": "innerHTML"
@@ -1886,7 +1887,7 @@ var _formCache = {},
 	};
 V.ra("bind-form", function(attrKey) {
 	return formListerAttribute;
-})
+});
 var _event_by_fun = (function() {
 	var testEvent = Function(""),
 		attrKey = "onclick";

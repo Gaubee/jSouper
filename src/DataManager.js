@@ -157,7 +157,8 @@ DataManager.prototype = {
 			if (key.indexOf(triggerKey) === 0 || triggerKey.indexOf(key) === 0) {
 				var oldVal = self.get(triggerKey, $FALSE),
 					newVal = self.get(triggerKey, $TRUE); //updata cacheData
-				if (oldVal !== newVal || newVal instanceof Object || self.get(triggerKey, $NULL)/*updata cacheData*/ instanceof Object) {
+
+				if (oldVal !== newVal || newVal instanceof Object || self.get(triggerKey, $NULL)/*updata cacheData*/ instanceof Proto) {
 					$.p(updateKeys, triggerKey);
 				}
 			}

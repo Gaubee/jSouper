@@ -12,7 +12,7 @@ var _formCache = {},
 			// }
 			return {
 				attributeName: "value",
-				eventNames: ["keyup", "change"]
+				eventNames: _isIE ? ["propertychange", "keyup"] : ["input", "keyup"]
 			};
 		},
 		"button": "innerHTML"
@@ -56,4 +56,4 @@ var _formCache = {},
 	};
 V.ra("bind-form", function(attrKey) {
 	return formListerAttribute;
-})
+});
