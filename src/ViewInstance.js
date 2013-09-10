@@ -9,6 +9,7 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	var self = this,
 		dataManager;
 	self._isAttr = $FALSE; //if no null --> Storage the attribute key and current.
+	self._isEach = $FALSE; //if no null --> Storage the attribute key and current.
 	self.dataManager; //= dataManager;
 	self.handleNodeTree = handleNodeTree;
 	self.DOMArr = $.s(handleNodeTree.childNodes);

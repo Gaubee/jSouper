@@ -753,6 +753,7 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	var self = this,
 		dataManager;
 	self._isAttr = $FALSE; //if no null --> Storage the attribute key and current.
+	self._isEach = $FALSE; //if no null --> Storage the attribute key and current.
 	self.dataManager; //= dataManager;
 	self.handleNodeTree = handleNodeTree;
 	self.DOMArr = $.s(handleNodeTree.childNodes);
@@ -1401,7 +1402,7 @@ V.rt("&&", V.rt("and", function(handle, index, parentHandle) {
 	return trigger;
 }));
 var eachConfig = {
-	$I:"$INDEX"
+	$I: "$INDEX"
 }
 V.rt("#each", function(handle, index, parentHandle) {
 	var id = handle.id,
@@ -1425,16 +1426,21 @@ V.rt("#each", function(handle, index, parentHandle) {
 
 				var viewInstance = arrViewInstances[index];
 				if (!viewInstance) {
-					viewInstance = arrViewInstances[index] = eachModuleConstructor();
+					viewInstance = arrViewInstances[index] = eachModuleConstructor(eachItemData);
+					viewInstance._isEach = {
+						index:index,
+						brotherVI:arrViewInstances
+					}
 					dataManager.subset(viewInstance); //reset arrViewInstance's dataManager
 					inserNew = $TRUE;
+				} else {
+					viewInstance.set(eachItemData);
 				}
+				viewInstance.set(eachConfig.$I, index)
 				if (!viewInstance._canRemoveAble) { //had being recovered into the packingBag
 					inserNew = $TRUE;
 				}
 
-				viewInstance.set(eachItemData);
-				viewInstance.set(eachConfig.$I,index)
 
 				if (inserNew && !arrViewInstances.hidden) {
 					viewInstance.insert(comment_endeach_node)
@@ -1780,30 +1786,30 @@ V.ra(function(attrKey){
 	return _AttributeHandleEvent.dir;
 })
 var _event_cache = {},
-	_addEventListener = function(Element, eventName, eventFun) {
-		var args = $.s(arguments).splice(3),
-			wrapEventFun = _event_cache[$.hashCode(eventFun)] = function() {
+	_addEventListener = function(Element, eventName, eventFun, elementHash) {
+		var args = $.s(arguments).splice(4),
+			wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = function() {
 				var wrapArgs = $.s(arguments);
 				Array.prototype.push.apply(wrapArgs, args);
 				eventFun.apply(Element, wrapArgs)
 			};
 		Element.addEventListener(eventName, wrapEventFun, $FALSE);
 	},
-	_removeEventListener = function(Element, eventName, eventFun) {
-		var wrapEventFun = _event_cache[$.hashCode(eventFun)];
+	_removeEventListener = function(Element, eventName, eventFun, elementHash) {
+		var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
 		wrapEventFun && Element.removeEventListener(eventName, wrapEventFun, $FALSE);
 	},
-	_attachEvent = function(Element, eventName, eventFun) {
-		var args = $.s(arguments).splice(3),
-			wrapEventFun = _event_cache[$.hashCode(eventFun)] = function() {
+	_attachEvent = function(Element, eventName, eventFun, elementHash) {
+		var args = $.s(arguments).splice(4),
+			wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = function() {
 				var wrapArgs = $.s(arguments);
 				Array.prototype.push.apply(wrapArgs, args);
 				eventFun.apply(Element, wrapArgs)
 			};
 		Element.attachEvent("on" + eventName, wrapEventFun);
 	},
-	_detachEvent = function(Element, eventName, eventFun) {
-		var wrapEventFun = _event_cache[$.hashCode(eventFun)];
+	_detachEvent = function(Element, eventName, eventFun, elementHash) {
+		var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
 		wrapEventFun && Element.detachEvent("on" + eventName, wrapEventFun);
 	},
 	_registerEvent = _isIE ? _attachEvent : _addEventListener,
@@ -1812,17 +1818,18 @@ var _event_cache = {},
 	eventListerAttribute = function(key, currentNode, parserNode, vi, dm) {
 		var attrOuter = _getAttrOuter(parserNode),
 			eventName = key.replace("event-on", "").replace("event-", ""),
-			eventFun = dm.get(attrOuter), //Function("return " + attrOuter.replace(_ieEnterPlaceholderRegExp,"\n"))(),
-			index = $.hashCode(currentNode),
+			eventFun = dm.get(attrOuter), //在重用函数的过程中会出现问题
+			elementHashCode = $.hashCode(currentNode, "event"),
 			eventCollection,
 			oldEventFun;
-
-		eventCollection = _elementCache[index] || (_elementCache[index] = {});
-		if (oldEventFun = eventCollection[eventName]) {
-			_cancelEvent(currentNode, eventName, oldEventFun)
+		if (eventFun) {
+			eventCollection = _elementCache[elementHashCode] || (_elementCache[elementHashCode] = {});
+			if (oldEventFun = eventCollection[eventName]) {
+				_cancelEvent(currentNode, eventName, oldEventFun, elementHashCode)
+			}
+			_registerEvent(currentNode, eventName, eventFun, elementHashCode, vi); //只能定位到属性操作的VI，需要重新构架！！如果完成这个，则_isEach的each元素需要全新的ViewInstance方法，包括remove等来调整次序
+			eventCollection[eventName] = eventFun;
 		}
-		_registerEvent(currentNode, eventName, eventFun, vi);
-		eventCollection[eventName] = eventFun;
 	};
 
 V.ra(function(attrKey) {
@@ -1858,7 +1865,7 @@ var _formCache = {},
 				eventNames: ["click"]
 			},
 			eventNames,
-			index = $.hashCode(currentNode, "form"),
+			elementHashCode = $.hashCode(currentNode, "form"),
 			formCollection,
 			oldFormHandle,
 			newFormHandle,
@@ -1866,22 +1873,22 @@ var _formCache = {},
 		typeof eventConfig === "function" && (eventConfig = eventConfig(currentNode));
 		eventNames = eventConfig.eventNames;
 
-		formCollection = _formCache[index] || (_formCache[index] = {});
+		formCollection = _formCache[elementHashCode] || (_formCache[elementHashCode] = {});
 		$.ftE(eventNames, function(eventName) {
 			if (oldFormHandle = formCollection[eventName]) {
-				_cancelEvent(currentNode, eventName, oldFormHandle)
+				_cancelEvent(currentNode, eventName, oldFormHandle, elementHashCode)
 			}
 			if (obj instanceof Proto) {
 				var baseFormHandle = obj.form === $NULL ? _noopFormHandle : obj.form;
 				newFormHandle = function(e) {
 					dm.set(attrOuter, baseFormHandle.call(this, e, this[eventConfig.attributeName], vi))
 				};
-				_registerEvent(currentNode, eventName, newFormHandle);
+				_registerEvent(currentNode, eventName, newFormHandle, elementHashCode);
 			} else if (typeof obj === "string") {
 				newFormHandle = function(e) {
 					dm.set(attrOuter, this[eventConfig.attributeName])
 				};
-				_registerEvent(currentNode, eventName, newFormHandle);
+				_registerEvent(currentNode, eventName, newFormHandle, elementHashCode);
 			}
 			formCollection[eventName] = newFormHandle;
 		});

@@ -1,5 +1,5 @@
 var eachConfig = {
-	$I:"$INDEX"
+	$I: "$INDEX"
 }
 V.rt("#each", function(handle, index, parentHandle) {
 	var id = handle.id,
@@ -23,16 +23,21 @@ V.rt("#each", function(handle, index, parentHandle) {
 
 				var viewInstance = arrViewInstances[index];
 				if (!viewInstance) {
-					viewInstance = arrViewInstances[index] = eachModuleConstructor();
+					viewInstance = arrViewInstances[index] = eachModuleConstructor(eachItemData);
+					viewInstance._isEach = {
+						index:index,
+						brotherVI:arrViewInstances
+					}
 					dataManager.subset(viewInstance); //reset arrViewInstance's dataManager
 					inserNew = $TRUE;
+				} else {
+					viewInstance.set(eachItemData);
 				}
+				viewInstance.set(eachConfig.$I, index)
 				if (!viewInstance._canRemoveAble) { //had being recovered into the packingBag
 					inserNew = $TRUE;
 				}
 
-				viewInstance.set(eachItemData);
-				viewInstance.set(eachConfig.$I,index)
 
 				if (inserNew && !arrViewInstances.hidden) {
 					viewInstance.insert(comment_endeach_node)
