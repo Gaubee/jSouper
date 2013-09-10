@@ -282,7 +282,7 @@ DataManager.prototype = {
 				}
 			} else if (refresh === $FALSE) {
 				result = cacheData[key];
-			} else if (refresh === $TRUE || (result = cacheData[key]) === $UNDEFINED) {
+			} else if (refresh === $TRUE || (result = cacheData[key]) === $UNDEFINED || key.indexOf(".length") === key.length-7/*get array length*/ ) {
 				if ((result = cacheData[key] = self.getNC(formateKey)) === $UNDEFINED && $T && self._parentDataManager) {
 					//顺序很重要
 					return self._parentDataManager.get(formateKey);
