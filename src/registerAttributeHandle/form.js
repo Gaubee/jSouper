@@ -26,7 +26,7 @@ var _formCache = {},
 				eventNames: ["click"]
 			},
 			eventNames,
-			index = $.hashCode(currentNode,"form"),
+			index = $.hashCode(currentNode, "form"),
 			formCollection,
 			oldFormHandle,
 			newFormHandle,
@@ -34,15 +34,15 @@ var _formCache = {},
 		typeof eventConfig === "function" && (eventConfig = eventConfig(currentNode));
 		eventNames = eventConfig.eventNames;
 
-		formCollection = _formCache[index]||(_formCache[index]={});
+		formCollection = _formCache[index] || (_formCache[index] = {});
 		$.ftE(eventNames, function(eventName) {
 			if (oldFormHandle = formCollection[eventName]) {
 				_cancelEvent(currentNode, eventName, oldFormHandle)
-			}else{
+			}
 			if (obj instanceof Proto) {
 				var baseFormHandle = obj.form === $NULL ? _noopFormHandle : obj.form;
 				newFormHandle = function(e) {
-					dm.set(attrOuter, baseFormHandle.call(this,e, this[eventConfig.attributeName],vi))
+					dm.set(attrOuter, baseFormHandle.call(this, e, this[eventConfig.attributeName], vi))
 				};
 				_registerEvent(currentNode, eventName, newFormHandle);
 			} else if (typeof obj === "string") {
@@ -52,7 +52,6 @@ var _formCache = {},
 				_registerEvent(currentNode, eventName, newFormHandle);
 			}
 			formCollection[eventName] = newFormHandle;
-			}
 		});
 	};
 V.ra("bind-form", function(attrKey) {

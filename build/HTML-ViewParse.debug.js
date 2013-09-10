@@ -1811,8 +1811,7 @@ var _event_cache = {},
 	},
 	_removeEventListener = function(Element, eventName, eventFun) {
 		var wrapEventFun = _event_cache[$.hashCode(eventFun)];
-		console.log(eventName,$.hashCode(eventFun),wrapEventFun)
-		Element.removeEventListener(eventName, eventFun, $FALSE);
+		wrapEventFun && Element.removeEventListener(eventName, wrapEventFun, $FALSE);
 	},
 	_attachEvent = function(Element, eventName, eventFun) {
 		var args = $.s(arguments).splice(3),
@@ -1825,7 +1824,7 @@ var _event_cache = {},
 	},
 	_detachEvent = function(Element, eventName, eventFun) {
 		var wrapEventFun = _event_cache[$.hashCode(eventFun)];
-		eventFun && Element.detachEvent("on" + eventName, wrapEventFun);
+		wrapEventFun && Element.detachEvent("on" + eventName, wrapEventFun);
 	},
 	_registerEvent = _isIE ? _attachEvent : _addEventListener,
 	_cancelEvent = _isIE ? _detachEvent : _removeEventListener,
@@ -1842,7 +1841,7 @@ var _event_cache = {},
 		if (oldEventFun = eventCollection[eventName]) {
 			_cancelEvent(currentNode, eventName, oldEventFun)
 		}
-		_registerEvent(currentNode, eventName, eventFun,vi);
+		_registerEvent(currentNode, eventName, eventFun, vi);
 		eventCollection[eventName] = eventFun;
 	};
 
@@ -1879,7 +1878,7 @@ var _formCache = {},
 				eventNames: ["click"]
 			},
 			eventNames,
-			index = $.hashCode(currentNode,"form"),
+			index = $.hashCode(currentNode, "form"),
 			formCollection,
 			oldFormHandle,
 			newFormHandle,
@@ -1887,15 +1886,15 @@ var _formCache = {},
 		typeof eventConfig === "function" && (eventConfig = eventConfig(currentNode));
 		eventNames = eventConfig.eventNames;
 
-		formCollection = _formCache[index]||(_formCache[index]={});
+		formCollection = _formCache[index] || (_formCache[index] = {});
 		$.ftE(eventNames, function(eventName) {
 			if (oldFormHandle = formCollection[eventName]) {
 				_cancelEvent(currentNode, eventName, oldFormHandle)
-			}else{
+			}
 			if (obj instanceof Proto) {
 				var baseFormHandle = obj.form === $NULL ? _noopFormHandle : obj.form;
 				newFormHandle = function(e) {
-					dm.set(attrOuter, baseFormHandle.call(this,e, this[eventConfig.attributeName],vi))
+					dm.set(attrOuter, baseFormHandle.call(this, e, this[eventConfig.attributeName], vi))
 				};
 				_registerEvent(currentNode, eventName, newFormHandle);
 			} else if (typeof obj === "string") {
@@ -1905,7 +1904,6 @@ var _formCache = {},
 				_registerEvent(currentNode, eventName, newFormHandle);
 			}
 			formCollection[eventName] = newFormHandle;
-			}
 		});
 	};
 V.ra("bind-form", function(attrKey) {

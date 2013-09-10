@@ -10,8 +10,7 @@ var _event_cache = {},
 	},
 	_removeEventListener = function(Element, eventName, eventFun) {
 		var wrapEventFun = _event_cache[$.hashCode(eventFun)];
-		console.log(eventName,$.hashCode(eventFun),wrapEventFun)
-		Element.removeEventListener(eventName, eventFun, $FALSE);
+		wrapEventFun && Element.removeEventListener(eventName, wrapEventFun, $FALSE);
 	},
 	_attachEvent = function(Element, eventName, eventFun) {
 		var args = $.s(arguments).splice(3),
@@ -24,7 +23,7 @@ var _event_cache = {},
 	},
 	_detachEvent = function(Element, eventName, eventFun) {
 		var wrapEventFun = _event_cache[$.hashCode(eventFun)];
-		eventFun && Element.detachEvent("on" + eventName, wrapEventFun);
+		wrapEventFun && Element.detachEvent("on" + eventName, wrapEventFun);
 	},
 	_registerEvent = _isIE ? _attachEvent : _addEventListener,
 	_cancelEvent = _isIE ? _detachEvent : _removeEventListener,
@@ -41,7 +40,7 @@ var _event_cache = {},
 		if (oldEventFun = eventCollection[eventName]) {
 			_cancelEvent(currentNode, eventName, oldEventFun)
 		}
-		_registerEvent(currentNode, eventName, eventFun,vi);
+		_registerEvent(currentNode, eventName, eventFun, vi);
 		eventCollection[eventName] = eventFun;
 	};
 
