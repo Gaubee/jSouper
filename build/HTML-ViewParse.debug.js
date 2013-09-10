@@ -269,11 +269,11 @@ DataManager.prototype = {
 					self = parent;
 				}
 			}
-			if (refresh === $.noop) {//获取原始对象 and not update cacheData
+			if (refresh === $.noop) { //获取原始对象 and not update cacheData
 				if ((result = self.getS(formateKey)) === $UNDEFINED && $T && self._parentDataManager) {
 					return self._parentDataManager.get(formateKey);
 				};
-			}else if (refresh === $NULL) { //获取原始对象，不经过valueOf提取的
+			} else if (refresh === $NULL) { //获取原始对象，不经过valueOf提取的
 				if ((result = self.getS(formateKey)) === $UNDEFINED && $T && self._parentDataManager) {
 					return self._parentDataManager.get(formateKey);
 				};
@@ -297,6 +297,7 @@ DataManager.prototype = {
 		var self = this,
 			baseData = self._database || {},
 			result = $.valueOf(baseData),
+			cacheData = self._cacheData,
 			cacheObj = result,
 			arrKey,
 			itemKey,
@@ -334,9 +335,9 @@ DataManager.prototype = {
 		$.ftE(self._triggerKeys, function(triggerKey) {
 			if (key.indexOf(triggerKey) === 0 || triggerKey.indexOf(key) === 0) {
 				var oldVal = self.get(triggerKey, $FALSE),
-					newVal = self.get(triggerKey, $TRUE); //updata cacheData
-
-				if (oldVal !== newVal || newVal instanceof Object || self.get(triggerKey, $NULL)/*updata cacheData*/ instanceof Proto) {
+					newVal = self.get(triggerKey, $TRUE),
+					observerObj = self.get(triggerKey, $.noop); //updata cacheData
+				if (oldVal !== newVal || newVal instanceof Object || (observerObj /*updata cacheData*/ instanceof Proto && oldVal !== observerObj.get())) {
 					$.p(updateKeys, triggerKey);
 				}
 			}
