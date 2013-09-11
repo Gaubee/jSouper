@@ -104,7 +104,7 @@ DataManager.prototype = {
 				}
 			} else if (refresh === $FALSE) {
 				result = cacheData[key];
-			} else if (refresh === $TRUE || (result = cacheData[key]) === $UNDEFINED || key.indexOf(".length") === key.length-7/*get array length*/ ) {
+			} else if (refresh === $TRUE || (result = cacheData[key]) === $UNDEFINED ) {// || key.indexOf(".length") === key.length-7/*get array length*/
 				if ((result = cacheData[key] = self.getNC(formateKey)) === $UNDEFINED && $T && self._parentDataManager) {
 					//顺序很重要
 					return self._parentDataManager.get(formateKey);
@@ -154,7 +154,8 @@ DataManager.prototype = {
 				self._database = baseData;
 				break;
 		}
-		$.ftE(self._triggerKeys, function(triggerKey) {
+		$.p(self._triggerKeys,key);
+		$.ftE($.un(self._triggerKeys), function(triggerKey) {
 			if (key.indexOf(triggerKey) === 0 || triggerKey.indexOf(key) === 0) {
 				var oldVal = self.get(triggerKey, $FALSE),
 					newVal = self.get(triggerKey, $TRUE),

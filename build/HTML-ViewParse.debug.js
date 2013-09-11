@@ -282,7 +282,7 @@ DataManager.prototype = {
 				}
 			} else if (refresh === $FALSE) {
 				result = cacheData[key];
-			} else if (refresh === $TRUE || (result = cacheData[key]) === $UNDEFINED || key.indexOf(".length") === key.length-7/*get array length*/ ) {
+			} else if (refresh === $TRUE || (result = cacheData[key]) === $UNDEFINED ) {// || key.indexOf(".length") === key.length-7/*get array length*/
 				if ((result = cacheData[key] = self.getNC(formateKey)) === $UNDEFINED && $T && self._parentDataManager) {
 					//顺序很重要
 					return self._parentDataManager.get(formateKey);
@@ -332,7 +332,8 @@ DataManager.prototype = {
 				self._database = baseData;
 				break;
 		}
-		$.ftE(self._triggerKeys, function(triggerKey) {
+		$.p(self._triggerKeys,key);
+		$.ftE($.un(self._triggerKeys), function(triggerKey) {
 			if (key.indexOf(triggerKey) === 0 || triggerKey.indexOf(key) === 0) {
 				var oldVal = self.get(triggerKey, $FALSE),
 					newVal = self.get(triggerKey, $TRUE),
@@ -494,7 +495,6 @@ var relyOn = Controller.relyOn = {
 					$.ftE(leaderArr, function(leaderObj) {
 						var dm = leaderObj.dm,
 							key = leaderObj.key;
-						// dm._touchOffSubset(key);
 						chain_update_rely(dm.id, dm._set(key,dm._get(key,$.noop).get()))//get->$NULL will miss selfKey while set//递归:链式更新
 					})
 				}
@@ -505,6 +505,7 @@ var relyOn = Controller.relyOn = {
 			setStack = relyOn.setStack,
 			updataKeys = _set.apply(self, $.s(arguments));
 		chain_update_rely(self.id, updataKeys) //开始链式更新
+		return updataKeys;
 	};
 	proto.get = function(key) {
 		var self = this,
@@ -1612,6 +1613,7 @@ V.rt("#if", function(handle, index, parentHandle) {
 				parentNode = NodeList_of_ViewInstance[parentHandleId].currentNode,
 				markHandleId = comment_else_id, //if(true)
 				markHandle; //default is undefined --> insertBefore === appendChild
+			
 			if (NodeList_of_ViewInstance[this.handleId]._data !== conditionVal || triggerBy) {
 				NodeList_of_ViewInstance[this.handleId]._data = conditionVal;
 				if (!conditionVal) {

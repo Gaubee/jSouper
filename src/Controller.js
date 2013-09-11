@@ -87,7 +87,6 @@ var relyOn = Controller.relyOn = {
 					$.ftE(leaderArr, function(leaderObj) {
 						var dm = leaderObj.dm,
 							key = leaderObj.key;
-						// dm._touchOffSubset(key);
 						chain_update_rely(dm.id, dm._set(key,dm._get(key,$.noop).get()))//get->$NULL will miss selfKey while set//递归:链式更新
 					})
 				}
@@ -98,6 +97,7 @@ var relyOn = Controller.relyOn = {
 			setStack = relyOn.setStack,
 			updataKeys = _set.apply(self, $.s(arguments));
 		chain_update_rely(self.id, updataKeys) //开始链式更新
+		return updataKeys;
 	};
 	proto.get = function(key) {
 		var self = this,

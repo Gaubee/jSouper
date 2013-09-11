@@ -41,6 +41,7 @@ V.rt("#if", function(handle, index, parentHandle) {
 				parentNode = NodeList_of_ViewInstance[parentHandleId].currentNode,
 				markHandleId = comment_else_id, //if(true)
 				markHandle; //default is undefined --> insertBefore === appendChild
+			
 			if (NodeList_of_ViewInstance[this.handleId]._data !== conditionVal || triggerBy) {
 				NodeList_of_ViewInstance[this.handleId]._data = conditionVal;
 				if (!conditionVal) {
