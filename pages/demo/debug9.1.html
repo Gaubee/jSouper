@@ -48,6 +48,11 @@
 				}
 			})
 		});
+	var center = VP.modules["controller_other"]({
+		name:VP.Proto(function(){
+			return model.get("fullName");
+		})
+	}).append(document.body);
 	var view = VP.modules["controller"](model).append(document.body);
 
 	var center = VP.modules["controller_other"]({

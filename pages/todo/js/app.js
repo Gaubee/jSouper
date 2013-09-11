@@ -2,100 +2,136 @@
 	'use strict';
 	// Your starting point. Enjoy the ride!
 	var doc = document,
-		b = doc.body,
+		body = doc.body,
+		VModel = ViewParser,
 		$ = function(id) {
 			return doc.getElementById(id);
-		},
-		__proto__ = function() {},
-		min = function(proto) {
-			__proto__.prototype = proto;
-			return new __proto__;
-		},
-		database = {
-			newTodo: "",
-			todoList: [],
-			type: [{
-				name: "All",
-				index: 0,
-				status: true
-			}, {
-				name: "Active",
-				index: 1,
-				status: false
-			}, {
-				name: "Completed",
-				index: 2,
-				status: false
-			}],
-			currentTypeName: "All",
-			todo_active_length: 0,
-			todo_completed_length: 0
-		}, //Model
-		todo = ViewParser.parse($("todo").innerHTML)(database), //View
-		controller = {
-			new: function(value) { //redraw
-				if (event.which === 13 && value.replace(/\s/g, "")) {
-					var todoList = database.todoList,
-						index = todoList.length;
-					todoList[index] = {
-						todo: todo.get("newTodo"),
-						index: index,
-						completed: false
-					}
-					todo.set("newTodo", "");
-					this.redraw();
-				} else {
-					todo.set("newTodo", value);
-				}
-			},
-			del: function(index) { //redraw
-				var todoList = database.todoList;
-				todoList.splice(index, 1);
-				for (var i = index, item; item = todoList[i]; i += 1) {
-					item.index = item.index - 1;
-				}
-				this.redraw();
-			},
-			changStatus: function(index) { //redraw
-				var todoList = database["todoList"],
-					completed = todoList[index].completed = !todoList[index].completed;
-				this.redraw();
-			},
-			get: function(key) {
-				return todo.get(key);
-			},
-			setType: function(index) {
-				var type = database.type;
-				for (var i = 0, item; item = type[i]; i += 1) {
-					item.status = false;
-				}
-				database.currentTypeName = type[index].name;
-				type[index].status = true;
-				todo.set("type", type);
-				todo.set("currentTypeName", database.currentTypeName);
-			},
-			redraw: function() {
-				var todo_completed_length = 0,
-					todo_active_length = 0,
-					todoList = database.todoList;
-
-				for (var i = 0, item; item = todoList[i]; i += 1) {
-					if (item.completed) {
-						todo_completed_length += 1;
+		};
+	global.todoModel = DataManager({
+		newTodo: "",
+		todoList: [],
+		filterTodoList: VModel.Proto(function() {
+			var todoList = todoModel.get("todoList"),
+				status = todoModel.get("status");
+			if (status !== 'All') {
+				var complatedTodoList = [],
+					activeTodoList = [];
+				for (var i = 0, todo; todo = todoList[i]; i += 1) {
+					if (todo.completed.valueOf()) {
+						complatedTodoList.push(todo)
 					} else {
-						todo_active_length += 1;
+						activeTodoList.push(todo)
 					}
 				}
-				console.log(todo_completed_length,todo_active_length)
-
-				todo.set("todo_completed_length", todo_completed_length);
-				todo.set("todo_active_length", todo_active_length);
-				todo.set("todoList", todoList);
+				if (status === "Completed") {
+					return complatedTodoList;
+				} else {
+					return activeTodoList;
+				}
 			}
-		} //Controller
-		;
-	todo.append(b);
-	global.controller = controller;
-	global.database = database;
-	global.todo = todo;
+			return todoList;
+		}),
+		completed_length: VModel.Proto(function() {
+			var todoList = todoModel.get("todoList"),
+				completed_length = 0;
+			for (var i = 0, len = todoList.length; i < len; i += 1) {
+				if (todoList[i].completed.valueOf()) {
+					completed_length += 1;
+				}
+			}
+			return completed_length;
+		}),
+		active_length: VModel.Proto(function() {
+			var todoList = todoModel.get("todoList"),
+				active_length = 0;
+			for (var i = 0, len = todoList.length; i < len; i += 1) {
+				if (!todoList[i].completed.valueOf()) {
+					active_length += 1;
+				}
+			}
+			return active_length;
+		}),
+		event: {
+			push: function(e, vm) {
+				if (e.which === 13) {
+					var newTodo = todoModel.get("newTodo").trim();
+					if (newTodo) {
+						var todoList = todoModel.get("todoList");
+						todoList.unshift({
+							todo: newTodo,
+							completed: false/*VModel.Proto({
+								get: function() {
+									return this.value;
+								},
+								set: function(newValue) {
+									todoModel.set("todoList",todoModel.get("todoList"))
+									return newValue;
+								}
+							})*/
+						});
+						todoModel.set("todoList", todoList);
+						todoModel.set("newTodo", "");
+					}
+				}
+			},
+			changeStatus: function(e, vm) {
+				var index = this.parentNode.getAttribute("data-index"),
+					key = "todoList."+index+".completed";
+					// todoList = todoModel.get("todoList"),
+					// status;
+					todoModel.set(key,!todoModel.get(key))
+				// for (var i = 0, todo; todo = todoList[i]; i += 1) {
+				// 	if (todo.index === index) {
+				// 		todo.completed = !todo.completed;
+				// 	}
+				// }
+				// todoModel.set("todoList", todoList);
+			},
+			remove: function(e, vm) {
+				var index = this.parentNode.getAttribute("data-index"),
+					todoList = todoModel.get("filterTodoList");
+				console.log(index)
+				todoList.splice(index, 1);
+				todoModel.set("filterTodoList", todoList);
+			},
+			clearCompleted: function(e, vm) {
+				var todoList = todoModel.get("todoList"),
+					activeList = [];
+				for (var i = 0, len = todoList.length; i < len; i += 1) {
+					if (!todoList[i].completed.valueOf()) {
+						activeList.push(todoList[i])
+					}
+				}
+				todoModel.set("todoList", activeList);
+			},
+			filter: function(e, vm) {
+				var status = this.getAttribute("data-status");
+				todoModel.set("status", status);
+				todoModel.get("status");
+			},
+			All: {
+				select: function(e, vm) {
+					var todoList = todoModel.get("todoList"),
+						selectAll = !todoModel.get("selectAll");
+					for (var i = 0, todo; todo = todoList[i]; i += 1) {
+						todo.completed = selectAll
+					}
+					todoModel.set("todoList", todoList);
+					todoModel.set("selectAll", selectAll);
+				}
+			}
+		},
+		status: "All",
+		selectAll: VModel.Proto(function() {
+			var todoList = todoModel.get("todoList");
+			for (var i = 0, todo; todo = todoList[i]; i += 1) {
+				// console.log(todo.completed)
+				if (!todo.completed) {
+					return false;
+				}
+			}
+			return true;
+		})
+	}),
+	global.view = VModel.parse($("todo").innerHTML)(todoModel).append(body)
 })(window);
