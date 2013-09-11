@@ -192,6 +192,7 @@ function DataManager(baseData, viewInstance) {
 	self._cacheData = {};
 	self._viewInstances = []; //to touch off
 	self._parentDataManager = $UNDEFINED; //to get data
+	self._prefix = ""; //冒泡时需要加上的前缀
 	self._subsetDataManagers = []; //to touch off
 	self._triggerKeys = [];
 	viewInstance && self.collect(viewInstance);
@@ -207,6 +208,22 @@ DataManager.config = {
 	"$P": "$PARENT",
 	"$A": "$TOP"
 }
+DataManager.handleKey = function(key) {
+	var $T = DataManager.config.$T,
+		$P = DataManager.config.$P,
+		$A = DataManager.config.$A;
+	while ([key.indexOf($T), key.indexOf($P), key.indexOf($A)].join("") !== "-1-1-1") { //===-1
+		if (!key.indexOf($T)) {
+			key = key.substring($T.length)
+		} else if (!key.indexOf($P)) {
+			key = key.substring($P.length)
+		} else if (!key.indexOf($A)) {
+			key = key.substring($A.length)
+		}
+	}
+	return key;
+};
+// var direction = []; //direction.length>0 , from the parent node.
 DataManager.prototype = {
 	getS: function(key) {
 		var arrKey = key.split("."),
@@ -282,7 +299,7 @@ DataManager.prototype = {
 				}
 			} else if (refresh === $FALSE) {
 				result = cacheData[key];
-			} else if (refresh === $TRUE || (result = cacheData[key]) === $UNDEFINED ) {// || key.indexOf(".length") === key.length-7/*get array length*/
+			} else if (refresh === $TRUE || (result = cacheData[key]) === $UNDEFINED) { // || key.indexOf(".length") === key.length-7/*get array length*/
 				if ((result = cacheData[key] = self.getNC(formateKey)) === $UNDEFINED && $T && self._parentDataManager) {
 					//顺序很重要
 					return self._parentDataManager.get(formateKey);
@@ -332,7 +349,7 @@ DataManager.prototype = {
 				self._database = baseData;
 				break;
 		}
-		$.p(self._triggerKeys,key);
+		$.p(self._triggerKeys, key);
 		$.ftE($.un(self._triggerKeys), function(triggerKey) {
 			if (key.indexOf(triggerKey) === 0 || triggerKey.indexOf(key) === 0) {
 				var oldVal = self.get(triggerKey, $FALSE),
@@ -348,23 +365,35 @@ DataManager.prototype = {
 		});
 		return updateKeys;
 	},
-	_touchOffSubset: function(key) {
-		$.fE(this._subsetDataManagers, function(dm) {
+	_touchOffSubset: function(key) { //TODO:each下的事件无法冒泡到顶级
+		var self = this;
+		$.fE(self._subsetDataManagers, function(dm) {
+			// direction.push($UNDEFINED);
 			dm._touchOffSubset(key);
+			// direction.pop();
 		});
 		var i, vis, vi, len;
-		for (i = 0, vis = this._viewInstances, vi, len = vis.length; vi = vis[i];) {
+		for (i = 0, vis = self._viewInstances, vi, len = vis.length; vi = vis[i];) {
 			if (vi._isAttr) {
 				$.fE(vi._triggers, function(key) {
 					vi.touchOff(key);
 				});
 				vi._isAttr.setAttribute(vi, vi.dataManager);
-				vi.dataManager.remove(vi);
+				vi.dataManager.remove(vi); //?
 			} else {
 				vi.touchOff(key);
 				i += 1;
 			}
 		}
+		// if (self._parentDataManager && !direction.length) { //call parent
+		// 	// var handlKey = DataManager.handleKey(key);
+		// 	// if (self._prefix) {
+		// 	// 	handlKey = self._prefix + (handlKey ? "." + handlKey : "");
+		// 	// }
+		// 	// handlKey && (handlKey = "$THIS");
+		// 	var handlKey = self._prefix || "$THIS";
+		// 	self._parentDataManager.set(handlKey, self._parentDataManager.get(handlKey));
+		// }
 	},
 	_collectTriKey: function(vi) {
 		var dm = this,
@@ -382,7 +411,7 @@ DataManager.prototype = {
 		}
 		return dm;
 	},
-	subset: function(viewInstance, baseData) {
+	subset: function(viewInstance, prefix) {
 		var dm = this,
 			subsetDataManager = viewInstance.dataManager; //DataManager(baseData, viewInstance);
 		subsetDataManager._parentDataManager = dm;
@@ -391,8 +420,8 @@ DataManager.prototype = {
 			viewInstance.reDraw();
 			dm._collectTriKey(viewInstance);
 		}
-		if (arguments.length > 1) {
-			subsetDataManager.set(baseData);
+		if (prefix) {
+			subsetDataManager._prefix = prefix;
 		}
 		$.p(this._subsetDataManagers, subsetDataManager);
 		return subsetDataManager; //subset(vi).set(basedata);},
@@ -1454,7 +1483,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 						index:index,
 						brotherVI:arrViewInstances
 					}
-					dataManager.subset(viewInstance); //reset arrViewInstance's dataManager
+					dataManager.subset(viewInstance,arrDataHandleKey);//+"."+index //reset arrViewInstance's dataManager
 					inserNew = $TRUE;
 				} else {
 					viewInstance.set(eachItemData);
@@ -1469,7 +1498,6 @@ V.rt("#each", function(handle, index, parentHandle) {
 					viewInstance.insert(comment_endeach_node)
 				}
 			});
-
 			$.fE(arrViewInstances, function(eachItemHandle) {
 				eachItemHandle.remove();
 			}, divideIndex);
@@ -1708,6 +1736,7 @@ V.rt("||",V.rt("or", function(handle, index, parentHandle) {
 		bubble: $TRUE,
 		event: function(NodeList_of_ViewInstance, dataManager) {
 			var handleId = this.handleId;
+			NodeList_of_ViewInstance[handleId]._data = $FALSE;
 			$.fE(childHandlesId, function(child_handle_id) { //Compared to other values
 				if (NodeList_of_ViewInstance[child_handle_id]._data) {
 					NodeList_of_ViewInstance[handleId]._data = $TRUE;
@@ -1866,13 +1895,18 @@ V.ra(function(attrKey) {
  */
 var _formCache = {},
 	_formKey = {
-		"input": function(node) {
+		"input": function(node) {//需阻止默认事件，比如Checked需要被重写，否则数据没有变动而Checked因用户点击而变动，没有达到V->M的数据同步
 			var result = "value";
-			// switch (node.type.toLowerCase()) {
-			// 	case "button":
-			// 	case "reset":
-			// 	case "submit":
-			// }
+			switch (node.type.toLowerCase()) {
+				case "checkbox":
+					return {
+						attributeName:"checked",
+						eventNames:["change"]
+					}
+				case "button":
+				case "reset":
+				case "submit":
+			}
 			return {
 				attributeName: "value",
 				eventNames: _isIE ? ["propertychange", "keyup"] : ["input", "keyup"]

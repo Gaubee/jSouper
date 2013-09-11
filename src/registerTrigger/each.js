@@ -28,7 +28,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 						index:index,
 						brotherVI:arrViewInstances
 					}
-					dataManager.subset(viewInstance); //reset arrViewInstance's dataManager
+					dataManager.subset(viewInstance,arrDataHandleKey);//+"."+index //reset arrViewInstance's dataManager
 					inserNew = $TRUE;
 				} else {
 					viewInstance.set(eachItemData);
@@ -43,7 +43,6 @@ V.rt("#each", function(handle, index, parentHandle) {
 					viewInstance.insert(comment_endeach_node)
 				}
 			});
-
 			$.fE(arrViewInstances, function(eachItemHandle) {
 				eachItemHandle.remove();
 			}, divideIndex);

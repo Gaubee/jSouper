@@ -11,6 +11,7 @@ V.rt("||",V.rt("or", function(handle, index, parentHandle) {
 		bubble: $TRUE,
 		event: function(NodeList_of_ViewInstance, dataManager) {
 			var handleId = this.handleId;
+			NodeList_of_ViewInstance[handleId]._data = $FALSE;
 			$.fE(childHandlesId, function(child_handle_id) { //Compared to other values
 				if (NodeList_of_ViewInstance[child_handle_id]._data) {
 					NodeList_of_ViewInstance[handleId]._data = $TRUE;

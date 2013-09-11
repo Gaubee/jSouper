@@ -3,13 +3,18 @@
  */
 var _formCache = {},
 	_formKey = {
-		"input": function(node) {
+		"input": function(node) {//需阻止默认事件，比如Checked需要被重写，否则数据没有变动而Checked因用户点击而变动，没有达到V->M的数据同步
 			var result = "value";
-			// switch (node.type.toLowerCase()) {
-			// 	case "button":
-			// 	case "reset":
-			// 	case "submit":
-			// }
+			switch (node.type.toLowerCase()) {
+				case "checkbox":
+					return {
+						attributeName:"checked",
+						eventNames:["change"]
+					}
+				case "button":
+				case "reset":
+				case "submit":
+			}
 			return {
 				attributeName: "value",
 				eventNames: _isIE ? ["propertychange", "keyup"] : ["input", "keyup"]
