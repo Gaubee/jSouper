@@ -16,7 +16,7 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	self.NodeList = NodeList;
 	var el = self.topNode(); //NodeList[handleNodeTree.id].currentNode;
 	self._packingBag = el;
-	self._id = $.uid();
+	V._instances[self._id = $.uid()] = self;
 	self._open = $.D.C(self._id + " _open");
 	self._close = $.D.C(self._id + " _close");
 	self._canRemoveAble = $FALSE;
@@ -26,10 +26,17 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	$.D.iB(el, self._open, el.childNodes[0]);
 	$.D.ap(el, self._close);
 	(self._triggers = [])._ = {};
+	// self._triggers._u = [];//undefined key,update every time
 	self.TEMP = {};
 
+	if (data instanceof DataManager) {
+		dataManager = data.collect(self);
+	} else {
+		dataManager = DataManager(data, self);
+	}
+
 	$.fI(triggerTable, function(tiggerCollection, key) {
-		if (key && key !== ".") {
+		if (".".indexOf(key)!==0) {
 			$.p(self._triggers, key);
 		}
 		self._triggers._[key] = tiggerCollection;
@@ -37,18 +44,12 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	$.fE(triggerTable["."], function(tiggerFun) { //const value
 		tiggerFun.event(NodeList, dataManager);
 	});
-	if (data instanceof DataManager) {
-		dataManager = data.collect(self);
-	} else {
-		dataManager = DataManager(data, self);
-	}
-	V._instances[self._id] = self;
 	self.reDraw();
 };
 
 function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {
 	var self = this;
-	$.fE(tiggerCollection, function(trigger) {
+	$.fE(tiggerCollection, function(trigger) { //TODO:测试参数长度和效率的平衡点，减少参数传递的数量
 		trigger.event(NodeList, dataManager, eventTrigger, self._isAttr, self._id);
 		if (trigger.bubble) {
 			var parentNode = NodeList[trigger.handleId].parentNode;
@@ -165,6 +166,7 @@ ViewInstance.prototype = {
 		var self = this,
 			dataManager = self.dataManager,
 			NodeList = self.NodeList;
+		// key!==$UNDEFINED?_bubbleTrigger.call(self, self._triggers._[key], NodeList, dataManager):_bubbleTrigger.call(self, self._triggers._u, NodeList, dataManager)
 		_bubbleTrigger.call(self, self._triggers._[key], NodeList, dataManager)
 	}
 };

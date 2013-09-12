@@ -93,30 +93,25 @@ draggable
 		if (_matchRule.test(attrValue)) {
 
 			var attrViewInstance = (V.attrModules[handle.id + attrKey] = V.parse(attrValue))(),
-				_shadowDIV = $.D.cl(shadowDIV); //parserNode
+				_shadowDIV = $.D.cl(shadowDIV), //parserNode
+				_attributeHandle = _AttributeHandle(attrKey);
 			attrViewInstance.append(_shadowDIV);
 			attrViewInstance._isAttr = {
-				key: attrKey,
-				/*
-			When the trigger of be injecte in the View instance being fired (triggered by the ViewInstance instance), 
-			it will storage the property value where the currentNode,// and the dataManager, 
-			and lock it into attrViewInstance, 
-			waiting for updates the attribute.*/ //(so the trigger of be injecte in mush be unshift)
-				currentNode: $NULL,
-				_attributeHandle: _AttributeHandle(attrKey),
-				setAttribute: function(viewInstance, dataManager) { /*viewInstance ,dataManager*/
-					var self = this,
-						currentNode = self.currentNode;
-					if (currentNode) {
-						self._attributeHandle(attrKey, currentNode, _shadowDIV, viewInstance, dataManager, handle, triggerTable);
-					}
-				}
-			};
+				key: attrKey
+			}
 
 			var attrTrigger = {
-				event: function(NodeList, dataManager, eventTrigger) {
-					attrViewInstance._isAttr.currentNode = NodeList[handle.id].currentNode;
-					dataManager.collect(attrViewInstance);
+				event: function(NodeList, dataManager, eventTrigger, isAttr, viewInstance_ID) { /*NodeList, dataManager, eventTrigger, self._isAttr, self._id*/
+					var currentNode = NodeList[handle.id].currentNode,
+						viewInstance = V._instances[viewInstance_ID];
+					if (currentNode) {
+						dataManager.collect(attrViewInstance);
+						$.fE(attrViewInstance._triggers, function(key) {
+							attrViewInstance.touchOff(key);
+						});
+						_attributeHandle(attrKey, currentNode, _shadowDIV, viewInstance, dataManager, handle, triggerTable);
+						dataManager.remove(attrViewInstance); //?
+					}
 				}
 			}
 			$.fE(attrViewInstance._triggers, function(key) {

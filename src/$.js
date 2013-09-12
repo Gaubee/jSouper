@@ -1,7 +1,11 @@
 'use strict';
 var global = global || this;
-var shadowBody = document.createElement("body"),
-	shadowDIV = document.createElement("div"),
+var doc = document,
+	shadowBody = doc.createElement("body"),
+	shadowDIV = doc.createElement("div"),
+	_placeholder = function(prefix) {
+		return prefix || "@" + Math.random().toString(36).substring(2)
+	},
 	$NULL = null,
 	$UNDEFINED,
 	$TRUE = !$UNDEFINED,
@@ -9,8 +13,8 @@ var shadowBody = document.createElement("body"),
 	$ = {
 		id: 9,
 		uidAvator: Math.random().toString(36).substring(2),
-		hashCode:function(obj,prefix){
-			var uidAvator = (prefix||"")+$.uidAvator,
+		hashCode: function(obj, prefix) {
+			var uidAvator = (prefix || "") + $.uidAvator,
 				codeID;
 			if (!(codeID = obj[uidAvator])) {
 				codeID = obj[uidAvator] = $.uid();
@@ -18,7 +22,7 @@ var shadowBody = document.createElement("body"),
 			return codeID;
 		},
 		noop: function noop() {},
-		valueOf:function(Obj){
+		valueOf: function(Obj) {
 			if (Obj) {
 				Obj = Obj.valueOf()
 			}
@@ -38,15 +42,15 @@ var shadowBody = document.createElement("body"),
 			while (ws.test(str.charAt(--i)));
 			return str.slice(0, i + 1);
 		},
-		p: function(arr, item) {//push
+		p: function(arr, item) { //push
 			var len = arr.length
 			arr[len] = item;
 			return len;
 		},
-		us: function(arr, item) {//unshift
+		us: function(arr, item) { //unshift
 			arr.splice(0, 0, item);
 		},
-		un: function(array) {//unique
+		un: function(array) { //unique
 			var a = array;
 			for (var i = 0; i < a.length; ++i) {
 				for (var j = i + 1; j < a.length; ++j) {
@@ -56,7 +60,7 @@ var shadowBody = document.createElement("body"),
 			}
 			return a;
 		},
-		s: function(likeArr) {//slice
+		s: function(likeArr) { //slice
 			var array;
 			if (typeof likeArr === "string") {
 				return likeArr.split('');
@@ -118,7 +122,7 @@ var shadowBody = document.createElement("body"),
 			_Object_create_noop.prototype = proto;
 			return new _Object_create_noop;
 		},
-		D: {//DOM
+		D: { //DOM
 			C: function(info) { //Comment
 				return document.createComment(info)
 			},

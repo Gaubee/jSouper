@@ -2,8 +2,12 @@
 
 'use strict';
 var global = global || this;
-var shadowBody = document.createElement("body"),
-	shadowDIV = document.createElement("div"),
+var doc = document,
+	shadowBody = doc.createElement("body"),
+	shadowDIV = doc.createElement("div"),
+	_placeholder = function(prefix) {
+		return prefix || "@" + Math.random().toString(36).substring(2)
+	},
 	$NULL = null,
 	$UNDEFINED,
 	$TRUE = !$UNDEFINED,
@@ -11,8 +15,8 @@ var shadowBody = document.createElement("body"),
 	$ = {
 		id: 9,
 		uidAvator: Math.random().toString(36).substring(2),
-		hashCode:function(obj,prefix){
-			var uidAvator = (prefix||"")+$.uidAvator,
+		hashCode: function(obj, prefix) {
+			var uidAvator = (prefix || "") + $.uidAvator,
 				codeID;
 			if (!(codeID = obj[uidAvator])) {
 				codeID = obj[uidAvator] = $.uid();
@@ -20,7 +24,7 @@ var shadowBody = document.createElement("body"),
 			return codeID;
 		},
 		noop: function noop() {},
-		valueOf:function(Obj){
+		valueOf: function(Obj) {
 			if (Obj) {
 				Obj = Obj.valueOf()
 			}
@@ -40,15 +44,15 @@ var shadowBody = document.createElement("body"),
 			while (ws.test(str.charAt(--i)));
 			return str.slice(0, i + 1);
 		},
-		p: function(arr, item) {//push
+		p: function(arr, item) { //push
 			var len = arr.length
 			arr[len] = item;
 			return len;
 		},
-		us: function(arr, item) {//unshift
+		us: function(arr, item) { //unshift
 			arr.splice(0, 0, item);
 		},
-		un: function(array) {//unique
+		un: function(array) { //unique
 			var a = array;
 			for (var i = 0; i < a.length; ++i) {
 				for (var j = i + 1; j < a.length; ++j) {
@@ -58,7 +62,7 @@ var shadowBody = document.createElement("body"),
 			}
 			return a;
 		},
-		s: function(likeArr) {//slice
+		s: function(likeArr) { //slice
 			var array;
 			if (typeof likeArr === "string") {
 				return likeArr.split('');
@@ -120,7 +124,7 @@ var shadowBody = document.createElement("body"),
 			_Object_create_noop.prototype = proto;
 			return new _Object_create_noop;
 		},
-		D: {//DOM
+		D: { //DOM
 			C: function(info) { //Comment
 				return document.createComment(info)
 			},
@@ -352,26 +356,10 @@ DataManager.prototype = {
 		});
 		var i, vis, vi, len;
 		for (i = 0, vis = self._viewInstances, vi, len = vis.length; vi = vis[i];) {
-			if (vi._isAttr) {
-				$.fE(vi._triggers, function(key) {
-					vi.touchOff(key);
-				});
-				vi._isAttr.setAttribute(vi, vi.dataManager);
-				vi.dataManager.remove(vi); //?
-			} else {
-				vi.touchOff(key);
-				i += 1;
-			}
+			vi.touchOff(key);
+			i += 1;
 		}
-		// if (self._parentDataManager && !direction.length) { //call parent
-		// 	// var handlKey = DataManager.handleKey(key);
-		// 	// if (self._prefix) {
-		// 	// 	handlKey = self._prefix + (handlKey ? "." + handlKey : "");
-		// 	// }
-		// 	// handlKey && (handlKey = "$THIS");
-		// 	var handlKey = self._prefix || "$THIS";
-		// 	self._parentDataManager.set(handlKey, self._parentDataManager.get(handlKey));
-		// }
+
 	},
 	_collectTriKey: function(vi) {
 		var dm = this,
@@ -640,30 +628,25 @@ draggable
 		if (_matchRule.test(attrValue)) {
 
 			var attrViewInstance = (V.attrModules[handle.id + attrKey] = V.parse(attrValue))(),
-				_shadowDIV = $.D.cl(shadowDIV); //parserNode
+				_shadowDIV = $.D.cl(shadowDIV), //parserNode
+				_attributeHandle = _AttributeHandle(attrKey);
 			attrViewInstance.append(_shadowDIV);
 			attrViewInstance._isAttr = {
-				key: attrKey,
-				/*
-			When the trigger of be injecte in the View instance being fired (triggered by the ViewInstance instance), 
-			it will storage the property value where the currentNode,// and the dataManager, 
-			and lock it into attrViewInstance, 
-			waiting for updates the attribute.*/ //(so the trigger of be injecte in mush be unshift)
-				currentNode: $NULL,
-				_attributeHandle: _AttributeHandle(attrKey),
-				setAttribute: function(viewInstance, dataManager) { /*viewInstance ,dataManager*/
-					var self = this,
-						currentNode = self.currentNode;
-					if (currentNode) {
-						self._attributeHandle(attrKey, currentNode, _shadowDIV, viewInstance, dataManager, handle, triggerTable);
-					}
-				}
-			};
+				key: attrKey
+			}
 
 			var attrTrigger = {
-				event: function(NodeList, dataManager, eventTrigger) {
-					attrViewInstance._isAttr.currentNode = NodeList[handle.id].currentNode;
-					dataManager.collect(attrViewInstance);
+				event: function(NodeList, dataManager, eventTrigger, isAttr, viewInstance_ID) { /*NodeList, dataManager, eventTrigger, self._isAttr, self._id*/
+					var currentNode = NodeList[handle.id].currentNode,
+						viewInstance = V._instances[viewInstance_ID];
+					if (currentNode) {
+						dataManager.collect(attrViewInstance);
+						$.fE(attrViewInstance._triggers, function(key) {
+							attrViewInstance.touchOff(key);
+						});
+						_attributeHandle(attrKey, currentNode, _shadowDIV, viewInstance, dataManager, handle, triggerTable);
+						dataManager.remove(attrViewInstance); //?
+					}
 				}
 			}
 			$.fE(attrViewInstance._triggers, function(key) {
@@ -724,7 +707,7 @@ function _buildTrigger(handleNodeTree, dataManager) {
 			if (triggerFactory) {
 				var trigger = triggerFactory(handle, index, parentHandle);
 				if (trigger) {
-					var key = trigger.key = trigger.key || "";
+					var key = trigger.key || (trigger.key = "");
 					trigger.handleId = trigger.handleId || handle.id;
 					//unshift list and In order to achieve the trigger can be simulated bubble
 					$.us((triggerTable[key]||(triggerTable[key]  =  [])), trigger); //Storage as key -> array
@@ -790,7 +773,7 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	self.NodeList = NodeList;
 	var el = self.topNode(); //NodeList[handleNodeTree.id].currentNode;
 	self._packingBag = el;
-	self._id = $.uid();
+	V._instances[self._id = $.uid()] = self;
 	self._open = $.D.C(self._id + " _open");
 	self._close = $.D.C(self._id + " _close");
 	self._canRemoveAble = $FALSE;
@@ -800,10 +783,17 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	$.D.iB(el, self._open, el.childNodes[0]);
 	$.D.ap(el, self._close);
 	(self._triggers = [])._ = {};
+	// self._triggers._u = [];//undefined key,update every time
 	self.TEMP = {};
 
+	if (data instanceof DataManager) {
+		dataManager = data.collect(self);
+	} else {
+		dataManager = DataManager(data, self);
+	}
+
 	$.fI(triggerTable, function(tiggerCollection, key) {
-		if (key && key !== ".") {
+		if (".".indexOf(key)!==0) {
 			$.p(self._triggers, key);
 		}
 		self._triggers._[key] = tiggerCollection;
@@ -811,18 +801,12 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	$.fE(triggerTable["."], function(tiggerFun) { //const value
 		tiggerFun.event(NodeList, dataManager);
 	});
-	if (data instanceof DataManager) {
-		dataManager = data.collect(self);
-	} else {
-		dataManager = DataManager(data, self);
-	}
-	V._instances[self._id] = self;
 	self.reDraw();
 };
 
 function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {
 	var self = this;
-	$.fE(tiggerCollection, function(trigger) {
+	$.fE(tiggerCollection, function(trigger) { //TODO:测试参数长度和效率的平衡点，减少参数传递的数量
 		trigger.event(NodeList, dataManager, eventTrigger, self._isAttr, self._id);
 		if (trigger.bubble) {
 			var parentNode = NodeList[trigger.handleId].parentNode;
@@ -939,6 +923,7 @@ ViewInstance.prototype = {
 		var self = this,
 			dataManager = self.dataManager,
 			NodeList = self.NodeList;
+		// key!==$UNDEFINED?_bubbleTrigger.call(self, self._triggers._[key], NodeList, dataManager):_bubbleTrigger.call(self, self._triggers._u, NodeList, dataManager)
 		_bubbleTrigger.call(self, self._triggers._[key], NodeList, dataManager)
 	}
 };
@@ -1056,10 +1041,7 @@ CommentHandle.prototype = Handle("comment", {
 /*
  * parse rule
  */
-var _placeholder = function() {
-	return "@" + Math.random().toString(36).substring(2)
-},
-	placeholder = {
+var placeholder = {
 		"<": "&lt;",
 		">": "&gt;",
 		"{": _placeholder(),
@@ -1172,11 +1154,10 @@ var _placeholder = function() {
 		withModules: {},
 		_instances: {},
 
-		Proto:Proto,
-		Model:DataManager
+		Proto: DynamicComputed/*Proto*/,
+		Model: DataManager
 	};
 global.ViewParser = $.c(V);
-
 V.rh("HTML", function(handle, index, parentHandle) {
 	var endCommentHandle = _commentPlaceholder(handle, parentHandle, "html_end_" + handle.id),
 		startCommentHandle = _commentPlaceholder(handle, parentHandle, "html_start_" + handle.id);
@@ -1258,8 +1239,12 @@ V.rh("#each", function(handle, index, parentHandle) {
 	_commentPlaceholder(handle, parentHandle);
 });
 V.rh("/each", placeholderHandle);
-V.rh("", function(handle, index, parentHandle) {
+// var _noParameters = _placeholder();
+V.rh("$TOP",V.rh("$THIS",V.rh("$PARENT",V.rh("", function(handle, index, parentHandle) {
 	var textHandle = handle.childNodes[0];
+	if (!textHandle) {//{()} 无参数
+		textHandle = $.p(handle.childNodes,new TextHandle(doc.createTextNode("")))
+	}
 	if (parentHandle.type !== "handle") { //is textNode
 		if (textHandle) {
 			$.iA(parentHandle.childNodes, handle, textHandle);
@@ -1268,7 +1253,7 @@ V.rh("", function(handle, index, parentHandle) {
 			return $.noop;
 		}
 	}// else {console.log("ignore:",textHandle) if (textHandle) {textHandle.ignore = $TRUE; } }  //==> ignore Node's childNodes will be ignored too.
-});
+}))));
 V.rh("@", function(handle, index, parentHandle) {
 	var textHandle = handle.childNodes[0];
 	var i = 0;
@@ -1407,6 +1392,15 @@ V.rt("HTML", function(handle, index, parentHandle) {
 	}
 	return trigger;
 });
+function _handle_on_event_string(isAttr, data) {
+	if (isAttr) {
+		//IE浏览器直接编译，故不需要转义，其他浏览器需要以字符串绑定到属性中。需要转义，否则会出现引号冲突
+		if (isAttr.key.indexOf("on") === 0 && !_isIE) { //W#C标准，onXXX属性事件使用string，消除差异
+			data = String(data).replace(/"/g, '\\"').replace(/'/g, "\\'");
+		}
+	}
+	return data;
+}
 V.rt("&&", V.rt("and", function(handle, index, parentHandle) {
 	var childHandlesId = [],
 		trigger;
@@ -1557,6 +1551,84 @@ V.rt("", function(handle, index, parentHandle) {
 				}
 			};
 		}
+	}
+	return trigger;
+});
+V.rt("$THIS", function(handle, index, parentHandle) {
+	var textHandle = handle.childNodes[0],
+		textHandleId = textHandle.id,
+		key = textHandle.node.data || DataManager.config.$THIS,
+		trigger;
+
+	if (parentHandle.type !== "handle") { //as textHandle
+		trigger = {
+			key: key,
+			event: function(NodeList_of_ViewInstance, dataManager, triggerBy, isAttr, vi) { //call by ViewInstance's Node
+				var data = dataManager.getThis(key),
+					currentNode = NodeList_of_ViewInstance[textHandleId].currentNode;
+				currentNode.data = _handle_on_event_string(isAttr, data);
+			}
+		}
+	} else { //as stringHandle
+		trigger = {
+			key: key,
+			bubble: $TRUE,
+			event: function(NodeList_of_ViewInstance, dataManager) {
+				NodeList_of_ViewInstance[this.handleId]._data = dataManager.getThis(key);
+			}
+		};
+	}
+	return trigger;
+});
+V.rt("$PARENT", function(handle, index, parentHandle) {
+	var textHandle = handle.childNodes[0],
+		textHandleId = textHandle.id,
+		key = textHandle.node.data || DataManager.config.$PARENT,
+		trigger;
+
+	if (parentHandle.type !== "handle") { //as textHandle
+		trigger = {
+			key: key,
+			event: function(NodeList_of_ViewInstance, dataManager, triggerBy, isAttr, vi) { //call by ViewInstance's Node
+				var data = dataManager.getParent(key),
+					currentNode = NodeList_of_ViewInstance[textHandleId].currentNode;
+				currentNode.data = _handle_on_event_string(isAttr, data);
+			}
+		}
+	} else { //as stringHandle
+		trigger = {
+			key: key,
+			bubble: $TRUE,
+			event: function(NodeList_of_ViewInstance, dataManager) {
+				NodeList_of_ViewInstance[this.handleId]._data = dataManager.getParent(key);
+			}
+		};
+	}
+	return trigger;
+});
+V.rt("$TOP", function(handle, index, parentHandle) {
+	var textHandle = handle.childNodes[0],
+		textHandleId = textHandle.id,
+		key = textHandle.node.data || DataManager.config.$TOP,
+		trigger;
+
+	if (parentHandle.type !== "handle") { //as textHandle
+		trigger = {
+			key: key,
+			event: function(NodeList_of_ViewInstance, dataManager, triggerBy, isAttr, vi) { //call by ViewInstance's Node
+				var data = dataManager.getTop(key),
+					currentNode = NodeList_of_ViewInstance[textHandleId].currentNode;
+				currentNode.data = _handle_on_event_string(isAttr, data);
+			}
+		}
+	} else { //as stringHandle
+		trigger = {
+			key: key,
+			bubble: $TRUE,
+			event: function(NodeList_of_ViewInstance, dataManager) {
+				NodeList_of_ViewInstance[this.handleId]._data = dataManager.getTop(key);
+			}
+		};
 	}
 	return trigger;
 });

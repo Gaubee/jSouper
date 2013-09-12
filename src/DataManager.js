@@ -196,26 +196,10 @@ DataManager.prototype = {
 		});
 		var i, vis, vi, len;
 		for (i = 0, vis = self._viewInstances, vi, len = vis.length; vi = vis[i];) {
-			if (vi._isAttr) {
-				$.fE(vi._triggers, function(key) {
-					vi.touchOff(key);
-				});
-				vi._isAttr.setAttribute(vi, vi.dataManager);
-				vi.dataManager.remove(vi); //?
-			} else {
-				vi.touchOff(key);
-				i += 1;
-			}
+			vi.touchOff(key);
+			i += 1;
 		}
-		// if (self._parentDataManager && !direction.length) { //call parent
-		// 	// var handlKey = DataManager.handleKey(key);
-		// 	// if (self._prefix) {
-		// 	// 	handlKey = self._prefix + (handlKey ? "." + handlKey : "");
-		// 	// }
-		// 	// handlKey && (handlKey = "$THIS");
-		// 	var handlKey = self._prefix || "$THIS";
-		// 	self._parentDataManager.set(handlKey, self._parentDataManager.get(handlKey));
-		// }
+
 	},
 	_collectTriKey: function(vi) {
 		var dm = this,

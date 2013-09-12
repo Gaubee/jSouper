@@ -1,10 +1,7 @@
 /*
  * parse rule
  */
-var _placeholder = function() {
-	return "@" + Math.random().toString(36).substring(2)
-},
-	placeholder = {
+var placeholder = {
 		"<": "&lt;",
 		">": "&gt;",
 		"{": _placeholder(),
@@ -117,7 +114,7 @@ var _placeholder = function() {
 		withModules: {},
 		_instances: {},
 
-		Proto:Proto,
-		Model:DataManager
+		Proto: DynamicComputed/*Proto*/,
+		Model: DataManager
 	};
 global.ViewParser = $.c(V);

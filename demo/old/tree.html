@@ -12,11 +12,11 @@
 <body>
 	<ul id="tree"></ul>
 	<script type="text/template" name="tree">
-		{#each( {$THIS(list)} )}
+		{#each( {($THIS.list)} )}
 			{#if( {==({(type)}{('folder')})} )}
-				<li><p> {#if( {$THIS(title)} )} {(title)} {#else()} {$TOP(title)} {/if()}</p></li>
+				<li><p> {#if( {($THIS.title)} )} {(title)} {#else()} {($TOP.title)} {/if()}</p></li>
 				<ul>
-					{>( {('tree')} {$THIS()} )}
+					{>( {('tree')} {($THIS)} )}
 				</ul>
 			{#else()}
 				<li><a attr-href="#{(title)}">{(title)}{#if( {(type)})}.{(type)}{/if()}</a></li>
@@ -42,6 +42,6 @@
 				type:"js"
 			}]/**/
 		});
-	// ViewParser.modules["tree"](model).append(document.getElementById('tree'));
+	ViewParser.modules["tree"](model).append(document.getElementById('tree'));
 
 </script>

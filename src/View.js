@@ -50,7 +50,7 @@ function _buildTrigger(handleNodeTree, dataManager) {
 			if (triggerFactory) {
 				var trigger = triggerFactory(handle, index, parentHandle);
 				if (trigger) {
-					var key = trigger.key = trigger.key || "";
+					var key = trigger.key || (trigger.key = "");
 					trigger.handleId = trigger.handleId || handle.id;
 					//unshift list and In order to achieve the trigger can be simulated bubble
 					$.us((triggerTable[key]||(triggerTable[key]  =  [])), trigger); //Storage as key -> array
