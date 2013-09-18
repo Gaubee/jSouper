@@ -1240,7 +1240,7 @@ V.rh("#each", function(handle, index, parentHandle) {
 });
 V.rh("/each", placeholderHandle);
 // var _noParameters = _placeholder();
-V.rh("$TOP",V.rh("$THIS",V.rh("$PARENT",V.rh("", function(handle, index, parentHandle) {
+V.rh("", function(handle, index, parentHandle) {
 	var textHandle = handle.childNodes[0];
 	if (!textHandle) {//{()} 无参数
 		textHandle = $.p(handle.childNodes,new TextHandle(doc.createTextNode("")))
@@ -1253,7 +1253,7 @@ V.rh("$TOP",V.rh("$THIS",V.rh("$PARENT",V.rh("", function(handle, index, parentH
 			return $.noop;
 		}
 	}// else {console.log("ignore:",textHandle) if (textHandle) {textHandle.ignore = $TRUE; } }  //==> ignore Node's childNodes will be ignored too.
-}))));
+});
 V.rh("@", function(handle, index, parentHandle) {
 	var textHandle = handle.childNodes[0];
 	var i = 0;
@@ -1551,84 +1551,6 @@ V.rt("", function(handle, index, parentHandle) {
 				}
 			};
 		}
-	}
-	return trigger;
-});
-V.rt("$THIS", function(handle, index, parentHandle) {
-	var textHandle = handle.childNodes[0],
-		textHandleId = textHandle.id,
-		key = textHandle.node.data || DataManager.config.$THIS,
-		trigger;
-
-	if (parentHandle.type !== "handle") { //as textHandle
-		trigger = {
-			key: key,
-			event: function(NodeList_of_ViewInstance, dataManager, triggerBy, isAttr, vi) { //call by ViewInstance's Node
-				var data = dataManager.getThis(key),
-					currentNode = NodeList_of_ViewInstance[textHandleId].currentNode;
-				currentNode.data = _handle_on_event_string(isAttr, data);
-			}
-		}
-	} else { //as stringHandle
-		trigger = {
-			key: key,
-			bubble: $TRUE,
-			event: function(NodeList_of_ViewInstance, dataManager) {
-				NodeList_of_ViewInstance[this.handleId]._data = dataManager.getThis(key);
-			}
-		};
-	}
-	return trigger;
-});
-V.rt("$PARENT", function(handle, index, parentHandle) {
-	var textHandle = handle.childNodes[0],
-		textHandleId = textHandle.id,
-		key = textHandle.node.data || DataManager.config.$PARENT,
-		trigger;
-
-	if (parentHandle.type !== "handle") { //as textHandle
-		trigger = {
-			key: key,
-			event: function(NodeList_of_ViewInstance, dataManager, triggerBy, isAttr, vi) { //call by ViewInstance's Node
-				var data = dataManager.getParent(key),
-					currentNode = NodeList_of_ViewInstance[textHandleId].currentNode;
-				currentNode.data = _handle_on_event_string(isAttr, data);
-			}
-		}
-	} else { //as stringHandle
-		trigger = {
-			key: key,
-			bubble: $TRUE,
-			event: function(NodeList_of_ViewInstance, dataManager) {
-				NodeList_of_ViewInstance[this.handleId]._data = dataManager.getParent(key);
-			}
-		};
-	}
-	return trigger;
-});
-V.rt("$TOP", function(handle, index, parentHandle) {
-	var textHandle = handle.childNodes[0],
-		textHandleId = textHandle.id,
-		key = textHandle.node.data || DataManager.config.$TOP,
-		trigger;
-
-	if (parentHandle.type !== "handle") { //as textHandle
-		trigger = {
-			key: key,
-			event: function(NodeList_of_ViewInstance, dataManager, triggerBy, isAttr, vi) { //call by ViewInstance's Node
-				var data = dataManager.getTop(key),
-					currentNode = NodeList_of_ViewInstance[textHandleId].currentNode;
-				currentNode.data = _handle_on_event_string(isAttr, data);
-			}
-		}
-	} else { //as stringHandle
-		trigger = {
-			key: key,
-			bubble: $TRUE,
-			event: function(NodeList_of_ViewInstance, dataManager) {
-				NodeList_of_ViewInstance[this.handleId]._data = dataManager.getTop(key);
-			}
-		};
 	}
 	return trigger;
 });

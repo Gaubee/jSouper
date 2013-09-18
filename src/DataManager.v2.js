@@ -62,10 +62,11 @@ DataManager.__formateKey; //最后一次get处理完成的formateKey
 DataManager.__id; //最后一次get的id对象
 DataManager._instances = {};
 DataManager.config = {
-	"$THIS": _placeholder(),
-	"$PARENT": _placeholder(),
-	"$TOP": _placeholder()
-}
+	"THIS": "$THIS", // _placeholder(),
+	"PARENT": "$PARENT", // _placeholder(),
+	"TOP": "$TOP" // _placeholder()
+};
+var DMconfig = DataManager.config;
 
 function _DM_set(key, nObj) {
 	//mix:将对象和当前数据集合混合
@@ -77,16 +78,20 @@ function _DM_set(key, nObj) {
 		lastKey,
 		cache_top_n_obj,
 		cache_n_Obj,
-		updateKeys = [DataManager.config.$THIS];
+		updateKeys = [];
 	switch (arguments.length) {
 		case 0:
 			break;
 		case 1:
 			nObj = key;
-			self._database = _mix(self._database, nObj);
+			if (self._database!==nObj||nObj instanceof Object) {
+				self._database = _mix(self._database, nObj);
+				$.p(updateKeys,DMconfig.THIS);
+			};
 			key = "";
 			break;
 		default:
+			$.p(updateKeys,DMconfig.THIS);
 			var sObj = self.get(key)
 			if (sObj instanceof DynamicComputed) { //是计算属性
 				sObj.set(nObj);
@@ -127,7 +132,8 @@ function _DM_set(key, nObj) {
 function _DM_bubbleSet(key, nObj) {
 	var self = this,
 		parentDataManager = self._parentDataManager,
-		prefix = self._prefix
+		prefix = self._prefix,
+		result;
 	if (parentDataManager) { //确保数据更新到最顶层的数据源中。
 		switch (arguments.length) {
 			case 0:
@@ -138,7 +144,8 @@ function _DM_bubbleSet(key, nObj) {
 				} else {
 					parentDataManager.set(nObj)
 				}
-				return _DM_set.call(self, parentDataManager.get(prefix));
+				result = _DM_set.call(self, parentDataManager.get(prefix));
+				break;
 			default:
 				if (prefix) {
 					prefix = prefix + "." + key;
@@ -146,16 +153,17 @@ function _DM_bubbleSet(key, nObj) {
 					prefix = key;
 				}
 				parentDataManager.set(prefix, nObj)
-				return _DM_set.call(self, key, parentDataManager.get(prefix));
+				result = _DM_set.call(self, key, parentDataManager.get(prefix));
 		}
 		//从顶层获取完整数据
 	}
+	return result;
 };
 // var direction = []; //direction.length>0 , from the parent node.
 DataManager.prototype = {
 	getParent: function(key) { //一般用于with或者layout
 		//不加前缀对父级索取，不冒泡
-		return this._parentDataManager.get(key);
+		return this._parentDataManager && this._parentDataManager.get(key);
 	},
 	getThis: function(key) {
 		// var self = this,
@@ -163,39 +171,27 @@ DataManager.prototype = {
 		// key = prefix + key;
 		// //加前缀，不冒泡
 		var self = this,
-			triggerKeys = self._triggerKeys,
-			cacheData = self._cacheData,
+			cacheData_bak = self._cacheData,
+			parentDataManager_bak = self._parentDataManager,
 			result;
-		if (!triggerKeys._[key]) {
-			result = self._update(key);
-		} else {
-			result = cacheData[key];
-		}
+		self._cacheData = {};
+		self._parentDataManager = $UNDEFINED;
+		result = self.get(key);
+		self._cacheData = cacheData_bak;
+		self._parentDataManager = parentDataManager_bak;
 		return result;
 	},
 	getTop: function(key) {
 		//冒泡到最顶层的父级
 		var self = this,
 			cacheData = self._cacheData,
-			parentDM;
+			parentDM = self._parentDataManager;
 		while (parentDM = self._parentDataManager) {
 			self = parentDM;
 		}
 		return self.get(key);
 	},
-	_getSource: function(key) {
-		var self = this,
-			cacheData = self._cacheData,
-			arrKey = key.split("."),
-			result = self._database;
-		if (result != $UNDEFINED && result !== $FALSE) { //null|undefined|false
-			do {
-				result = result[arrKey.splice(0, 1)];
-			} while (result !== $UNDEFINED && arrKey.length);
-		}
-		return result;
-	},
-	get: function(key) {
+	getNomarl: function(key) {
 		//冒泡获取，不更新缓存
 		var self = this,
 			triggerKeys = self._triggerKeys,
@@ -215,6 +211,40 @@ DataManager.prototype = {
 				if (result === $UNDEFINED && (parentDM = self._parentDataManager)) { //冒泡
 					return parentDM.get(key);
 				}
+		}
+		return result;
+	},
+	_getSource: function(key) {
+		var self = this,
+			cacheData = self._cacheData,
+			arrKey = key.split("."),
+			result = self._database;
+		if (result != $UNDEFINED && result !== $FALSE) { //null|undefined|false
+			do {
+				result = result[arrKey.splice(0, 1)];
+			} while (result !== $UNDEFINED && arrKey.length);
+		}
+		return result;
+	},
+	get: function(key) { //getRoute
+		var self = this,
+			THIS = DMconfig.THIS,
+			PARENT = DMconfig.PARENT,
+			TOP = DMconfig.TOP,
+			result;
+		if (key == $UNDEFINED) {
+			result = self.getNomarl();
+		} else if (!key.indexOf(THIS)) {
+			key = key.replace(THIS, "");
+			result = key ? self.getThis(key.substring(1)) : self.getThis();
+		} else if (!key.indexOf(PARENT)) {
+			key = key.replace(PARENT, "");
+			result = key ? self.getParent(key.substring(1)) : self.getParent();
+		} else if (!key.indexOf(TOP)) {
+			key = key.replace(TOP, "");
+			result = key ? self.getTop(key.substring(1)) : self.getTop();
+		} else {
+			result = key ? self.getNomarl(key) : self.getNomarl();
 		}
 		return result;
 	},
@@ -247,7 +277,7 @@ DataManager.prototype = {
 			triggerKeys = self._triggerKeys,
 			subsetDataManager = vi.dataManager;
 		$.ftE(vi._triggers, function(triggerKey) {
-			if (!triggerKeys._[triggerKey]/*$.iO(triggerKeys, triggerKey) === -1*/) { //更新触发所需的关键字
+			if (!triggerKeys._[triggerKey] /*$.iO(triggerKeys, triggerKey) === -1*/ ) { //更新触发所需的关键字
 				subsetDataManager._update(triggerKey);
 			}
 		});
