@@ -29,12 +29,6 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	// self._triggers._u = [];//undefined key,update every time
 	self.TEMP = {};
 
-	if (data instanceof DataManager) {
-		dataManager = data.collect(self);
-	} else {
-		dataManager = DataManager(data, self);
-	}
-
 	$.fI(triggerTable, function(tiggerCollection, key) {
 		if (".".indexOf(key)!==0) {
 			$.p(self._triggers, key);
@@ -44,6 +38,13 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	$.fE(triggerTable["."], function(tiggerFun) { //const value
 		tiggerFun.event(NodeList, dataManager);
 	});
+	
+	if (data instanceof DataManager) {
+		dataManager = data.collect(self);
+	} else {
+		dataManager = DataManager(data, self);
+	}
+
 	self.reDraw();
 };
 

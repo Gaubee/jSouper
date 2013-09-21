@@ -18,7 +18,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 				comment_endeach_node = NodeList_of_ViewInstance[comment_endeach_id].currentNode;
 
 			(arrViewInstances = allArrViewInstances[id] || (allArrViewInstances[id] = [])).len = divideIndex;
-
+			// console.log(data)
 			$.fE(data, function(eachItemData, index) {
 
 				var viewInstance = arrViewInstances[index];
@@ -28,7 +28,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 						index:index,
 						brotherVI:arrViewInstances
 					}
-					dataManager.subset(viewInstance,arrDataHandleKey);//+"."+index //reset arrViewInstance's dataManager
+					dataManager.subset(viewInstance,arrDataHandleKey+"."+index);//+"."+index //reset arrViewInstance's dataManager
 					inserNew = $TRUE;
 				} else {
 					viewInstance.set(eachItemData);

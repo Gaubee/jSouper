@@ -250,12 +250,9 @@ DataManager.config = {
 };
 var DMconfig = DataManager.config;
 
-function _DM_set(key, nObj) {
-	//mix:将对象和当前数据集合混合
-	//计算属性需要特殊操作
-	//set会引发计算属性链式更新，所以triggerKeys的正常收集仅仅发生在set内部
+function _nomarl_set_mix_data(key, nObj) {
+	//mix Data 合并数据
 	var self = this,
-		triggerKeys = self._triggerKeys,
 		keys,
 		lastKey,
 		cache_top_n_obj,
@@ -266,14 +263,14 @@ function _DM_set(key, nObj) {
 			break;
 		case 1:
 			nObj = key;
-			if (self._database!==nObj||nObj instanceof Object) {
+			if (self._database !== nObj || nObj instanceof Object) {
 				self._database = _mix(self._database, nObj);
-				$.p(updateKeys,DMconfig.THIS);
+				$.p(updateKeys, DMconfig.THIS);
 			};
 			key = "";
 			break;
 		default:
-			$.p(updateKeys,DMconfig.THIS);
+			$.p(updateKeys, DMconfig.THIS);
 			var sObj = self.get(key)
 			if (sObj instanceof DynamicComputed) { //是计算属性
 				sObj.set(nObj);
@@ -288,6 +285,14 @@ function _DM_set(key, nObj) {
 				self._database = _mix(self._database, cache_top_n_obj);
 			}
 	}
+	return _nomarl_set_key_touch(self, key, updateKeys);
+};
+
+function _nomarl_set_key_touch(self, key, updateKeys) {
+	//根据依赖的关键字集合更新关键字数据缓存，
+	//通过对比更新前后，
+	//得知改动的关键字
+	var triggerKeys = self._triggerKeys;
 	$.ftE($.un(triggerKeys), function(triggerKey) {
 		if (key.indexOf(triggerKey) === 0 || triggerKey.indexOf(key) === 0) {
 			var oldVal = self.get(triggerKey),
@@ -304,29 +309,38 @@ function _DM_set(key, nObj) {
 		self._update(key); //更新缓存
 		$.p(updateKeys, key);
 	}
-	$.ftE(updateKeys, function(triggerKey) {
+	$.ftE(updateKeys, function(triggerKey) { //触发关键字更新
 		self._touchOffSubset(triggerKey)
 	});
 	chain_update_rely(self.id, updateKeys) //开始链式更新
 	return updateKeys;
 };
 
-function _DM_bubbleSet(key, nObj) {
+
+
+function _bubble_set(key, nObj) {
+	//获取飞机对象
+	//拼接父对象的相对关键字
 	var self = this,
 		parentDataManager = self._parentDataManager,
 		prefix = self._prefix,
-		result;
-	if (parentDataManager) { //确保数据更新到最顶层的数据源中。
-		switch (arguments.length) {
+		result,
+		subsetIndex,
+		updateKeys = [DMconfig.THIS];
+	if (parentDataManager) {
+		//移除父级对象对自身的触发更新，采用手动更新，以获取updateKeys
+		subsetIndex = $.iO(parentDataManager._subsetDataManagers, self);
+		parentDataManager._subsetDataManagers.splice(subsetIndex, 1);
+		switch (arguments.length) { //确保数据更新到最顶层的数据源中。
 			case 0:
 				break;
 			case 1:
 				if (prefix) {
 					parentDataManager.set(prefix, nObj)
 				} else {
-					parentDataManager.set(nObj)
+					parentDataManager.set(nObj).length === 0 && updateKeys.pop();
 				}
-				result = _DM_set.call(self, parentDataManager.get(prefix));
+				key = "";
 				break;
 			default:
 				if (prefix) {
@@ -335,9 +349,11 @@ function _DM_bubbleSet(key, nObj) {
 					prefix = key;
 				}
 				parentDataManager.set(prefix, nObj)
-				result = _DM_set.call(self, key, parentDataManager.get(prefix));
 		}
 		//从顶层获取完整数据
+		result = _nomarl_set_key_touch(self, key, updateKeys); //set中没有$THIS、$PARENT、$TOP等概念，所以key可以直接使用
+		//回位
+		parentDataManager._subsetDataManagers.splice(subsetIndex, 0, self);
 	}
 	return result;
 };
@@ -345,7 +361,8 @@ function _DM_bubbleSet(key, nObj) {
 DataManager.prototype = {
 	getParent: function(key) { //一般用于with或者layout
 		//不加前缀对父级索取，不冒泡
-		return this._parentDataManager && this._parentDataManager.get(key);
+		var parentDM = this._parentDataManager;
+		return parentDM && (key === $UNDEFINED ? this._parentDataManager._database /*get()*/ : this._parentDataManager.get(key));
 	},
 	getThis: function(key) {
 		// var self = this,
@@ -358,7 +375,7 @@ DataManager.prototype = {
 			result;
 		self._cacheData = {};
 		self._parentDataManager = $UNDEFINED;
-		result = self.get(key);
+		result = key === $UNDEFINED ? self._database /*get()*/ : self._update(key);
 		self._cacheData = cacheData_bak;
 		self._parentDataManager = parentDataManager_bak;
 		return result;
@@ -366,12 +383,11 @@ DataManager.prototype = {
 	getTop: function(key) {
 		//冒泡到最顶层的父级
 		var self = this,
-			cacheData = self._cacheData,
 			parentDM = self._parentDataManager;
 		while (parentDM = self._parentDataManager) {
 			self = parentDM;
 		}
-		return self.get(key);
+		return key === $UNDEFINED ? self._database /*get()*/ : self.get(key);
 	},
 	getNomarl: function(key) {
 		//冒泡获取，不更新缓存
@@ -386,9 +402,13 @@ DataManager.prototype = {
 				break;
 			default:
 				if (!triggerKeys._[key] /*$.iO(triggerKeys, key) === -1*/ ) { //这里不将key存入triggerKeys中，set时自然会存在
-					result = self._update(key); //这种情况不存在缓存机制，因为set的自动更新triggerKeys无法更新到这些key，所以保持使用动态获取
+					//这种情况不存在缓存机制，因为set的自动更新triggerKeys无法更新到这些key，所以保持使用动态获取
+					var cacheData_bak = self._cacheData;
+					self._cacheData = {};
+					result = self._update(key);
+					self._cacheData = cacheData_bak;
 				} else {
-					result = cacheData[key];
+					result = key in cacheData ? cacheData[key] : self._update(key)
 				}
 				if (result === $UNDEFINED && (parentDM = self._parentDataManager)) { //冒泡
 					return parentDM.get(key);
@@ -430,7 +450,53 @@ DataManager.prototype = {
 		}
 		return result;
 	},
-	set: _DM_set,
+	setParent: function() {
+		var parentDM = this._parentDataManager;
+		return (parentDM && parentDM.set.apply(parentDM, $.s(arguments))) || [];
+	},
+	setThis: function() {
+		return _nomarl_set_mix_data.apply(this, $.s(arguments))
+	},
+	setTop: function() {
+		//冒泡到最顶层的父级
+		var self = this,
+			parentDM = self._parentDataManager;
+		while (parentDM = self._parentDataManager) {
+			self = parentDM;
+		}
+		return self.set.apply(self, $.s(arguments));
+	},
+	setNomarl: _nomarl_set_mix_data,
+	set: function(key, nObj) { //setRoute
+		var self = this,
+			THIS = DMconfig.THIS,
+			PARENT = DMconfig.PARENT,
+			TOP = DMconfig.TOP,
+			result;
+		switch (arguments.length) {
+			case 0:
+				break;
+			case 1:
+				result = self.setNomarl(key);
+
+				break;
+			default:
+				if (!key.indexOf(THIS)) {
+					key = key.replace(THIS, "");
+					result = self.setThis(key.substring(1), nObj);
+				} else if (!key.indexOf(PARENT)) {
+					key = key.replace(PARENT, "");
+					result = self.setParent(key.substring(1), nObj);
+				} else if (!key.indexOf(TOP)) {
+					key = key.replace(TOP, "");
+					result = self.setTop(key.substring(1), nObj);
+				} else {
+					result = self.setNomarl(key, nObj);
+				}
+		}
+		console.log(result)
+		return result;
+	},
 	_update: function(key) { //将更新缓存从get中剥离
 		//更新发生于：1、set	2、collect viewInstance	3、get set_triggerKeys(set操作中需更新的key)中不存在的key（由于2，所以不会影响到vi的更新）
 		var self = this,
@@ -447,31 +513,36 @@ DataManager.prototype = {
 	_touchOffSubset: function(key) { //TODO:each下的事件无法冒泡到顶级
 		var self = this;
 		$.fE(self._subsetDataManagers, function(dm) {
-			dm._touchOffSubset(key);
+			if (!dm._prefix||dm._prefix.indexOf(key) !== 0) {
+				dm._touchOffSubset(key);
+			}
 		});
 		var i, vis, vi, len;
+		// console.log(self._viewInstances)
 		$.ftE(self._viewInstances, function(vi) { //属性更新器彻底游离，由属性触发器托管
-			vi.touchOff(key);
+			vi && vi.touchOff(key);
 		});
 	},
-	_collectTriKey: function(vi) {
+	_collectTriKey: function(viewInstance) {
 		var self = this,
 			triggerKeys = self._triggerKeys,
-			subsetDataManager = vi.dataManager;
-		$.ftE(vi._triggers, function(triggerKey) {
-			if (!triggerKeys._[triggerKey] /*$.iO(triggerKeys, triggerKey) === -1*/ ) { //更新触发所需的关键字
+			subsetDataManager = viewInstance.dataManager;
+		$.ftE(viewInstance._triggers, function(triggerKey) {
+			if (!triggerKeys._[triggerKey]) { //对新的关键字进行初次数据采集
 				subsetDataManager._update(triggerKey);
 			}
 		});
-		//完全更新完毕后，更新页面，以免函数运作获取到正确数据
-		$.ftE(vi._triggers, function(triggerKey) {
-			vi.touchOff(triggerKey);
+		$.ftE(viewInstance._triggers, function(triggerKey) {
+			//完全更新完毕后，更新页面，以免函数运作获取到正确数据
+			viewInstance.touchOff(triggerKey);
 		});
-		$.ftE(vi._triggers, function(triggerKey) { //将关键字收集到set操作中需更新的key
-			// triggerKeys.push.apply(triggerKeys, vi._triggers);
-			$.p(triggerKeys, triggerKey);
-			triggerKeys._[triggerKey] = $TRUE;
+		$.ftE(viewInstance._triggers, function(triggerKey) { //将关键字收集到set操作中需更新的key
+			if (!triggerKeys._[triggerKey]) {
+				$.p(triggerKeys, triggerKey);
+				triggerKeys._[triggerKey] = $TRUE;
+			}
 		});
+		// _nomarl_set_key_touch(subsetDataManager, "", [DMconfig.THIS])
 	},
 	collect: function(viewInstance) {
 		var self = this;
@@ -487,20 +558,14 @@ DataManager.prototype = {
 		var self = this,
 			subsetDataManager = viewInstance.dataManager; //DataManager(baseData, viewInstance);
 		subsetDataManager._parentDataManager = self;
-		subsetDataManager.set = _DM_bubbleSet;
-		if (arguments.length > 1) {
-			subsetDataManager._database = _mix(subsetDataManager._database, self.get(String(prefix)));
-		} else {
-			subsetDataManager._database = self._database;
-		}
-		if (viewInstance instanceof ViewInstance) {
-			viewInstance.dataManager = subsetDataManager;
-			// viewInstance.reDraw();
-			self._collectTriKey(viewInstance);
-		}
+		subsetDataManager.setNormarl = _bubble_set;
+		self._collectTriKey(viewInstance);
 		if (prefix) {
 			subsetDataManager._prefix = prefix;
 		}
+		//更新数据源
+		subsetDataManager._database = _mix(subsetDataManager._database, (arguments.length > 1 ? self.get(prefix) : self._database));
+
 		$.p(this._subsetDataManagers, subsetDataManager);
 		return subsetDataManager; //subset(vi).set(basedata);},
 	},
@@ -838,12 +903,6 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	// self._triggers._u = [];//undefined key,update every time
 	self.TEMP = {};
 
-	if (data instanceof DataManager) {
-		dataManager = data.collect(self);
-	} else {
-		dataManager = DataManager(data, self);
-	}
-
 	$.fI(triggerTable, function(tiggerCollection, key) {
 		if (".".indexOf(key)!==0) {
 			$.p(self._triggers, key);
@@ -853,6 +912,13 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	$.fE(triggerTable["."], function(tiggerFun) { //const value
 		tiggerFun.event(NodeList, dataManager);
 	});
+	
+	if (data instanceof DataManager) {
+		dataManager = data.collect(self);
+	} else {
+		dataManager = DataManager(data, self);
+	}
+
 	self.reDraw();
 };
 
@@ -1497,7 +1563,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 				comment_endeach_node = NodeList_of_ViewInstance[comment_endeach_id].currentNode;
 
 			(arrViewInstances = allArrViewInstances[id] || (allArrViewInstances[id] = [])).len = divideIndex;
-
+			// console.log(data)
 			$.fE(data, function(eachItemData, index) {
 
 				var viewInstance = arrViewInstances[index];
@@ -1507,7 +1573,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 						index:index,
 						brotherVI:arrViewInstances
 					}
-					dataManager.subset(viewInstance,arrDataHandleKey);//+"."+index //reset arrViewInstance's dataManager
+					dataManager.subset(viewInstance,arrDataHandleKey+"."+index);//+"."+index //reset arrViewInstance's dataManager
 					inserNew = $TRUE;
 				} else {
 					viewInstance.set(eachItemData);

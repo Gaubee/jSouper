@@ -786,12 +786,6 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	// self._triggers._u = [];//undefined key,update every time
 	self.TEMP = {};
 
-	if (data instanceof DataManager) {
-		dataManager = data.collect(self);
-	} else {
-		dataManager = DataManager(data, self);
-	}
-
 	$.fI(triggerTable, function(tiggerCollection, key) {
 		if (".".indexOf(key)!==0) {
 			$.p(self._triggers, key);
@@ -801,6 +795,13 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	$.fE(triggerTable["."], function(tiggerFun) { //const value
 		tiggerFun.event(NodeList, dataManager);
 	});
+	
+	if (data instanceof DataManager) {
+		dataManager = data.collect(self);
+	} else {
+		dataManager = DataManager(data, self);
+	}
+
 	self.reDraw();
 };
 
@@ -1445,7 +1446,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 				comment_endeach_node = NodeList_of_ViewInstance[comment_endeach_id].currentNode;
 
 			(arrViewInstances = allArrViewInstances[id] || (allArrViewInstances[id] = [])).len = divideIndex;
-
+			// console.log(data)
 			$.fE(data, function(eachItemData, index) {
 
 				var viewInstance = arrViewInstances[index];
@@ -1455,7 +1456,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 						index:index,
 						brotherVI:arrViewInstances
 					}
-					dataManager.subset(viewInstance,arrDataHandleKey);//+"."+index //reset arrViewInstance's dataManager
+					dataManager.subset(viewInstance,arrDataHandleKey+"."+index);//+"."+index //reset arrViewInstance's dataManager
 					inserNew = $TRUE;
 				} else {
 					viewInstance.set(eachItemData);

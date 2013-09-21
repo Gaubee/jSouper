@@ -11,15 +11,16 @@
 </head>
 <body>
 	<ul id="tree"></ul>
+
 	<script type="text/template" name="tree">
 		{#each( {($THIS.list)} )}
-			{#if( {==({(type)}{('folder')})} )}
+			{#if( {==({($THIS.type)}{('folder')})} )}
 				<li><p> {#if( {($THIS.title)} )} {(title)} {#else()} {($TOP.title)} {/if()}</p></li>
 				<ul>
 					{>( {('tree')} {($THIS)} )}
 				</ul>
 			{#else()}
-				<li><a attr-href="#{(title)}">{(title)}{#if( {(type)})}.{(type)}{/if()}</a></li>
+				<li><a attr-href="#{(title)}">{#if( {($THIS.title)} )} {(title)} {#else()} {($TOP.title)} {/if()} {#if( {($THIS.type)})}.{(type)}{/if()}</a></li>
 			{/if()}
 		{/each()}
 	</script>
@@ -36,12 +37,23 @@
 				list:[{
 					title:"child",
 					type:"css"
-				},{}]
+				},{
+					title:"child_tree"
+				},{},{},{},{},{}]
 			},{
 				title:"jser",
-				type:"js"
+				type:"jsp"
 			}]
 		});
 	ViewParser.modules["tree"](model).append(document.getElementById('tree'));
-
+	setTimeout(function(){
+		// model.set("list.1.type","folder")
+		// model.set("list.1.list",[{},{}])
+	},1000);
+	// setTimeout(function(){
+	// 	model.set("list.0.list.length",1);
+	// },2000);
+	// setTimeout(function(){
+	// 	model.set("list.0.list.2",{title:"Gaubee",type:"folder",list:[{}]})
+	// },3000);
 </script>
