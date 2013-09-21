@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>HTML-ViewParse</title>
+	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js">
+	{
+		appName:"aboutMe",
+		data:{
+			name:"Gaubee",
+			boy:true,
+			age:20
+		}
+	}
+	</script>
+</head>
+<body id="aboutMe">
+	<h2>my name is {{name}}</h2>
+	<span>I'm a 
+	{{#if boy}}boy{{#else}}girl{{/if}}
+	 and now is {{age}} years old.</span>
+</body>
+
+</html>
+
+<script type="text/javascript">
+	ViewParser.scans();
+
+</script>
