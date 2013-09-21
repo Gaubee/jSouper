@@ -158,6 +158,49 @@ var doc = document,
 			}
 		}
 	};
+
+function ArraySet() {
+	var self = this;
+	self.keys = [];
+	self.store = {};
+	return self;
+};
+ArraySet.prototype = {
+	set: function(key, value) {
+		var self = this,
+			keys = self.keys,
+			store = self.store;
+		key = String(key);
+		if (!(key in store)) {
+			$.p(keys, key)
+		}
+		store[key] = value;
+	},
+	get: function(key) {
+		return this.store[key];
+	},
+	fE: function(callback) { //forEach ==> forIn
+		var self = this,
+			store = self.store,
+			value;
+		return $.fE(self.keys, function(key, index) {
+			value = store[key];
+			return callback(value, key, store);
+		})
+	},
+	// ftE: function(callback) { //fastEach ==> forIn
+	// 	var self = this,
+	// 		store = self.store,
+	// 		value;
+	// 	return $.ftE(self.keys, function(key, index) {
+	// 		value = store[key];
+	// 		callback(value, key);
+	// 	})
+	// },
+	has: function(key) {
+		return key in this.store;
+	}
+};
 /*
  * DataManager constructor
  */
@@ -1043,13 +1086,13 @@ CommentHandle.prototype = Handle("comment", {
  * parse rule
  */
 var placeholder = {
-		"<": "&lt;",
-		">": "&gt;",
-		"{": _placeholder(),
-		"(": _placeholder(),
-		")": _placeholder(),
-		"}": _placeholder()
-	},
+	"<": "&lt;",
+	">": "&gt;",
+	"{": _placeholder(),
+	"(": _placeholder(),
+	")": _placeholder(),
+	"}": _placeholder()
+},
 	_Rg = function(s) {
 		return RegExp(s, "g")
 	},
@@ -1120,13 +1163,6 @@ var placeholder = {
 			var result = new ElementHandle(_shadowBody);
 			return View(result);
 		},
-		scans: function() {
-			$.fE(document.getElementsByTagName("script"), function(scriptNode) {
-				if (scriptNode.getAttribute("type") === "text/template") {
-					V.modules[scriptNode.getAttribute("name")] = V.parse(scriptNode.innerHTML);
-				}
-			});
-		},
 		rt: function(handleName, triggerFactory) {
 			return V.triggers[handleName] = triggerFactory;
 		},
@@ -1155,10 +1191,56 @@ var placeholder = {
 		withModules: {},
 		_instances: {},
 
-		Proto: DynamicComputed/*Proto*/,
+		Proto: DynamicComputed /*Proto*/ ,
 		Model: DataManager
 	};
-global.ViewParser = $.c(V);
+var ViewParser = global.ViewParser = {
+	scans: function() {
+		var HVP_config = ViewParser.config;
+		$.fE(document.getElementsByTagName("script"), function(scriptNode) {
+			if (scriptNode.getAttribute("type") === "text/template") {
+				V.modules[scriptNode.getAttribute("name")] = V.parse(scriptNode.innerHTML);
+			}
+		});
+		var App = document.getElementById(HVP_config.appName); //configable
+		if (App) {
+			var template = this.parseNode(App)(HVP_config.data); //App.getAttribute("template-data")//json or url or configable
+			App.innerHTML = "";
+			template.append(App);
+			global[HVP_config.appName] = template;
+		}
+	},
+	parseStr: function(htmlStr) {
+		return V.parse(parse(str))
+	},
+	parseNode: function(htmlNode) {
+		return V.parse(parse(htmlNode.innerHTML))
+	},
+	parse: function(html) {
+		if (html instanceof Object) {
+			return this.parseNode(html)
+		}
+		return this.parseStr(html)
+	},
+	modules: V.modules,
+	config: {
+		appName: 'HVP',
+		data:{}
+	}
+};
+(function() {
+
+	var scriptTags = document.getElementsByTagName("script"),
+		HVP_config = ViewParser.config;
+	try {
+		var userConfig = eval("(" + scriptTags[scriptTags.length - 1].innerHTML + ")");
+	} catch (e) {
+		throw "config error:" + e.message;
+	}
+	for (var i in userConfig) {//mix
+		HVP_config[i] = userConfig[i];
+	}
+}());
 V.rh("HTML", function(handle, index, parentHandle) {
 	var endCommentHandle = _commentPlaceholder(handle, parentHandle, "html_end_" + handle.id),
 		startCommentHandle = _commentPlaceholder(handle, parentHandle, "html_start_" + handle.id);
