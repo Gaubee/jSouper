@@ -156,3 +156,46 @@ var doc = document,
 			}
 		}
 	};
+
+function ArraySet() {
+	var self = this;
+	self.keys = [];
+	self.store = {};
+	return self;
+};
+ArraySet.prototype = {
+	set: function(key, value) {
+		var self = this,
+			keys = self.keys,
+			store = self.store;
+		key = String(key);
+		if (!(key in store)) {
+			$.p(keys, key)
+		}
+		store[key] = value;
+	},
+	get: function(key) {
+		return this.store[key];
+	},
+	fE: function(callback) { //forEach ==> forIn
+		var self = this,
+			store = self.store,
+			value;
+		return $.fE(self.keys, function(key, index) {
+			value = store[key];
+			return callback(value, key, store);
+		})
+	},
+	// ftE: function(callback) { //fastEach ==> forIn
+	// 	var self = this,
+	// 		store = self.store,
+	// 		value;
+	// 	return $.ftE(self.keys, function(key, index) {
+	// 		value = store[key];
+	// 		callback(value, key);
+	// 	})
+	// },
+	has: function(key) {
+		return key in this.store;
+	}
+};
