@@ -212,7 +212,7 @@ DataManager.prototype = {
 				result = self._database;
 				break;
 			default:
-				if (!triggerKeys._[key] /*$.iO(triggerKeys, key) === -1*/ ) { //这里不将key存入triggerKeys中，set时自然会存在
+				if (!triggerKeys.has(key) /*$.iO(triggerKeys, key) === -1*/ ) { //这里不将key存入triggerKeys中，set时自然会存在
 					//这种情况不存在缓存机制，因为set的自动更新triggerKeys无法更新到这些key，所以保持使用动态获取
 					var cacheData_bak = self._cacheData;
 					self._cacheData = {};
@@ -321,109 +321,19 @@ DataManager.prototype = {
 		}
 		return cacheData[key] = result;
 	},
-	filterKey: function(key) {
-		var keep = $TRUE,
-			dm = self;
-
-		do {
-			keep = $FALSE;
-			var cacheKey = key.replace(_DM_filterKey_RegExp, function(matchKey, i) {
-				if (dm) {
-					if (matchKey === DMconfig.PARENT) {
-						dm = dm._parentDataManager;
-					} else if (matchKey === DMconfig.TOP) {
-						while (dm._parentDataManager) {
-							dm = dm._parentDataManager;
-						}
-					}
-				}
-				if (i) {
-					return matchKey;
-				}
-				return "";
-			});
-			if (cacheKey !== key) {
-				keep = $TRUE;
-				key = cacheKey.substring(1); //去除“点” $THIS . a.b.c
-			}
-		} while (keep)
-		return {
-			key: key,
-			dataManager: dm
-		};
-	},
-	_touchOffSubset: function(key) { //TODO:each下的事件无法冒泡到顶级
-		var self = this;
-		$.fE(self._subsetDataManagers, function(dm) {
-			if (!dm._prefix || dm._prefix.indexOf(key) !== 0) {
-				dm._touchOffSubset(key);
-			}
-		});
-		var i, vis, vi, len;
-		// console.log(self._viewInstances)
-		$.ftE(self._viewInstances, function(vi) { //属性更新器彻底游离，由属性触发器托管
-			vi && vi.touchOff(key);
-		});
+	_touchOffSubset: function(key) { 
 	},
 	_collectTriKey: function(viewInstance) {
-		var self = this,
-			triggerKeys = self._triggerKeys,
-			subsetDataManager = viewInstance.dataManager,
-			cacheData_bak = subsetDataManager._cacheData;
-		subsetDataManager._cacheData = {}
-		$.ftE(viewInstance._triggers, function(triggerKey) {
-			if (!triggerKeys.has(triggerKey)) { //对新的关键字进行初次数据采集
-				subsetDataManager.get(triggerKey);
-			}
-		});
-		subsetDataManager._cacheData = _mix(cacheData_bak, subsetDataManager._cacheData);
 
-		$.ftE(viewInstance._triggers, function(triggerKey) {
-			//完全更新完毕后，更新页面，以免函数运作获取到正确数据
-			viewInstance.touchOff(triggerKey);
-		});
-		
-		$.ftE(viewInstance._triggers, function(triggerKey) { //将关键字收集到set操作中需更新的key
-			if (!triggerKeys._[triggerKey]) {
-				$.p(triggerKeys, triggerKey);
-				triggerKeys._[triggerKey] = $TRUE;
-			}
-		});
-		// _nomarl_set_key_touch(subsetDataManager, "", [DMconfig.THIS])
 	},
-	collect: function(viewInstance) {
-		var self = this;
-		if ($.iO(self._viewInstances, viewInstance) === -1) {
-			viewInstance.dataManager && viewInstance.dataManager.remove(viewInstance);
-			$.p(self._viewInstances, viewInstance);
-			viewInstance.dataManager = self;
-			self._collectTriKey(viewInstance);
-		}
-		return self;
-	},
-	subset: $.noop,
-	// subset: function(viewInstance, prefix) {
-	// 	var self = this,
-	// 		subsetDataManager = viewInstance.dataManager; //DataManager(baseData, viewInstance);
-	// 	subsetDataManager._parentDataManager = self;
-	// 	subsetDataManager.setNormarl = _bubble_set;
-	// 	self._collectTriKey(viewInstance);
-	// 	if (prefix) {
-	// 		subsetDataManager._prefix = prefix;
-	// 	}
-	// 	//更新数据源
-	// 	subsetDataManager._database = _mix(subsetDataManager._database, (arguments.length > 1 ? self.get(prefix) : self._database));
+	collect: function(dm) {
 
-	// 	$.p(this._subsetDataManagers, subsetDataManager);
-	// 	return subsetDataManager; //subset(vi).set(basedata);},
-	// },
+	},
+	subset: function(dm,prefix){
+
+	},
 	remove: function(viewInstance) {
-		var self = this,
-			vis = self._viewInstances,
-			index = $.iO(vis, viewInstance);
-		if (index !== -1) {
-			vis.splice(index, 1);
-		}
+
 	}
 };
 global.DataManager = DataManager;

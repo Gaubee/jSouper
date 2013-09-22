@@ -41,14 +41,14 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 		});
 		result = str.replace(newTemplateMatchReg, function(matchStr, innerStr, index) {
 			// console.log(arguments)
-			var fun_name = innerStr.trim().split(" ")[0];
+			var fun_name = $.trim(innerStr).split(" ")[0];
 			if (fun_name in templateHandles) {
 				if (templateHandles[fun_name]) {
 					var args = innerStr.replace(fun_name, "").split(","),
 						result = "{" + fun_name + "(";
 					$.ftE(args, function(arg) {
 						// args.forEach(function(arg) {
-						if (arg = arg.trim()) {
+						if (arg = $.trim(arg)) {
 							result += parseIte(parseArg(arg));
 						}
 					});
@@ -58,7 +58,7 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 					return "{" + fun_name + "()}";
 				}
 			} else {
-				return parseIte(parseArg(innerStr.trim())); //"{(" + innerStr + ")}";
+				return parseIte(parseArg($.trim(innerStr))); //"{(" + innerStr + ")}";
 			}
 		})
 		return result.replace(RegExp(Placeholder, "g"), function(p) {
@@ -98,7 +98,7 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 			pointer = 0;
 		sliceArgStr.replace(/([^\w$\(\)]+)/g, function(matchOperator, operator, index, str) { //([\W]+)
 			// console.log(arguments)
-			operator = operator.trim();
+			operator = $.trim(operator);
 			if (operator && operator !== ".") {
 				$.p(stack, {
 					// stack.push({

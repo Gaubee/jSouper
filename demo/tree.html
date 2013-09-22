@@ -24,6 +24,37 @@
 			{/if()}
 		{/each()}
 	</script>
+	<script type="text/template" name="treebak">
+		{{#each $THIS.list}}
+			{{#if  $THIS.type == 'folder'}}
+				<li>
+					<p> 
+						{{#if $THIS.title}} 
+							{{title}} 
+						{{#else}} 
+							{{$TOP.title}} 
+						{{/if}}
+					</p>
+				</li>
+				<ul>
+					{{> 'tree',$THIS}}
+				</ul>
+			{{#else}}
+				<li>
+					<a attr-href="#{{title}}">
+					{{#if  $THIS.title}}
+						{{title}}
+					{{#else}} 
+						{{$TOP.title}}
+					{{/if}} 
+					{{#if $THIS.type}}
+						.{{$TOP.title}}
+					{{/if}}
+					</a>
+				</li>
+			{{/if}}
+		{{/each}}
+	</script>
 </body>
 </html>
 

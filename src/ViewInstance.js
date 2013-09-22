@@ -44,8 +44,6 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	} else {
 		dataManager = DataManager(data, self);
 	}
-
-	self.reDraw();
 };
 
 function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {

@@ -179,13 +179,11 @@ ArraySet.prototype = {
 	get: function(key) {
 		return this.store[key];
 	},
-	fE: function(callback) { //forEach ==> forIn
+	forIn: function(callback) { //forEach ==> forIn
 		var self = this,
-			store = self.store,
-			value;
-		return $.fE(self.keys, function(key, index) {
-			value = store[key];
-			return callback(value, key, store);
+			store = self.store;
+		return $.ftE(self.keys, function(key, index) {
+			callback(store[key], key, store);
 		})
 	},
 	// ftE: function(callback) { //fastEach ==> forIn
@@ -844,8 +842,6 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	} else {
 		dataManager = DataManager(data, self);
 	}
-
-	self.reDraw();
 };
 
 function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {
@@ -1233,7 +1229,8 @@ var ViewParser = global.ViewParser = {
 	var scriptTags = document.getElementsByTagName("script"),
 		HVP_config = ViewParser.config;
 	try {
-		var userConfig = eval("(" + scriptTags[scriptTags.length - 1].innerHTML + ")");
+		var userConfigStr= scriptTags[scriptTags.length - 1].innerHTML;
+			userConfig = $.trim(userConfigStr)?eval("(" + userConfigStr + ")"):{};
 	} catch (e) {
 		throw "config error:" + e.message;
 	}

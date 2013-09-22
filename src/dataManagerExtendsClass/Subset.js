@@ -6,6 +6,7 @@ function Subset(dataManager) {
 	if (!(this instanceof Subset)) {
 		return new Subset(dataManager);
 	}
+	DataManager.Object(self);
 	self.id = $.uid();
 	self.dataManager = dataManager;
 	dataManager.set = Subset.set;

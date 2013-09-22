@@ -149,7 +149,8 @@ var ViewParser = global.ViewParser = {
 	var scriptTags = document.getElementsByTagName("script"),
 		HVP_config = ViewParser.config;
 	try {
-		var userConfig = eval("(" + scriptTags[scriptTags.length - 1].innerHTML + ")");
+		var userConfigStr= scriptTags[scriptTags.length - 1].innerHTML;
+			userConfig = $.trim(userConfigStr)?eval("(" + userConfigStr + ")"):{};
 	} catch (e) {
 		throw "config error:" + e.message;
 	}

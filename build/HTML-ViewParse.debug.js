@@ -201,13 +201,11 @@ ArraySet.prototype = {
 	get: function(key) {
 		return this.store[key];
 	},
-	fE: function(callback) { //forEach ==> forIn
+	forIn: function(callback) { //forEach ==> forIn
 		var self = this,
-			store = self.store,
-			value;
-		return $.fE(self.keys, function(key, index) {
-			value = store[key];
-			return callback(value, key, store);
+			store = self.store;
+		return $.ftE(self.keys, function(key, index) {
+			callback(store[key], key, store);
 		})
 	},
 	// ftE: function(callback) { //fastEach ==> forIn
@@ -242,49 +240,35 @@ function DataManager(baseData, viewInstance) {
 	self._prefix = $NULL; //冒泡时需要加上的前缀
 	self._subsetDataManagers = []; //to touch off
 	(self._triggerKeys = [])._ = {};
+	self._triggerKeys = new ArraySet();
 	viewInstance && self.collect(viewInstance);
 	DataManager._instances[self.id] = self;
 };
-var relyStack = [], //用于搜集依赖的堆栈数据集
-	allRelyContainer = {}, //存储处理过的依赖关系集，在set运作后链式触发 TODO：注意处理循环依赖
-	chain_update_rely = function(id, updataKeys) {
-		var relyContainer = allRelyContainer[id]; // || (allRelyContainer[this.id] = {});
 
-		relyContainer && $.ftE(updataKeys, function(updataKey) { //触发依赖
-			var leaderArr;
-			if (leaderArr = relyContainer[updataKey]) {
-				$.ftE(leaderArr, function(leaderObj) {
-					var leader = leaderObj.dm,
-						key = leaderObj.key;
-					chain_update_rely(leader.id, leader.set(key, leader._getSource(key).get())) //递归:链式更新
-				})
-			}
-		})
-	},
-	DM_proto = DataManager.prototype,
-	DM_proto_get = DM_proto.get;
-
-
+var _DM_extends_object_constructor = _placeholder();
+DataManager.Object = function(extendsObj) {
+	extendsObj[_DM_extends_object_constructor] = $TRUE;
+};
 
 function _mix(sObj, nObj) {
-	var obj_s, obj_n, i;
+	var obj_nx,
+		obj_s,
+		i;
 	if (sObj instanceof Object && nObj instanceof Object) {
-		for (i in nObj) {
-			var obj_n = nObj[i];
-			if ((obj_s = sObj[i]) instanceof DynamicComputed) { //计算属性直接采用自带的set操作
-				obj_s.set === $.noop ? (obj_s._value = _mix(obj_s._value, obj_n)) : obj_s.set(obj_n);
+		for (var i in nObj) {
+			obj_n = nObj[i];
+			if ((obj_s = sObj[i])._DM_extends_object_constructor) { //拓展的DM_Object对象，通过接口实现操作
+				obj_s.set(obj_n);
 			} else if (obj_s !== obj_n) { //避免循环 Avoid Circular
 				sObj[i] = _mix(obj_s, obj_n);
 			}
+			DataManager.set(sObj, i, nObj);
 		}
 		return sObj;
 	} else {
 		return nObj;
 	}
 };
-global.DataManager = DataManager;
-DataManager.__formateKey; //最后一次get处理完成的formateKey
-DataManager.__id; //最后一次get的id对象
 DataManager._instances = {};
 DataManager.config = {
 	"THIS": "$THIS", // _placeholder(),
@@ -292,6 +276,13 @@ DataManager.config = {
 	"TOP": "$TOP" // _placeholder()
 };
 var DMconfig = DataManager.config;
+var _DM_filterKey_RegExp = RegExp(function(config) {
+	var str = "";
+	$.fI(config, function(key) {
+		str += "|" + key.replace(/(\W)/g, "\\$1")
+	});
+	return str.substring(1);
+}(DMconfig));
 
 function _nomarl_set_mix_data(key, nObj) {
 	//mix Data 合并数据
@@ -336,17 +327,17 @@ function _nomarl_set_key_touch(self, key, updateKeys) {
 	//通过对比更新前后，
 	//得知改动的关键字
 	var triggerKeys = self._triggerKeys;
-	$.ftE($.un(triggerKeys), function(triggerKey) {
+	triggerKeys.forIn(function(_, triggerKey) {
 		if (key.indexOf(triggerKey) === 0 || triggerKey.indexOf(key) === 0) {
-			var oldVal = self.get(triggerKey),
-				newVal = self._update(triggerKey), //updata cacheData
-				computedPrototype = self._getSource(triggerKey);
-			if (oldVal !== newVal || newVal instanceof Object || (computedPrototype /*updata cacheData*/ instanceof DynamicComputed && oldVal !== computedPrototype.get())) {
+			var oldVal = self.get(triggerKey), //get caheData
+				newVal = self._update(triggerKey), //updata cacheData and return new data
+				DM_Object = self._getSource(triggerKey);
+			if (oldVal !== newVal || newVal instanceof Object || (DM_Object[_DM_extends_object_constructor] && oldVal !== computedPrototype.get())) {
 				$.p(updateKeys, triggerKey);
 			}
 		}
-	});
-	if (key !== "" && !triggerKeys._[key] /*$.iO(triggerKeys, key) === -1*/ ) { //新的Key
+	})
+	if (key !== "" && !triggerKeys.has(key)) { //新的Key
 		$.p(triggerKeys, key);
 		triggerKeys._[key] = $TRUE;
 		self._update(key); //更新缓存
@@ -444,7 +435,7 @@ DataManager.prototype = {
 				result = self._database;
 				break;
 			default:
-				if (!triggerKeys._[key] /*$.iO(triggerKeys, key) === -1*/ ) { //这里不将key存入triggerKeys中，set时自然会存在
+				if (!triggerKeys.has(key) /*$.iO(triggerKeys, key) === -1*/ ) { //这里不将key存入triggerKeys中，set时自然会存在
 					//这种情况不存在缓存机制，因为set的自动更新triggerKeys无法更新到这些key，所以保持使用动态获取
 					var cacheData_bak = self._cacheData;
 					self._cacheData = {};
@@ -553,74 +544,22 @@ DataManager.prototype = {
 		}
 		return cacheData[key] = result;
 	},
-	_touchOffSubset: function(key) { //TODO:each下的事件无法冒泡到顶级
-		var self = this;
-		$.fE(self._subsetDataManagers, function(dm) {
-			if (!dm._prefix||dm._prefix.indexOf(key) !== 0) {
-				dm._touchOffSubset(key);
-			}
-		});
-		var i, vis, vi, len;
-		// console.log(self._viewInstances)
-		$.ftE(self._viewInstances, function(vi) { //属性更新器彻底游离，由属性触发器托管
-			vi && vi.touchOff(key);
-		});
+	_touchOffSubset: function(key) { 
 	},
 	_collectTriKey: function(viewInstance) {
-		var self = this,
-			triggerKeys = self._triggerKeys,
-			subsetDataManager = viewInstance.dataManager;
-		$.ftE(viewInstance._triggers, function(triggerKey) {
-			if (!triggerKeys._[triggerKey]) { //对新的关键字进行初次数据采集
-				subsetDataManager._update(triggerKey);
-			}
-		});
-		$.ftE(viewInstance._triggers, function(triggerKey) {
-			//完全更新完毕后，更新页面，以免函数运作获取到正确数据
-			viewInstance.touchOff(triggerKey);
-		});
-		$.ftE(viewInstance._triggers, function(triggerKey) { //将关键字收集到set操作中需更新的key
-			if (!triggerKeys._[triggerKey]) {
-				$.p(triggerKeys, triggerKey);
-				triggerKeys._[triggerKey] = $TRUE;
-			}
-		});
-		// _nomarl_set_key_touch(subsetDataManager, "", [DMconfig.THIS])
-	},
-	collect: function(viewInstance) {
-		var self = this;
-		if ($.iO(self._viewInstances, viewInstance) === -1) {
-			viewInstance.dataManager && viewInstance.dataManager.remove(viewInstance);
-			$.p(self._viewInstances, viewInstance);
-			viewInstance.dataManager = self;
-			self._collectTriKey(viewInstance);
-		}
-		return self;
-	},
-	subset: function(viewInstance, prefix) {
-		var self = this,
-			subsetDataManager = viewInstance.dataManager; //DataManager(baseData, viewInstance);
-		subsetDataManager._parentDataManager = self;
-		subsetDataManager.setNormarl = _bubble_set;
-		self._collectTriKey(viewInstance);
-		if (prefix) {
-			subsetDataManager._prefix = prefix;
-		}
-		//更新数据源
-		subsetDataManager._database = _mix(subsetDataManager._database, (arguments.length > 1 ? self.get(prefix) : self._database));
 
-		$.p(this._subsetDataManagers, subsetDataManager);
-		return subsetDataManager; //subset(vi).set(basedata);},
+	},
+	collect: function(dm) {
+
+	},
+	subset: function(dm,prefix){
+
 	},
 	remove: function(viewInstance) {
-		var self = this,
-			vis = self._viewInstances,
-			index = $.iO(vis, viewInstance);
-		if (index !== -1) {
-			vis.splice(index, 1);
-		}
+
 	}
 };
+global.DataManager = DataManager;
 function DynamicComputed(obs, isStatic) { //动态计算类，可定制成静态计算类（只收集一次的依赖，适合于简单的计算属性，没有逻辑嵌套）
 	var self = this;
 	if (!(this instanceof Controller.Observer)) {
@@ -736,14 +675,14 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 		});
 		result = str.replace(newTemplateMatchReg, function(matchStr, innerStr, index) {
 			// console.log(arguments)
-			var fun_name = innerStr.trim().split(" ")[0];
+			var fun_name = $.trim(innerStr).split(" ")[0];
 			if (fun_name in templateHandles) {
 				if (templateHandles[fun_name]) {
 					var args = innerStr.replace(fun_name, "").split(","),
 						result = "{" + fun_name + "(";
 					$.ftE(args, function(arg) {
 						// args.forEach(function(arg) {
-						if (arg = arg.trim()) {
+						if (arg = $.trim(arg)) {
 							result += parseIte(parseArg(arg));
 						}
 					});
@@ -753,7 +692,7 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 					return "{" + fun_name + "()}";
 				}
 			} else {
-				return parseIte(parseArg(innerStr.trim())); //"{(" + innerStr + ")}";
+				return parseIte(parseArg($.trim(innerStr))); //"{(" + innerStr + ")}";
 			}
 		})
 		return result.replace(RegExp(Placeholder, "g"), function(p) {
@@ -793,7 +732,7 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 			pointer = 0;
 		sliceArgStr.replace(/([^\w$\(\)]+)/g, function(matchOperator, operator, index, str) { //([\W]+)
 			// console.log(arguments)
-			operator = operator.trim();
+			operator = $.trim(operator);
 			if (operator && operator !== ".") {
 				$.p(stack, {
 					// stack.push({
@@ -1152,8 +1091,6 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	} else {
 		dataManager = DataManager(data, self);
 	}
-
-	self.reDraw();
 };
 
 function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {
@@ -1541,7 +1478,8 @@ var ViewParser = global.ViewParser = {
 	var scriptTags = document.getElementsByTagName("script"),
 		HVP_config = ViewParser.config;
 	try {
-		var userConfig = eval("(" + scriptTags[scriptTags.length - 1].innerHTML + ")");
+		var userConfigStr= scriptTags[scriptTags.length - 1].innerHTML;
+			userConfig = $.trim(userConfigStr)?eval("(" + userConfigStr + ")"):{};
 	} catch (e) {
 		throw "config error:" + e.message;
 	}
@@ -2335,3 +2273,146 @@ V.ra(function(attrKey){
 V.ra("style",function () {
 	return _isIE&&_AttributeHandleEvent.style;
 })
+var relyStack = [], //用于搜集依赖的堆栈数据集
+	allRelyContainer = {}, //存储处理过的依赖关系集，在set运作后链式触发 TODO：注意处理循环依赖
+	chain_update_rely = function(id, updataKeys) {
+		var relyContainer = allRelyContainer[id]; // || (allRelyContainer[this.id] = {});
+
+		relyContainer && $.ftE(updataKeys, function(updataKey) { //触发依赖
+			var leaderArr;
+			if (leaderArr = relyContainer[updataKey]) {
+				$.ftE(leaderArr, function(leaderObj) {
+					var leader = leaderObj.dm,
+						key = leaderObj.key;
+					chain_update_rely(leader.id, leader.set(key, leader._getSource(key).get())) //递归:链式更新
+				})
+			}
+		})
+	}
+
+function Observer(obs) { //动态计算类
+	var self = this;
+	if (!(this instanceof Observer)) {
+		return new Observer(obs);
+	}
+	DataManager.Object(self);
+	if (obs instanceof Function) {
+		self._get = obs;
+		self.set = $.noop; //默认更新value并触发更新
+		self._form = $NULL;
+	} else {
+		self._get = obs.get || function() {
+			return self._value
+		};
+		self.set = obs.set || $.noop;
+		self._form = obs.form || $NULL;
+	}
+	self._value;
+	self._valueOf = Observer._initGetData;
+	self._toString = Observer._getData;
+};
+Observer.prototype.get = function() {
+
+	var self = this,
+		result;
+	$.p(relyStack, []); //开始收集
+
+	result = self._get();
+
+	var relySet = relyStack.pop(); //获取收集结果
+
+	relySet.length && relyOn.pickUp(self, key, relySet);
+	$.ftE(relySet, function(relyNode) { //处理依赖结果
+		var relyId = relyNode.id,
+			relyKey = relyNode.key,
+			relyContainer = allRelyContainer[relyId] || (allRelyContainer[relyId] = {});
+
+		if (!(leader_id === relyId && leader_key === relyKey)) { //避免直接的循环依赖
+			cache = relyContainer[relyKey];
+			if (!cache) {
+				cache = relyContainer[relyKey] = [];
+				cache._ = {};
+			}
+			var cache_key = cache._[leader_key] || (cache._[leader_key] = "|");
+
+			if (cache_key.indexOf("|" + leader_id + "|") === -1) {
+				$.p(cache, {
+					dm: leader,
+					key: leader_key
+				});
+				cache._[leader_key] += leader_id + "|";
+			}
+		}
+	});
+};
+
+Observer._initGetData = function() {
+	var self = this;
+	self.valueOf = self.toString;
+	return self.value = self.get();
+};
+Observer._getData = function() {
+	return this.value
+};
+var _cacheGet = Observer.get;
+function StaticObserver(obs) { //静态计算类（只收集一次的依赖，适合于简单的计算属性，没有逻辑嵌套）
+	var observerInstance = new Observer(obs);
+	observerInstance.get = StaticObserver.staticGet;
+}
+StaticObserver.staticGet = function() { //转化成静态计算类
+	var self = this,
+		result = _cacheGet.apply(self, $.s(arguments));
+	self.get = self._get; //剥离依赖收集器
+	return result;
+};
+var DM_proto = DataManager.prototype,
+	DM_proto_set = DM_proto.set;
+
+function Subset(dataManager) {
+	var self = this;
+	if (!(this instanceof Subset)) {
+		return new Subset(dataManager);
+	}
+	DataManager.Object(self);
+	self.id = $.uid();
+	self.dataManager = dataManager;
+	dataManager.set = Subset.set;
+};
+Subset.set = function() {
+	var self = this,
+		result = DM_proto_set.call(self, $.s(arguments)),
+		parentDM = self._parentDataManager,
+		subsetDM = parentDM._subsetDataManagers,
+		index = $.iO(subsetDM, self);
+	subsetDM.splice(index, 1);
+	parentDM._touchOffSubset(self._prefix);//find similar keys
+	subsetDM.splice(index, 0, self);
+	return result;
+};
+DM_proto.subset = function(viewInstance, prefix) {
+	var self = this,
+		triggerKeys = self._triggerKeys,
+		subsetDataManager = viewInstance.dataManager,
+		subsetConfig = Subset(subsetDataManager); //DataManager(baseData, viewInstance);
+
+	triggerKeys.get(DataManager.filterKey(prefix)).set(prefix)
+
+	subsetDataManager._parentDataManager = self;
+	subsetDataManager.set = _DM_bubbleSet;
+	if (arguments.length > 1) {
+		subsetDataManager._database = _mix(subsetDataManager._database, self.get(String(prefix)));
+	} else {
+		subsetDataManager._database = self._database;
+	}
+	if (viewInstance instanceof ViewInstance) {
+		viewInstance.dataManager = subsetDataManager;
+		// viewInstance.reDraw();
+		self._collectTriKey(viewInstance);
+	}
+	if (prefix) {
+
+		subsetDataManager._prefix = prefix;
+	}
+	$.p(this._subsetDataManagers, subsetDataManager);
+	return subsetDataManager; //subset(vi).set(basedata);},
+};

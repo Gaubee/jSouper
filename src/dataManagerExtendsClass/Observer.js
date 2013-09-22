@@ -20,6 +20,7 @@ function Observer(obs) { //动态计算类
 	if (!(this instanceof Observer)) {
 		return new Observer(obs);
 	}
+	DataManager.Object(self);
 	if (obs instanceof Function) {
 		self._get = obs;
 		self.set = $.noop; //默认更新value并触发更新
