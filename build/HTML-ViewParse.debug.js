@@ -247,11 +247,14 @@ function TriggerKeySet() {
 		$.p(currentCollection, value)
 	}
 };
-function TriggerKeyItem(){
-
+function TriggerKeyItem(key,dataManager){
+	var self = this;
+	self.key = key;
+	self.dataManager = dataManager;
 };
 TriggerKeyItem.prototype = {
-	
+	get:function(){
+	}
 };
 (function() {
 	function DataManager(baseData) {
@@ -322,11 +325,13 @@ TriggerKeyItem.prototype = {
 				dmTriggerKeys = dataManager._triggerKeys,
 				dotPrefix = prefix ? prefix += "." : ""
 			dataManager._prefix = prefix;
+			dataManager._parentDataManager&&dataManager._parentDataManager.remove(dataManager);
+			
 			dmTriggerKeys.forIn(function(dmTriggerCollection, key) {
 				myTriggerKeys.push(dotPrefix + key, dmTriggerCollection);
 			});
 		},
-		remove: function(viewInstance) {}
+		remove: function(dataManager) {}
 	};
 }());
 function DynamicComputed(obs, isStatic) { //动态计算类，可定制成静态计算类（只收集一次的依赖，适合于简单的计算属性，没有逻辑嵌套）
