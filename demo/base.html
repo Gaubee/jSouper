@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>HTML-ViewParse</title>
+	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js">
+	{
+		data:{
+			library_name:"HTML-ViewParse",
+			author:"Gaubee"
+		}
+	}
+	</script>
+</head>
+<body>
+	<div id="HVP">
+		<h3>the {{library_name}} create by {{author}}</h3>
+	</div>
+</body>
+</html>
+<script>
+	ViewParser.scans();
+	var model = DataManager({
+		name:"Gaubee",
+		other:{
+			age:20,
+			good:"js"
+		}
+	});
+	console.log(model.get("name"));
+	model.set("name","bangeel");
+	console.log(model.get("name"));
+	console.log(model.get("other"));
+	model.set("other.age",30);
+	console.log(model.get("other"));
+	model.set("other.??",20);
+	console.log(model.get("other"));
+	model.mix("other.xx",22);
+	console.log(model.get("other"));
+	model.mix("other",{"ww":23});
+	console.log(model.get("other"));
+	model.set("other",{"www":404});
+	console.log(model.get("other"));
+</script>
