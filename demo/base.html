@@ -40,4 +40,15 @@
 	console.log(model.get("other"));
 	model.set("other",{"www":404});
 	console.log(model.get("other"));
+
+	console.log("-----------------");
+
+	console.log(trigger_id = model.registerTrigger("a",function(){console.log("a trigger")}));
+	console.warn("befor remove! touchOff 'a' key.");
+	model.touchOff("a");
+
+	model.removeTrigger(trigger_id);
+
+	console.warn("after remove! touchOff 'a' key.");
+	model.touchOff("a");
 </script>

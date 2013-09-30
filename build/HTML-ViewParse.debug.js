@@ -246,6 +246,7 @@ function TriggerKeySet() {
 	} else {
 		$.p(currentCollection, value)
 	}
+	return currentCollection.length;
 };
 
 function TriggerKeyItem(key, dataManager) {
@@ -379,8 +380,39 @@ TriggerKeyItem.prototype = {
 			}
 			return self.touchOff(key);
 		},
+		registerTrigger:function(key,trigger){
+			var self = this,
+				triggerKeys = self._triggerKeys;
+			if (typeof trigger === "function") {
+				trigger = {
+					key:key,
+					event:trigger
+				};
+			}else{
+				if(!("key" in trigger)){
+					trigger.key = key
+				}
+			}
+			return "id" in trigger?trigger.id:(trigger.id = (triggerKeys.push(key,trigger)-1)+"-"+key);
+		},
+		removeTrigger:function(trigger_id){
+			var index = parseInt(trigger_id),
+				key = trigger_id.replace(index+"-",""),
+				self = this,
+				triggerKeys = self._triggerKeys,
+				triggerCollection = triggerKeys.get(key)||[];
+			triggerCollection.splice(index,1);
+		},
 		touchOff:function(key){
-
+			var self = this,
+				triggerKeys = self._triggerKeys;
+				updateKey = []
+				;
+			triggerKeys.forIn(function(triggerCollection,key){
+				$.ftE(triggerCollection,function(trigger){
+					trigger.event(self);
+				})
+			});
 		},
 		_touchOffSubset: function(key) {},
 		_collectTriKey: function(viewInstance) {},
