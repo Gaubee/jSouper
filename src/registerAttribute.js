@@ -84,13 +84,14 @@ draggable
 		});
 		return result || _AttributeHandleEvent.com;
 	},
+	_templateMatchRule= /\{[\w\W]*?\{[\w\W]*?\}[\s]*\}/,
 	attributeHandle = function(attrStr, node, handle, triggerTable) {
 		var attrKey = $.trim(attrStr.substring(0, attrStr.search("="))),
 			attrValue = node.getAttribute(attrKey);
 		attrKey = attrKey.toLowerCase()
 		attrKey = attrKey.indexOf(V.prefix) ? attrKey : attrKey.replace(V.prefix, "")
 		attrKey = (_isIE && IEfix[attrKey]) || attrKey
-		if (_matchRule.test(attrValue)) {
+		if (_matchRule.test(attrValue)||_templateMatchRule.test(attrValue)) {
 
 			var attrViewInstance = (V.attrModules[handle.id + attrKey] = V.parse(attrValue))(),
 				_shadowDIV = $.D.cl(shadowDIV), //parserNode

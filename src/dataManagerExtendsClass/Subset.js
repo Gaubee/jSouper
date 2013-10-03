@@ -1,4 +1,4 @@
-var DM_proto_set = DM_proto.set;
+/*var DM_proto_set = DM_proto.set;
 
 function Subset(dataManager) {
 	var self = this;
@@ -47,4 +47,4 @@ DM_proto.subset = function(viewInstance, prefix) {
 	}
 	$.p(this._subsetDataManagers, subsetDataManager);
 	return subsetDataManager; //subset(vi).set(basedata);},
-};
+};*/

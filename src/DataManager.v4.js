@@ -4,7 +4,7 @@
 // var _hasOwn = Object.prototype.hasOwnProperty;
 
 // (function() {
-	
+
 function DataManager(baseData) {
 	var self = this;
 	if (!(self instanceof DataManager)) {
@@ -67,9 +67,11 @@ var DM_proto = DataManager.prototype = {
 				result = $.valueOf(result[arrKey.splice(0, 1)]);
 			} while (result !== $UNDEFINED && arrKey.length);
 		}
+		/*
+		//避免混淆，不使用智能作用域，否则关键字更新触发器无法准确绑定或者会照常大量计算
 		if (arrKey.length && (parent = self._parentDataManager)) { //key不在对象中，查询父级
 			result = parent.get(key);
-		}
+		}*/
 		DataManager.session.filterKey = key;
 		return result;
 	},
@@ -162,14 +164,14 @@ var DM_proto = DataManager.prototype = {
 			triggerKeys = self._triggerKeys,
 			updateKey = [],
 			triggerCollection;
-		// triggerKeys.forIn(function(triggerCollection,key){
-		// 	$.ftE(triggerCollection,function(trigger){
-		// 		trigger.event(triggerKeys/*self*/);
-		// 	})
-		// });
-		(triggerCollection = triggerKeys.get(key)) && $.ftE(triggerCollection, function(smartTriggerHandle) {
-			smartTriggerHandle.event(triggerKeys);
-		})
+		triggerKeys.forIn(function(triggerCollection, triggerKey) {
+			if (triggerKey.indexOf(key) === 0||key.indexOf(triggerKey)===0) {
+				$.ftE(triggerCollection, function(smartTriggerHandle) {
+					smartTriggerHandle.event(triggerKeys);
+				})
+			}
+
+		});
 	},
 	_touchOffSubset: function(key) {},
 	_collectTriKey: function(viewInstance) {},
@@ -183,22 +185,39 @@ var DM_proto = DataManager.prototype = {
 			// 	smartTriggerHandle.event( /*new triggerKeySet*/ myTriggerKeys);
 			// })
 		});
+		$.ftE(dataManager._subsetDataManagers, function(childDataManager) {
+			dataManager.remove(childDataManager);
+			$.p(self._subsetDataManagers, childDataManager);
+		})
 		return self;
 	},
 	subset: function(dataManager, prefix) { /*收集dataManager的触发集*/
 		var self = this,
 			myTriggerKeys = self._triggerKeys,
 			dmTriggerKeys = dataManager._triggerKeys,
-			dotPrefix = prefix ? prefix += "." : ""
+			dotPrefix = prefix ? prefix + "." : ""
 		dataManager._prefix = prefix;
 		dataManager._parentDataManager && dataManager._parentDataManager.remove(dataManager);
-
+		dataManager._parentDataManager = self;
+		var data = self.get(prefix);
+		if (dataManager._database !== data) {
+			dataManager.set(data)
+		}
+		$.p(self._subsetDataManagers,dataManager);
+		/*
+		
 		dmTriggerKeys.forIn(function(dmTriggerCollection, key) {
 			myTriggerKeys.push(dotPrefix + key, dmTriggerCollection);
-		});
+		});*/
 		return self;
 	},
-	remove: function(dataManager) {},
+	remove: function(dataManager) {
+		var self = this,
+			subsetDataManagers = self._subsetDataManagers,
+			index = $.iO(subsetDataManagers, dataManager);
+		subsetDataManagers.splice(index, 1);
+		return self;
+	},
 	destroy: function() {},
 	buildGetter: function(key) {},
 	buildSetter: function(key) {}

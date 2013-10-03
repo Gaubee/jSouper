@@ -3,6 +3,43 @@
  */
 
 (function DM_extends_fot_VI() {
+	DM_proto.rebuildTree = function(key) {
+		var self = this,
+			DMSet = self._subsetDataManagers;
+		// $.p(DMSet, self); //add self into cycle
+		// _touchOff.call(self,key);
+		$.ftE(self._viewInstances, function(childViewInstance) {
+			var smartTriggerCollection =
+				$.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
+					var TEMP = smartTrigger.TEMP;
+					TEMP.dataManager.get(TEMP.sourceKey);
+					var topGetter = DataManager.session.topGetter;
+					if (topGetter !== TEMP.dataManager) {
+						smartTrigger.bind(topGetter._triggerKeys);
+						TEMP.dataManager = topGetter;
+					}
+					smartTrigger.event(topGetter._triggerKeys);
+				})
+		})
+		$.ftE(self._subsetDataManagers, function(childDataManager) {
+			$.ftE(childDataManager._viewInstances, function(childViewInstance) {
+				var smartTriggerCollection =
+					$.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
+						if (smartTrigger.moveAble) {
+							var TEMP = smartTrigger.TEMP;
+							TEMP.dataManager.get(TEMP.sourceKey);
+							var topGetter = DataManager.session.topGetter;
+							if (topGetter !== TEMP.dataManager) {
+								smartTrigger.unbind(TEMP.dataManager._triggerKeys).bind(topGetter._triggerKeys);
+								TEMP.dataManager = topGetter;
+								smartTrigger.event(topGetter._triggerKeys);
+							}
+						}
+					})
+			})
+		})
+		// DMSet.pop(); //remove self
+	}
 	var _collect = DM_proto.collect;
 	DM_proto.collect = function(viewInstance) {
 		var self = this,
@@ -40,49 +77,36 @@
 					// smartTrigger.event(topGetterTriggerKeys);
 				});
 			}
-			$.p(viewInstance.dataManager._viewInstances,viewInstance);
+			$.p(viewInstance.dataManager._viewInstances, viewInstance);
 			self.rebuildTree();
 		}
 		return self;
 	};
-	// var _touchOff = DM_proto.touchOff;
-	DM_proto.rebuildTree = function(key) {
-		var self = this,
-			DMSet = self._subsetDataManagers;
-		// $.p(DMSet, self); //add self into cycle
-		// _touchOff.call(self,key);
-		$.ftE(self._viewInstances, function(childViewInstance) {
-			var smartTriggerCollection =
-				$.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
-					var TEMP = smartTrigger.TEMP;
-					TEMP.dataManager.get(TEMP.sourceKey);
-					var topGetter = DataManager.session.topGetter;
-					if (topGetter !== TEMP.dataManager) {
-						smartTrigger.bind(topGetter._triggerKeys);
-						TEMP.dataManager = topGetter;
-					}
-					smartTrigger.event(topGetter._triggerKeys);
-				})
-		})
-		$.ftE(self._subsetDataManagers, function(childDataManager) {
-			$.ftE(childDataManager._viewInstances, function(childViewInstance) {
-				var smartTriggerCollection =
-					$.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
-						if (smartTrigger.moveAble) {
-							var TEMP = smartTrigger.TEMP;
-							TEMP.dataManager.get(TEMP.sourceKey);
-							var topGetter = DataManager.session.topGetter;
-							if (topGetter !== TEMP.dataManager) {
-								smartTrigger.bind(topGetter._triggerKeys);
-								TEMP.dataManager = topGetter;
-								smartTrigger.event(topGetter._triggerKeys);
-							}
-						}
-					})
-			})
-		})
-		// DMSet.pop(); //remove self
-	}
+	var _subset = DM_proto.subset;
+	DM_proto.subset = function(viewInstance, prefix) {
+		var self = this;
+		if (viewInstance instanceof DataManager) {
+			_subset.call(self, viewInstance, prefix);
+		} else {
+			var vi_DM = viewInstance.dataManager;
+			if (vi_DM) {
+				_subset.call(self, vi_DM, prefix);
+			} else {
+				var data = self.get(prefix),
+					filterKey = DataManager.session.filterKey;
+				console.log(filterKey)
+				if (filterKey) {
+					vi_DM = DataManager(data);
+					vi_DM.collect(viewInstance);
+					_subset.call(/*DataManager.session.topGetter*/self/*be lower*/, vi_DM, filterKey);//!!!
+				} else {
+					self.collect(viewInstance);
+				}
+				self.rebuildTree();
+			}
+			self.rebuildTree();
+		}
+	};
 }());
 var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	if (!(this instanceof ViewInstance)) {

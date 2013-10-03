@@ -1,6 +1,7 @@
 /*
  * SmartTriggerSet constructor
  */
+
 function SmartTriggerSet(data) {
 	var self = this;
 	self.keys = [];
@@ -18,15 +19,20 @@ function SmartTriggerSet(data) {
 	}
 	currentCollection = store[key] || (store[key] = []);
 	if (value instanceof Array) {
-		currentCollection.push.apply(currentCollection, value)
-	} else {
+		$.ftE(value,function(smartTriggerHandle){
+			self.push(key,smartTriggerHandle);
+		})
+		// currentCollection.push.apply(currentCollection, value)
+	} else if(value instanceof SmartTriggerHandle){
 		$.p(currentCollection, value)
+	}else{
+		console.warn("type error,no SmartTriggerHandle instance!");
 	}
 	return currentCollection.length;
 };
-SmartTriggerSet.prototype.touchOff = function(key){
+SmartTriggerSet.prototype.touchOff = function(key) {
 	var self = this;
-	$.ftE(self.get(key),function(smartTriggerHandle){
+	$.ftE(self.get(key), function(smartTriggerHandle) {
 		smartTriggerHandle.event(self);
 	});
 	return self;
@@ -34,6 +40,7 @@ SmartTriggerSet.prototype.touchOff = function(key){
 /*
  * SmartTriggerHandle constructor
  */
+
 function SmartTriggerHandle(key, triggerEvent, data) {
 	var self = this,
 		match = key;
@@ -47,8 +54,9 @@ function SmartTriggerHandle(key, triggerEvent, data) {
 	self.TEMP = data;
 	self.event = triggerEvent instanceof Function ? triggerEvent : $.noop;
 	self.moveAble = SmartTriggerHandle.moveAble(self);
+	self.smartTriggerSetCollection = [];
 };
-SmartTriggerHandle.moveAble = function(smartTriggerHandle){
+SmartTriggerHandle.moveAble = function(smartTriggerHandle) {
 	return $TRUE;
 };
 SmartTriggerHandle.prototype = {
@@ -59,15 +67,20 @@ SmartTriggerHandle.prototype = {
 	// 	}
 	// 	return self;
 	// },
-	bind: function(smartTriggerSet) {
+	bind: function(smartTriggerSet, key) {
 		var self = this;
-		self.unbind().smartTriggerSet = smartTriggerSet;
-		smartTriggerSet.push(self.matchKey,self);
+		$.p(self.smartTriggerSetCollection, smartTriggerSet);
+		smartTriggerSet.push(key === $UNDEFINED ? self.matchKey : key, self);
 		return self;
 	},
-	unbind: function() {
-		var self = this;
-		self.smartTriggerSet && self.smartTriggerSet.remove(self);
+	unbind: function(smartTriggerSet) {
+		var self = this,
+			smartTriggerSetCollection = self.smartTriggerSetCollection,
+			index = $.iO(smartTriggerSetCollection, smartTriggerSet);
+		if (index !== -1) {
+			smartTriggerSet.remove(self);
+			smartTriggerSetCollection.splice(index, 1);
+		}
 		return self;
 	}
 };
