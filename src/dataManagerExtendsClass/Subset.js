@@ -1,5 +1,4 @@
-var DM_proto = DataManager.prototype,
-	DM_proto_set = DM_proto.set;
+var DM_proto_set = DM_proto.set;
 
 function Subset(dataManager) {
 	var self = this;

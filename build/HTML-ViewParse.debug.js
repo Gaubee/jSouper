@@ -222,16 +222,15 @@ ArraySet.prototype = {
 	}
 };
 /*
- * DataManager constructor
+ * SmartTriggerSet constructor
  */
-// var _hasOwn = Object.prototype.hasOwnProperty;
-
-function TriggerKeySet() {
+function SmartTriggerSet(data) {
 	var self = this;
 	self.keys = [];
 	self.store = {};
+	self.TEMP = data;
 };
-(TriggerKeySet.prototype = $.c(ArraySet.prototype)).push = function(key, value) {
+(SmartTriggerSet.prototype = $.c(ArraySet.prototype)).push = function(key, value) {
 	var self = this,
 		keys = self.keys,
 		store = self.store,
@@ -248,197 +247,260 @@ function TriggerKeySet() {
 	}
 	return currentCollection.length;
 };
-
-function TriggerKeyItem(key, dataManager) {
+SmartTriggerSet.prototype.touchOff = function(key){
 	var self = this;
-	self.key = key;
-	self.dataManager = dataManager;
+	$.ftE(self.get(key),function(smartTriggerHandle){
+		smartTriggerHandle.event(self);
+	});
+	return self;
 };
-TriggerKeyItem.prototype = {
-	get: function() {}
+/*
+ * SmartTriggerHandle constructor
+ */
+function SmartTriggerHandle(key, triggerEvent, data) {
+	var self = this,
+		match = key;
+	// if (!(match instanceof Function)) {
+	// 	match = function(matchObj) {
+	// 		return matchObj === key;
+	// 	}
+	// }
+	// self.match = match;
+	self.matchKey = String(key);
+	self.TEMP = data;
+	self.event = triggerEvent instanceof Function ? triggerEvent : $.noop;
+	self.moveAble = SmartTriggerHandle.moveAble(self);
 };
-(function() {
-	function DataManager(baseData) {
+SmartTriggerHandle.moveAble = function(smartTriggerHandle){
+	return $TRUE;
+};
+SmartTriggerHandle.prototype = {
+	// touchOff: function(matchKey) {
+	// 	var self = this;
+	// 	if (self.matchKey === matchKey) {
+	// 		self.event()
+	// 	}
+	// 	return self;
+	// },
+	bind: function(smartTriggerSet) {
 		var self = this;
-		if (!(self instanceof DataManager)) {
-			return new DataManager(baseData);
+		self.unbind().smartTriggerSet = smartTriggerSet;
+		smartTriggerSet.push(self.matchKey,self);
+		return self;
+	},
+	unbind: function() {
+		var self = this;
+		self.smartTriggerSet && self.smartTriggerSet.remove(self);
+		return self;
+	}
+};
+
+/*
+ * DataManager constructor
+ */
+// var _hasOwn = Object.prototype.hasOwnProperty;
+
+// (function() {
+	
+function DataManager(baseData) {
+	var self = this;
+	if (!(self instanceof DataManager)) {
+		return new DataManager(baseData);
+	}
+	baseData = baseData || {};
+	self.id = $.uid();
+	self._database = baseData;
+	// self._cacheData = {};
+	self._viewInstances = []; //to touch off
+	self._parentDataManager // = $UNDEFINED; //to get data
+	self._prefix // = $NULL; //冒泡时需要加上的前缀
+	self._subsetDataManagers = []; //to touch off
+	self._triggerKeys = new SmartTriggerSet({
+		dataManager: self
+	});
+	DataManager._instances[self.id] = self;
+};
+(global.DataManager = DataManager)._instances = {};
+
+var _DM_extends_object_constructor = _placeholder();
+DataManager.Object = function(extendsObj) {
+	extendsObj[_DM_extends_object_constructor] = $TRUE;
+};
+
+function _mix(sObj, nObj) {
+	var obj_nx,
+		obj_s,
+		i;
+	if (sObj instanceof Object && nObj instanceof Object) {
+		for (var i in nObj) {
+			obj_n = nObj[i];
+			obj_s = sObj[i]; //||(sObj[i]={});
+			if (obj_s && obj_s._DM_extends_object_constructor) { //拓展的DM_Object对象，通过接口实现操作
+				obj_s.set(obj_n);
+			} else if (obj_s !== obj_n) { //避免循环 Avoid Circular
+				sObj[i] = _mix(obj_s, obj_n);
+			}
+			// DataManager.set(sObj, i, nObj);
 		}
-		baseData = baseData || {};
-		self.id = $.uid();
-		self._database = baseData;
-		// self._cacheData = {};
-		self._viewInstances = []; //to touch off
-		self._parentDataManager // = $UNDEFINED; //to get data
-		self._prefix // = $NULL; //冒泡时需要加上的前缀
-		self._subsetDataManagers = []; //to touch off
-		self._triggerKeys = new TriggerKeySet();
-		DataManager._instances[self.id] = self;
-	};
-	(global.DataManager = DataManager)._instances = {};
+		return sObj;
+	} else {
+		return nObj;
+	}
+};
 
-	var _DM_extends_object_constructor = _placeholder();
-	DataManager.Object = function(extendsObj) {
-		extendsObj[_DM_extends_object_constructor] = $TRUE;
-	};
-
-	function _mix(sObj, nObj) {
-		var obj_nx,
-			obj_s,
-			i;
-		if (sObj instanceof Object && nObj instanceof Object) {
-			for (var i in nObj) {
-				obj_n = nObj[i];
-				obj_s = sObj[i];//||(sObj[i]={});
-				if (obj_s&&obj_s._DM_extends_object_constructor) { //拓展的DM_Object对象，通过接口实现操作
-					obj_s.set(obj_n);
-				} else if (obj_s !== obj_n) { //避免循环 Avoid Circular
-					sObj[i] = _mix(obj_s, obj_n);
-				}
-				// DataManager.set(sObj, i, nObj);
-			}
-			return sObj;
-		} else {
-			return nObj;
+DataManager.session = {
+	topGetter: $NULL,
+	topSetter: $NULL,
+	filterKey: $NULL
+};
+var DM_proto = DataManager.prototype = {
+	get: function(key) { //
+		var self = DataManager.session.topGetter = this,
+			arrKey = key.split("."),
+			parent,
+			result = self._database;
+		if (result != $UNDEFINED && result !== $FALSE) { //null|undefined|false
+			do {
+				result = $.valueOf(result[arrKey.splice(0, 1)]);
+			} while (result !== $UNDEFINED && arrKey.length);
 		}
-	};
-
-	// var direction = []; //direction.length>0 , from the parent node.
-	DataManager.prototype = {
-		get: function(key) { //
-			var self = this,
-				arrKey = key.split("."),
-				parent,
-				result = self._database;
-			if (result != $UNDEFINED && result !== $FALSE) { //null|undefined|false
-				do {
-					result = $.valueOf(result[arrKey.splice(0, 1)]);
-				} while (result !== $UNDEFINED && arrKey.length);
-			}
-			if (arrKey.length&&(parent = self._parentDataManager)) {//key不在对象中，查询父级
-				result = parent.get(key);
-			}
-			return result;
-		},
-		mix: function(key, nObj) {
-			//mix Data 合并数据
-			var self = this,
-				keys,
-				lastKey,
-				cache_top_n_obj,
-				cache_n_Obj;
-			switch (arguments.length) {
-				case 0:
-					break;
-				case 1:
-					nObj = key;
-					if (self._database !== nObj || nObj instanceof Object) {
-						self._database = _mix(self._database, nObj);
-					};
-					key = "";
-					break;
-				default:
-					var sObj = self.get(key)
-					if (sObj&&sObj[_DM_extends_object_constructor]) { //是DataManager.Object的拓展对象
-						sObj.set(nObj); //调用拓展对象的接口
-					} else {
-						keys = key.split(".");
-						lastKey = keys.pop();
-						cache_top_n_obj = cache_n_Obj = {};
-						$.ftE(keys, function(nodeKey) { //根据对象链生成可混合对象
-							cache_n_Obj = (cache_n_Obj[nodeKey] = {});
-						});
-						cache_n_Obj[lastKey] = nObj;
-						self._database = _mix(self._database, cache_top_n_obj);
-					}
-			}
-			return self.touchOff(key);
-		},
-		set: function(key, nObj) {
-			//replace Data 取代原有对象数据
-			var self = this,
-				keys,
-				lastKey;
-			switch (arguments.length) {
-				case 0:
-					break;
-				case 1:
-					nObj = key;
-					if (self._database !== nObj || nObj instanceof Object) {
-						self._database = nObj;
-					};
-					key = "";
-					break;
-				default:
-					var database = self._database||(self._database = {}),
-						cache_n_Obj = database,
-						arrKey = key.split("."),
-						lastKey = arrKey.pop();
-					$.ftE(arrKey,function(currentKey){
-						cache_n_Obj = cache_n_Obj[currentKey]||(cache_n_Obj[currentKey] = {})
+		if (arrKey.length && (parent = self._parentDataManager)) { //key不在对象中，查询父级
+			result = parent.get(key);
+		}
+		DataManager.session.filterKey = key;
+		return result;
+	},
+	mix: function(key, nObj) {
+		//mix Data 合并数据
+		var self = this,
+			keys,
+			lastKey,
+			cache_top_n_obj,
+			cache_n_Obj;
+		switch (arguments.length) {
+			case 0:
+				break;
+			case 1:
+				nObj = key;
+				if (self._database !== nObj || nObj instanceof Object) {
+					self._database = _mix(self._database, nObj);
+				};
+				key = "";
+				break;
+			default:
+				var sObj = self.get(key)
+				if (sObj && sObj[_DM_extends_object_constructor]) { //是DataManager.Object的拓展对象
+					sObj.set(nObj); //调用拓展对象的接口
+				} else {
+					keys = key.split(".");
+					lastKey = keys.pop();
+					cache_top_n_obj = cache_n_Obj = {};
+					$.ftE(keys, function(nodeKey) { //根据对象链生成可混合对象
+						cache_n_Obj = (cache_n_Obj[nodeKey] = {});
 					});
 					cache_n_Obj[lastKey] = nObj;
-			}
-			return self.touchOff(key);
-		},
-		registerTrigger:function(key,trigger){
-			var self = this,
-				triggerKeys = self._triggerKeys;
-			if (typeof trigger === "function") {
-				trigger = {
-					key:key,
-					event:trigger
-				};
-			}else{
-				if(!("key" in trigger)){
-					trigger.key = key
+					self._database = _mix(self._database, cache_top_n_obj);
 				}
+		}
+		return self.touchOff(key);
+	},
+	set: function(key, nObj) {
+		//replace Data 取代原有对象数据
+		var self = DataManager.session.topSetter = this,
+			lastKey;
+		switch (arguments.length) {
+			case 0:
+				break;
+			case 1:
+				nObj = key;
+				if (self._database !== nObj || nObj instanceof Object) {
+					self._database = nObj;
+				};
+				key = "";
+				break;
+			default:
+				var database = self._database || (self._database = {}),
+					cache_n_Obj = database,
+					arrKey = key.split("."),
+					lastKey = arrKey.pop();
+				$.ftE(arrKey, function(currentKey) {
+					cache_n_Obj = cache_n_Obj[currentKey] || (cache_n_Obj[currentKey] = {})
+				});
+				cache_n_Obj[lastKey] = nObj;
+		}
+		DataManager.session.filterKey = key;
+		return self.touchOff(key);
+	},
+	registerTrigger: function(key, trigger) {
+		var self = this,
+			triggerKeys = self._triggerKeys;
+		if (typeof trigger === "function") {
+			trigger = {
+				key: key,
+				event: trigger
+			};
+		} else {
+			if (!("key" in trigger)) {
+				trigger.key = key
 			}
-			return "id" in trigger?trigger.id:(trigger.id = (triggerKeys.push(key,trigger)-1)+"-"+key);
-		},
-		removeTrigger:function(trigger_id){
-			var index = parseInt(trigger_id),
-				key = trigger_id.replace(index+"-",""),
-				self = this,
-				triggerKeys = self._triggerKeys,
-				triggerCollection = triggerKeys.get(key)||[];
-			triggerCollection.splice(index,1);
-		},
-		touchOff:function(key){
-			var self = this,
-				triggerKeys = self._triggerKeys;
-				updateKey = []
-				;
-			triggerKeys.forIn(function(triggerCollection,key){
-				$.ftE(triggerCollection,function(trigger){
-					trigger.event(self);
-				})
-			});
-		},
-		_touchOffSubset: function(key) {},
-		_collectTriKey: function(viewInstance) {},
-		collect: function(dataManager) { /*收集dataManager的触发集*/
-			var self = this,
-				myTriggerKeys = self._triggerKeys,
-				dmTriggerKeys = dataManager._triggerKeys;
-			dmTriggerKeys.forIn(function(dmTriggerCollection, key) {
-				myTriggerKeys.push(key, dmTriggerCollection);
-			});
-		},
-		subset: function(dataManager, prefix) { /*收集dataManager的触发集*/
-			var self = this,
-				myTriggerKeys = self._triggerKeys,
-				dmTriggerKeys = dataManager._triggerKeys,
-				dotPrefix = prefix ? prefix += "." : ""
-			dataManager._prefix = prefix;
-			dataManager._parentDataManager && dataManager._parentDataManager.remove(dataManager);
+		}
+		return "id" in trigger ? trigger.id : (trigger.id = (triggerKeys.push(key, trigger) - 1) + "-" + key);
+	},
+	removeTrigger: function(trigger_id) {
+		var index = parseInt(trigger_id),
+			key = trigger_id.replace(index + "-", ""),
+			self = this,
+			triggerKeys = self._triggerKeys,
+			triggerCollection = triggerKeys.get(key) || [];
+		triggerCollection.splice(index, 1);
+	},
+	touchOff: function(key) {
+		var self = this,
+			triggerKeys = self._triggerKeys,
+			updateKey = [],
+			triggerCollection;
+		// triggerKeys.forIn(function(triggerCollection,key){
+		// 	$.ftE(triggerCollection,function(trigger){
+		// 		trigger.event(triggerKeys/*self*/);
+		// 	})
+		// });
+		(triggerCollection = triggerKeys.get(key)) && $.ftE(triggerCollection, function(smartTriggerHandle) {
+			smartTriggerHandle.event(triggerKeys);
+		})
+	},
+	_touchOffSubset: function(key) {},
+	_collectTriKey: function(viewInstance) {},
+	collect: function(dataManager) { /*收集dataManager的触发集*/
+		var self = this,
+			myTriggerKeys = self._triggerKeys,
+			dmTriggerKeys = dataManager._triggerKeys;
+		dmTriggerKeys.forIn(function(dmTriggerCollection, key) {
+			myTriggerKeys.push(key, dmTriggerCollection);
+			// $.ftE(dmTriggerCollection, function(smartTriggerHandle) {
+			// 	smartTriggerHandle.event( /*new triggerKeySet*/ myTriggerKeys);
+			// })
+		});
+		return self;
+	},
+	subset: function(dataManager, prefix) { /*收集dataManager的触发集*/
+		var self = this,
+			myTriggerKeys = self._triggerKeys,
+			dmTriggerKeys = dataManager._triggerKeys,
+			dotPrefix = prefix ? prefix += "." : ""
+		dataManager._prefix = prefix;
+		dataManager._parentDataManager && dataManager._parentDataManager.remove(dataManager);
 
-			dmTriggerKeys.forIn(function(dmTriggerCollection, key) {
-				myTriggerKeys.push(dotPrefix + key, dmTriggerCollection);
-			});
-		},
-		remove: function(dataManager) {}
-	};
-}());
+		dmTriggerKeys.forIn(function(dmTriggerCollection, key) {
+			myTriggerKeys.push(dotPrefix + key, dmTriggerCollection);
+		});
+		return self;
+	},
+	remove: function(dataManager) {},
+	destroy: function() {},
+	buildGetter: function(key) {},
+	buildSetter: function(key) {}
+};
+// }());
 function DynamicComputed(obs, isStatic) { //动态计算类，可定制成静态计算类（只收集一次的依赖，适合于简单的计算属性，没有逻辑嵌套）
 	var self = this;
 	if (!(this instanceof Controller.Observer)) {
@@ -928,6 +990,88 @@ function _create(data) { //data maybe basedata or dataManager
  * View Instance constructor
  */
 
+(function DM_extends_fot_VI() {
+	var _collect = DM_proto.collect;
+	DM_proto.collect = function(viewInstance) {
+		var self = this,
+			smartTriggers = viewInstance._smartTriggers;
+		if (viewInstance instanceof DataManager) {
+			_collect.call(self, viewInstance)
+		} else if (viewInstance instanceof ViewInstance) {
+			var vi_DM = viewInstance.dataManager;
+			viewInstance.dataManager = self;
+			if (vi_DM) {
+				_collect.call(self, vi_DM)
+				vi_DM.remove(viewInstance);
+				// viewInstance.dataManager = self;
+			} else {
+				// viewInstance.dataManager = self;
+				var viewInstanceTriggers = viewInstance._triggers;
+				$.ftE(viewInstanceTriggers, function(sKey) {
+					self.get(sKey);
+					var baseKey = DataManager.session.filterKey,
+						topGetterTriggerKeys = DataManager.session.topGetter._triggerKeys,
+						smartTrigger = new SmartTriggerHandle(
+							baseKey, //match key
+
+							function(smartTriggerSet) { //event
+								viewInstance.touchOff(sKey);
+							}, { //TEMP data
+								viewInstance: viewInstance,
+								dataManager: self,
+								// triggerSet: topGetterTriggerKeys,
+								sourceKey: sKey
+							}
+						);
+					$.p(smartTriggers, smartTrigger);
+					smartTrigger.bind(topGetterTriggerKeys); // topGetterTriggerKeys.push(baseKey, smartTrigger);
+					// smartTrigger.event(topGetterTriggerKeys);
+				});
+			}
+			$.p(viewInstance.dataManager._viewInstances,viewInstance);
+			self.rebuildTree();
+		}
+		return self;
+	};
+	// var _touchOff = DM_proto.touchOff;
+	DM_proto.rebuildTree = function(key) {
+		var self = this,
+			DMSet = self._subsetDataManagers;
+		// $.p(DMSet, self); //add self into cycle
+		// _touchOff.call(self,key);
+		$.ftE(self._viewInstances, function(childViewInstance) {
+			var smartTriggerCollection =
+				$.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
+					var TEMP = smartTrigger.TEMP;
+					TEMP.dataManager.get(TEMP.sourceKey);
+					var topGetter = DataManager.session.topGetter;
+					if (topGetter !== TEMP.dataManager) {
+						smartTrigger.bind(topGetter._triggerKeys);
+						TEMP.dataManager = topGetter;
+					}
+					smartTrigger.event(topGetter._triggerKeys);
+				})
+		})
+		$.ftE(self._subsetDataManagers, function(childDataManager) {
+			$.ftE(childDataManager._viewInstances, function(childViewInstance) {
+				var smartTriggerCollection =
+					$.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
+						if (smartTrigger.moveAble) {
+							var TEMP = smartTrigger.TEMP;
+							TEMP.dataManager.get(TEMP.sourceKey);
+							var topGetter = DataManager.session.topGetter;
+							if (topGetter !== TEMP.dataManager) {
+								smartTrigger.bind(topGetter._triggerKeys);
+								TEMP.dataManager = topGetter;
+								smartTrigger.event(topGetter._triggerKeys);
+							}
+						}
+					})
+			})
+		})
+		// DMSet.pop(); //remove self
+	}
+}());
 var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	if (!(this instanceof ViewInstance)) {
 		return new ViewInstance(handleNodeTree, NodeList, triggerTable, data);
@@ -956,7 +1100,7 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	self.TEMP = {};
 
 	$.fI(triggerTable, function(tiggerCollection, key) {
-		if (".".indexOf(key)!==0) {
+		if (".".indexOf(key) !== 0) {
 			$.p(self._triggers, key);
 		}
 		self._triggers._[key] = tiggerCollection;
@@ -964,19 +1108,20 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	$.fE(triggerTable["."], function(tiggerFun) { //const value
 		tiggerFun.event(NodeList, dataManager);
 	});
-	
-	if (data instanceof DataManager) {
-		dataManager = data.collect(self);
-	} else {
-		dataManager = DataManager(data, self);
+
+	if (!(data instanceof DataManager)) {
+		dataManager = DataManager(data);
 	}
+	self._smartTriggers = [];
+	dataManager.collect(self);
 };
 
 function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {
-	var self = this;
+	var self = this,
+		result;
 	$.fE(tiggerCollection, function(trigger) { //TODO:测试参数长度和效率的平衡点，减少参数传递的数量
-		trigger.event(NodeList, dataManager, eventTrigger, self._isAttr, self._id);
-		if (trigger.bubble) {
+		result = trigger.event(NodeList, dataManager, eventTrigger, self._isAttr, self._id);
+		if (result !== $FALSE && trigger.bubble) {
 			var parentNode = NodeList[trigger.handleId].parentNode;
 			parentNode && _bubbleTrigger.call(self, parentNode._triggers, NodeList, dataManager, trigger);
 		}
@@ -2244,8 +2389,7 @@ StaticObserver.staticGet = function() { //转化成静态计算类
 	self.get = self._get; //剥离依赖收集器
 	return result;
 };
-var DM_proto = DataManager.prototype,
-	DM_proto_set = DM_proto.set;
+var DM_proto_set = DM_proto.set;
 
 function Subset(dataManager) {
 	var self = this;

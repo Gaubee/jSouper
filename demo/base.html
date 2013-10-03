@@ -51,4 +51,12 @@
 
 	console.warn("after remove! touchOff 'a' key.");
 	model.touchOff("a");
+
+	console.log("-----------------");
+	setTimeout(function(){
+		console.log("begin to collect HVP - VI")
+		model.set("author","Gaubee bangeel");
+		model.set("library_name","HVP");
+		model.collect(HVP)
+	},500)
 </script>

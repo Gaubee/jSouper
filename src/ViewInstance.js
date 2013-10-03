@@ -2,6 +2,88 @@
  * View Instance constructor
  */
 
+(function DM_extends_fot_VI() {
+	var _collect = DM_proto.collect;
+	DM_proto.collect = function(viewInstance) {
+		var self = this,
+			smartTriggers = viewInstance._smartTriggers;
+		if (viewInstance instanceof DataManager) {
+			_collect.call(self, viewInstance)
+		} else if (viewInstance instanceof ViewInstance) {
+			var vi_DM = viewInstance.dataManager;
+			viewInstance.dataManager = self;
+			if (vi_DM) {
+				_collect.call(self, vi_DM)
+				vi_DM.remove(viewInstance);
+				// viewInstance.dataManager = self;
+			} else {
+				// viewInstance.dataManager = self;
+				var viewInstanceTriggers = viewInstance._triggers;
+				$.ftE(viewInstanceTriggers, function(sKey) {
+					self.get(sKey);
+					var baseKey = DataManager.session.filterKey,
+						topGetterTriggerKeys = DataManager.session.topGetter._triggerKeys,
+						smartTrigger = new SmartTriggerHandle(
+							baseKey, //match key
+
+							function(smartTriggerSet) { //event
+								viewInstance.touchOff(sKey);
+							}, { //TEMP data
+								viewInstance: viewInstance,
+								dataManager: self,
+								// triggerSet: topGetterTriggerKeys,
+								sourceKey: sKey
+							}
+						);
+					$.p(smartTriggers, smartTrigger);
+					smartTrigger.bind(topGetterTriggerKeys); // topGetterTriggerKeys.push(baseKey, smartTrigger);
+					// smartTrigger.event(topGetterTriggerKeys);
+				});
+			}
+			$.p(viewInstance.dataManager._viewInstances,viewInstance);
+			self.rebuildTree();
+		}
+		return self;
+	};
+	// var _touchOff = DM_proto.touchOff;
+	DM_proto.rebuildTree = function(key) {
+		var self = this,
+			DMSet = self._subsetDataManagers;
+		// $.p(DMSet, self); //add self into cycle
+		// _touchOff.call(self,key);
+		$.ftE(self._viewInstances, function(childViewInstance) {
+			var smartTriggerCollection =
+				$.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
+					var TEMP = smartTrigger.TEMP;
+					TEMP.dataManager.get(TEMP.sourceKey);
+					var topGetter = DataManager.session.topGetter;
+					if (topGetter !== TEMP.dataManager) {
+						smartTrigger.bind(topGetter._triggerKeys);
+						TEMP.dataManager = topGetter;
+					}
+					smartTrigger.event(topGetter._triggerKeys);
+				})
+		})
+		$.ftE(self._subsetDataManagers, function(childDataManager) {
+			$.ftE(childDataManager._viewInstances, function(childViewInstance) {
+				var smartTriggerCollection =
+					$.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
+						if (smartTrigger.moveAble) {
+							var TEMP = smartTrigger.TEMP;
+							TEMP.dataManager.get(TEMP.sourceKey);
+							var topGetter = DataManager.session.topGetter;
+							if (topGetter !== TEMP.dataManager) {
+								smartTrigger.bind(topGetter._triggerKeys);
+								TEMP.dataManager = topGetter;
+								smartTrigger.event(topGetter._triggerKeys);
+							}
+						}
+					})
+			})
+		})
+		// DMSet.pop(); //remove self
+	}
+}());
 var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	if (!(this instanceof ViewInstance)) {
 		return new ViewInstance(handleNodeTree, NodeList, triggerTable, data);
@@ -30,7 +112,7 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	self.TEMP = {};
 
 	$.fI(triggerTable, function(tiggerCollection, key) {
-		if (".".indexOf(key)!==0) {
+		if (".".indexOf(key) !== 0) {
 			$.p(self._triggers, key);
 		}
 		self._triggers._[key] = tiggerCollection;
@@ -38,19 +120,20 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	$.fE(triggerTable["."], function(tiggerFun) { //const value
 		tiggerFun.event(NodeList, dataManager);
 	});
-	
-	if (data instanceof DataManager) {
-		dataManager = data.collect(self);
-	} else {
-		dataManager = DataManager(data, self);
+
+	if (!(data instanceof DataManager)) {
+		dataManager = DataManager(data);
 	}
+	self._smartTriggers = [];
+	dataManager.collect(self);
 };
 
 function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {
-	var self = this;
+	var self = this,
+		result;
 	$.fE(tiggerCollection, function(trigger) { //TODO:测试参数长度和效率的平衡点，减少参数传递的数量
-		trigger.event(NodeList, dataManager, eventTrigger, self._isAttr, self._id);
-		if (trigger.bubble) {
+		result = trigger.event(NodeList, dataManager, eventTrigger, self._isAttr, self._id);
+		if (result !== $FALSE && trigger.bubble) {
 			var parentNode = NodeList[trigger.handleId].parentNode;
 			parentNode && _bubbleTrigger.call(self, parentNode._triggers, NodeList, dataManager, trigger);
 		}
