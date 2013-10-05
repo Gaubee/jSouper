@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>HTML-ViewParse</title>
+	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js">
+	{
+		data:{
+			title:"hehhe",
+			list:[{title:"1"},{title:"2"},{title:"3"},{title:"4"},{title:"5"}]
+		}
+	}
+	</script>
+</head>
+<body>
+	<div id="HVP">
+		<h3>the List</h3>
+		<ul>
+			<p>{{list.length}}</p>
+			{{#each list}}
+				<li>{{title}}</li>
+			{{/each}}
+		</ul>
+		<hr>
+		<ul>
+			<p>{{list.length}}</p>
+			{{#each list}}
+				<li>{{title}}</li>
+			{{/each}}
+		</ul>
+	</div>
+</body>
+</html>
+<script>
+	ViewParser.scans();
+	setTimeout(function (argument) {
+		HVP.set("list.3",{title:"????"})
+	},500)
+	setTimeout(function (argument) {
+		HVP.set("list.4.title","?????")
+	},1000)
+	setTimeout(function (argument) {
+		HVP.set("list",[{title:"@1"}])
+	},1500)
+	setTimeout(function (argument) {
+		HVP.set("list",[{title:"@1"},{title:"@2"},{title:"@3"}])
+	},2000)
+</script>

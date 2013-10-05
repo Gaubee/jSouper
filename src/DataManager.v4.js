@@ -54,7 +54,8 @@ function _mix(sObj, nObj) {
 DataManager.session = {
 	topGetter: $NULL,
 	topSetter: $NULL,
-	filterKey: $NULL
+	filterKey: $NULL,
+	setStacks:[]
 };
 var DM_proto = DataManager.prototype = {
 	get: function(key) { //
@@ -134,7 +135,22 @@ var DM_proto = DataManager.prototype = {
 				cache_n_Obj[lastKey] = nObj;
 		}
 		DataManager.session.filterKey = key;
-		return self.touchOff(key);
+
+		// return self.touchOff(key);
+		var result = self.getTopDataManager(key),
+			setStacks = DataManager.session.setStacks,
+			result_dm = result.dataManager,
+			result_dm_id = result_dm.id;
+		if ($.iO(setStacks,result_dm_id)!==-1) {
+			$.p(setStacks,result_dm_id);
+			result = result_dm.touchOff(result.key)
+			setStacks.pop();
+		}else{
+			// $.p(setStacks,self.id);
+			result = self.touchOff(key);
+			// setStacks.pop();
+		}
+		return result;
 	},
 	registerTrigger: function(key, trigger) {
 		var self = this,
@@ -159,19 +175,65 @@ var DM_proto = DataManager.prototype = {
 			triggerCollection = triggerKeys.get(key) || [];
 		triggerCollection.splice(index, 1);
 	},
+	getTopDataManager:function(key){
+		var self = this,
+			parent = self._parentDataManager,
+			result,
+			prefix;
+		if (parent) {
+			prefix = self._prefix//||""
+			key?(prefix&&(key=key+"."+prefix)/*else key = key*/):(prefix&&(key=prefix)/*key=""*/);
+			result = parent.getTopDataManager(key)
+		}else{
+			result = {
+				dataManager:self,
+				key:key
+			};
+		}
+		return result;
+	},
 	touchOff: function(key) {
 		var self = this,
+			parent = self._parentDataManager,
 			triggerKeys = self._triggerKeys,
 			updateKey = [],
 			triggerCollection;
+		//self
 		triggerKeys.forIn(function(triggerCollection, triggerKey) {
-			if (triggerKey.indexOf(key) === 0||key.indexOf(triggerKey)===0) {
+			if ( /*triggerKey.indexOf(key ) === 0 || key.indexOf(triggerKey ) === 0*/ !key || key === triggerKey || triggerKey.indexOf(key + ".") === 0 || key.indexOf(triggerKey + ".") === 0) {
+				// console.log("triggerKey:",triggerKey,"key:",key)
 				$.ftE(triggerCollection, function(smartTriggerHandle) {
 					smartTriggerHandle.event(triggerKeys);
 				})
 			}
-
 		});
+		//child
+		$.ftE(self._subsetDataManagers, function(childDataManager) {
+			var prefix = childDataManager._prefix; // || "";
+			if (prefix.indexOf(key + ".") === 0) {
+				childDataManager.touchOff(prefix.replace(key + ".", ""));
+			} else if (!key || key === prefix || key.indexOf(prefix + "") === 0) {
+				childDataManager.touchOff("")
+			}
+		});
+		/*debugger
+		//parent
+		if (parent) {
+			var prefix = self._prefix,
+				touchKey; //||"";
+			if (prefix.indexOf(key + ".") === 0) {
+				touchKey = prefix.replace(key + ".", "")
+			} else if (!key || key === prefix || key.indexOf(prefix + ".") === 0) {
+				touchKey = ""
+			}
+			if (touchKey !== $UNDEFINED) {
+				var parent_sunsetDM = parent._subsetDataManagers,
+					index = $.iO(parent_sunsetDM, self);
+				parent_sunsetDM.splice(index, 1);
+				parent.touchOff(touchKey);
+				parent_sunsetDM.splice(index, 0, self);
+			}
+		}*/
 	},
 	_touchOffSubset: function(key) {},
 	_collectTriKey: function(viewInstance) {},
@@ -196,14 +258,14 @@ var DM_proto = DataManager.prototype = {
 			myTriggerKeys = self._triggerKeys,
 			dmTriggerKeys = dataManager._triggerKeys,
 			dotPrefix = prefix ? prefix + "." : ""
-		dataManager._prefix = prefix;
+		dataManager._prefix = prefix || "";
 		dataManager._parentDataManager && dataManager._parentDataManager.remove(dataManager);
 		dataManager._parentDataManager = self;
 		var data = self.get(prefix);
 		if (dataManager._database !== data) {
 			dataManager.set(data)
 		}
-		$.p(self._subsetDataManagers,dataManager);
+		$.p(self._subsetDataManagers, dataManager);
 		/*
 		
 		dmTriggerKeys.forIn(function(dmTriggerCollection, key) {
