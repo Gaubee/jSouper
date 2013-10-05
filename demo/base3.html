@@ -44,4 +44,10 @@
 	setTimeout(function (argument) {
 		HVP.set("list",[{title:"@1"},{title:"@2"},{title:"@3"}])
 	},2000)
+
+	var subset = new DataManager;
+	HVP.dataManager.subset(subset,"list.0");
+	setTimeout(function(){
+		subset.set("title","???")
+	},2500)
 </script>

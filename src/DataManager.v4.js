@@ -55,25 +55,27 @@ DataManager.session = {
 	topGetter: $NULL,
 	topSetter: $NULL,
 	filterKey: $NULL,
-	setStacks:[]
+	setStacks: []
 };
 var DM_proto = DataManager.prototype = {
 	get: function(key) { //
 		var self = DataManager.session.topGetter = this,
-			arrKey = key.split("."),
-			parent,
 			result = self._database;
-		if (result != $UNDEFINED && result !== $FALSE) { //null|undefined|false
-			do {
-				result = $.valueOf(result[arrKey.splice(0, 1)]);
-			} while (result !== $UNDEFINED && arrKey.length);
-		}
-		/*
+		if (arguments.length !== 0) {
+			var arrKey = key.split("."),
+				parent
+			if (result != $UNDEFINED && result !== $FALSE) { //null|undefined|false
+				do {
+					result = $.valueOf(result[arrKey.splice(0, 1)]);
+				} while (result !== $UNDEFINED && arrKey.length);
+			}
+			/*
 		//避免混淆，不使用智能作用域，否则关键字更新触发器无法准确绑定或者会照常大量计算
 		if (arrKey.length && (parent = self._parentDataManager)) { //key不在对象中，查询父级
 			result = parent.get(key);
 		}*/
-		DataManager.session.filterKey = key;
+			DataManager.session.filterKey = key;
+		}
 		return result;
 	},
 	mix: function(key, nObj) {
@@ -141,11 +143,13 @@ var DM_proto = DataManager.prototype = {
 			setStacks = DataManager.session.setStacks,
 			result_dm = result.dataManager,
 			result_dm_id = result_dm.id;
-		if ($.iO(setStacks,result_dm_id)!==-1) {
-			$.p(setStacks,result_dm_id);
-			result = result_dm.touchOff(result.key)
+		if ($.iO(setStacks, result_dm_id) === -1) {
+			$.p(setStacks, result_dm_id);
+			// console.log(result)
+			result = result.key?result_dm.set(result.key,nObj):result_dm.set(nObj);
+			// result = result_dm.touchOff(result.key)
 			setStacks.pop();
-		}else{
+		} else {
 			// $.p(setStacks,self.id);
 			result = self.touchOff(key);
 			// setStacks.pop();
@@ -175,19 +179,19 @@ var DM_proto = DataManager.prototype = {
 			triggerCollection = triggerKeys.get(key) || [];
 		triggerCollection.splice(index, 1);
 	},
-	getTopDataManager:function(key){
+	getTopDataManager: function(key) {
 		var self = this,
 			parent = self._parentDataManager,
 			result,
 			prefix;
 		if (parent) {
-			prefix = self._prefix//||""
-			key?(prefix&&(key=key+"."+prefix)/*else key = key*/):(prefix&&(key=prefix)/*key=""*/);
+			prefix = self._prefix //||""
+			key ? (prefix && (key = prefix + "." + key) /*else key = key*/ ) : (prefix && (key = prefix) /*key=""*/ );
 			result = parent.getTopDataManager(key)
-		}else{
+		} else {
 			result = {
-				dataManager:self,
-				key:key
+				dataManager: self,
+				key: key
 			};
 		}
 		return result;
@@ -210,10 +214,17 @@ var DM_proto = DataManager.prototype = {
 		//child
 		$.ftE(self._subsetDataManagers, function(childDataManager) {
 			var prefix = childDataManager._prefix; // || "";
-			if (prefix.indexOf(key + ".") === 0) {
-				childDataManager.touchOff(prefix.replace(key + ".", ""));
-			} else if (!key || key === prefix || key.indexOf(prefix + "") === 0) {
-				childDataManager.touchOff("")
+			if (!key) {
+				childDataManager.set(prefix ? self.get(prefix) : self.get())
+			} else if (!prefix) {
+				childDataManager.set(key, self.get(key))
+			} else if (key === prefix || prefix.indexOf(key + ".") === 0) {
+				// childDataManager.touchOff(prefix.replace(key + ".", ""));
+				childDataManager.set(self.get(prefix))
+			} else if (key.indexOf(prefix + ".") === 0) {
+				prefix = key.replace(prefix + ".","")
+				childDataManager.set(prefix,self.get(key))
+				// childDataManager.touchOff("")
 			}
 		});
 		/*debugger
