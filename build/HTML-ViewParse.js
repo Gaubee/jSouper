@@ -12,6 +12,37 @@ var doc = document,
 	$UNDEFINED,
 	$TRUE = !$UNDEFINED,
 	$FALSE = !$TRUE,
+
+	_event_cache = {},
+	_addEventListener = function(Element, eventName, eventFun, elementHash) {
+		var args = $.s(arguments).splice(4),
+			wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = function() {
+				var wrapArgs = $.s(arguments);
+				Array.prototype.push.apply(wrapArgs, args);
+				eventFun.apply(Element, wrapArgs)
+			};
+		Element.addEventListener(eventName, wrapEventFun, $FALSE);
+	},
+	_removeEventListener = function(Element, eventName, eventFun, elementHash) {
+		var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
+		wrapEventFun && Element.removeEventListener(eventName, wrapEventFun, $FALSE);
+	},
+	_attachEvent = function(Element, eventName, eventFun, elementHash) {
+		var args = $.s(arguments).splice(4),
+			wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = function() {
+				var wrapArgs = $.s(arguments);
+				Array.prototype.push.apply(wrapArgs, args);
+				eventFun.apply(Element, wrapArgs)
+			};
+		Element.attachEvent("on" + eventName, wrapEventFun);
+	},
+	_detachEvent = function(Element, eventName, eventFun, elementHash) {
+		var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
+		wrapEventFun && Element.detachEvent("on" + eventName, wrapEventFun);
+	},
+	_registerEvent = _isIE ? _attachEvent : _addEventListener,
+	_cancelEvent = _isIE ? _detachEvent : _removeEventListener,
+	
 	$ = {
 		id: 9,
 		uidAvator: Math.random().toString(36).substring(2),
@@ -199,6 +230,18 @@ ArraySet.prototype = {
 		return key in this.store;
 	}
 };
+function Try(tryFun,scope,errorCallback){
+	errorCallback = errorCallback||$.noop;
+	return function(){
+		var result;
+		try{
+			result = tryFun.call(scope);
+		}catch(e){
+			errorCallback(e);
+		}
+		return result;
+	}
+};
 /*
  * SmartTriggerSet constructor
  */
@@ -353,7 +396,7 @@ var DM_proto = DataManager.prototype = {
 				parent
 			if (result != $UNDEFINED && result !== $FALSE) { //null|undefined|false
 				do {
-					result = $.valueOf(result[arrKey.splice(0, 1)]);
+					result = result[arrKey.splice(0, 1)];//$.valueOf(result[arrKey.splice(0, 1)]);
 				} while (result !== $UNDEFINED && arrKey.length);
 			}
 			/*
@@ -433,7 +476,7 @@ var DM_proto = DataManager.prototype = {
 		if ($.iO(setStacks, result_dm_id) === -1) {
 			$.p(setStacks, result_dm_id);
 			// console.log(result)
-			result = result.key?result_dm.set(result.key,nObj):result_dm.set(nObj);
+			result = result.key ? result_dm.set(result.key, nObj) : result_dm.set(nObj);
 			// result = result_dm.touchOff(result.key)
 			setStacks.pop();
 		} else {
@@ -487,12 +530,15 @@ var DM_proto = DataManager.prototype = {
 		var self = this,
 			parent = self._parentDataManager,
 			triggerKeys = self._triggerKeys,
-			updateKey = [],
+			updateKey = [key],
+			chidlUpdateKey = [],
+			allUpdateKey,
 			triggerCollection;
 		//self
 		triggerKeys.forIn(function(triggerCollection, triggerKey) {
 			if ( /*triggerKey.indexOf(key ) === 0 || key.indexOf(triggerKey ) === 0*/ !key || key === triggerKey || triggerKey.indexOf(key + ".") === 0 || key.indexOf(triggerKey + ".") === 0) {
 				// console.log("triggerKey:",triggerKey,"key:",key)
+				$.p(updateKey,triggerKey)
 				$.ftE(triggerCollection, function(smartTriggerHandle) {
 					smartTriggerHandle.event(triggerKeys);
 				})
@@ -500,19 +546,21 @@ var DM_proto = DataManager.prototype = {
 		});
 		//child
 		$.ftE(self._subsetDataManagers, function(childDataManager) {
-			var prefix = childDataManager._prefix; // || "";
+			var prefix = childDataManager._prefix,
+				childResult; // || "";
 			if (!key) {
-				childDataManager.set(prefix ? self.get(prefix) : self.get())
+				childResult = childDataManager.set(prefix ? self.get(prefix) : self.get())
 			} else if (!prefix) {
-				childDataManager.set(key, self.get(key))
+				childResult = childDataManager.set(key, self.get(key))
 			} else if (key === prefix || prefix.indexOf(key + ".") === 0) {
 				// childDataManager.touchOff(prefix.replace(key + ".", ""));
-				childDataManager.set(self.get(prefix))
+				childResult = childDataManager.set(self.get(prefix))
 			} else if (key.indexOf(prefix + ".") === 0) {
-				prefix = key.replace(prefix + ".","")
-				childDataManager.set(prefix,self.get(key))
+				prefix = key.replace(prefix + ".", "")
+				childResult = childDataManager.set(prefix, self.get(key))
 				// childDataManager.touchOff("")
 			}
+			$.p(chidlUpdateKey,childResult);
 		});
 		/*debugger
 		//parent
@@ -532,6 +580,16 @@ var DM_proto = DataManager.prototype = {
 				parent_sunsetDM.splice(index, 0, self);
 			}
 		}*/
+		// allUpdateKey = $.s(updateKey);
+		// $.ftE(chidlUpdateKey,function(childResult){
+		// 	allUpdateKey.push.apply(allUpdateKey,childResult.allUpdateKey);
+		// });
+		return {
+			key: key,
+			// allUpdateKey: allUpdateKey,
+			updateKey: updateKey,
+			chidlUpdateKey: chidlUpdateKey
+		}
 	},
 	_touchOffSubset: function(key) {},
 	_collectTriKey: function(viewInstance) {},
@@ -583,78 +641,6 @@ var DM_proto = DataManager.prototype = {
 	buildSetter: function(key) {}
 };
 // }());
-function DynamicComputed(obs, isStatic) { //动态计算类，可定制成静态计算类（只收集一次的依赖，适合于简单的计算属性，没有逻辑嵌套）
-	var self = this;
-	if (!(this instanceof Controller.Observer)) {
-		return new Controller.Observer(obs);
-	}
-	if (obs instanceof Function) {
-		self._get = obs;
-		self.set = $.noop; //默认更新value并触发更新
-		self._form = $NULL;
-	} else {
-		self._get = obs.get || function() {
-			return self._value
-		};
-		self.set = obs.set || $.noop;
-		self._form = obs.form || $NULL;
-	}
-	if (self._static = !! isStatic) {
-		var _cacheGet = self.get;
-		self.get = DynamicComputed._staticGet;
-	};
-	self._value;
-	self._valueOf = Controller._initGetData;
-	self._toString = Controller._getData;
-};
-DynamicComputed.prototype.get = function() {
-
-	var self = this,
-		result;
-	$.p(relyStack, []); //开始收集
-
-	result = self._get();
-
-	var relySet = relyStack.pop(); //获取收集结果
-
-	relySet.length && relyOn.pickUp(self, key, relySet);
-	$.ftE(relySet, function(relyNode) { //处理依赖结果
-		var relyId = relyNode.id,
-			relyKey = relyNode.key,
-			relyContainer = allRelyContainer[relyId] || (allRelyContainer[relyId] = {});
-
-		if (!(leader_id === relyId && leader_key === relyKey)) { //避免直接的循环依赖
-			cache = relyContainer[relyKey];
-			if (!cache) {
-				cache = relyContainer[relyKey] = [];
-				cache._ = {};
-			}
-			var cache_key = cache._[leader_key] || (cache._[leader_key] = "|");
-
-			if (cache_key.indexOf("|" + leader_id + "|") === -1) {
-				$.p(cache, {
-					dm: leader,
-					key: leader_key
-				});
-				cache._[leader_key] += leader_id + "|";
-			}
-		}
-	});
-};
-DynamicComputed._staticGet = function() { //转化成静态计算类
-	var self = this,
-		result = _cacheGet.apply(self, $.s(arguments));
-	self.get = self._get; //剥离依赖收集器
-	return result;
-};
-DynamicComputed._initGetData = function() {
-	var self = this;
-	self.valueOf = self.toString;
-	return self.value = self.get();
-};
-DynamicComputed._getData = function() {
-	return this.value
-};
 var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 	// $TRUE = true,
 	// $FALSE = false,
@@ -846,7 +832,7 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 // var testStr = "{{> 'tepl',data}}"; //==>{>({('tepl')}{(data)})}
 // var testStr = "{{$THIS.name*Gaubee}}"
 // console.log(parse(testStr));
-var _isIE = !+"\v1",
+var _isIE = !window.dispatchEvent,//!+"\v1",
 	//by RubyLouvre(司徒正美)
 	//setAttribute bug:http://www.iefans.net/ie-setattribute-bug/
 	IEfix = {
@@ -873,7 +859,8 @@ var _isIE = !+"\v1",
 		rowspan: "rowSpan",
 		tabindex: "tabIndex",
 		valign: "vAlign",
-		vspace: "vSpace"
+		vspace: "vSpace",
+		DOMContentLoaded:"readystatechange"
 	},
 	/*
 The full list of boolean attributes in HTML 4.01 (and hence XHTML 1.0) is (with property names where they differ in case):
@@ -1567,24 +1554,16 @@ var placeholder = {
 		withModules: {},
 		_instances: {},
 
-		Proto: DynamicComputed /*Proto*/ ,
+		// Proto: DynamicComputed /*Proto*/ ,
 		Model: DataManager
 	};
 var ViewParser = global.ViewParser = {
 	scans: function() {
-		var HVP_config = ViewParser.config;
 		$.fE(document.getElementsByTagName("script"), function(scriptNode) {
 			if (scriptNode.getAttribute("type") === "text/template") {
 				V.modules[scriptNode.getAttribute("name")] = V.parse(scriptNode.innerHTML);
 			}
 		});
-		var App = document.getElementById(HVP_config.appName); //configable
-		if (App) {
-			var template = this.parseNode(App)(HVP_config.data); //App.getAttribute("template-data")//json or url or configable
-			App.innerHTML = "";
-			template.append(App);
-			global[HVP_config.appName] = template;
-		}
 	},
 	parseStr: function(htmlStr) {
 		return V.parse(parse(str))
@@ -1601,22 +1580,55 @@ var ViewParser = global.ViewParser = {
 	modules: V.modules,
 	config: {
 		appName: 'HVP',
-		data:{}
-	}
+		data: {}
+	},
+	ready: (function() {
+		var ready = "DOMContentLoaded", //_isIE ? "DOMContentLoaded" : "readystatechange",
+			ready_status = $FALSE,
+			callbackFunStacks = [];
+
+		_registerEvent(doc, (_isIE && IEfix[ready]) || ready, function() {
+			$.ftE(callbackFunStacks, function(callbackObj) {
+				callbackObj.callback.call(callbackObj.scope)
+			})
+			ready_status = $TRUE;
+		});
+		return function(callbackFun, scope) {
+			if (ready_status) {
+				callbackFun.call(scope);
+			} else {
+				$.p(callbackFunStacks, {
+					callback: callbackFun,
+					scope: scope
+				})
+			}
+		}
+	}())
 };
 (function() {
 
 	var scriptTags = document.getElementsByTagName("script"),
-		HVP_config = ViewParser.config;
-	try {
-		var userConfigStr= scriptTags[scriptTags.length - 1].innerHTML;
-			userConfig = $.trim(userConfigStr)?eval("(" + userConfigStr + ")"):{};
-	} catch (e) {
+		HVP_config = ViewParser.config,
+		userConfigStr = scriptTags[scriptTags.length - 1].innerHTML;
+	ViewParser.ready(Try(function() {
+		userConfig = $.trim(userConfigStr) ? eval("(" + userConfigStr + ")") : {};
+		for (var i in userConfig) { //mix
+			HVP_config[i] = userConfig[i];
+		}
+	}, function(e) {
 		throw "config error:" + e.message;
-	}
-	for (var i in userConfig) {//mix
-		HVP_config[i] = userConfig[i];
-	}
+	}));
+	ViewParser.ready(function() {
+		var HVP_config = ViewParser.config,
+			App = document.getElementById(HVP_config.appName); //configable
+		if (App) {
+			var template = global[HVP_config.appName] =ViewParser.parseNode(App)(/*HVP_config.data*/); //App.getAttribute("template-data")//json or url or configable
+			template.set(HVP_config.data);
+			App.innerHTML = "";
+			template.append(App);
+		}
+		ViewParser.scans();
+	})
 }());
 V.rh("HTML", function(handle, index, parentHandle) {
 	var endCommentHandle = _commentPlaceholder(handle, parentHandle, "html_end_" + handle.id),
@@ -2270,36 +2282,8 @@ V.ra(function(attrKey){
 }, function() {
 	return _AttributeHandleEvent.dir;
 })
-var _event_cache = {},
-	_addEventListener = function(Element, eventName, eventFun, elementHash) {
-		var args = $.s(arguments).splice(4),
-			wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = function() {
-				var wrapArgs = $.s(arguments);
-				Array.prototype.push.apply(wrapArgs, args);
-				eventFun.apply(Element, wrapArgs)
-			};
-		Element.addEventListener(eventName, wrapEventFun, $FALSE);
-	},
-	_removeEventListener = function(Element, eventName, eventFun, elementHash) {
-		var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
-		wrapEventFun && Element.removeEventListener(eventName, wrapEventFun, $FALSE);
-	},
-	_attachEvent = function(Element, eventName, eventFun, elementHash) {
-		var args = $.s(arguments).splice(4),
-			wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = function() {
-				var wrapArgs = $.s(arguments);
-				Array.prototype.push.apply(wrapArgs, args);
-				eventFun.apply(Element, wrapArgs)
-			};
-		Element.attachEvent("on" + eventName, wrapEventFun);
-	},
-	_detachEvent = function(Element, eventName, eventFun, elementHash) {
-		var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
-		wrapEventFun && Element.detachEvent("on" + eventName, wrapEventFun);
-	},
-	_registerEvent = _isIE ? _attachEvent : _addEventListener,
-	_cancelEvent = _isIE ? _detachEvent : _removeEventListener,
-	_elementCache = {},
+
+var _elementCache = {},
 	eventListerAttribute = function(key, currentNode, parserNode, vi, dm) {
 		var attrOuter = _getAttrOuter(parserNode),
 			eventName = key.replace("event-on", "").replace("event-", ""),
@@ -2421,38 +2405,40 @@ var relyStack = [], //用于搜集依赖的堆栈数据集
 		})
 	}
 
-function Observer(obs) { //动态计算类
+	function Observer(obs) { //动态计算类
+		var self = this;
+		if (!(this instanceof Observer)) {
+			return new Observer(obs);
+		}
+		DataManager.Object(self);
+		if (obs instanceof Function) {
+			self._get = Try(obs, self);
+			self.set = $.noop; //默认更新value并触发更新
+			self._form = $NULL;
+		} else {
+			self._get = obs.get || function() {
+				return self._value
+			};
+			self.set = Try(obs.set, self) || $.noop;
+			self._form = Try(obs.form, self) || $NULL;
+		}
+		self._value;
+		self._valueOf = Observer._initGetData;
+		self._toString = Observer._getData;
+	};
+Observer._initGetData = function() {
 	var self = this;
-	if (!(this instanceof Observer)) {
-		return new Observer(obs);
-	}
-	DataManager.Object(self);
-	if (obs instanceof Function) {
-		self._get = obs;
-		self.set = $.noop; //默认更新value并触发更新
-		self._form = $NULL;
-	} else {
-		self._get = obs.get || function() {
-			return self._value
-		};
-		self.set = obs.set || $.noop;
-		self._form = obs.form || $NULL;
-	}
-	self._value;
-	self._valueOf = Observer._initGetData;
-	self._toString = Observer._getData;
+	self.valueOf = self.toString = Observer._getData;
+	return self._value = self.get();
 };
-Observer.prototype.get = function() {
-
-	var self = this,
-		result;
-	$.p(relyStack, []); //开始收集
-
-	result = self._get();
-
-	var relySet = relyStack.pop(); //获取收集结果
-
-	relySet.length && relyOn.pickUp(self, key, relySet);
+Observer._getData = function() {
+	return this._value
+};
+Observer.collect = function(leader_id, follower_id) {
+	//allRelyContainer;
+};
+Observer.pickUp = function(leader, leader_key, relySet) {
+	var leader_id = leader.id;
 	$.ftE(relySet, function(relyNode) { //处理依赖结果
 		var relyId = relyNode.id,
 			relyKey = relyNode.key,
@@ -2476,15 +2462,69 @@ Observer.prototype.get = function() {
 		}
 	});
 };
+Observer.prototype = {
+	get: function() {
 
-Observer._initGetData = function() {
-	var self = this;
-	self.valueOf = self.toString;
-	return self.value = self.get();
+		var self = this,
+			dm = DataManager.session.topGetter,
+			key = DataManager.session.filterKey,
+			result;
+		$.p(relyStack, []); //开始收集
+
+		result = self._value = self._get();
+
+		var relySet = relyStack.pop(); //获取收集结果
+		console.log(relySet); //debugger;
+		relySet.length && Observer.pickUp(dm, key, relySet);
+
+		return result;
+	}/*,
+	toString: Observer._initGetData,
+	valueOf: Observer._initGetData*/
 };
-Observer._getData = function() {
-	return this.value
-};
+
+(function() {
+	var _get = DM_proto.get,
+		_set = DM_proto.set,
+		_collect = DM_proto.collect;
+	DM_proto.get = function() {
+		var result = _get.apply(this, $.s(arguments));
+		// console.log(result)
+		if (result instanceof Observer) {
+			result = result.get()
+		}
+		if (relyStack.length) {
+			$.p($.lI(relyStack), {
+				id: DataManager.session.topGetter.id,
+				// dataManager: DataManager.session.topGetter,
+				key: DataManager.session.filterKey
+			})
+		}
+		return result;
+	};
+	DM_proto.set = function() {
+		var self= this,
+			result = _set.apply(this, $.s(arguments)),
+			relyContainer = allRelyContainer[self.id];
+		if (relyContainer) {
+			// console.log(result,relyContainer)
+			$.ftE(result.updateKey,function(updateKey){
+				var relyObjects = relyContainer[updateKey];
+				relyObjects&&$.ftE(relyObjects,function(relyObject){
+					relyObject.dm.touchOff(relyObject.key)
+				});
+			});
+		}
+		return result;
+	};
+	DM_proto.collect = function(dataManager) {
+		var result = _collect.apply(this, $.s(arguments));
+		if (dataManager instanceof DataManager) {
+			Observer.collect(this.id, dataManager.id);
+		}
+		return result;
+	}
+}());
 var _cacheGet = Observer.get;
 function StaticObserver(obs) { //静态计算类（只收集一次的依赖，适合于简单的计算属性，没有逻辑嵌套）
 	var observerInstance = new Observer(obs);
@@ -2496,55 +2536,5 @@ StaticObserver.staticGet = function() { //转化成静态计算类
 	self.get = self._get; //剥离依赖收集器
 	return result;
 };
-/*var DM_proto_set = DM_proto.set;
-
-function Subset(dataManager) {
-	var self = this;
-	if (!(this instanceof Subset)) {
-		return new Subset(dataManager);
-	}
-	DataManager.Object(self);
-	self.id = $.uid();
-	self.dataManager = dataManager;
-	dataManager.set = Subset.set;
-};
-Subset.set = function() {
-	var self = this,
-		result = DM_proto_set.call(self, $.s(arguments)),
-		parentDM = self._parentDataManager,
-		subsetDM = parentDM._subsetDataManagers,
-		index = $.iO(subsetDM, self);
-	subsetDM.splice(index, 1);
-	parentDM._touchOffSubset(self._prefix);//find similar keys
-	subsetDM.splice(index, 0, self);
-	return result;
-};
-DM_proto.subset = function(viewInstance, prefix) {
-	var self = this,
-		triggerKeys = self._triggerKeys,
-		subsetDataManager = viewInstance.dataManager,
-		subsetConfig = Subset(subsetDataManager); //DataManager(baseData, viewInstance);
-
-	triggerKeys.get(DataManager.filterKey(prefix)).set(prefix)
-
-	subsetDataManager._parentDataManager = self;
-	subsetDataManager.set = _DM_bubbleSet;
-	if (arguments.length > 1) {
-		subsetDataManager._database = _mix(subsetDataManager._database, self.get(String(prefix)));
-	} else {
-		subsetDataManager._database = self._database;
-	}
-	if (viewInstance instanceof ViewInstance) {
-		viewInstance.dataManager = subsetDataManager;
-		// viewInstance.reDraw();
-		self._collectTriKey(viewInstance);
-	}
-	if (prefix) {
-
-		subsetDataManager._prefix = prefix;
-	}
-	$.p(this._subsetDataManagers, subsetDataManager);
-	return subsetDataManager; //subset(vi).set(basedata);},
-};*/
 
 }(this));

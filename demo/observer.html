@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>HTML-ViewParse</title>
+	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js">
+	{
+		data:{
+			title:"Observer",
+			fullName:Observer(function get (argument) {
+				return HVP.get("firstName")+" "+HVP.get("lastName")
+			}),
+			firstName:"Gaubee",
+			lastName:"bangeel"
+		}
+	}
+	</script>
+</head>
+<body>
+	<div id="HVP">
+		<h3>{{title}}-{{fullName}}</h3>
+	</div>
+</body>
+</html>
+<script>
+</script>

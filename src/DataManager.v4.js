@@ -66,7 +66,7 @@ var DM_proto = DataManager.prototype = {
 				parent
 			if (result != $UNDEFINED && result !== $FALSE) { //null|undefined|false
 				do {
-					result = $.valueOf(result[arrKey.splice(0, 1)]);
+					result = result[arrKey.splice(0, 1)];//$.valueOf(result[arrKey.splice(0, 1)]);
 				} while (result !== $UNDEFINED && arrKey.length);
 			}
 			/*
@@ -146,7 +146,7 @@ var DM_proto = DataManager.prototype = {
 		if ($.iO(setStacks, result_dm_id) === -1) {
 			$.p(setStacks, result_dm_id);
 			// console.log(result)
-			result = result.key?result_dm.set(result.key,nObj):result_dm.set(nObj);
+			result = result.key ? result_dm.set(result.key, nObj) : result_dm.set(nObj);
 			// result = result_dm.touchOff(result.key)
 			setStacks.pop();
 		} else {
@@ -200,12 +200,15 @@ var DM_proto = DataManager.prototype = {
 		var self = this,
 			parent = self._parentDataManager,
 			triggerKeys = self._triggerKeys,
-			updateKey = [],
+			updateKey = [key],
+			chidlUpdateKey = [],
+			allUpdateKey,
 			triggerCollection;
 		//self
 		triggerKeys.forIn(function(triggerCollection, triggerKey) {
 			if ( /*triggerKey.indexOf(key ) === 0 || key.indexOf(triggerKey ) === 0*/ !key || key === triggerKey || triggerKey.indexOf(key + ".") === 0 || key.indexOf(triggerKey + ".") === 0) {
 				// console.log("triggerKey:",triggerKey,"key:",key)
+				$.p(updateKey,triggerKey)
 				$.ftE(triggerCollection, function(smartTriggerHandle) {
 					smartTriggerHandle.event(triggerKeys);
 				})
@@ -213,19 +216,21 @@ var DM_proto = DataManager.prototype = {
 		});
 		//child
 		$.ftE(self._subsetDataManagers, function(childDataManager) {
-			var prefix = childDataManager._prefix; // || "";
+			var prefix = childDataManager._prefix,
+				childResult; // || "";
 			if (!key) {
-				childDataManager.set(prefix ? self.get(prefix) : self.get())
+				childResult = childDataManager.set(prefix ? self.get(prefix) : self.get())
 			} else if (!prefix) {
-				childDataManager.set(key, self.get(key))
+				childResult = childDataManager.set(key, self.get(key))
 			} else if (key === prefix || prefix.indexOf(key + ".") === 0) {
 				// childDataManager.touchOff(prefix.replace(key + ".", ""));
-				childDataManager.set(self.get(prefix))
+				childResult = childDataManager.set(self.get(prefix))
 			} else if (key.indexOf(prefix + ".") === 0) {
-				prefix = key.replace(prefix + ".","")
-				childDataManager.set(prefix,self.get(key))
+				prefix = key.replace(prefix + ".", "")
+				childResult = childDataManager.set(prefix, self.get(key))
 				// childDataManager.touchOff("")
 			}
+			$.p(chidlUpdateKey,childResult);
 		});
 		/*debugger
 		//parent
@@ -245,6 +250,16 @@ var DM_proto = DataManager.prototype = {
 				parent_sunsetDM.splice(index, 0, self);
 			}
 		}*/
+		// allUpdateKey = $.s(updateKey);
+		// $.ftE(chidlUpdateKey,function(childResult){
+		// 	allUpdateKey.push.apply(allUpdateKey,childResult.allUpdateKey);
+		// });
+		return {
+			key: key,
+			// allUpdateKey: allUpdateKey,
+			updateKey: updateKey,
+			chidlUpdateKey: chidlUpdateKey
+		}
 	},
 	_touchOffSubset: function(key) {},
 	_collectTriKey: function(viewInstance) {},

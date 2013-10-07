@@ -1,4 +1,4 @@
-var _isIE = !+"\v1",
+var _isIE = !window.dispatchEvent,//!+"\v1",
 	//by RubyLouvre(司徒正美)
 	//setAttribute bug:http://www.iefans.net/ie-setattribute-bug/
 	IEfix = {
@@ -25,7 +25,8 @@ var _isIE = !+"\v1",
 		rowspan: "rowSpan",
 		tabindex: "tabIndex",
 		valign: "vAlign",
-		vspace: "vSpace"
+		vspace: "vSpace",
+		DOMContentLoaded:"readystatechange"
 	},
 	/*
 The full list of boolean attributes in HTML 4.01 (and hence XHTML 1.0) is (with property names where they differ in case):

@@ -17,7 +17,7 @@
 		<ul>
 			<p>{{list.length}}</p>
 			{{#each list}}
-				<li>{{title}}</li>
+				<li>{{$INDEX}}:{{title}}</li>
 			{{/each}}
 		</ul>
 		<hr>
@@ -49,5 +49,6 @@
 	HVP.dataManager.subset(subset,"list.0");
 	setTimeout(function(){
 		subset.set("title","???")
+		subset.set({})
 	},2500)
 </script>

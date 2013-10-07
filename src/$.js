@@ -10,6 +10,37 @@ var doc = document,
 	$UNDEFINED,
 	$TRUE = !$UNDEFINED,
 	$FALSE = !$TRUE,
+
+	_event_cache = {},
+	_addEventListener = function(Element, eventName, eventFun, elementHash) {
+		var args = $.s(arguments).splice(4),
+			wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = function() {
+				var wrapArgs = $.s(arguments);
+				Array.prototype.push.apply(wrapArgs, args);
+				eventFun.apply(Element, wrapArgs)
+			};
+		Element.addEventListener(eventName, wrapEventFun, $FALSE);
+	},
+	_removeEventListener = function(Element, eventName, eventFun, elementHash) {
+		var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
+		wrapEventFun && Element.removeEventListener(eventName, wrapEventFun, $FALSE);
+	},
+	_attachEvent = function(Element, eventName, eventFun, elementHash) {
+		var args = $.s(arguments).splice(4),
+			wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = function() {
+				var wrapArgs = $.s(arguments);
+				Array.prototype.push.apply(wrapArgs, args);
+				eventFun.apply(Element, wrapArgs)
+			};
+		Element.attachEvent("on" + eventName, wrapEventFun);
+	},
+	_detachEvent = function(Element, eventName, eventFun, elementHash) {
+		var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
+		wrapEventFun && Element.detachEvent("on" + eventName, wrapEventFun);
+	},
+	_registerEvent = _isIE ? _attachEvent : _addEventListener,
+	_cancelEvent = _isIE ? _detachEvent : _removeEventListener,
+	
 	$ = {
 		id: 9,
 		uidAvator: Math.random().toString(36).substring(2),
@@ -195,5 +226,17 @@ ArraySet.prototype = {
 	// },
 	has: function(key) {
 		return key in this.store;
+	}
+};
+function Try(tryFun,scope,errorCallback){
+	errorCallback = errorCallback||$.noop;
+	return function(){
+		var result;
+		try{
+			result = tryFun.call(scope);
+		}catch(e){
+			errorCallback(e);
+		}
+		return result;
 	}
 };

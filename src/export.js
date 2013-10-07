@@ -107,24 +107,16 @@ var placeholder = {
 		withModules: {},
 		_instances: {},
 
-		Proto: DynamicComputed /*Proto*/ ,
+		// Proto: DynamicComputed /*Proto*/ ,
 		Model: DataManager
 	};
 var ViewParser = global.ViewParser = {
 	scans: function() {
-		var HVP_config = ViewParser.config;
 		$.fE(document.getElementsByTagName("script"), function(scriptNode) {
 			if (scriptNode.getAttribute("type") === "text/template") {
 				V.modules[scriptNode.getAttribute("name")] = V.parse(scriptNode.innerHTML);
 			}
 		});
-		var App = document.getElementById(HVP_config.appName); //configable
-		if (App) {
-			var template = this.parseNode(App)(HVP_config.data); //App.getAttribute("template-data")//json or url or configable
-			App.innerHTML = "";
-			template.append(App);
-			global[HVP_config.appName] = template;
-		}
 	},
 	parseStr: function(htmlStr) {
 		return V.parse(parse(str))
@@ -141,20 +133,53 @@ var ViewParser = global.ViewParser = {
 	modules: V.modules,
 	config: {
 		appName: 'HVP',
-		data:{}
-	}
+		data: {}
+	},
+	ready: (function() {
+		var ready = "DOMContentLoaded", //_isIE ? "DOMContentLoaded" : "readystatechange",
+			ready_status = $FALSE,
+			callbackFunStacks = [];
+
+		_registerEvent(doc, (_isIE && IEfix[ready]) || ready, function() {
+			$.ftE(callbackFunStacks, function(callbackObj) {
+				callbackObj.callback.call(callbackObj.scope)
+			})
+			ready_status = $TRUE;
+		});
+		return function(callbackFun, scope) {
+			if (ready_status) {
+				callbackFun.call(scope);
+			} else {
+				$.p(callbackFunStacks, {
+					callback: callbackFun,
+					scope: scope
+				})
+			}
+		}
+	}())
 };
 (function() {
 
 	var scriptTags = document.getElementsByTagName("script"),
-		HVP_config = ViewParser.config;
-	try {
-		var userConfigStr= scriptTags[scriptTags.length - 1].innerHTML;
-			userConfig = $.trim(userConfigStr)?eval("(" + userConfigStr + ")"):{};
-	} catch (e) {
+		HVP_config = ViewParser.config,
+		userConfigStr = scriptTags[scriptTags.length - 1].innerHTML;
+	ViewParser.ready(Try(function() {
+		userConfig = $.trim(userConfigStr) ? eval("(" + userConfigStr + ")") : {};
+		for (var i in userConfig) { //mix
+			HVP_config[i] = userConfig[i];
+		}
+	}, function(e) {
 		throw "config error:" + e.message;
-	}
-	for (var i in userConfig) {//mix
-		HVP_config[i] = userConfig[i];
-	}
+	}));
+	ViewParser.ready(function() {
+		var HVP_config = ViewParser.config,
+			App = document.getElementById(HVP_config.appName); //configable
+		if (App) {
+			var template = global[HVP_config.appName] =ViewParser.parseNode(App)(/*HVP_config.data*/); //App.getAttribute("template-data")//json or url or configable
+			template.set(HVP_config.data);
+			App.innerHTML = "";
+			template.append(App);
+		}
+		ViewParser.scans();
+	})
 }());
