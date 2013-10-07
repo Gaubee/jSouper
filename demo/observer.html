@@ -10,7 +10,20 @@
 				return HVP.get("firstName")+" "+HVP.get("lastName")
 			}),
 			firstName:"Gaubee",
-			lastName:"bangeel"
+			lastName:"bangeel",
+			name:Observer({
+				get:function(){
+					return "my name is "+HVP.get("firstName")+" "+HVP.get("lastName")
+				},
+				set:function(new_data){
+					console.log(new_data)
+					var name = new_data.split(" ");
+					if (name.length>1) {
+						HVP.set("firstName",name[0]);
+						HVP.set("lastName",name[name.length-1]);
+					}
+				}
+			})
 		}
 	}
 	</script>
@@ -18,8 +31,12 @@
 <body>
 	<div id="HVP">
 		<h3>{{title}}-{{fullName}}</h3>
+		<p>{{name}}</p>
 	</div>
 </body>
 </html>
 <script>
+setTimeout(function(){
+	HVP.set("name","a b")
+},1000)
 </script>

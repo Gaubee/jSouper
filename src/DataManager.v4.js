@@ -66,7 +66,8 @@ var DM_proto = DataManager.prototype = {
 				parent
 			if (result != $UNDEFINED && result !== $FALSE) { //null|undefined|false
 				do {
-					result = result[arrKey.splice(0, 1)];//$.valueOf(result[arrKey.splice(0, 1)]);
+					result = result[arrKey.splice(0, 1)];
+					// result = $.valueOf(result[arrKey.splice(0, 1)]);
 				} while (result !== $UNDEFINED && arrKey.length);
 			}
 			/*
@@ -75,6 +76,9 @@ var DM_proto = DataManager.prototype = {
 			result = parent.get(key);
 		}*/
 			DataManager.session.filterKey = key;
+		}
+		if (result && result[_DM_extends_object_constructor]) {
+			result = result.get();
 		}
 		return result;
 	},
@@ -128,13 +132,18 @@ var DM_proto = DataManager.prototype = {
 				break;
 			default:
 				var database = self._database || (self._database = {}),
+					sObj,
 					cache_n_Obj = database,
 					arrKey = key.split("."),
 					lastKey = arrKey.pop();
 				$.ftE(arrKey, function(currentKey) {
 					cache_n_Obj = cache_n_Obj[currentKey] || (cache_n_Obj[currentKey] = {})
 				});
-				cache_n_Obj[lastKey] = nObj;
+				if ((sObj = cache_n_Obj[lastKey])[_DM_extends_object_constructor]) {
+					sObj.set(nObj)
+				} else {
+					cache_n_Obj[lastKey] = nObj;
+				}
 		}
 		DataManager.session.filterKey = key;
 
@@ -208,7 +217,7 @@ var DM_proto = DataManager.prototype = {
 		triggerKeys.forIn(function(triggerCollection, triggerKey) {
 			if ( /*triggerKey.indexOf(key ) === 0 || key.indexOf(triggerKey ) === 0*/ !key || key === triggerKey || triggerKey.indexOf(key + ".") === 0 || key.indexOf(triggerKey + ".") === 0) {
 				// console.log("triggerKey:",triggerKey,"key:",key)
-				$.p(updateKey,triggerKey)
+				$.p(updateKey, triggerKey)
 				$.ftE(triggerCollection, function(smartTriggerHandle) {
 					smartTriggerHandle.event(triggerKeys);
 				})
@@ -230,7 +239,7 @@ var DM_proto = DataManager.prototype = {
 				childResult = childDataManager.set(prefix, self.get(key))
 				// childDataManager.touchOff("")
 			}
-			$.p(chidlUpdateKey,childResult);
+			$.p(chidlUpdateKey, childResult);
 		});
 		/*debugger
 		//parent

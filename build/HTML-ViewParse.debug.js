@@ -257,7 +257,7 @@ function Try(tryFun,scope,errorCallback){
 	return function(){
 		var result;
 		try{
-			result = tryFun.call(scope);
+			result = tryFun.apply(scope,$.s(arguments));
 		}catch(e){
 			errorCallback(e);
 		}
@@ -418,7 +418,8 @@ var DM_proto = DataManager.prototype = {
 				parent
 			if (result != $UNDEFINED && result !== $FALSE) { //null|undefined|false
 				do {
-					result = result[arrKey.splice(0, 1)];//$.valueOf(result[arrKey.splice(0, 1)]);
+					result = result[arrKey.splice(0, 1)];
+					// result = $.valueOf(result[arrKey.splice(0, 1)]);
 				} while (result !== $UNDEFINED && arrKey.length);
 			}
 			/*
@@ -427,6 +428,9 @@ var DM_proto = DataManager.prototype = {
 			result = parent.get(key);
 		}*/
 			DataManager.session.filterKey = key;
+		}
+		if (result && result[_DM_extends_object_constructor]) {
+			result = result.get();
 		}
 		return result;
 	},
@@ -480,13 +484,18 @@ var DM_proto = DataManager.prototype = {
 				break;
 			default:
 				var database = self._database || (self._database = {}),
+					sObj,
 					cache_n_Obj = database,
 					arrKey = key.split("."),
 					lastKey = arrKey.pop();
 				$.ftE(arrKey, function(currentKey) {
 					cache_n_Obj = cache_n_Obj[currentKey] || (cache_n_Obj[currentKey] = {})
 				});
-				cache_n_Obj[lastKey] = nObj;
+				if ((sObj = cache_n_Obj[lastKey])[_DM_extends_object_constructor]) {
+					sObj.set(nObj)
+				} else {
+					cache_n_Obj[lastKey] = nObj;
+				}
 		}
 		DataManager.session.filterKey = key;
 
@@ -560,7 +569,7 @@ var DM_proto = DataManager.prototype = {
 		triggerKeys.forIn(function(triggerCollection, triggerKey) {
 			if ( /*triggerKey.indexOf(key ) === 0 || key.indexOf(triggerKey ) === 0*/ !key || key === triggerKey || triggerKey.indexOf(key + ".") === 0 || key.indexOf(triggerKey + ".") === 0) {
 				// console.log("triggerKey:",triggerKey,"key:",key)
-				$.p(updateKey,triggerKey)
+				$.p(updateKey, triggerKey)
 				$.ftE(triggerCollection, function(smartTriggerHandle) {
 					smartTriggerHandle.event(triggerKeys);
 				})
@@ -582,7 +591,7 @@ var DM_proto = DataManager.prototype = {
 				childResult = childDataManager.set(prefix, self.get(key))
 				// childDataManager.touchOff("")
 			}
-			$.p(chidlUpdateKey,childResult);
+			$.p(chidlUpdateKey, childResult);
 		});
 		/*debugger
 		//parent
@@ -2435,7 +2444,9 @@ var relyStack = [], //用于搜集依赖的堆栈数据集
 		DataManager.Object(self);
 		if (obs instanceof Function) {
 			self._get = Try(obs, self);
-			self.set = $.noop; //默认更新value并触发更新
+			self.set = $.noop;/*function(new_value){
+				self._value = new_value;
+			};*///; //默认更新value并触发更新
 			self._form = $NULL;
 		} else {
 			self._get = obs.get || function() {
@@ -2496,13 +2507,13 @@ Observer.prototype = {
 		result = self._value = self._get();
 
 		var relySet = relyStack.pop(); //获取收集结果
-		console.log(relySet); //debugger;
+		// console.log(relySet); //debugger;
 		relySet.length && Observer.pickUp(dm, key, relySet);
 
 		return result;
-	}/*,
+	},
 	toString: Observer._initGetData,
-	valueOf: Observer._initGetData*/
+	valueOf: Observer._initGetData
 };
 
 (function() {
@@ -2512,9 +2523,9 @@ Observer.prototype = {
 	DM_proto.get = function() {
 		var result = _get.apply(this, $.s(arguments));
 		// console.log(result)
-		if (result instanceof Observer) {
-			result = result.get()
-		}
+		// if (result instanceof Observer) {
+		// 	result = result.get()
+		// }
 		if (relyStack.length) {
 			$.p($.lI(relyStack), {
 				id: DataManager.session.topGetter.id,

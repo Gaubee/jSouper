@@ -23,7 +23,9 @@ var relyStack = [], //用于搜集依赖的堆栈数据集
 		DataManager.Object(self);
 		if (obs instanceof Function) {
 			self._get = Try(obs, self);
-			self.set = $.noop; //默认更新value并触发更新
+			self.set = $.noop;/*function(new_value){
+				self._value = new_value;
+			};*///; //默认更新value并触发更新
 			self._form = $NULL;
 		} else {
 			self._get = obs.get || function() {
@@ -84,13 +86,13 @@ Observer.prototype = {
 		result = self._value = self._get();
 
 		var relySet = relyStack.pop(); //获取收集结果
-		console.log(relySet); //debugger;
+		// console.log(relySet); //debugger;
 		relySet.length && Observer.pickUp(dm, key, relySet);
 
 		return result;
-	}/*,
+	},
 	toString: Observer._initGetData,
-	valueOf: Observer._initGetData*/
+	valueOf: Observer._initGetData
 };
 
 (function() {
@@ -100,9 +102,9 @@ Observer.prototype = {
 	DM_proto.get = function() {
 		var result = _get.apply(this, $.s(arguments));
 		// console.log(result)
-		if (result instanceof Observer) {
-			result = result.get()
-		}
+		// if (result instanceof Observer) {
+		// 	result = result.get()
+		// }
 		if (relyStack.length) {
 			$.p($.lI(relyStack), {
 				id: DataManager.session.topGetter.id,

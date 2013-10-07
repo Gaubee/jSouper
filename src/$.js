@@ -233,7 +233,7 @@ function Try(tryFun,scope,errorCallback){
 	return function(){
 		var result;
 		try{
-			result = tryFun.call(scope);
+			result = tryFun.apply(scope,$.s(arguments));
 		}catch(e){
 			errorCallback(e);
 		}
