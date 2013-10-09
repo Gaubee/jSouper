@@ -50,7 +50,13 @@ function _mix(sObj, nObj) {
 		return nObj;
 	}
 };
-
+var DM_config = DataManager.config = {
+	prefix: {
+		this: "$THIS",
+		parent: "$PARENT",
+		top: "$TOP"
+	}
+};
 DataManager.session = {
 	topGetter: $NULL,
 	topSetter: $NULL,
@@ -139,7 +145,7 @@ var DM_proto = DataManager.prototype = {
 				$.ftE(arrKey, function(currentKey) {
 					cache_n_Obj = cache_n_Obj[currentKey] || (cache_n_Obj[currentKey] = {})
 				});
-				if ((sObj = cache_n_Obj[lastKey])[_DM_extends_object_constructor]) {
+				if ((sObj = cache_n_Obj[lastKey]) && sObj[_DM_extends_object_constructor]) {
 					sObj.set(nObj)
 				} else {
 					cache_n_Obj[lastKey] = nObj;
@@ -292,12 +298,17 @@ var DM_proto = DataManager.prototype = {
 		var self = this,
 			myTriggerKeys = self._triggerKeys,
 			dmTriggerKeys = dataManager._triggerKeys,
-			dotPrefix = prefix ? prefix + "." : ""
-		dataManager._prefix = prefix || "";
+			// dotPrefix = prefix ? prefix + "." : "",
+			data = prefix === $UNDEFINED ? self.get() : self.get(prefix);
+		dataManager._prefix = DataManager.session.filterKey || "";
 		dataManager._parentDataManager && dataManager._parentDataManager.remove(dataManager);
-		dataManager._parentDataManager = self;
-		var data = self.get(prefix);
+		dataManager._parentDataManager = DataManager.session.topGetter;
+
 		if (dataManager._database !== data) {
+			if (dataManager._database instanceof Object) {
+				data = _mix(dataManager._database, data)
+			}
+			// console.log(prefix, data)
 			dataManager.set(data)
 		}
 		$.p(self._subsetDataManagers, dataManager);

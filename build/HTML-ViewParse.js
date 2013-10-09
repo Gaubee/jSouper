@@ -263,13 +263,13 @@ function SmartTriggerSet(data) {
 	}
 	currentCollection = store[key] || (store[key] = []);
 	if (value instanceof Array) {
-		$.ftE(value,function(smartTriggerHandle){
-			self.push(key,smartTriggerHandle);
+		$.ftE(value, function(smartTriggerHandle) {
+			self.push(key, smartTriggerHandle);
 		})
 		// currentCollection.push.apply(currentCollection, value)
-	} else if(value instanceof SmartTriggerHandle){
+	} else if (value instanceof SmartTriggerHandle) {
 		$.p(currentCollection, value)
-	}else{
+	} else {
 		console.warn("type error,no SmartTriggerHandle instance!");
 	}
 	return currentCollection.length;
@@ -281,6 +281,16 @@ SmartTriggerSet.prototype.touchOff = function(key) {
 	});
 	return self;
 };
+SmartTriggerSet.prototype.remove = function(smartTriggerHandle) {
+	var self = this,
+		key = smartTriggerHandle.matchKey,
+		store = self.store,
+		currentCollection = store[key],
+		index = $.iO(currentCollection, smartTriggerHandle);
+	// console.log(index)
+	// currentCollection.splice(smartTriggerHandle);
+	return self;
+}
 /*
  * SmartTriggerHandle constructor
  */
@@ -380,7 +390,13 @@ function _mix(sObj, nObj) {
 		return nObj;
 	}
 };
-
+var DM_config = DataManager.config = {
+	prefix: {
+		this: "$THIS",
+		parent: "$PARENT",
+		top: "$TOP"
+	}
+};
 DataManager.session = {
 	topGetter: $NULL,
 	topSetter: $NULL,
@@ -469,7 +485,7 @@ var DM_proto = DataManager.prototype = {
 				$.ftE(arrKey, function(currentKey) {
 					cache_n_Obj = cache_n_Obj[currentKey] || (cache_n_Obj[currentKey] = {})
 				});
-				if ((sObj = cache_n_Obj[lastKey])[_DM_extends_object_constructor]) {
+				if ((sObj = cache_n_Obj[lastKey]) && sObj[_DM_extends_object_constructor]) {
 					sObj.set(nObj)
 				} else {
 					cache_n_Obj[lastKey] = nObj;
@@ -622,12 +638,17 @@ var DM_proto = DataManager.prototype = {
 		var self = this,
 			myTriggerKeys = self._triggerKeys,
 			dmTriggerKeys = dataManager._triggerKeys,
-			dotPrefix = prefix ? prefix + "." : ""
-		dataManager._prefix = prefix || "";
+			// dotPrefix = prefix ? prefix + "." : "",
+			data = prefix === $UNDEFINED ? self.get() : self.get(prefix);
+		dataManager._prefix = DataManager.session.filterKey || "";
 		dataManager._parentDataManager && dataManager._parentDataManager.remove(dataManager);
-		dataManager._parentDataManager = self;
-		var data = self.get(prefix);
+		dataManager._parentDataManager = DataManager.session.topGetter;
+
 		if (dataManager._database !== data) {
+			if (dataManager._database instanceof Object) {
+				data = _mix(dataManager._database, data)
+			}
+			// console.log(prefix, data)
 			dataManager.set(data)
 		}
 		$.p(self._subsetDataManagers, dataManager);
@@ -1152,6 +1173,7 @@ function _create(data) { //data maybe basedata or dataManager
 	var _subset = DM_proto.subset;
 	DM_proto.subset = function(viewInstance, prefix) {
 		var self = this;
+		// prefix === $UNDEFINED&&(prefix = "")
 		if (viewInstance instanceof DataManager) {
 			_subset.call(self, viewInstance, prefix);
 		} else {
@@ -1161,7 +1183,7 @@ function _create(data) { //data maybe basedata or dataManager
 			} else {
 				var data = self.get(prefix),
 					filterKey = DataManager.session.filterKey;
-				console.log(filterKey)
+				// console.log(filterKey)
 				if (filterKey) {
 					vi_DM = DataManager(data);
 					vi_DM.collect(viewInstance);
@@ -2397,6 +2419,98 @@ V.ra(function(attrKey){
 V.ra("style",function () {
 	return _isIE&&_AttributeHandleEvent.style;
 })
+;
+(function() {
+	var _get = DM_proto.get,
+		_set = DM_proto.set,
+		/*set = DM_proto.set = function(key) {
+			var self = this,
+				args = $.s(arguments),
+				prefix_parent = DM_config.prefix.parent,
+				prefix_this = DM_config.prefix.this,
+				result = {
+					key: key,
+					// allUpdateKey: allUpdateKey,
+					updateKey: [key],
+					chidlUpdateKey: []
+				};
+			if (args.length > 1) {
+				if (key.indexOf(prefix_parent) === 0) { //$parent
+					if (key === prefix_parent) {
+						if (self._prefix) {
+							args[0] = self._prefix
+						} else {
+							args.splice(0, 1);
+						}
+					} else if (key.charAt(prefix_parent.length) === ".") {
+						if (self._prefix) {
+							args[0] = key.replace(prefix_parent, self._prefix)
+						} else {
+							args[0] = key.replace(prefix_parent + ".", "");
+						}
+					}
+					result = set.apply(self._parentDataManager, args);
+				} else if (key.indexOf(prefix_this) === 0) { //$this
+					if (key === prefix_this) {
+						args.splice(0, 1);
+					} else if (key.charAt(prefix_this.length) === ".") {
+						args[0] = key.replace(prefix_this + ".", "");
+					}
+					result = set.apply(self, args);
+					result = set.apply(self, args);
+				} else { //no prefix key
+					result = _set.apply(self, args);
+				}
+			} else { //one argument
+				// result = _set.apply(self, args);
+				result = _set.call(self, key);
+			}
+			console.log(self, args)
+			return result;
+		},*/
+		get = DM_proto.get = function(key) {
+			var self = this,
+				args = $.s(arguments),
+				prefix_parent = DM_config.prefix.parent,
+				prefix_this = DM_config.prefix.this,
+				result;
+			// console.log(key)
+			if (args.length > 0) {
+				if (key.indexOf(prefix_parent) === 0) { //$parent
+					if (self = self._parentDataManager) {
+						if (key === prefix_parent) {
+							// if (self._prefix) {
+							// 	args[0] = self._prefix
+							// } else {
+								args.splice(0, 1);
+							// }
+						} else if (key.charAt(prefix_parent.length) === ".") {
+							// if (self._prefix) {
+							// 	args[0] = key.replace(prefix_parent, self._prefix)
+							// } else {
+								args[0] = key.replace(prefix_parent + ".", "");
+							// }
+						}
+						result = get.apply(self, args);
+					}
+				} else if (key.indexOf(prefix_this) === 0) { //$this
+					if (key === prefix_this) {
+						args.splice(0, 1);
+					} else if (key.charAt(prefix_this.length) === ".") {
+						args[0] = key.replace(prefix_this + ".", "");
+					}
+					result = get.apply(self, args);
+				} else { //no prefix key
+					result = _get.apply(self, args);
+				}
+			} else { //one argument
+				result = _get.apply(self, args);
+				// result = _get.call(self, key);
+			}
+			// console.log(self, args)
+			return result;
+		}
+}());
 var relyStack = [], //用于搜集依赖的堆栈数据集
 	allRelyContainer = {}, //存储处理过的依赖关系集，在set运作后链式触发 TODO：注意处理循环依赖
 	chain_update_rely = function(id, updataKeys) {

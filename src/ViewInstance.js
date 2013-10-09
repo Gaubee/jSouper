@@ -85,6 +85,7 @@
 	var _subset = DM_proto.subset;
 	DM_proto.subset = function(viewInstance, prefix) {
 		var self = this;
+		// prefix === $UNDEFINED&&(prefix = "")
 		if (viewInstance instanceof DataManager) {
 			_subset.call(self, viewInstance, prefix);
 		} else {
@@ -94,7 +95,7 @@
 			} else {
 				var data = self.get(prefix),
 					filterKey = DataManager.session.filterKey;
-				console.log(filterKey)
+				// console.log(filterKey)
 				if (filterKey) {
 					vi_DM = DataManager(data);
 					vi_DM.collect(viewInstance);

@@ -19,13 +19,13 @@ function SmartTriggerSet(data) {
 	}
 	currentCollection = store[key] || (store[key] = []);
 	if (value instanceof Array) {
-		$.ftE(value,function(smartTriggerHandle){
-			self.push(key,smartTriggerHandle);
+		$.ftE(value, function(smartTriggerHandle) {
+			self.push(key, smartTriggerHandle);
 		})
 		// currentCollection.push.apply(currentCollection, value)
-	} else if(value instanceof SmartTriggerHandle){
+	} else if (value instanceof SmartTriggerHandle) {
 		$.p(currentCollection, value)
-	}else{
+	} else {
 		console.warn("type error,no SmartTriggerHandle instance!");
 	}
 	return currentCollection.length;
@@ -37,6 +37,16 @@ SmartTriggerSet.prototype.touchOff = function(key) {
 	});
 	return self;
 };
+SmartTriggerSet.prototype.remove = function(smartTriggerHandle) {
+	var self = this,
+		key = smartTriggerHandle.matchKey,
+		store = self.store,
+		currentCollection = store[key],
+		index = $.iO(currentCollection, smartTriggerHandle);
+	// console.log(index)
+	// currentCollection.splice(smartTriggerHandle);
+	return self;
+}
 /*
  * SmartTriggerHandle constructor
  */
