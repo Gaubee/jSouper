@@ -343,8 +343,6 @@ SmartTriggerHandle.prototype = {
  */
 // var _hasOwn = Object.prototype.hasOwnProperty;
 
-// (function() {
-
 function DataManager(baseData) {
 	var self = this;
 	if (!(self instanceof DataManager)) {
@@ -587,28 +585,6 @@ var DM_proto = DataManager.prototype = {
 			}
 			$.p(chidlUpdateKey, childResult);
 		});
-		/*debugger
-		//parent
-		if (parent) {
-			var prefix = self._prefix,
-				touchKey; //||"";
-			if (prefix.indexOf(key + ".") === 0) {
-				touchKey = prefix.replace(key + ".", "")
-			} else if (!key || key === prefix || key.indexOf(prefix + ".") === 0) {
-				touchKey = ""
-			}
-			if (touchKey !== $UNDEFINED) {
-				var parent_sunsetDM = parent._subsetDataManagers,
-					index = $.iO(parent_sunsetDM, self);
-				parent_sunsetDM.splice(index, 1);
-				parent.touchOff(touchKey);
-				parent_sunsetDM.splice(index, 0, self);
-			}
-		}*/
-		// allUpdateKey = $.s(updateKey);
-		// $.ftE(chidlUpdateKey,function(childResult){
-		// 	allUpdateKey.push.apply(allUpdateKey,childResult.allUpdateKey);
-		// });
 		return {
 			key: key,
 			// allUpdateKey: allUpdateKey,
@@ -670,7 +646,7 @@ var DM_proto = DataManager.prototype = {
 	buildGetter: function(key) {},
 	buildSetter: function(key) {}
 };
-// }());
+
 var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 	// $TRUE = true,
 	// $FALSE = false,
@@ -2468,11 +2444,71 @@ V.ra("style",function () {
 			console.log(self, args)
 			return result;
 		},*/
+		set = DM_proto.set = function(key) {
+			var self = this,
+				args = $.s(arguments),
+				prefix_parent = DM_config.prefix.parent,
+				prefix_this = DM_config.prefix.this,
+				prefix_top = DM_config.prefix.top,
+				result;
+			// console.log(key)
+			if (args.length > 1) {
+				if (key.indexOf(prefix_parent) === 0) { //$parent
+					if (self = self._parentDataManager) {
+						if (key === prefix_parent) {
+							// if (self._prefix) {
+							// 	args[0] = self._prefix
+							// } else {
+							args.splice(0, 1);
+							// }
+						} else if (key.charAt(prefix_parent.length) === ".") {
+							// if (self._prefix) {
+							// 	args[0] = key.replace(prefix_parent, self._prefix)
+							// } else {
+							args[0] = key.replace(prefix_parent + ".", "");
+							// }
+						}
+						result = set.apply(self, args);
+					}
+				} else if (key.indexOf(prefix_this) === 0) { //$this
+					if (key === prefix_this) {
+						args.splice(0, 1);
+					} else if (key.charAt(prefix_this.length) === ".") {
+						args[0] = key.replace(prefix_this + ".", "");
+					}
+					result = set.apply(self, args);
+				} else if (key.indexOf(prefix_top) === 0) {
+					var next;
+					while (next = self._parentDataManager) {
+						self = next;
+					}
+					if (key === prefix_top) {
+						args.splice(0, 1);
+					} else if (key.charAt(prefix_top.length) === ".") {
+						args[0] = key.replace(prefix_top + ".", "");
+					}
+					result = set.apply(self, args);
+				} else { //no prefix key
+					result = _set.apply(self, args);
+				}
+			} else { //one argument
+				result = _set.apply(self, args);
+				// result = _set.call(self, key);
+			}
+			// console.log(self, args)
+			return result || {
+				key: key,
+				// allUpdateKey: allUpdateKey,
+				updateKey: [key],
+				chidlUpdateKey: []
+			};
+		},
 		get = DM_proto.get = function(key) {
 			var self = this,
 				args = $.s(arguments),
 				prefix_parent = DM_config.prefix.parent,
 				prefix_this = DM_config.prefix.this,
+				prefix_top = DM_config.prefix.top,
 				result;
 			// console.log(key)
 			if (args.length > 0) {
@@ -2482,13 +2518,13 @@ V.ra("style",function () {
 							// if (self._prefix) {
 							// 	args[0] = self._prefix
 							// } else {
-								args.splice(0, 1);
+							args.splice(0, 1);
 							// }
 						} else if (key.charAt(prefix_parent.length) === ".") {
 							// if (self._prefix) {
 							// 	args[0] = key.replace(prefix_parent, self._prefix)
 							// } else {
-								args[0] = key.replace(prefix_parent + ".", "");
+							args[0] = key.replace(prefix_parent + ".", "");
 							// }
 						}
 						result = get.apply(self, args);
@@ -2498,6 +2534,17 @@ V.ra("style",function () {
 						args.splice(0, 1);
 					} else if (key.charAt(prefix_this.length) === ".") {
 						args[0] = key.replace(prefix_this + ".", "");
+					}
+					result = get.apply(self, args);
+				} else if (key.indexOf(prefix_top) === 0) {
+					var next;
+					while (next = self._parentDataManager) {
+						self = next;
+					}
+					if (key === prefix_top) {
+						args.splice(0, 1);
+					} else if (key.charAt(prefix_top.length) === ".") {
+						args[0] = key.replace(prefix_top + ".", "");
 					}
 					result = get.apply(self, args);
 				} else { //no prefix key

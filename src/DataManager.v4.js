@@ -3,8 +3,6 @@
  */
 // var _hasOwn = Object.prototype.hasOwnProperty;
 
-// (function() {
-
 function DataManager(baseData) {
 	var self = this;
 	if (!(self instanceof DataManager)) {
@@ -247,28 +245,6 @@ var DM_proto = DataManager.prototype = {
 			}
 			$.p(chidlUpdateKey, childResult);
 		});
-		/*debugger
-		//parent
-		if (parent) {
-			var prefix = self._prefix,
-				touchKey; //||"";
-			if (prefix.indexOf(key + ".") === 0) {
-				touchKey = prefix.replace(key + ".", "")
-			} else if (!key || key === prefix || key.indexOf(prefix + ".") === 0) {
-				touchKey = ""
-			}
-			if (touchKey !== $UNDEFINED) {
-				var parent_sunsetDM = parent._subsetDataManagers,
-					index = $.iO(parent_sunsetDM, self);
-				parent_sunsetDM.splice(index, 1);
-				parent.touchOff(touchKey);
-				parent_sunsetDM.splice(index, 0, self);
-			}
-		}*/
-		// allUpdateKey = $.s(updateKey);
-		// $.ftE(chidlUpdateKey,function(childResult){
-		// 	allUpdateKey.push.apply(allUpdateKey,childResult.allUpdateKey);
-		// });
 		return {
 			key: key,
 			// allUpdateKey: allUpdateKey,
@@ -330,4 +306,3 @@ var DM_proto = DataManager.prototype = {
 	buildGetter: function(key) {},
 	buildSetter: function(key) {}
 };
-// }());

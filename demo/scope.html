@@ -45,5 +45,8 @@
 
 	var anonymousVM = data().append(document.body)
 
-	cchildVM.dataManager.subset(anonymousVM,"child");
+	cchildVM.dataManager.subset(anonymousVM,"$PARENT.child");
+	setTimeout(function  (argument) {
+		anonymousVM.set("$TOP.name","this is Top!!! touch off by the last viewInstance Fork Me!")
+	},1000)
 </script>
