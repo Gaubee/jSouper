@@ -43,8 +43,6 @@ SmartTriggerSet.prototype.remove = function(smartTriggerHandle) {
 		store = self.store,
 		currentCollection = store[key],
 		index = $.iO(currentCollection, smartTriggerHandle);
-	// console.log(index)
-	// currentCollection.splice(smartTriggerHandle);
 	return self;
 }
 /*
@@ -54,12 +52,6 @@ SmartTriggerSet.prototype.remove = function(smartTriggerHandle) {
 function SmartTriggerHandle(key, triggerEvent, data) {
 	var self = this,
 		match = key;
-	// if (!(match instanceof Function)) {
-	// 	match = function(matchObj) {
-	// 		return matchObj === key;
-	// 	}
-	// }
-	// self.match = match;
 	self.matchKey = String(key);
 	self.TEMP = data;
 	self.event = triggerEvent instanceof Function ? triggerEvent : $.noop;
@@ -70,13 +62,6 @@ SmartTriggerHandle.moveAble = function(smartTriggerHandle) {
 	return $TRUE;
 };
 SmartTriggerHandle.prototype = {
-	// touchOff: function(matchKey) {
-	// 	var self = this;
-	// 	if (self.matchKey === matchKey) {
-	// 		self.event()
-	// 	}
-	// 	return self;
-	// },
 	bind: function(smartTriggerSet, key) {
 		var self = this;
 		$.p(self.smartTriggerSetCollection, smartTriggerSet);

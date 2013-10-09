@@ -158,7 +158,6 @@ var DM_proto = DataManager.prototype = {
 			result_dm_id = result_dm.id;
 		if ($.iO(setStacks, result_dm_id) === -1) {
 			$.p(setStacks, result_dm_id);
-			// console.log(result)
 			result = result.key ? result_dm.set(result.key, nObj) : result_dm.set(nObj);
 			// result = result_dm.touchOff(result.key)
 			setStacks.pop();

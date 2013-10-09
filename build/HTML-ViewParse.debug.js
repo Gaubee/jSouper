@@ -309,8 +309,6 @@ SmartTriggerSet.prototype.remove = function(smartTriggerHandle) {
 		store = self.store,
 		currentCollection = store[key],
 		index = $.iO(currentCollection, smartTriggerHandle);
-	// console.log(index)
-	// currentCollection.splice(smartTriggerHandle);
 	return self;
 }
 /*
@@ -320,12 +318,6 @@ SmartTriggerSet.prototype.remove = function(smartTriggerHandle) {
 function SmartTriggerHandle(key, triggerEvent, data) {
 	var self = this,
 		match = key;
-	// if (!(match instanceof Function)) {
-	// 	match = function(matchObj) {
-	// 		return matchObj === key;
-	// 	}
-	// }
-	// self.match = match;
 	self.matchKey = String(key);
 	self.TEMP = data;
 	self.event = triggerEvent instanceof Function ? triggerEvent : $.noop;
@@ -336,13 +328,6 @@ SmartTriggerHandle.moveAble = function(smartTriggerHandle) {
 	return $TRUE;
 };
 SmartTriggerHandle.prototype = {
-	// touchOff: function(matchKey) {
-	// 	var self = this;
-	// 	if (self.matchKey === matchKey) {
-	// 		self.event()
-	// 	}
-	// 	return self;
-	// },
 	bind: function(smartTriggerSet, key) {
 		var self = this;
 		$.p(self.smartTriggerSetCollection, smartTriggerSet);
@@ -520,7 +505,6 @@ var DM_proto = DataManager.prototype = {
 			result_dm_id = result_dm.id;
 		if ($.iO(setStacks, result_dm_id) === -1) {
 			$.p(setStacks, result_dm_id);
-			// console.log(result)
 			result = result.key ? result_dm.set(result.key, nObj) : result_dm.set(nObj);
 			// result = result_dm.touchOff(result.key)
 			setStacks.pop();
@@ -670,8 +654,6 @@ var DM_proto = DataManager.prototype = {
 };
 
 var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
-	// $TRUE = true,
-	// $FALSE = false,
 	// DoubleQuotedString = /"(?:\.|(\\\")|[^\""\n])*"/g, //双引号字符串
 	// SingleQuotedString = /'(?:\.|(\\\')|[^\''\n])*'/g, //单引号字符串
 	QuotedString = /"(?:\.|(\\\")|[^\""\n])*"|'(?:\.|(\\\')|[^\''\n])*'/g, //单引号字符串
@@ -711,14 +693,12 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 			return Placeholder;
 		});
 		result = str.replace(newTemplateMatchReg, function(matchStr, innerStr, index) {
-			// console.log(arguments)
 			var fun_name = $.trim(innerStr).split(" ")[0];
 			if (fun_name in templateHandles) {
 				if (templateHandles[fun_name]) {
 					var args = innerStr.replace(fun_name, "").split(","),
 						result = "{" + fun_name + "(";
 					$.ftE(args, function(arg) {
-						// args.forEach(function(arg) {
 						if (arg = $.trim(arg)) {
 							result += parseIte(parseArg(arg));
 						}
@@ -757,27 +737,19 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 		if (inner) {
 			allStack.push.apply(allStack, parseStr(argStr));
 		}
-		// console.log(pointer, argStr.length)
-		// stack = argStr.split(/([\W]+?)/);
-		// console.log(allStack);
-		// parseIte(stack);
-		// return parseIte(stack); //argStr;
 		return allStack;
 	},
 	parseStr = function(sliceArgStr) {
 		var stack = [],
 			pointer = 0;
 		sliceArgStr.replace(/([^\w$\(\)]+)/g, function(matchOperator, operator, index, str) { //([\W]+)
-			// console.log(arguments)
 			operator = $.trim(operator);
 			if (operator && operator !== ".") {
 				$.p(stack, {
-					// stack.push({
 					type: "arg",
 					value: str.substring(pointer, index)
 				});
 				$.p(stack, {
-					// stack.push({
 					type: "ope",
 					value: operator,
 					num: templateOperatorNum[operator] || 0,
@@ -791,7 +763,6 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 		}
 		if (sliceArgStr.length - pointer) {
 			$.p(stack, {
-				// stack.push({
 				type: "arg",
 				value: sliceArgStr.substring(pointer, sliceArgStr.length)
 			})
@@ -801,21 +772,17 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 	parseIte = function(arr) {
 		var result = "";
 		$.ftE(arr, function(block, index) {
-			// arr.forEach(function(block, index) {
 			if (block.type === "arg") {
 				!block.parse && (block.parse = "{(" + block.value + ")}");
-				// console.log(block.parse, index)
 			}
 			if (!block.value) {
 				block.ignore = $TRUE;
 			}
 		});
 		$.ftE(arr, function(block, index) {
-			// arr.forEach(function(block, index) {
 			if (block.type === "ope") {
 				var prev = arr[index - 1],
 					next = arr[index + 1];
-				// console.log(prev, index, next)
 				if (block.num === 1) {
 					if (prev && prev.type === "arg") { //a++
 						block.parse = "{$" + block.value + "(" + prev.parse + ")}";
@@ -828,14 +795,12 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 					next.parse = "{" + block.value + "(" + prev.parse + next.parse + ")}"
 					prev.ignore = $TRUE;
 					block.ignore = $TRUE;
-				} else { //()
-					// console.log(block)
+				} else { 
 					throw "Unknown type:" + block.value
 				}
 			}
 		});
 		$.ftE(arr, function(block) {
-			// arr.forEach(function(block) {
 			if (!block.ignore) {
 				result += block.parse;
 			}
@@ -843,23 +808,6 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 		return result; //arr;
 	};
 
-
-// var testStr = "{{  a.b  }} "; //==>{(a.b)}
-// var testStr = "{{  --a--  }} "; //==>{$--({--({(a)})})} 
-// var testStr = "{{  #if bool}} {{name}} {{/if}}"; //==>{#if({(bool)})} {(name)} {/if()}
-// var testStr = "{{  !a.x + (++b)  }}"; //==>{+({!({(a.x)})}{++({(b)})})}
-// var testStr = "{{  #if !a.x + (++b) +x.v  }} {{name}} {{/if}}"; //==>{#if({+({+({!({(a.x)})}{++({(b)})})}{(x.v)})})} {(name)} {/if()}
-// var testStr = "{{ a || b}}"; //==>{||({(a)}{(b)})}
-// var testStr = "{{ a && b}}"; //==>{&&({(a)}{(b)})}
-// var testStr = "{{@ hehe }}"; //==>{@({(hehe)})}
-// var testStr = "{{HTML gaubee }}"; //==>{@({(hehe)})}
-// var testStr = "<p>{{HTML gaubee }}</p>"; //==>{@({(hehe)})}
-// var testStr = "<p>{{#if a=='asdsd'}}{{'hehe'}}{{/if}}</p>"; //==>{@({(hehe)})}
-
-// var testStr = "{{a='x'}}"; //==>{=({(a)}{('x')})}
-// var testStr = "{{> 'tepl',data}}"; //==>{>({('tepl')}{(data)})}
-// var testStr = "{{$THIS.name*Gaubee}}"
-// console.log(parse(testStr));
 var _isIE = !window.dispatchEvent,//!+"\v1",
 	//by RubyLouvre(司徒正美)
 	//setAttribute bug:http://www.iefans.net/ie-setattribute-bug/
@@ -891,55 +839,12 @@ var _isIE = !window.dispatchEvent,//!+"\v1",
 		DOMContentLoaded:"readystatechange"
 	},
 	/*
-The full list of boolean attributes in HTML 4.01 (and hence XHTML 1.0) is (with property names where they differ in case):
-
-checked             (input type=checkbox/radio)
-selected            (option)
-disabled            (input, textarea, button, select, option, optgroup)
-readonly            (input type=text/password, textarea)
-multiple            (select)
-ismap     isMap     (img, input type=image)
-
-defer               (script)
-declare             (object; never used)
-noresize  noResize  (frame)
-nowrap    noWrap    (td, th; deprecated)
-noshade   noShade   (hr; deprecated)
-compact             (ul, ol, dl, menu, dir; deprecated)
-//------------anyother answer
-all elements: hidden
-script: async, defer
-button: autofocus, formnovalidate, disabled
-input: autofocus, formnovalidate, multiple, readonly, required, disabled, checked
-keygen: autofocus, disabled
-select: autofocus, multiple, required, disabled
-textarea: autofocus, readonly, required, disabled
-style: scoped
-ol: reversed
-command: disabled, checked
-fieldset: disabled
-optgroup: disabled
-option: selected, disabled
-audio: autoplay, controls, loop, muted
-video: autoplay, controls, loop, muted
-iframe: seamless
-track: default
-img: ismap
-form: novalidate
-details: open
-object: typemustmatch
-marquee: truespeed
-//----
-editable
-draggable
-*/
+The full list of boolean attributes in HTML 4.01 (and hence XHTML 1.0) is (with property names where they differ in case): \n \n checked             (input type=checkbox/radio) \n selected            (option) \n disabled            (input, textarea, button, select, option, optgroup) \n readonly            (input type=text/password, textarea) \n multiple            (select) \n ismap     isMap     (img, input type=image) \n \n defer               (script) \n declare             (object; never used) \n noresize  noResize  (frame) \n nowrap    noWrap    (td, th; deprecated) \n noshade   noShade   (hr; deprecated) \n compact             (ul, ol, dl, menu, dir; deprecated) \n //------------anyother answer \n all elements: hidden \n script: async, defer \n button: autofocus, formnovalidate, disabled \n input: autofocus, formnovalidate, multiple, readonly, required, disabled, checked \n keygen: autofocus, disabled \n select: autofocus, multiple, required, disabled \n textarea: autofocus, readonly, required, disabled \n style: scoped \n ol: reversed \n command: disabled, checked \n fieldset: disabled \n optgroup: disabled \n option: selected, disabled \n audio: autoplay, controls, loop, muted \n video: autoplay, controls, loop, muted \n iframe: seamless \n track: default \n img: ismap \n form: novalidate \n details: open \n object: typemustmatch \n marquee: truespeed \n //---- \n editable \n draggable \n */
 	_AttributeHandle = function(attrKey) {
 		var assign;
 		var attrHandles = V.attrHandles,
 			result;
-		// console.log("attrKey:",attrKey)
 		$.fE(attrHandles, function(attrHandle) {
-			// console.log(attrHandle.match)
 			if (attrHandle.match(attrKey)) {
 				result = attrHandle.handle(attrKey);
 				return $FALSE
@@ -963,7 +868,6 @@ draggable
 			attrViewInstance._isAttr = {
 				key: attrKey
 			}
-
 			var attrTrigger = {
 				event: function(NodeList, dataManager, eventTrigger, isAttr, viewInstance_ID) { /*NodeList, dataManager, eventTrigger, self._isAttr, self._id*/
 					var currentNode = NodeList[handle.id].currentNode,
@@ -996,10 +900,6 @@ function View(arg) {
 	self.handleNodeTree = arg;
 	self._handles = [];
 	self._triggerTable = {};
-	// self._triggers = {};
-	// (self._triggers = [])._ = {}; //storage key word and _ storage trigger instance
-
-
 	_buildHandler.call(self);
 	_buildTrigger.call(self);
 
@@ -1092,8 +992,6 @@ function _create(data) { //data maybe basedata or dataManager
 	DM_proto.rebuildTree = function(key) {
 		var self = this,
 			DMSet = self._subsetDataManagers;
-		// $.p(DMSet, self); //add self into cycle
-		// _touchOff.call(self,key);
 		$.ftE(self._viewInstances, function(childViewInstance) {
 			var smartTriggerCollection =
 				$.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
@@ -1124,7 +1022,6 @@ function _create(data) { //data maybe basedata or dataManager
 					})
 			})
 		})
-		// DMSet.pop(); //remove self
 	}
 	var _collect = DM_proto.collect;
 	DM_proto.collect = function(viewInstance) {
@@ -1138,9 +1035,7 @@ function _create(data) { //data maybe basedata or dataManager
 			if (vi_DM) {
 				_collect.call(self, vi_DM)
 				vi_DM.remove(viewInstance);
-				// viewInstance.dataManager = self;
 			} else {
-				// viewInstance.dataManager = self;
 				var viewInstanceTriggers = viewInstance._triggers;
 				$.ftE(viewInstanceTriggers, function(sKey) {
 					self.get(sKey);
@@ -1160,7 +1055,6 @@ function _create(data) { //data maybe basedata or dataManager
 						);
 					$.p(smartTriggers, smartTrigger);
 					smartTrigger.bind(topGetterTriggerKeys); // topGetterTriggerKeys.push(baseKey, smartTrigger);
-					// smartTrigger.event(topGetterTriggerKeys);
 				});
 			}
 			$.p(viewInstance.dataManager._viewInstances, viewInstance);
@@ -1171,7 +1065,6 @@ function _create(data) { //data maybe basedata or dataManager
 	var _subset = DM_proto.subset;
 	DM_proto.subset = function(viewInstance, prefix) {
 		var self = this;
-		// prefix === $UNDEFINED&&(prefix = "")
 		if (viewInstance instanceof DataManager) {
 			_subset.call(self, viewInstance, prefix);
 		} else {
@@ -2421,51 +2314,6 @@ V.ra("style",function () {
 (function() {
 	var _get = DM_proto.get,
 		_set = DM_proto.set,
-		/*set = DM_proto.set = function(key) {
-			var self = this,
-				args = $.s(arguments),
-				prefix_parent = DM_config.prefix.parent,
-				prefix_this = DM_config.prefix.this,
-				result = {
-					key: key,
-					// allUpdateKey: allUpdateKey,
-					updateKey: [key],
-					chidlUpdateKey: []
-				};
-			if (args.length > 1) {
-				if (key.indexOf(prefix_parent) === 0) { //$parent
-					if (key === prefix_parent) {
-						if (self._prefix) {
-							args[0] = self._prefix
-						} else {
-							args.splice(0, 1);
-						}
-					} else if (key.charAt(prefix_parent.length) === ".") {
-						if (self._prefix) {
-							args[0] = key.replace(prefix_parent, self._prefix)
-						} else {
-							args[0] = key.replace(prefix_parent + ".", "");
-						}
-					}
-					result = set.apply(self._parentDataManager, args);
-				} else if (key.indexOf(prefix_this) === 0) { //$this
-					if (key === prefix_this) {
-						args.splice(0, 1);
-					} else if (key.charAt(prefix_this.length) === ".") {
-						args[0] = key.replace(prefix_this + ".", "");
-					}
-					result = set.apply(self, args);
-					result = set.apply(self, args);
-				} else { //no prefix key
-					result = _set.apply(self, args);
-				}
-			} else { //one argument
-				// result = _set.apply(self, args);
-				result = _set.call(self, key);
-			}
-			console.log(self, args)
-			return result;
-		},*/
 		set = DM_proto.set = function(key) {
 			var self = this,
 				args = $.s(arguments),
@@ -2473,22 +2321,13 @@ V.ra("style",function () {
 				prefix_this = DM_config.prefix.this,
 				prefix_top = DM_config.prefix.top,
 				result;
-			// console.log(key)
 			if (args.length > 1) {
 				if (key.indexOf(prefix_parent) === 0) { //$parent
 					if (self = self._parentDataManager) {
 						if (key === prefix_parent) {
-							// if (self._prefix) {
-							// 	args[0] = self._prefix
-							// } else {
 							args.splice(0, 1);
-							// }
 						} else if (key.charAt(prefix_parent.length) === ".") {
-							// if (self._prefix) {
-							// 	args[0] = key.replace(prefix_parent, self._prefix)
-							// } else {
 							args[0] = key.replace(prefix_parent + ".", "");
-							// }
 						}
 						result = set.apply(self, args);
 					}
@@ -2515,9 +2354,7 @@ V.ra("style",function () {
 				}
 			} else { //one argument
 				result = _set.apply(self, args);
-				// result = _set.call(self, key);
 			}
-			// console.log(self, args)
 			return result || {
 				key: key,
 				// allUpdateKey: allUpdateKey,
@@ -2532,22 +2369,13 @@ V.ra("style",function () {
 				prefix_this = DM_config.prefix.this,
 				prefix_top = DM_config.prefix.top,
 				result;
-			// console.log(key)
 			if (args.length > 0) {
 				if (key.indexOf(prefix_parent) === 0) { //$parent
 					if (self = self._parentDataManager) {
 						if (key === prefix_parent) {
-							// if (self._prefix) {
-							// 	args[0] = self._prefix
-							// } else {
 							args.splice(0, 1);
-							// }
 						} else if (key.charAt(prefix_parent.length) === ".") {
-							// if (self._prefix) {
-							// 	args[0] = key.replace(prefix_parent, self._prefix)
-							// } else {
 							args[0] = key.replace(prefix_parent + ".", "");
-							// }
 						}
 						result = get.apply(self, args);
 					}
@@ -2574,9 +2402,7 @@ V.ra("style",function () {
 				}
 			} else { //one argument
 				result = _get.apply(self, args);
-				// result = _get.call(self, key);
 			}
-			// console.log(self, args)
 			return result;
 		}
 }());

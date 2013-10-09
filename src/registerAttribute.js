@@ -29,55 +29,12 @@ var _isIE = !window.dispatchEvent,//!+"\v1",
 		DOMContentLoaded:"readystatechange"
 	},
 	/*
-The full list of boolean attributes in HTML 4.01 (and hence XHTML 1.0) is (with property names where they differ in case):
-
-checked             (input type=checkbox/radio)
-selected            (option)
-disabled            (input, textarea, button, select, option, optgroup)
-readonly            (input type=text/password, textarea)
-multiple            (select)
-ismap     isMap     (img, input type=image)
-
-defer               (script)
-declare             (object; never used)
-noresize  noResize  (frame)
-nowrap    noWrap    (td, th; deprecated)
-noshade   noShade   (hr; deprecated)
-compact             (ul, ol, dl, menu, dir; deprecated)
-//------------anyother answer
-all elements: hidden
-script: async, defer
-button: autofocus, formnovalidate, disabled
-input: autofocus, formnovalidate, multiple, readonly, required, disabled, checked
-keygen: autofocus, disabled
-select: autofocus, multiple, required, disabled
-textarea: autofocus, readonly, required, disabled
-style: scoped
-ol: reversed
-command: disabled, checked
-fieldset: disabled
-optgroup: disabled
-option: selected, disabled
-audio: autoplay, controls, loop, muted
-video: autoplay, controls, loop, muted
-iframe: seamless
-track: default
-img: ismap
-form: novalidate
-details: open
-object: typemustmatch
-marquee: truespeed
-//----
-editable
-draggable
-*/
+The full list of boolean attributes in HTML 4.01 (and hence XHTML 1.0) is (with property names where they differ in case): \n \n checked             (input type=checkbox/radio) \n selected            (option) \n disabled            (input, textarea, button, select, option, optgroup) \n readonly            (input type=text/password, textarea) \n multiple            (select) \n ismap     isMap     (img, input type=image) \n \n defer               (script) \n declare             (object; never used) \n noresize  noResize  (frame) \n nowrap    noWrap    (td, th; deprecated) \n noshade   noShade   (hr; deprecated) \n compact             (ul, ol, dl, menu, dir; deprecated) \n //------------anyother answer \n all elements: hidden \n script: async, defer \n button: autofocus, formnovalidate, disabled \n input: autofocus, formnovalidate, multiple, readonly, required, disabled, checked \n keygen: autofocus, disabled \n select: autofocus, multiple, required, disabled \n textarea: autofocus, readonly, required, disabled \n style: scoped \n ol: reversed \n command: disabled, checked \n fieldset: disabled \n optgroup: disabled \n option: selected, disabled \n audio: autoplay, controls, loop, muted \n video: autoplay, controls, loop, muted \n iframe: seamless \n track: default \n img: ismap \n form: novalidate \n details: open \n object: typemustmatch \n marquee: truespeed \n //---- \n editable \n draggable \n */
 	_AttributeHandle = function(attrKey) {
 		var assign;
 		var attrHandles = V.attrHandles,
 			result;
-		// console.log("attrKey:",attrKey)
 		$.fE(attrHandles, function(attrHandle) {
-			// console.log(attrHandle.match)
 			if (attrHandle.match(attrKey)) {
 				result = attrHandle.handle(attrKey);
 				return $FALSE
@@ -101,7 +58,6 @@ draggable
 			attrViewInstance._isAttr = {
 				key: attrKey
 			}
-
 			var attrTrigger = {
 				event: function(NodeList, dataManager, eventTrigger, isAttr, viewInstance_ID) { /*NodeList, dataManager, eventTrigger, self._isAttr, self._id*/
 					var currentNode = NodeList[handle.id].currentNode,

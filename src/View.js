@@ -10,10 +10,6 @@ function View(arg) {
 	self.handleNodeTree = arg;
 	self._handles = [];
 	self._triggerTable = {};
-	// self._triggers = {};
-	// (self._triggers = [])._ = {}; //storage key word and _ storage trigger instance
-
-
 	_buildHandler.call(self);
 	_buildTrigger.call(self);
 

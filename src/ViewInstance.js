@@ -6,8 +6,6 @@
 	DM_proto.rebuildTree = function(key) {
 		var self = this,
 			DMSet = self._subsetDataManagers;
-		// $.p(DMSet, self); //add self into cycle
-		// _touchOff.call(self,key);
 		$.ftE(self._viewInstances, function(childViewInstance) {
 			var smartTriggerCollection =
 				$.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
@@ -38,7 +36,6 @@
 					})
 			})
 		})
-		// DMSet.pop(); //remove self
 	}
 	var _collect = DM_proto.collect;
 	DM_proto.collect = function(viewInstance) {
@@ -52,9 +49,7 @@
 			if (vi_DM) {
 				_collect.call(self, vi_DM)
 				vi_DM.remove(viewInstance);
-				// viewInstance.dataManager = self;
 			} else {
-				// viewInstance.dataManager = self;
 				var viewInstanceTriggers = viewInstance._triggers;
 				$.ftE(viewInstanceTriggers, function(sKey) {
 					self.get(sKey);
@@ -74,7 +69,6 @@
 						);
 					$.p(smartTriggers, smartTrigger);
 					smartTrigger.bind(topGetterTriggerKeys); // topGetterTriggerKeys.push(baseKey, smartTrigger);
-					// smartTrigger.event(topGetterTriggerKeys);
 				});
 			}
 			$.p(viewInstance.dataManager._viewInstances, viewInstance);
@@ -85,7 +79,6 @@
 	var _subset = DM_proto.subset;
 	DM_proto.subset = function(viewInstance, prefix) {
 		var self = this;
-		// prefix === $UNDEFINED&&(prefix = "")
 		if (viewInstance instanceof DataManager) {
 			_subset.call(self, viewInstance, prefix);
 		} else {
