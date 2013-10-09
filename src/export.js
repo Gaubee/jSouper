@@ -119,7 +119,7 @@ var ViewParser = global.ViewParser = {
 		});
 	},
 	parseStr: function(htmlStr) {
-		return V.parse(parse(str))
+		return V.parse(parse(htmlStr))
 	},
 	parseNode: function(htmlNode) {
 		return V.parse(parse(htmlNode.innerHTML))

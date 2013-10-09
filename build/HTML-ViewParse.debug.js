@@ -860,8 +860,7 @@ The full list of boolean attributes in HTML 4.01 (and hence XHTML 1.0) is (with 
 		attrKey = attrKey.indexOf(V.prefix) ? attrKey : attrKey.replace(V.prefix, "")
 		attrKey = (_isIE && IEfix[attrKey]) || attrKey
 		if (_matchRule.test(attrValue)||_templateMatchRule.test(attrValue)) {
-
-			var attrViewInstance = (V.attrModules[handle.id + attrKey] = V.parse(attrValue))(),
+			var attrViewInstance = (V.attrModules[handle.id + attrKey] = ViewParser.parse(attrValue))(),
 				_shadowDIV = $.D.cl(shadowDIV), //parserNode
 				_attributeHandle = _AttributeHandle(attrKey);
 			attrViewInstance.append(_shadowDIV);
@@ -873,19 +872,20 @@ The full list of boolean attributes in HTML 4.01 (and hence XHTML 1.0) is (with 
 					var currentNode = NodeList[handle.id].currentNode,
 						viewInstance = V._instances[viewInstance_ID];
 					if (currentNode) {
-						dataManager.collect(attrViewInstance);
+						// dataManager.collect(attrViewInstance);
+						attrViewInstance.dataManager = dataManager;
 						$.fE(attrViewInstance._triggers, function(key) {
 							attrViewInstance.touchOff(key);
 						});
 						_attributeHandle(attrKey, currentNode, _shadowDIV, viewInstance, dataManager, handle, triggerTable);
-						dataManager.remove(attrViewInstance); //?
+						// dataManager.remove(attrViewInstance); //?
 					}
 				}
 			}
 			$.fE(attrViewInstance._triggers, function(key) {
 				$.us(triggerTable[key] || (triggerTable[key] = []), attrTrigger);
 			});
-
+			// console.log(attrKey,attrValue)
 		}
 	};
 /*
@@ -950,7 +950,6 @@ function _buildTrigger(handleNodeTree, dataManager) {
 
 			$.fE(attrs, function(attrStr) {
 				attributeHandle(attrStr, node, handle, triggerTable);
-
 			});
 		}
 	});
@@ -1114,7 +1113,6 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	(self._triggers = [])._ = {};
 	// self._triggers._u = [];//undefined key,update every time
 	self.TEMP = {};
-
 	$.fI(triggerTable, function(tiggerCollection, key) {
 		if (".".indexOf(key) !== 0) {
 			$.p(self._triggers, key);
@@ -1488,7 +1486,7 @@ var ViewParser = global.ViewParser = {
 		});
 	},
 	parseStr: function(htmlStr) {
-		return V.parse(parse(str))
+		return V.parse(parse(htmlStr))
 	},
 	parseNode: function(htmlNode) {
 		return V.parse(parse(htmlNode.innerHTML))

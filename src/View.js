@@ -60,7 +60,6 @@ function _buildTrigger(handleNodeTree, dataManager) {
 
 			$.fE(attrs, function(attrStr) {
 				attributeHandle(attrStr, node, handle, triggerTable);
-
 			});
 		}
 	});
