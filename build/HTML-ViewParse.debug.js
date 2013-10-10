@@ -23,7 +23,8 @@
 
 // Place any jQuery/helper plugins in here.
 'use strict';
-var global = global || this;
+var global =  global||this /*strict model use "global" else than "this"*/;
+
 var doc = document,
 	_isIE = !global.dispatchEvent, //!+"\v1",
 	shadowBody = doc.createElement("body"),
@@ -689,34 +690,34 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 	},
 	parse = function(str) {
 		var quotedString = [];
-		var Placeholder = "_" + Math.random();
-		str = str.replace(QuotedString, function(qs) {
-			quotedString.push(qs)
-			return Placeholder;
-		});
-		result = str.replace(newTemplateMatchReg, function(matchStr, innerStr, index) {
-			var fun_name = $.trim(innerStr).split(" ")[0];
-			if (fun_name in templateHandles) {
-				if (templateHandles[fun_name]) {
-					var args = innerStr.replace(fun_name, "").split(","),
-						result = "{" + fun_name + "(";
-					$.ftE(args, function(arg) {
-						if (arg = $.trim(arg)) {
-							result += parseIte(parseArg(arg));
-						}
-					});
-					result += ")}"
-					return result;
+		var Placeholder = "_" + Math.random(),
+			str = str.replace(QuotedString, function(qs) {
+				quotedString.push(qs)
+				return Placeholder;
+			}),
+			result = str.replace(newTemplateMatchReg, function(matchStr, innerStr, index) {
+				var fun_name = $.trim(innerStr).split(" ")[0];
+				if (fun_name in templateHandles) {
+					if (templateHandles[fun_name]) {
+						var args = innerStr.replace(fun_name, "").split(","),
+							result = "{" + fun_name + "(";
+						$.ftE(args, function(arg) {
+							if (arg = $.trim(arg)) {
+								result += parseIte(parseArg(arg));
+							}
+						});
+						result += ")}"
+						return result;
+					} else {
+						return "{" + fun_name + "()}";
+					}
 				} else {
-					return "{" + fun_name + "()}";
+					return parseIte(parseArg($.trim(innerStr))); //"{(" + innerStr + ")}";
 				}
-			} else {
-				return parseIte(parseArg($.trim(innerStr))); //"{(" + innerStr + ")}";
-			}
-		})
-		return result.replace(RegExp(Placeholder, "g"), function(p) {
-			return quotedString.splice(0, 1)
-		});
+			})
+			return result.replace(RegExp(Placeholder, "g"), function(p) {
+				return quotedString.splice(0, 1)
+			});
 	},
 	parseArg = function(argStr) {
 		var allStack = [],
@@ -797,7 +798,7 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 					next.parse = "{" + block.value + "(" + prev.parse + next.parse + ")}"
 					prev.ignore = $TRUE;
 					block.ignore = $TRUE;
-				} else { 
+				} else {
 					throw "Unknown type:" + block.value
 				}
 			}
@@ -809,7 +810,6 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 		});
 		return result; //arr;
 	};
-
 	//by RubyLouvre(司徒正美)
 	//setAttribute bug:http://www.iefans.net/ie-setattribute-bug/
 var IEfix = {
@@ -1500,7 +1500,7 @@ var ViewParser = global.ViewParser = {
 	},
 	modules: V.modules,
 	config: {
-		appName: 'HVP',
+		app: 'HVP',
 		data: {}
 	},
 	ready: (function() {
@@ -1527,12 +1527,12 @@ var ViewParser = global.ViewParser = {
 	}())
 };
 (function() {
-
+	console.log("???")
 	var scriptTags = document.getElementsByTagName("script"),
 		HVP_config = ViewParser.config,
-		userConfigStr = scriptTags[scriptTags.length - 1].innerHTML;
+		userConfigStr = $.trim(scriptTags[scriptTags.length - 1].innerHTML);
 	ViewParser.ready(Try(function() {
-		userConfig = $.trim(userConfigStr) ? eval("(" + userConfigStr + ")") : {};
+		var userConfig = userConfigStr ? Function("return" + userConfigStr)() : {};
 		for (var i in userConfig) { //mix
 			HVP_config[i] = userConfig[i];
 		}
@@ -1543,12 +1543,12 @@ var ViewParser = global.ViewParser = {
 		var HVP_config = ViewParser.config,
 			App = document.getElementById(HVP_config.id); //configable
 		if (App) {
-			var appName = HVP_config.appName;
-			if (!appName||appName==HVP_config.id) {
+			var appName = HVP_config.app;
+			if (!appName || appName == HVP_config.id) {
 				//IE does not support the use and the DOM ID of the same variable names, so automatically add '_App' after the most.
-				appName = HVP_config.id+"_App";
+				appName = HVP_config.id + "_App";
 			}
-			var template = global[appName] =ViewParser.parseNode(App)(/*HVP_config.data*/); //App.getAttribute("template-data")//json or url or configable
+			var template = global[appName] = ViewParser.parseNode(App)( /*HVP_config.data*/ ); //App.getAttribute("template-data")//json or url or configable
 			template.set(HVP_config.data);
 			App.innerHTML = "";
 			template.append(App);
@@ -1699,6 +1699,18 @@ V.rh(">", V.rh("#layout", function(handle, index, parentHandle) {
 	handle.display = _layout_display; //Custom rendering function
 	_commentPlaceholder(handle, parentHandle);
 }));
+var _operator_handle  = function(handle, index, parentHandle) {
+	var textHandle = handle.childNodes[0].childNodes[0];
+	if (parentHandle.type !== "handle") {
+		if (textHandle) {
+			$.iA(parentHandle.childNodes, handle, textHandle);
+			return $.noop;
+		}
+	}
+};
+$.fE("+-*/%", function(operator) {
+	V.rh(operator, _operator_handle)
+});
 var _with_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManager, triggerBy, viewInstance_ID) {
 	var handle = this,
 		parentHandle = handle.parentNode,
@@ -1790,15 +1802,6 @@ V.rt("HTML", function(handle, index, parentHandle) {
 	}
 	return trigger;
 });
-function _handle_on_event_string(isAttr, data) {
-	if (isAttr) {
-		//IE浏览器直接编译，故不需要转义，其他浏览器需要以字符串绑定到属性中。需要转义，否则会出现引号冲突
-		if (isAttr.key.indexOf("on") === 0 && !_isIE) { //W#C标准，onXXX属性事件使用string，消除差异
-			data = String(data).replace(/"/g, '\\"').replace(/'/g, "\\'");
-		}
-	}
-	return data;
-}
 V.rt("&&", V.rt("and", function(handle, index, parentHandle) {
 	var childHandlesId = [],
 		trigger;
@@ -2093,6 +2096,40 @@ V.rt("!", V.rt("nega", function(handle, index, parentHandle) { //Negate
 	}
 	return trigger;
 }));
+var _operator_handle_builder = function(handle, index, parentHandle){
+	var firstParameter_id = handle.childNodes[0].id,
+		textHandle_id = handle.childNodes[0].childNodes[0].id,
+		secondParameter = handle.childNodes[1],
+		trigger = {
+			bubble: true//build in global,can't use $TRUE
+		};
+	// console.log(handle.childNodes[0].parentNode, handle.parentNode)
+
+	if (parentHandle.type !== "handle") { //as textHandle
+		trigger.event = function(NodeList_of_ViewInstance /*, dataManager, triggerBy, isAttr, vi*/ ) { //call by ViewInstance's Node
+			var result =  NodeList_of_ViewInstance[firstParameter_id]._data+(secondParameter ? NodeList_of_ViewInstance[secondParameter.id]._data : 0) ,
+				currentNode = NodeList_of_ViewInstance[textHandle_id].currentNode;
+			currentNode.data = result;
+		}
+	} else {
+		trigger.event = function(NodeList_of_ViewInstance /*, dataManager, triggerBy, isAttr, vi*/ ) { //call by ViewInstance's Node
+			var result =  NodeList_of_ViewInstance[firstParameter_id]._data+(secondParameter ? NodeList_of_ViewInstance[secondParameter.id]._data : 0) ;
+			NodeList_of_ViewInstance[this.handleId]._data = result;
+		}
+	}
+
+	return trigger;
+}
+var _operator_handle_build_str = String(_operator_handle_builder),
+	_operator_handle_build_arguments = _operator_handle_build_str.match(/\(([\w\W]+?)\)/)[1],
+	_operator_handle_build_str = _operator_handle_build_str.substring(_operator_handle_build_str.indexOf("{")+1,_operator_handle_build_str.length-1),
+	_operator_handle_build_factory = function(operator) {
+		var result= Function(_operator_handle_build_arguments, _operator_handle_build_str.replace(/\+/g, operator))
+		return result
+	};
+$.fE("+-*/%", function(operator) {
+	V.rt(operator, _operator_handle_build_factory(operator))
+});
 V.rt("||",V.rt("or", function(handle, index, parentHandle) {
 	var childHandlesId = [],
 		trigger;

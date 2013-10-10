@@ -1,5 +1,6 @@
 'use strict';
-var global = global || this;
+var global =  global||this /*strict model use "global" else than "this"*/;
+
 var doc = document,
 	_isIE = !global.dispatchEvent, //!+"\v1",
 	shadowBody = doc.createElement("body"),

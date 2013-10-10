@@ -132,7 +132,7 @@ var ViewParser = global.ViewParser = {
 	},
 	modules: V.modules,
 	config: {
-		appName: 'HVP',
+		app: 'HVP',
 		data: {}
 	},
 	ready: (function() {
@@ -159,12 +159,12 @@ var ViewParser = global.ViewParser = {
 	}())
 };
 (function() {
-
+	console.log("???")
 	var scriptTags = document.getElementsByTagName("script"),
 		HVP_config = ViewParser.config,
-		userConfigStr = scriptTags[scriptTags.length - 1].innerHTML;
+		userConfigStr = $.trim(scriptTags[scriptTags.length - 1].innerHTML);
 	ViewParser.ready(Try(function() {
-		userConfig = $.trim(userConfigStr) ? eval("(" + userConfigStr + ")") : {};
+		var userConfig = userConfigStr ? Function("return" + userConfigStr)() : {};
 		for (var i in userConfig) { //mix
 			HVP_config[i] = userConfig[i];
 		}
@@ -175,12 +175,12 @@ var ViewParser = global.ViewParser = {
 		var HVP_config = ViewParser.config,
 			App = document.getElementById(HVP_config.id); //configable
 		if (App) {
-			var appName = HVP_config.appName;
-			if (!appName||appName==HVP_config.id) {
+			var appName = HVP_config.app;
+			if (!appName || appName == HVP_config.id) {
 				//IE does not support the use and the DOM ID of the same variable names, so automatically add '_App' after the most.
-				appName = HVP_config.id+"_App";
+				appName = HVP_config.id + "_App";
 			}
-			var template = global[appName] =ViewParser.parseNode(App)(/*HVP_config.data*/); //App.getAttribute("template-data")//json or url or configable
+			var template = global[appName] = ViewParser.parseNode(App)( /*HVP_config.data*/ ); //App.getAttribute("template-data")//json or url or configable
 			template.set(HVP_config.data);
 			App.innerHTML = "";
 			template.append(App);

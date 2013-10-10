@@ -32,34 +32,34 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 	},
 	parse = function(str) {
 		var quotedString = [];
-		var Placeholder = "_" + Math.random();
-		str = str.replace(QuotedString, function(qs) {
-			quotedString.push(qs)
-			return Placeholder;
-		});
-		result = str.replace(newTemplateMatchReg, function(matchStr, innerStr, index) {
-			var fun_name = $.trim(innerStr).split(" ")[0];
-			if (fun_name in templateHandles) {
-				if (templateHandles[fun_name]) {
-					var args = innerStr.replace(fun_name, "").split(","),
-						result = "{" + fun_name + "(";
-					$.ftE(args, function(arg) {
-						if (arg = $.trim(arg)) {
-							result += parseIte(parseArg(arg));
-						}
-					});
-					result += ")}"
-					return result;
+		var Placeholder = "_" + Math.random(),
+			str = str.replace(QuotedString, function(qs) {
+				quotedString.push(qs)
+				return Placeholder;
+			}),
+			result = str.replace(newTemplateMatchReg, function(matchStr, innerStr, index) {
+				var fun_name = $.trim(innerStr).split(" ")[0];
+				if (fun_name in templateHandles) {
+					if (templateHandles[fun_name]) {
+						var args = innerStr.replace(fun_name, "").split(","),
+							result = "{" + fun_name + "(";
+						$.ftE(args, function(arg) {
+							if (arg = $.trim(arg)) {
+								result += parseIte(parseArg(arg));
+							}
+						});
+						result += ")}"
+						return result;
+					} else {
+						return "{" + fun_name + "()}";
+					}
 				} else {
-					return "{" + fun_name + "()}";
+					return parseIte(parseArg($.trim(innerStr))); //"{(" + innerStr + ")}";
 				}
-			} else {
-				return parseIte(parseArg($.trim(innerStr))); //"{(" + innerStr + ")}";
-			}
-		})
-		return result.replace(RegExp(Placeholder, "g"), function(p) {
-			return quotedString.splice(0, 1)
-		});
+			})
+			return result.replace(RegExp(Placeholder, "g"), function(p) {
+				return quotedString.splice(0, 1)
+			});
 	},
 	parseArg = function(argStr) {
 		var allStack = [],
@@ -140,7 +140,7 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 					next.parse = "{" + block.value + "(" + prev.parse + next.parse + ")}"
 					prev.ignore = $TRUE;
 					block.ignore = $TRUE;
-				} else { 
+				} else {
 					throw "Unknown type:" + block.value
 				}
 			}
