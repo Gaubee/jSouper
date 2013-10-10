@@ -686,7 +686,12 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 		"||": 2,
 		"=": 2,
 		"==": 2,
-		"%": 2
+		"===": 2,
+		"!=": 2,
+		"!==": 2,
+		"%": 2,
+		">": 2,
+		"<": 2
 	},
 	parse = function(str) {
 		var quotedString = [];
@@ -696,6 +701,7 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 				return Placeholder;
 			}),
 			result = str.replace(newTemplateMatchReg, function(matchStr, innerStr, index) {
+				innerStr = innerStr.replace(/&gt;/g,">").replace(/&lt;/g,"<")//Semantic confusion with HTML
 				var fun_name = $.trim(innerStr).split(" ")[0];
 				if (fun_name in templateHandles) {
 					if (templateHandles[fun_name]) {
@@ -1527,7 +1533,6 @@ var ViewParser = global.ViewParser = {
 	}())
 };
 (function() {
-	console.log("???")
 	var scriptTags = document.getElementsByTagName("script"),
 		HVP_config = ViewParser.config,
 		userConfigStr = $.trim(scriptTags[scriptTags.length - 1].innerHTML);
@@ -1707,8 +1712,9 @@ var _operator_handle  = function(handle, index, parentHandle) {
 			return $.noop;
 		}
 	}
-};
-$.fE("+-*/%", function(operator) {
+},
+_operator_list = "+ - * / % == === != !== > <".split(" ");
+$.ftE(_operator_list, function(operator) {
 	V.rh(operator, _operator_handle)
 });
 var _with_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManager, triggerBy, viewInstance_ID) {
@@ -2127,7 +2133,7 @@ var _operator_handle_build_str = String(_operator_handle_builder),
 		var result= Function(_operator_handle_build_arguments, _operator_handle_build_str.replace(/\+/g, operator))
 		return result
 	};
-$.fE("+-*/%", function(operator) {
+$.ftE(_operator_list, function(operator) {
 	V.rt(operator, _operator_handle_build_factory(operator))
 });
 V.rt("||",V.rt("or", function(handle, index, parentHandle) {

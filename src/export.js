@@ -159,7 +159,6 @@ var ViewParser = global.ViewParser = {
 	}())
 };
 (function() {
-	console.log("???")
 	var scriptTags = document.getElementsByTagName("script"),
 		HVP_config = ViewParser.config,
 		userConfigStr = $.trim(scriptTags[scriptTags.length - 1].innerHTML);

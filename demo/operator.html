@@ -5,7 +5,7 @@
 	<!-- --><script type="text/javascript">
 		(function (ie){if(!ie)return;var b=document.createElement("script");b.setAttribute("type","text/javascript");b.setAttribute("src","http://"+location.hostname+"/firebug-lite/build/firebug-lite.js");document.getElementsByTagName("head")[0].appendChild(b)}(!+"\v1")); 
 	</script>
-	<script type="text/javascript" src="../build/HTML-ViewParse.js">
+	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js">
 		{
 			id:"operator_dom",
 			app:"operator",
@@ -27,6 +27,14 @@
 	<b>{{a}}</b><span class="operator-color"> * </span><b>{{b}}</b> = <b>{{a*b}}</b><br>
 	<b>{{a}}</b><span class="operator-color"> / </span><b>{{b}}</b> = <b>{{a/b}}</b><br>
 	<b>{{a}}</b><span class="operator-color"> % </span><b>{{b}}</b> = <b>{{a%b}}</b><br>
+	<b>{{a}}</b><span class="operator-color"> == </span><b>{{b}}</b> = <b>{{a==b}}</b><br>
+	<b>{{a}}</b><span class="operator-color"> != </span><b>{{b}}</b> = <b>{{a!=b}}</b><br>
+	<b>{{a}}</b><span class="operator-color"> === </span><b>{{b}}</b> = <b>{{a===b}}</b><br>
+	<b>{{a}}</b><span class="operator-color"> !== </span><b>{{b}}</b> = <b>{{a!==b}}</b><br>
+	<b>{{a}}</b><span class="operator-color">  >  </span><b>{{b}}</b> = <b>{{a > b}}</b><br>
+	<b>{{a}}</b><span class="operator-color">  <  </span><b>{{b}}</b> = <b>{{a < b}}</b><br>
+	<hr>
+
 </body>
 
 </html>

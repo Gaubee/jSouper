@@ -29,6 +29,6 @@ var _operator_handle_build_str = String(_operator_handle_builder),
 		var result= Function(_operator_handle_build_arguments, _operator_handle_build_str.replace(/\+/g, operator))
 		return result
 	};
-$.fE("+-*/%", function(operator) {
+$.ftE(_operator_list, function(operator) {
 	V.rt(operator, _operator_handle_build_factory(operator))
 });

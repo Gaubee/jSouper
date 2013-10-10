@@ -6,7 +6,8 @@ var _operator_handle  = function(handle, index, parentHandle) {
 			return $.noop;
 		}
 	}
-};
-$.fE("+-*/%", function(operator) {
+},
+_operator_list = "+ - * / % == === != !== > <".split(" ");
+$.ftE(_operator_list, function(operator) {
 	V.rh(operator, _operator_handle)
 });
