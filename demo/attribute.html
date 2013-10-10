@@ -16,11 +16,16 @@
 </head>
 <body id="attr">
 	<h3 style="color:{{style.color}};">{(title)}</h3>
-
+	<input type="text" value="{(title)}" bind-form="{@(title)}">
 </body>
 
 </html>
 
 <script type="text/javascript">
-
+function randomColor(){
+	return "#"+Math.random().toString(16).substring(2,8);
+}
+setInterval(function  (argument) {
+	attr.set("style.color",randomColor());
+},500)
 </script>

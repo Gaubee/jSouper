@@ -2272,7 +2272,7 @@ var _formCache = {},
 			if (oldFormHandle = formCollection[eventName]) {
 				_cancelEvent(currentNode, eventName, oldFormHandle, elementHashCode)
 			}
-			if (obj instanceof Proto) {
+			if (obj&&obj[_DM_extends_object_constructor]) {
 				var baseFormHandle = obj.form === $NULL ? _noopFormHandle : obj.form;
 				newFormHandle = function(e) {
 					dm.set(attrOuter, baseFormHandle.call(this, e, this[eventConfig.attributeName], vi))
