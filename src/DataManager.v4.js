@@ -50,9 +50,9 @@ function _mix(sObj, nObj) {
 };
 var DM_config = DataManager.config = {
 	prefix: {
-		this: "$THIS",
-		parent: "$PARENT",
-		top: "$TOP"
+		This: "$THIS",
+		Parent: "$PARENT",
+		Top: "$TOP"
 	}
 };
 DataManager.session = {

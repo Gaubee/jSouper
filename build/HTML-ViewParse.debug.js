@@ -25,6 +25,7 @@
 'use strict';
 var global = global || this;
 var doc = document,
+	_isIE = !global.dispatchEvent, //!+"\v1",
 	shadowBody = doc.createElement("body"),
 	shadowDIV = doc.createElement("div"),
 	_placeholder = function(prefix) {
@@ -37,7 +38,7 @@ var doc = document,
 
 	_event_cache = {},
 	_addEventListener = function(Element, eventName, eventFun, elementHash) {
-		var args = $.s(arguments).splice(4),
+		var args = $.s(arguments).splice(_addEventListener.length),
 			wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = function() {
 				var wrapArgs = $.s(arguments);
 				Array.prototype.push.apply(wrapArgs, args);
@@ -50,7 +51,7 @@ var doc = document,
 		wrapEventFun && Element.removeEventListener(eventName, wrapEventFun, $FALSE);
 	},
 	_attachEvent = function(Element, eventName, eventFun, elementHash) {
-		var args = $.s(arguments).splice(4),
+		var args = $.s(arguments).splice(_attachEvent.length),
 			wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = function() {
 				var wrapArgs = $.s(arguments);
 				Array.prototype.push.apply(wrapArgs, args);
@@ -64,7 +65,7 @@ var doc = document,
 	},
 	_registerEvent = _isIE ? _attachEvent : _addEventListener,
 	_cancelEvent = _isIE ? _detachEvent : _removeEventListener,
-	
+
 	$ = {
 		id: 9,
 		uidAvator: Math.random().toString(36).substring(2),
@@ -252,13 +253,14 @@ ArraySet.prototype = {
 		return key in this.store;
 	}
 };
-function Try(tryFun,scope,errorCallback){
-	errorCallback = errorCallback||$.noop;
-	return function(){
+
+function Try(tryFun, scope, errorCallback) {
+	errorCallback = errorCallback || $.noop;
+	return function() {
 		var result;
-		try{
-			result = tryFun.apply(scope,$.s(arguments));
-		}catch(e){
+		try {
+			result = tryFun.apply(scope, $.s(arguments));
+		} catch (e) {
 			errorCallback(e);
 		}
 		return result;
@@ -397,9 +399,9 @@ function _mix(sObj, nObj) {
 };
 var DM_config = DataManager.config = {
 	prefix: {
-		this: "$THIS",
-		parent: "$PARENT",
-		top: "$TOP"
+		This: "$THIS",
+		Parent: "$PARENT",
+		Top: "$TOP"
 	}
 };
 DataManager.session = {
@@ -752,7 +754,7 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 				$.p(stack, {
 					type: "ope",
 					value: operator,
-					num: templateOperatorNum[operator] || 0,
+					num: templateOperatorNum[operator] || 0
 				});
 				pointer = index + matchOperator.length;
 			}
@@ -808,10 +810,9 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 		return result; //arr;
 	};
 
-var _isIE = !window.dispatchEvent,//!+"\v1",
 	//by RubyLouvre(司徒正美)
 	//setAttribute bug:http://www.iefans.net/ie-setattribute-bug/
-	IEfix = {
+var IEfix = {
 		acceptcharset: "acceptCharset",
 		accesskey: "accessKey",
 		allowtransparency: "allowTransparency",
@@ -1540,9 +1541,14 @@ var ViewParser = global.ViewParser = {
 	}));
 	ViewParser.ready(function() {
 		var HVP_config = ViewParser.config,
-			App = document.getElementById(HVP_config.appName); //configable
+			App = document.getElementById(HVP_config.id); //configable
 		if (App) {
-			var template = global[HVP_config.appName] =ViewParser.parseNode(App)(/*HVP_config.data*/); //App.getAttribute("template-data")//json or url or configable
+			var appName = HVP_config.appName;
+			if (!appName||appName==HVP_config.id) {
+				//IE does not support the use and the DOM ID of the same variable names, so automatically add '_App' after the most.
+				appName = HVP_config.id+"_App";
+			}
+			var template = global[appName] =ViewParser.parseNode(App)(/*HVP_config.data*/); //App.getAttribute("template-data")//json or url or configable
 			template.set(HVP_config.data);
 			App.innerHTML = "";
 			template.append(App);
@@ -2231,13 +2237,13 @@ V.ra(function(attrKey) {
  */
 var _formCache = {},
 	_formKey = {
-		"input": function(node) {//需阻止默认事件，比如Checked需要被重写，否则数据没有变动而Checked因用户点击而变动，没有达到V->M的数据同步
+		"input": function(node) { //需阻止默认事件，比如Checked需要被重写，否则数据没有变动而Checked因用户点击而变动，没有达到V->M的数据同步
 			var result = "value";
 			switch (node.type.toLowerCase()) {
 				case "checkbox":
 					return {
-						attributeName:"checked",
-						eventNames:["change"]
+						attributeName: "checked",
+						eventNames: ["change"]
 					}
 				case "button":
 				case "reset":
@@ -2245,11 +2251,12 @@ var _formCache = {},
 			}
 			return {
 				attributeName: "value",
-				eventNames: _isIE ? ["propertychange", "keyup"] : ["input", "keyup"]
+				eventNames: _isIE ? ["propertychange"/*, "keyup"*/] : ["input"/*, "keyup"*/]
 			};
 		},
 		"button": "innerHTML"
-	}, _noopFormHandle = function(e, newValue) {
+	},
+	_noopFormHandle = function(e, newValue) {
 		return newValue
 	},
 	formListerAttribute = function(key, currentNode, parserNode, vi, dm, handle, triggerTable) {
@@ -2261,30 +2268,37 @@ var _formCache = {},
 			eventNames,
 			elementHashCode = $.hashCode(currentNode, "form"),
 			formCollection,
-			oldFormHandle,
-			newFormHandle,
+			outerFormHandle,
+			innerFormHandle,
 			obj = dm.get(attrOuter, $NULL);
 		typeof eventConfig === "function" && (eventConfig = eventConfig(currentNode));
 		eventNames = eventConfig.eventNames;
-
 		formCollection = _formCache[elementHashCode] || (_formCache[elementHashCode] = {});
 		$.ftE(eventNames, function(eventName) {
-			if (oldFormHandle = formCollection[eventName]) {
-				_cancelEvent(currentNode, eventName, oldFormHandle, elementHashCode)
-			}
-			if (obj&&obj[_DM_extends_object_constructor]) {
+			if (obj && obj[_DM_extends_object_constructor]) {
 				var baseFormHandle = obj.form === $NULL ? _noopFormHandle : obj.form;
-				newFormHandle = function(e) {
+				innerFormHandle = function(e) {
+					// console.log(eventConfig.attributeName, this[eventConfig.attributeName])
 					dm.set(attrOuter, baseFormHandle.call(this, e, this[eventConfig.attributeName], vi))
 				};
-				_registerEvent(currentNode, eventName, newFormHandle, elementHashCode);
-			} else if (typeof obj === "string") {
-				newFormHandle = function(e) {
+				// _registerEvent(currentNode, eventName, innerFormHandle, elementHashCode);
+			} else /*if (typeof obj === "string") */ {
+				// console.log(attrOuter,eventConfig.attributeName,currentNode[eventConfig.attributeName])
+				innerFormHandle = function(e) {
+					// console.log(attrOuter, eventConfig.attributeName, this[eventConfig.attributeName])
 					dm.set(attrOuter, this[eventConfig.attributeName])
 				};
-				_registerEvent(currentNode, eventName, newFormHandle, elementHashCode);
 			}
-			formCollection[eventName] = newFormHandle;
+			if (!(outerFormHandle = formCollection[eventName])) {
+				// _cancelEvent(currentNode, eventName, outerFormHandle, elementHashCode)
+				outerFormHandle = function(e) {
+					outerFormHandle.inner.apply(this,e/*$.s(arguments)*/);
+				}
+				console.log("reigster form event")
+				_registerEvent(currentNode, eventName, outerFormHandle, elementHashCode);
+				formCollection[eventName] = outerFormHandle;
+			}
+			outerFormHandle.inner = innerFormHandle;
 		});
 	};
 V.ra("bind-form", function(attrKey) {
@@ -2312,12 +2326,12 @@ V.ra("style",function () {
 (function() {
 	var _get = DM_proto.get,
 		_set = DM_proto.set,
+		prefix_parent = DM_config.prefix.Parent,
+		prefix_this = DM_config.prefix.This,
+		prefix_top = DM_config.prefix.Top,
 		set = DM_proto.set = function(key) {
 			var self = this,
 				args = $.s(arguments),
-				prefix_parent = DM_config.prefix.parent,
-				prefix_this = DM_config.prefix.this,
-				prefix_top = DM_config.prefix.top,
 				result;
 			if (args.length > 1) {
 				if (key.indexOf(prefix_parent) === 0) { //$parent
@@ -2363,9 +2377,6 @@ V.ra("style",function () {
 		get = DM_proto.get = function(key) {
 			var self = this,
 				args = $.s(arguments),
-				prefix_parent = DM_config.prefix.parent,
-				prefix_this = DM_config.prefix.this,
-				prefix_top = DM_config.prefix.top,
 				result;
 			if (args.length > 0) {
 				if (key.indexOf(prefix_parent) === 0) { //$parent

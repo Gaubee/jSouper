@@ -97,7 +97,7 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 				$.p(stack, {
 					type: "ope",
 					value: operator,
-					num: templateOperatorNum[operator] || 0,
+					num: templateOperatorNum[operator] || 0
 				});
 				pointer = index + matchOperator.length;
 			}

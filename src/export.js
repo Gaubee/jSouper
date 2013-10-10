@@ -173,9 +173,14 @@ var ViewParser = global.ViewParser = {
 	}));
 	ViewParser.ready(function() {
 		var HVP_config = ViewParser.config,
-			App = document.getElementById(HVP_config.appName); //configable
+			App = document.getElementById(HVP_config.id); //configable
 		if (App) {
-			var template = global[HVP_config.appName] =ViewParser.parseNode(App)(/*HVP_config.data*/); //App.getAttribute("template-data")//json or url or configable
+			var appName = HVP_config.appName;
+			if (!appName||appName==HVP_config.id) {
+				//IE does not support the use and the DOM ID of the same variable names, so automatically add '_App' after the most.
+				appName = HVP_config.id+"_App";
+			}
+			var template = global[appName] =ViewParser.parseNode(App)(/*HVP_config.data*/); //App.getAttribute("template-data")//json or url or configable
 			template.set(HVP_config.data);
 			App.innerHTML = "";
 			template.append(App);

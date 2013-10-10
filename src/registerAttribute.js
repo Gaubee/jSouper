@@ -1,7 +1,6 @@
-var _isIE = !window.dispatchEvent,//!+"\v1",
 	//by RubyLouvre(司徒正美)
 	//setAttribute bug:http://www.iefans.net/ie-setattribute-bug/
-	IEfix = {
+var IEfix = {
 		acceptcharset: "acceptCharset",
 		accesskey: "accessKey",
 		allowtransparency: "allowTransparency",

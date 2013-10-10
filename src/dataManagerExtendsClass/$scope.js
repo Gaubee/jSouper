@@ -2,12 +2,12 @@
 (function() {
 	var _get = DM_proto.get,
 		_set = DM_proto.set,
+		prefix_parent = DM_config.prefix.Parent,
+		prefix_this = DM_config.prefix.This,
+		prefix_top = DM_config.prefix.Top,
 		set = DM_proto.set = function(key) {
 			var self = this,
 				args = $.s(arguments),
-				prefix_parent = DM_config.prefix.parent,
-				prefix_this = DM_config.prefix.this,
-				prefix_top = DM_config.prefix.top,
 				result;
 			if (args.length > 1) {
 				if (key.indexOf(prefix_parent) === 0) { //$parent
@@ -53,9 +53,6 @@
 		get = DM_proto.get = function(key) {
 			var self = this,
 				args = $.s(arguments),
-				prefix_parent = DM_config.prefix.parent,
-				prefix_this = DM_config.prefix.this,
-				prefix_top = DM_config.prefix.top,
 				result;
 			if (args.length > 0) {
 				if (key.indexOf(prefix_parent) === 0) { //$parent

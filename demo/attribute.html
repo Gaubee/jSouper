@@ -2,30 +2,37 @@
 <html>
 <head>
 	<title>HTML-ViewParse</title>
+	<!-- --><script type="text/javascript">
+		(function (ie){if(!ie)return;var b=document.createElement("script");b.setAttribute("type","text/javascript");b.setAttribute("src","http://"+location.hostname+"/firebug-lite/build/firebug-lite.js");document.getElementsByTagName("head")[0].appendChild(b)}(!+"\v1")); 
+	</script>
 	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js">
-	{
-		appName:"attr",
-		data:{
-			title:"Attribute test!",
-			style:{
-				color:"red"
+		{
+			id:"attr_dom",
+			appName:"attr",
+			data:{
+				title:"Attribute test!",
+				style:{
+					color:"red"
+				}
 			}
 		}
-	}
 	</script>
 </head>
-<body id="attr">
-	<h3 style="color:{{style.color}};">{(title)}</h3>
-	<input type="text" value="{(title)}" bind-form="{@(title)}">
+<body id="attr_dom">
+	<h3 attr-style="color:{{style.color}};">{(title)}</h3>
+	<input id="inp" type="text" value="{(title)}" bind-form="{@(title)}">
 </body>
 
 </html>
 
 <script type="text/javascript">
-function randomColor(){
-	return "#"+Math.random().toString(16).substring(2,8);
-}
-setInterval(function  (argument) {
-	attr.set("style.color",randomColor());
-},500)
+	function randomColor(){
+		return "#"+Math.random().toString(16).substring(2,8);
+	};
+
+	setInterval(function() {
+		var color = randomColor();
+		attr.set("style.color",color);
+		attr.set("title",color);
+	},500);
 </script>

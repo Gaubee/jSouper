@@ -1,6 +1,7 @@
 'use strict';
 var global = global || this;
 var doc = document,
+	_isIE = !global.dispatchEvent, //!+"\v1",
 	shadowBody = doc.createElement("body"),
 	shadowDIV = doc.createElement("div"),
 	_placeholder = function(prefix) {
@@ -13,7 +14,7 @@ var doc = document,
 
 	_event_cache = {},
 	_addEventListener = function(Element, eventName, eventFun, elementHash) {
-		var args = $.s(arguments).splice(4),
+		var args = $.s(arguments).splice(_addEventListener.length),
 			wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = function() {
 				var wrapArgs = $.s(arguments);
 				Array.prototype.push.apply(wrapArgs, args);
@@ -26,7 +27,7 @@ var doc = document,
 		wrapEventFun && Element.removeEventListener(eventName, wrapEventFun, $FALSE);
 	},
 	_attachEvent = function(Element, eventName, eventFun, elementHash) {
-		var args = $.s(arguments).splice(4),
+		var args = $.s(arguments).splice(_attachEvent.length),
 			wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = function() {
 				var wrapArgs = $.s(arguments);
 				Array.prototype.push.apply(wrapArgs, args);
@@ -40,7 +41,7 @@ var doc = document,
 	},
 	_registerEvent = _isIE ? _attachEvent : _addEventListener,
 	_cancelEvent = _isIE ? _detachEvent : _removeEventListener,
-	
+
 	$ = {
 		id: 9,
 		uidAvator: Math.random().toString(36).substring(2),
@@ -228,13 +229,14 @@ ArraySet.prototype = {
 		return key in this.store;
 	}
 };
-function Try(tryFun,scope,errorCallback){
-	errorCallback = errorCallback||$.noop;
-	return function(){
+
+function Try(tryFun, scope, errorCallback) {
+	errorCallback = errorCallback || $.noop;
+	return function() {
 		var result;
-		try{
-			result = tryFun.apply(scope,$.s(arguments));
-		}catch(e){
+		try {
+			result = tryFun.apply(scope, $.s(arguments));
+		} catch (e) {
 			errorCallback(e);
 		}
 		return result;
