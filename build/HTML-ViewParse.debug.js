@@ -1089,7 +1089,7 @@ function _create(data) { //data maybe basedata or dataManager
 				if (filterKey) {
 					vi_DM = DataManager(data);
 					vi_DM.collect(viewInstance);
-					_subset.call(/*DataManager.session.topGetter*/self/*be lower*/, vi_DM, filterKey);//!!!
+					_subset.call( /*DataManager.session.topGetter*/ self /*be lower*/ , vi_DM, filterKey); //!!!
 				} else {
 					self.collect(viewInstance);
 				}
@@ -1126,30 +1126,38 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	// self._triggers._u = [];//undefined key,update every time
 	self.TEMP = {};
 	$.fI(triggerTable, function(tiggerCollection, key) {
-		if (".".indexOf(key) !== 0) {//""||"."
+		if ("".indexOf(key) !== 0) { //"" //||"."
 			$.p(self._triggers, key);
 		}
 		self._triggers._[key] = tiggerCollection;
 	});
-	$.fE(triggerTable["."], function(tiggerFun) { //const value
+	/*$.fE(triggerTable["."], function(tiggerFun) { //const value
 		tiggerFun.event(NodeList, dataManager);
-	});
+	});*/
 
 	if (!(data instanceof DataManager)) {
 		dataManager = DataManager(data);
 	}
 	self._smartTriggers = [];
-	dataManager.collect(self);
-};
+	dataManager.collect(self); //touchOff All triggers
+
+	delete self._triggers._["."] //remove "."(const) key,just touch one time;
+},
+	VI_session = ViewInstance.session = {
+		touchHash: $NULL
+	};
 
 function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {
 	var self = this,
 		result;
 	$.fE(tiggerCollection, function(trigger) { //TODO:测试参数长度和效率的平衡点，减少参数传递的数量
-		result = trigger.event(NodeList, dataManager, eventTrigger, self._isAttr, self._id);
-		if (result !== $FALSE && trigger.bubble) {
-			var parentNode = NodeList[trigger.handleId].parentNode;
-			parentNode && _bubbleTrigger.call(self, parentNode._triggers, NodeList, dataManager, trigger);
+		if (trigger._touchHash !== VI_session.touchHash) {
+			result = trigger.event(NodeList, dataManager, eventTrigger, self._isAttr, self._id);
+			if (result !== $FALSE && trigger.bubble) {
+				var parentNode = NodeList[trigger.handleId].parentNode;
+				parentNode && _bubbleTrigger.call(self, parentNode._triggers, NodeList, dataManager, trigger);
+			}
+			trigger._touchHash = VI_session.touchHash;
 		}
 	});
 };
@@ -1262,6 +1270,7 @@ ViewInstance.prototype = {
 		var self = this,
 			dataManager = self.dataManager,
 			NodeList = self.NodeList;
+		VI_session.touchHash = _placeholder();
 		// key!==$UNDEFINED?_bubbleTrigger.call(self, self._triggers._[key], NodeList, dataManager):_bubbleTrigger.call(self, self._triggers._u, NodeList, dataManager)
 		_bubbleTrigger.call(self, self._triggers._[key], NodeList, dataManager)
 	}
@@ -1566,10 +1575,6 @@ var ViewParser = global.ViewParser = {
 		ViewParser.scans();
 	})
 }());
-V.rh("HTML", function(handle, index, parentHandle) {
-	var endCommentHandle = _commentPlaceholder(handle, parentHandle, "html_end_" + handle.id),
-		startCommentHandle = _commentPlaceholder(handle, parentHandle, "html_start_" + handle.id);
-});
 var _commentPlaceholder = function(handle, parentHandle, commentText) {
 	var handleName = handle.handleName,
 		commentText = commentText || (handleName + handle.id),
@@ -1775,44 +1780,6 @@ V.rh("#with", function(handle, index, parentHandle) {
 	_commentPlaceholder(handle, parentHandle);
 });
 V.rh("/with", placeholderHandle);
-V.rt("HTML", function(handle, index, parentHandle) {
-	var handleChilds = handle.childNodes,
-		htmlTextHandlesId = handleChilds[0].id,
-		beginCommentId = handleChilds[handleChilds.length - 1].id,
-		endCommentId = handleChilds[handleChilds.length - 2].id,
-		cacheNode =  $.D.cl(shadowDIV),
-		trigger;
-	trigger = {
-		// key:"",//default key === ""
-		bubble: true,
-		event: function(NodeList_of_ViewInstance, dataManager) {
-			var htmlText = NodeList_of_ViewInstance[htmlTextHandlesId]._data,
-				startCommentNode = NodeList_of_ViewInstance[beginCommentId].currentNode,
-				endCommentNode = NodeList_of_ViewInstance[endCommentId].currentNode,
-				parentNode = endCommentNode.parentNode,
-				brotherNodes = parentNode.childNodes,
-				index = -1;
-			$.fE(brotherNodes, function(node, i) {
-				index = i;
-				if (node === startCommentNode) {
-					return $FALSE;
-				}
-			});
-			index = index + 1;
-			$.fE(brotherNodes, function(node, i) {
-				if (node === endCommentNode) {
-					return $FALSE;
-				}
-				$.D.rC(parentNode,node);//remove
-			}, index);
-			cacheNode.innerHTML = htmlText;
-			$.fE(cacheNode.childNodes, function(node, i) {
-				$.D.iB(parentNode, node, endCommentNode);
-			});
-		}
-	}
-	return trigger;
-});
 var eachConfig = {
 	$I: "$INDEX"
 }
@@ -2173,9 +2140,8 @@ function registerHandle(handleName, handleFun) {
 		return trigger;
 	});
 }
-registerHandle("gaubee",function (arg1,arg2) {
-	console.log(arguments)
-	return arg1+"---------"+arg2;
+registerHandle("HTML",function () {
+	return Array.prototype.join.call(arguments,"");
 })
 var _testDIV = $.D.cl(shadowDIV),
 	_getAttrOuter = Function("n", "return n." + (("textContent" in _testDIV) ? "textContent" : "innerText") + "||''"),

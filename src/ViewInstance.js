@@ -92,7 +92,7 @@
 				if (filterKey) {
 					vi_DM = DataManager(data);
 					vi_DM.collect(viewInstance);
-					_subset.call(/*DataManager.session.topGetter*/self/*be lower*/, vi_DM, filterKey);//!!!
+					_subset.call( /*DataManager.session.topGetter*/ self /*be lower*/ , vi_DM, filterKey); //!!!
 				} else {
 					self.collect(viewInstance);
 				}
@@ -129,30 +129,38 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	// self._triggers._u = [];//undefined key,update every time
 	self.TEMP = {};
 	$.fI(triggerTable, function(tiggerCollection, key) {
-		if (".".indexOf(key) !== 0) {//""||"."
+		if ("".indexOf(key) !== 0) { //"" //||"."
 			$.p(self._triggers, key);
 		}
 		self._triggers._[key] = tiggerCollection;
 	});
-	$.fE(triggerTable["."], function(tiggerFun) { //const value
+	/*$.fE(triggerTable["."], function(tiggerFun) { //const value
 		tiggerFun.event(NodeList, dataManager);
-	});
+	});*/
 
 	if (!(data instanceof DataManager)) {
 		dataManager = DataManager(data);
 	}
 	self._smartTriggers = [];
-	dataManager.collect(self);
-};
+	dataManager.collect(self); //touchOff All triggers
+
+	delete self._triggers._["."] //remove "."(const) key,just touch one time;
+},
+	VI_session = ViewInstance.session = {
+		touchHash: $NULL
+	};
 
 function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {
 	var self = this,
 		result;
 	$.fE(tiggerCollection, function(trigger) { //TODO:测试参数长度和效率的平衡点，减少参数传递的数量
-		result = trigger.event(NodeList, dataManager, eventTrigger, self._isAttr, self._id);
-		if (result !== $FALSE && trigger.bubble) {
-			var parentNode = NodeList[trigger.handleId].parentNode;
-			parentNode && _bubbleTrigger.call(self, parentNode._triggers, NodeList, dataManager, trigger);
+		if (trigger._touchHash !== VI_session.touchHash) {
+			result = trigger.event(NodeList, dataManager, eventTrigger, self._isAttr, self._id);
+			if (result !== $FALSE && trigger.bubble) {
+				var parentNode = NodeList[trigger.handleId].parentNode;
+				parentNode && _bubbleTrigger.call(self, parentNode._triggers, NodeList, dataManager, trigger);
+			}
+			trigger._touchHash = VI_session.touchHash;
 		}
 	});
 };
@@ -265,6 +273,7 @@ ViewInstance.prototype = {
 		var self = this,
 			dataManager = self.dataManager,
 			NodeList = self.NodeList;
+		VI_session.touchHash = _placeholder();
 		// key!==$UNDEFINED?_bubbleTrigger.call(self, self._triggers._[key], NodeList, dataManager):_bubbleTrigger.call(self, self._triggers._u, NodeList, dataManager)
 		_bubbleTrigger.call(self, self._triggers._[key], NodeList, dataManager)
 	}

@@ -56,7 +56,6 @@ function registerHandle(handleName, handleFun) {
 		return trigger;
 	});
 }
-registerHandle("gaubee",function (arg1,arg2) {
-	console.log(arguments)
-	return arg1+"---------"+arg2;
+registerHandle("HTML",function () {
+	return Array.prototype.join.call(arguments,"");
 })
