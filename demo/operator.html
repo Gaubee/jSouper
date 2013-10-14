@@ -33,8 +33,21 @@
 	<b>{{a}}</b><span class="operator-color"> !== </span><b>{{b}}</b> = <b>{{a!==b}}</b><br>
 	<b>{{a}}</b><span class="operator-color">  >  </span><b>{{b}}</b> = <b>{{a > b}}</b><br>
 	<b>{{a}}</b><span class="operator-color">  <  </span><b>{{b}}</b> = <b>{{a < b}}</b><br>
+	<b>{{a}}</b><span class="operator-color"> && </span><b>{{b}}</b> = <b>{{a&&b}}</b><br>
+	<b>{{a}}</b><span class="operator-color"> || </span><b>{{b}}</b> = <b>{{a||b}}</b><br>
+	<b>{{a}}</b><span class="operator-color"> & </span><b>{{b}}</b> = <b>{{a&b}}</b><br>
+	<b>{{a}}</b><span class="operator-color"> | </span><b>{{b}}</b> = <b>{{a|b}}</b><br>
+	<b>{{a}}</b><span class="operator-color"> >> </span><b>{{b}}</b> = <b>{{a >> b}}</b><br>
+	<b>{{a}}</b><span class="operator-color">  <<  </span><b>{{b}}</b> = <b>{{a << b}}</b><br>
+	<b>{{a}}</b><span class="operator-color">  ^  </span><b>{{b}}</b> = <b>{{a ^ b}}</b><br>
 	<hr>
-
+	<span class="operator-color">
+	{{#if a > b}}
+		{{a-b}}
+	{{#else}}
+		{{b+a}}
+	{{/if}}
+	</span>
 </body>
 
 </html>

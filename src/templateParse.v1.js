@@ -26,14 +26,19 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 		"/": 2,
 		"&&": 2,
 		"||": 2,
+		"&": 2,
+		"|": 2,
 		"=": 2,
 		"==": 2,
 		"===": 2,
 		"!=": 2,
 		"!==": 2,
 		"%": 2,
+		"^": 2,
 		">": 2,
-		"<": 2
+		"<": 2,
+		">>": 2,
+		"<<": 2
 	},
 	parse = function(str) {
 		var quotedString = [];
@@ -43,7 +48,7 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 				return Placeholder;
 			}),
 			result = str.replace(newTemplateMatchReg, function(matchStr, innerStr, index) {
-				innerStr = innerStr.replace(/&gt;/g,">").replace(/&lt;/g,"<")//Semantic confusion with HTML
+				innerStr = innerStr.replace(/&gt;/g,">").replace(/&lt;/g,"<").replace(/&amp;/g,"&")//Semantic confusion with HTML
 				var fun_name = $.trim(innerStr).split(" ")[0];
 				if (fun_name in templateHandles) {
 					if (templateHandles[fun_name]) {

@@ -684,14 +684,19 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 		"/": 2,
 		"&&": 2,
 		"||": 2,
+		"&": 2,
+		"|": 2,
 		"=": 2,
 		"==": 2,
 		"===": 2,
 		"!=": 2,
 		"!==": 2,
 		"%": 2,
+		"^": 2,
 		">": 2,
-		"<": 2
+		"<": 2,
+		">>": 2,
+		"<<": 2
 	},
 	parse = function(str) {
 		var quotedString = [];
@@ -701,7 +706,7 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 				return Placeholder;
 			}),
 			result = str.replace(newTemplateMatchReg, function(matchStr, innerStr, index) {
-				innerStr = innerStr.replace(/&gt;/g,">").replace(/&lt;/g,"<")//Semantic confusion with HTML
+				innerStr = innerStr.replace(/&gt;/g,">").replace(/&lt;/g,"<").replace(/&amp;/g,"&")//Semantic confusion with HTML
 				var fun_name = $.trim(innerStr).split(" ")[0];
 				if (fun_name in templateHandles) {
 					if (templateHandles[fun_name]) {
@@ -1713,7 +1718,7 @@ var _operator_handle  = function(handle, index, parentHandle) {
 		}
 	}
 },
-_operator_list = "+ - * / % == === != !== > <".split(" ");
+_operator_list = "+ - * / % == === != !== > < && || ^ >> << & |".split(" ");
 $.ftE(_operator_list, function(operator) {
 	V.rh(operator, _operator_handle)
 });
@@ -1808,30 +1813,6 @@ V.rt("HTML", function(handle, index, parentHandle) {
 	}
 	return trigger;
 });
-V.rt("&&", V.rt("and", function(handle, index, parentHandle) {
-	var childHandlesId = [],
-		trigger;
-	$.fE(handle.childNodes, function(child_handle) {
-		if (child_handle.type === "handle") {
-			$.p(childHandlesId, child_handle.id);
-		}
-	});
-	trigger = {
-		// key:"",//default key === ""
-		bubble: $TRUE,
-		event: function(NodeList_of_ViewInstance, dataManager) {
-			var and = $TRUE;
-			$.fE(childHandlesId, function(child_handle_id) { //Compared to other values
-				and = !! NodeList_of_ViewInstance[child_handle_id]._data
-				if (!and) {
-					return $FALSE; //stop forEach
-				}
-			});
-			NodeList_of_ViewInstance[this.handleId]._data = and;
-		}
-	}
-	return trigger;
-}));
 var eachConfig = {
 	$I: "$INDEX"
 }
@@ -1884,31 +1865,6 @@ V.rt("#each", function(handle, index, parentHandle) {
 	}
 	return trigger
 });
-V.rt("==", V.rt("equa", function(handle, index, parentHandle) { //Equal
-	var childHandlesId = [],
-		trigger;
-	$.fE(handle.childNodes, function(child_handle) {
-		if (child_handle.type === "handle") {
-			$.p(childHandlesId, child_handle.id);
-		}
-	});
-	trigger = {
-		// key:"",//default key === ""
-		bubble: $TRUE,
-		event: function(NodeList_of_ViewInstance, dataManager) {
-			var equal,
-				val = NodeList_of_ViewInstance[childHandlesId[0]]._data; //first value
-			$.fE(childHandlesId, function(child_handle_id) { //Compared to other values
-				equal = (NodeList_of_ViewInstance[child_handle_id]._data == val);
-				if (equal) {
-					return $FALSE; //stop forEach
-				}
-			}, 1); //start from second;
-			NodeList_of_ViewInstance[this.handleId]._data = !! equal;
-		}
-	}
-	return trigger;
-}));
 V.rt("", function(handle, index, parentHandle) {
 	var textHandle = handle.childNodes[0],
 		textHandleId = textHandle.id,
@@ -2136,31 +2092,6 @@ var _operator_handle_build_str = String(_operator_handle_builder),
 $.ftE(_operator_list, function(operator) {
 	V.rt(operator, _operator_handle_build_factory(operator))
 });
-V.rt("||",V.rt("or", function(handle, index, parentHandle) {
-	var childHandlesId = [],
-		trigger;
-	$.fE(handle.childNodes, function(child_handle) {
-		if (child_handle.type === "handle") {
-			$.p(childHandlesId, child_handle.id);
-		}
-	});
-	trigger = {
-		// key:"",//default key === ""
-		bubble: $TRUE,
-		event: function(NodeList_of_ViewInstance, dataManager) {
-			var handleId = this.handleId;
-			NodeList_of_ViewInstance[handleId]._data = $FALSE;
-			$.fE(childHandlesId, function(child_handle_id) { //Compared to other values
-				if (NodeList_of_ViewInstance[child_handle_id]._data) {
-					NodeList_of_ViewInstance[handleId]._data = $TRUE;
-					return $FALSE; //stop forEach
-				}
-			});
-		}
-	}
-	return trigger;
-}));
-
 V.rt("#with", function(handle, index, parentHandle) {
 	// console.log(handle)
 	var id = handle.id,
