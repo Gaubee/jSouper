@@ -1144,22 +1144,31 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	delete self._triggers._["."] //remove "."(const) key,just touch one time;
 },
 	VI_session = ViewInstance.session = {
-		touchHash: $NULL
+		touchHandleIdSet: $NULL,
+		touchStacks: $NULL
 	};
 
 function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {
-	var self = this,
-		result;
+	var self = this, // result,
+		eventStack = [],
+		touchStacks = VI_session.touchStacks,
+		touchHandleIdSet = VI_session.touchHandleIdSet;
+	$.p(touchStacks, eventStack);//Add a new layer event collector
 	$.fE(tiggerCollection, function(trigger) { //TODO:测试参数长度和效率的平衡点，减少参数传递的数量
-		if (trigger._touchHash !== VI_session.touchHash) {
-			result = trigger.event(NodeList, dataManager, eventTrigger, self._isAttr, self._id);
-			if (result !== $FALSE && trigger.bubble) {
+		if (!touchHandleIdSet[trigger.handleId]) {//To prevent repeated collection
+			$.p(eventStack,trigger)//collect trigger
+			if (/*result !== $FALSE &&*/ trigger.bubble) {
+				// Stop using the `return false` to prevent bubble triggered
+				// need to use `this. Mercifully = false` to control
 				var parentNode = NodeList[trigger.handleId].parentNode;
 				parentNode && _bubbleTrigger.call(self, parentNode._triggers, NodeList, dataManager, trigger);
 			}
-			trigger._touchHash = VI_session.touchHash;
+			touchHandleIdSet[trigger.handleId]  = $TRUE;
+		}else{
+			console.log(trigger.handleId)
 		}
 	});
+
 };
 
 function _replaceTopHandleCurrent(self, el) {
@@ -1270,9 +1279,16 @@ ViewInstance.prototype = {
 		var self = this,
 			dataManager = self.dataManager,
 			NodeList = self.NodeList;
-		VI_session.touchHash = _placeholder();
-		// key!==$UNDEFINED?_bubbleTrigger.call(self, self._triggers._[key], NodeList, dataManager):_bubbleTrigger.call(self, self._triggers._u, NodeList, dataManager)
+		VI_session.touchHandleIdSet = {};
+		VI_session.touchStacks=[];
+		// collect trigger stack
 		_bubbleTrigger.call(self, self._triggers._[key], NodeList, dataManager)
+		// trigger trigger stack
+		$.ftE(VI_session.touchStacks,function (eventStack) {
+			$.ftE(eventStack,function (trigger) {
+				trigger.event(NodeList, dataManager, trigger, self._isAttr, self._id)
+			})
+		})
 	}
 };
 
