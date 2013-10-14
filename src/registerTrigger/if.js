@@ -36,13 +36,13 @@ V.rt("#if", function(handle, index, parentHandle) {
 
 	trigger = {
 		// key:"",//default is ""
-		event: function(NodeList_of_ViewInstance, dataManager, triggerBy, isAttr, viewInstance_ID) {
+		event: function(NodeList_of_ViewInstance, dataManager, /*triggerBy,*/ isAttr, viewInstance_ID) {
 			var conditionVal = !! NodeList_of_ViewInstance[conditionHandleId]._data,
 				parentNode = NodeList_of_ViewInstance[parentHandleId].currentNode,
 				markHandleId = comment_else_id, //if(true)
 				markHandle; //default is undefined --> insertBefore === appendChild
 			
-			if (NodeList_of_ViewInstance[this.handleId]._data !== conditionVal || triggerBy) {
+			if (NodeList_of_ViewInstance[this.handleId]._data !== conditionVal /*|| triggerBy*/) {
 				NodeList_of_ViewInstance[this.handleId]._data = conditionVal;
 				if (!conditionVal) {
 					markHandleId = comment_endif_id;
@@ -64,7 +64,7 @@ V.rt("#if", function(handle, index, parentHandle) {
 					});
 					if (display) {
 						if (currentHandle.display) { //Custom Display Function,default is false
-							currentHandle.display($TRUE, NodeList_of_ViewInstance, dataManager, triggerBy, viewInstance_ID)
+							currentHandle.display($TRUE, NodeList_of_ViewInstance, dataManager, /*triggerBy, */viewInstance_ID)
 						} else if (node) {
 							$.D.re(parentNode, node, placeholderNode)
 						}
@@ -76,7 +76,7 @@ V.rt("#if", function(handle, index, parentHandle) {
 						placeholderNode = (currentHandle.placeholderNode = currentHandle.placeholderNode || $.D.C(id));
 
 					if (currentHandle.display) { //Custom Display Function,default is false
-						currentHandle.display($FALSE, NodeList_of_ViewInstance, dataManager, triggerBy, viewInstance_ID)
+						currentHandle.display($FALSE, NodeList_of_ViewInstance, dataManager, /*triggerBy,*/ viewInstance_ID)
 					} else if (node) {
 						$.D.re(parentNode, placeholderNode, node)
 					}

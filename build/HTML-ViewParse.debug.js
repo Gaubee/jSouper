@@ -1286,7 +1286,7 @@ ViewInstance.prototype = {
 		// trigger trigger stack
 		$.ftE(VI_session.touchStacks,function (eventStack) {
 			$.ftE(eventStack,function (trigger) {
-				trigger.event(NodeList, dataManager, trigger, self._isAttr, self._id)
+				trigger.event(NodeList, dataManager, /*trigger,*/ self._isAttr, self._id)
 			})
 		})
 	}
@@ -1806,7 +1806,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 		trigger;
 
 	trigger = {
-		event: function(NodeList_of_ViewInstance, dataManager, eventTrigger, isAttr, viewInstance_ID) {
+		event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
 			var data = dataManager.get(arrDataHandleKey),
 				allArrViewInstances = V._instances[viewInstance_ID]._AVI,
 				arrViewInstances,
@@ -1866,7 +1866,7 @@ V.rt("", function(handle, index, parentHandle) {
 		} else { //String for databese by key
 			trigger = {
 				key: key,
-				event: function(NodeList_of_ViewInstance, dataManager, triggerBy, isAttr, vi) { //call by ViewInstance's Node
+				event: function(NodeList_of_ViewInstance, dataManager,/* triggerBy,*/ isAttr, vi) { //call by ViewInstance's Node
 					var data = dataManager.get(key),
 						currentNode = NodeList_of_ViewInstance[textHandleId].currentNode;
 					if (isAttr) {
@@ -1954,13 +1954,13 @@ V.rt("#if", function(handle, index, parentHandle) {
 
 	trigger = {
 		// key:"",//default is ""
-		event: function(NodeList_of_ViewInstance, dataManager, triggerBy, isAttr, viewInstance_ID) {
+		event: function(NodeList_of_ViewInstance, dataManager, /*triggerBy,*/ isAttr, viewInstance_ID) {
 			var conditionVal = !! NodeList_of_ViewInstance[conditionHandleId]._data,
 				parentNode = NodeList_of_ViewInstance[parentHandleId].currentNode,
 				markHandleId = comment_else_id, //if(true)
 				markHandle; //default is undefined --> insertBefore === appendChild
 			
-			if (NodeList_of_ViewInstance[this.handleId]._data !== conditionVal || triggerBy) {
+			if (NodeList_of_ViewInstance[this.handleId]._data !== conditionVal /*|| triggerBy*/) {
 				NodeList_of_ViewInstance[this.handleId]._data = conditionVal;
 				if (!conditionVal) {
 					markHandleId = comment_endif_id;
@@ -1982,7 +1982,7 @@ V.rt("#if", function(handle, index, parentHandle) {
 					});
 					if (display) {
 						if (currentHandle.display) { //Custom Display Function,default is false
-							currentHandle.display($TRUE, NodeList_of_ViewInstance, dataManager, triggerBy, viewInstance_ID)
+							currentHandle.display($TRUE, NodeList_of_ViewInstance, dataManager, /*triggerBy, */viewInstance_ID)
 						} else if (node) {
 							$.D.re(parentNode, node, placeholderNode)
 						}
@@ -1994,7 +1994,7 @@ V.rt("#if", function(handle, index, parentHandle) {
 						placeholderNode = (currentHandle.placeholderNode = currentHandle.placeholderNode || $.D.C(id));
 
 					if (currentHandle.display) { //Custom Display Function,default is false
-						currentHandle.display($FALSE, NodeList_of_ViewInstance, dataManager, triggerBy, viewInstance_ID)
+						currentHandle.display($FALSE, NodeList_of_ViewInstance, dataManager, /*triggerBy,*/ viewInstance_ID)
 					} else if (node) {
 						$.D.re(parentNode, placeholderNode, node)
 					}
@@ -2015,7 +2015,7 @@ V.rt(">", V.rt("#layout", function(handle, index, parentHandle) {
 		trigger;
 
 	trigger = {
-		event: function(NodeList_of_ViewInstance, dataManager, eventTrigger, isAttr, viewInstance_ID) {
+		event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
 			var data = NodeList_of_ViewInstance[dataHandle_id]._data,
 				AllLayoutViewInstance = V._instances[viewInstance_ID]._ALVI,
 				layoutViewInstance = AllLayoutViewInstance[id],
@@ -2083,7 +2083,7 @@ V.rt("#with", function(handle, index, parentHandle) {
 		trigger;
 
 	trigger = {
-		event: function(NodeList_of_ViewInstance, dataManager, eventTrigger, isAttr, viewInstance_ID) {
+		event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
 			var data = NodeList_of_ViewInstance[dataHandle_id]._data,
 				AllLayoutViewInstance = V._instances[viewInstance_ID]._WVI,
 				withViewInstance = AllLayoutViewInstance[id], // || (AllLayoutViewInstance[id] = V.withModules[id](data).insert(NodeList_of_ViewInstance[comment_with_id].currentNode)),
@@ -2122,7 +2122,7 @@ function registerHandle(handleName, handleFun) {
 		trigger = {
 			// key:"",//default key === ""
 			bubble: true,
-			event: function(NodeList_of_ViewInstance, dataManager, triggerBy, isAttr, viewInstance_ID) {
+			event: function(NodeList_of_ViewInstance, dataManager, /*triggerBy,*/ isAttr, viewInstance_ID) {
 				var startCommentNode = NodeList_of_ViewInstance[beginCommentId].currentNode,
 					endCommentNode = NodeList_of_ViewInstance[endCommentId].currentNode,
 					parentNode = endCommentNode.parentNode,

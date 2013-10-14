@@ -6,7 +6,7 @@ V.rt("#with", function(handle, index, parentHandle) {
 		trigger;
 
 	trigger = {
-		event: function(NodeList_of_ViewInstance, dataManager, eventTrigger, isAttr, viewInstance_ID) {
+		event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
 			var data = NodeList_of_ViewInstance[dataHandle_id]._data,
 				AllLayoutViewInstance = V._instances[viewInstance_ID]._WVI,
 				withViewInstance = AllLayoutViewInstance[id], // || (AllLayoutViewInstance[id] = V.withModules[id](data).insert(NodeList_of_ViewInstance[comment_with_id].currentNode)),

@@ -16,7 +16,7 @@ V.rt("", function(handle, index, parentHandle) {
 		} else { //String for databese by key
 			trigger = {
 				key: key,
-				event: function(NodeList_of_ViewInstance, dataManager, triggerBy, isAttr, vi) { //call by ViewInstance's Node
+				event: function(NodeList_of_ViewInstance, dataManager,/* triggerBy,*/ isAttr, vi) { //call by ViewInstance's Node
 					var data = dataManager.get(key),
 						currentNode = NodeList_of_ViewInstance[textHandleId].currentNode;
 					if (isAttr) {

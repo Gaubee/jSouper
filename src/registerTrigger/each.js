@@ -8,7 +8,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 		trigger;
 
 	trigger = {
-		event: function(NodeList_of_ViewInstance, dataManager, eventTrigger, isAttr, viewInstance_ID) {
+		event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
 			var data = dataManager.get(arrDataHandleKey),
 				allArrViewInstances = V._instances[viewInstance_ID]._AVI,
 				arrViewInstances,

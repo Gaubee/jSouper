@@ -8,7 +8,7 @@ V.rt(">", V.rt("#layout", function(handle, index, parentHandle) {
 		trigger;
 
 	trigger = {
-		event: function(NodeList_of_ViewInstance, dataManager, eventTrigger, isAttr, viewInstance_ID) {
+		event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
 			var data = NodeList_of_ViewInstance[dataHandle_id]._data,
 				AllLayoutViewInstance = V._instances[viewInstance_ID]._ALVI,
 				layoutViewInstance = AllLayoutViewInstance[id],

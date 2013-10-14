@@ -289,7 +289,7 @@ ViewInstance.prototype = {
 		// trigger trigger stack
 		$.ftE(VI_session.touchStacks,function (eventStack) {
 			$.ftE(eventStack,function (trigger) {
-				trigger.event(NodeList, dataManager, trigger, self._isAttr, self._id)
+				trigger.event(NodeList, dataManager, /*trigger,*/ self._isAttr, self._id)
 			})
 		})
 	}

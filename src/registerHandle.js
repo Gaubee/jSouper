@@ -22,7 +22,7 @@ function registerHandle(handleName, handleFun) {
 		trigger = {
 			// key:"",//default key === ""
 			bubble: true,
-			event: function(NodeList_of_ViewInstance, dataManager, triggerBy, isAttr, viewInstance_ID) {
+			event: function(NodeList_of_ViewInstance, dataManager, /*triggerBy,*/ isAttr, viewInstance_ID) {
 				var startCommentNode = NodeList_of_ViewInstance[beginCommentId].currentNode,
 					endCommentNode = NodeList_of_ViewInstance[endCommentId].currentNode,
 					parentNode = endCommentNode.parentNode,
