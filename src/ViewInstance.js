@@ -129,7 +129,7 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 	// self._triggers._u = [];//undefined key,update every time
 	self.TEMP = {};
 	$.fI(triggerTable, function(tiggerCollection, key) {
-		if (".".indexOf(key) !== 0) {
+		if (".".indexOf(key) !== 0) {//""||"."
 			$.p(self._triggers, key);
 		}
 		self._triggers._[key] = tiggerCollection;

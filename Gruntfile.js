@@ -13,7 +13,7 @@ module.exports = function(grunt) {
 	//define tasks
 	grunt.registerTask('server', ['connect:server', 'watch']);
 
-	var baseFile = ['src/$.js', 'src/SmartTriggerSet_for_DM.js', 'src/DataManager.v4.js', /*'src/Controller.v2.js',*/ /*'src/DataManager.js', 'src/Controller.js',*/ 'src/templateParse.v1.js', 'src/registerAttribute.js', 'src/View.js', 'src/ViewInstance.js', 'src/Handle.js', 'src/export.js', 'src/registerHandle/*.js', 'src/registerTrigger/*.js', 'src/registerAttributeHandle/*.js', 'src/dataManagerExtendsClass/*.js'],
+	var baseFile = ['src/$.js', 'src/SmartTriggerSet_for_DM.js', 'src/DataManager.v4.js', /*'src/Controller.v2.js',*/ /*'src/DataManager.js', 'src/Controller.js',*/ 'src/templateParse.v1.js', 'src/registerAttribute.js', 'src/View.js', 'src/ViewInstance.js', 'src/Handle.js', 'src/export.js', 'src/registerHandle/*.js', 'src/registerTrigger/*.js', 'src/registerHandle.js', 'src/registerAttributeHandle/*.js', 'src/dataManagerExtendsClass/*.js'],
 		debugFile = baseFile.slice();
 	debugFile.unshift('src/plugins.js')
 	//grunt config
