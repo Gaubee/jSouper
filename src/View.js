@@ -12,12 +12,11 @@ function View(arg) {
 	self._triggerTable = {};
 	_buildHandler.call(self);
 	_buildTrigger.call(self);
-
 	return function(data) {
 		return _create.call(self, data);
 	}
 };
-
+// var V_session = View.session = {};
 function _buildHandler(handleNodeTree) {
 	var self = this,
 		handles = self._handles

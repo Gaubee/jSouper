@@ -914,12 +914,11 @@ function View(arg) {
 	self._triggerTable = {};
 	_buildHandler.call(self);
 	_buildTrigger.call(self);
-
 	return function(data) {
 		return _create.call(self, data);
 	}
 };
-
+// var V_session = View.session = {};
 function _buildHandler(handleNodeTree) {
 	var self = this,
 		handles = self._handles
@@ -1360,6 +1359,9 @@ function TemplateHandle(handleName, node) {
 	self.handleName = $.trim(handleName);
 	self.childNodes = _parse(node);
 	Handle.init(self,3);
+	// if (node.parentNode) {
+		delete node.parentNode.removeChild(node);
+		// console.log("GC node") // }else{// 	console.log("no parentNode ,can't call GC") // }
 };
 TemplateHandle.prototype = Handle("handle", {
 	ignore: $TRUE,
@@ -1539,6 +1541,7 @@ var ViewParser = global.ViewParser = {
 		app: 'HVP',
 		data: {}
 	},
+	registerHandle:registerHandle,
 	ready: (function() {
 		var ready = "DOMContentLoaded", //_isIE ? "DOMContentLoaded" : "readystatechange",
 			ready_status = $FALSE,
@@ -2155,6 +2158,7 @@ function registerHandle(handleName, handleFun) {
 		}
 		return trigger;
 	});
+	return ViewParser;
 }
 registerHandle("HTML",function () {
 	return Array.prototype.join.call(arguments,"");

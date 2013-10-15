@@ -55,6 +55,7 @@ function registerHandle(handleName, handleFun) {
 		}
 		return trigger;
 	});
+	return ViewParser;
 }
 registerHandle("HTML",function () {
 	return Array.prototype.join.call(arguments,"");

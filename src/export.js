@@ -135,6 +135,7 @@ var ViewParser = global.ViewParser = {
 		app: 'HVP',
 		data: {}
 	},
+	registerHandle:registerHandle,
 	ready: (function() {
 		var ready = "DOMContentLoaded", //_isIE ? "DOMContentLoaded" : "readystatechange",
 			ready_status = $FALSE,

@@ -67,6 +67,9 @@ function TemplateHandle(handleName, node) {
 	self.handleName = $.trim(handleName);
 	self.childNodes = _parse(node);
 	Handle.init(self,3);
+	// if (node.parentNode) {
+		delete node.parentNode.removeChild(node);
+		// console.log("GC node") // }else{// 	console.log("no parentNode ,can't call GC") // }
 };
 TemplateHandle.prototype = Handle("handle", {
 	ignore: $TRUE,
