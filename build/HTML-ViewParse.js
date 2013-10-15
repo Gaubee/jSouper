@@ -451,45 +451,49 @@ var DM_proto = DataManager.prototype = {
 	set: function(key, nObj) {
 		//replace Data 取代原有对象数据
 		var self = DataManager.session.topSetter = this,
-			lastKey;
-		switch (arguments.length) {
-			case 0:
-				break;
-			case 1:
-				nObj = key;
-				if (self._database !== nObj || nObj instanceof Object) {
-					self._database = nObj;
-				};
-				key = "";
-				break;
-			default:
-				var database = self._database || (self._database = {}),
-					sObj,
-					cache_n_Obj = database,
-					arrKey = key.split("."),
-					lastKey = arrKey.pop();
-				$.ftE(arrKey, function(currentKey) {
-					cache_n_Obj = cache_n_Obj[currentKey] || (cache_n_Obj[currentKey] = {})
-				});
-				if ((sObj = cache_n_Obj[lastKey]) && sObj[_DM_extends_object_constructor]) {
-					sObj.set(nObj)
-				} else {
-					cache_n_Obj[lastKey] = nObj;
-				}
+			lastKey,
+			argumentLen = arguments.length;
+		if (argumentLen === 0) {
+			return;
+		} else if (argumentLen === 1) {
+			nObj = key;
+			key = "";
 		}
 		DataManager.session.filterKey = key;
 
-		// return self.touchOff(key);
-		var result = self.getTopDataManager(key),
+		var result = self.getTopDataManager(key), //Leader:find the dataManager matched by key
 			setStacks = DataManager.session.setStacks,
 			result_dm = result.dataManager,
 			result_dm_id = result_dm.id;
-		if ($.iO(setStacks, result_dm_id) === -1) {
+		if ($.iO(setStacks, result_dm_id) === -1) { //maybe have many fork by the ExtendsClass
 			$.p(setStacks, result_dm_id);
 			result = result.key ? result_dm.set(result.key, nObj) : result_dm.set(nObj);
 			// result = result_dm.touchOff(result.key)
 			setStacks.pop();
 		} else {
+			switch (argumentLen) {
+				// case 0:
+				// 	break;
+				case 1:
+					if (self._database !== nObj || nObj instanceof Object) {
+						self._database = nObj;
+					};
+					break;
+				default: //find Object by the key-dot-path and change it
+					var database = self._database || (self._database = {}),
+						sObj,
+						cache_n_Obj = database,
+						arrKey = key.split("."),
+						lastKey = arrKey.pop();
+					$.ftE(arrKey, function(currentKey) {
+						cache_n_Obj = cache_n_Obj[currentKey] || (cache_n_Obj[currentKey] = {})
+					});
+					if ((sObj = cache_n_Obj[lastKey]) && sObj[_DM_extends_object_constructor]) {
+						sObj.set(nObj) //call ExtendsClass API
+					} else {
+						cache_n_Obj[lastKey] = nObj;
+					}
+			}
 			// $.p(setStacks,self.id);
 			result = self.touchOff(key);
 			// setStacks.pop();
@@ -633,7 +637,6 @@ var DM_proto = DataManager.prototype = {
 	buildGetter: function(key) {},
 	buildSetter: function(key) {}
 };
-
 var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 	// DoubleQuotedString = /"(?:\.|(\\\")|[^\""\n])*"/g, //双引号字符串
 	// SingleQuotedString = /'(?:\.|(\\\')|[^\''\n])*'/g, //单引号字符串
