@@ -1295,7 +1295,8 @@ ViewInstance.prototype = {
  * parse function
  */
 var _parse = function(node) {//get all childNodes
-	var result = [];
+	var result = [],
+		GC_node = [];
 	for (var i = 0, child_node, childNodes = node.childNodes; child_node = childNodes[i]; i += 1) {
 		switch (child_node.nodeType) {
 			case 3:
@@ -1309,12 +1310,17 @@ var _parse = function(node) {//get all childNodes
 					if (handleName !== $NULL) {
 						$.p(result, new TemplateHandle(handleName, child_node))
 					}
+					// delete child_node.parentNode.removeChild(child_node);
+					$.p(GC_node,child_node);
 				} else {
 					$.p(result, new ElementHandle(child_node))
 				}
 				break;
 		}
 	}
+	$.ftE(GC_node,function (nodeToDelete) {
+		delete nodeToDelete.parentNode.removeChild(nodeToDelete);
+	})
 	return result;
 };
 
@@ -1359,9 +1365,6 @@ function TemplateHandle(handleName, node) {
 	self.handleName = $.trim(handleName);
 	self.childNodes = _parse(node);
 	Handle.init(self,3);
-	// if (node.parentNode) {
-		delete node.parentNode.removeChild(node);
-		// console.log("GC node") // }else{// 	console.log("no parentNode ,can't call GC") // }
 };
 TemplateHandle.prototype = Handle("handle", {
 	ignore: $TRUE,
