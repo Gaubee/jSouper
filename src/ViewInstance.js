@@ -264,6 +264,10 @@ ViewInstance.prototype = {
 		var dm = this.dataManager;
 		return dm.get.apply(dm, $.s(arguments));
 	},
+	mix:function mix () {
+		var dm = this.dataManager;
+		return dm.mix.apply(dm,$.s(arguments))
+	},
 	set: function set() {
 		var dm = this.dataManager;
 		return dm.set.apply(dm, $.s(arguments))

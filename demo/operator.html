@@ -53,10 +53,14 @@
 </html>
 
 <script type="text/javascript">
-	setInterval(function(){
-		operator.set({
-			a:parseInt(Math.random()*50),
-			b:parseInt(Math.random()*50)
-		})
-	},1000)
+	setInterval(function() {
+		operator.mix({
+			a: parseInt(Math.random() * 50)
+		});
+		setTimeout(function() {
+			operator.mix({
+				b: parseInt(Math.random() * 50)
+			});
+		},500)
+	}, 1000)
 </script>

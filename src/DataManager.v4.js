@@ -89,36 +89,19 @@ var DM_proto = DataManager.prototype = {
 	mix: function(key, nObj) {
 		//mix Data 合并数据
 		var self = this,
-			keys,
-			lastKey,
-			cache_top_n_obj,
-			cache_n_Obj;
+			result;
 		switch (arguments.length) {
 			case 0:
 				break;
 			case 1:
-				nObj = key;
-				if (self._database !== nObj || nObj instanceof Object) {
-					self._database = _mix(self._database, nObj);
-				};
-				key = "";
+				result = self.get(); //maybe ExtendsClass
+				result = self.set(_mix(result, key));
 				break;
 			default:
-				var sObj = self.get(key)
-				if (sObj && sObj[_DM_extends_object_constructor]) { //是DataManager.Object的拓展对象
-					sObj.set(nObj); //调用拓展对象的接口
-				} else {
-					keys = key.split(".");
-					lastKey = keys.pop();
-					cache_top_n_obj = cache_n_Obj = {};
-					$.ftE(keys, function(nodeKey) { //根据对象链生成可混合对象
-						cache_n_Obj = (cache_n_Obj[nodeKey] = {});
-					});
-					cache_n_Obj[lastKey] = nObj;
-					self._database = _mix(self._database, cache_top_n_obj);
-				}
+				result = self.get(key);
+				result = self.set(key, _mix(result, nObj));
 		}
-		return self.touchOff(key);
+		return result;
 	},
 	set: function(key, nObj) {
 		//replace Data 取代原有对象数据
