@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>HTML-ViewParse</title>
+	<!-- --><script type="text/javascript">
+		(function (ie){if(!ie)return;var b=document.createElement("script");b.setAttribute("type","text/javascript");b.setAttribute("src","http://"+location.hostname+"/firebug-lite/build/firebug-lite.js");document.getElementsByTagName("head")[0].appendChild(b)}(!+"\v1")); 
+	</script>
+	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js">
+		{
+			id:"operator_dom",
+			app:"operator",
+			data:{
+				bool:false,
+				number:10
+			}
+		}
+	</script>
+	<style>
+	.operator-color{
+		color: #a22;
+	}
+	</style>
+</head>
+<body id="operator_dom">
+	<span class="operator-color"> - </span><b>{{number}}</b> = <b>{{-number}}</b><br>
+	<span class="operator-color"> ~ </span><b>{{number}}</b> = <b>{{~number}}</b><br>
+	<span class="operator-color"> ! </span><b>{{number}}</b> = <b>{{!bool}}</b><br>
+
+	<hr>
+	<span class="operator-color">
+	{{#if !bool}}
+		{{bool}} is false
+	{{#else}}
+		{{bool}} is true
+	{{/if}}
+	</span>
+</body>
+
+</html>
+
+<script type="text/javascript">
+	setInterval(function() {
+		operator.set({
+			bool: !operator.get("bool"),
+			number : Math.random()*1000
+		});
+	}, 1000)
+</script>

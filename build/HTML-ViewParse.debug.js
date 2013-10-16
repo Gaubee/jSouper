@@ -650,7 +650,7 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 		"#if": $TRUE,
 		"#else": $FALSE, //no arguments
 		"/if": $FALSE,
-		"@": $TRUE,
+		// "@": $TRUE,
 		"#each": $TRUE,
 		"/each": $FALSE,
 		"#with": $TRUE,
@@ -660,29 +660,30 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 		"layout": $TRUE
 	},
 	templateOperatorNum = {
-		"!": 1,
-		"~": 1,
-		"++": 1,
-		"--": 1,
-		"+": 2,
-		"-": 2,
-		"*": 2,
-		"/": 2,
-		"&&": 2,
-		"||": 2,
-		"&": 2,
-		"|": 2,
-		"=": 2,
-		"==": 2,
-		"===": 2,
-		"!=": 2,
-		"!==": 2,
-		"%": 2,
-		"^": 2,
-		">": 2,
-		"<": 2,
-		">>": 2,
-		"<<": 2
+		// "@": 1,
+		// "!": 1,
+		// "~": 1,
+		// "++": 1,
+		// "--": 1,
+		// "+": 2,
+		// "-": 2,
+		// "*": 2,
+		// "/": 2,
+		// "&&": 2,
+		// "||": 2,
+		// "&": 2,
+		// "|": 2,
+		// "=": 2,
+		// "==": 2,
+		// "===": 2,
+		// "!=": 2,
+		// "!==": 2,
+		// "%": 2,
+		// "^": 2,
+		// ">": 2,
+		// "<": 2,
+		// ">>": 2,
+		// "<<": 2
 	},
 	parse = function(str) {
 		var quotedString = [];
@@ -1737,6 +1738,12 @@ var _operator_handle  = function(handle, index, parentHandle) {
 },
 _operator_list = "+ - * / % == === != !== > < && || ^ >> << & |".split(" ");
 $.ftE(_operator_list, function(operator) {
+	templateOperatorNum[operator] = 2;
+	V.rh(operator, _operator_handle)
+});
+var _unary_operator_list = "! ~ -".split(" ");// ++ --
+$.ftE(_unary_operator_list, function(operator) {
+	templateOperatorNum[operator] = 1;
 	V.rh(operator, _operator_handle)
 });
 var _with_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManager, triggerBy, viewInstance_ID) {
@@ -2070,6 +2077,38 @@ var _operator_handle_build_str = String(_operator_handle_builder),
 	};
 $.ftE(_operator_list, function(operator) {
 	V.rt(operator, _operator_handle_build_factory(operator))
+});
+var _unary_operator_handle_builder = function(handle, index, parentHandle){
+	var firstParameter_id = handle.childNodes[0].id,
+		textHandle_id = handle.childNodes[0].childNodes[0].id,
+		trigger = {
+			bubble: true//build in global,can't use $TRUE
+		};
+
+	if (parentHandle.type !== "handle") { //as textHandle
+		trigger.event = function(NodeList_of_ViewInstance /*, dataManager, triggerBy, isAttr, vi*/ ) { //call by ViewInstance's Node
+			var result =  +NodeList_of_ViewInstance[firstParameter_id]._data,
+				currentNode = NodeList_of_ViewInstance[textHandle_id].currentNode;
+			currentNode.data = result;
+		}
+	} else {
+		trigger.event = function(NodeList_of_ViewInstance /*, dataManager, triggerBy, isAttr, vi*/ ) { //call by ViewInstance's Node
+			var result =  +NodeList_of_ViewInstance[firstParameter_id]._data;
+			NodeList_of_ViewInstance[this.handleId]._data = result;
+		}
+	}
+
+	return trigger;
+}
+var _unary_operator_handle_build_str = String(_unary_operator_handle_builder),
+	_unary_operator_handle_build_arguments = _unary_operator_handle_build_str.match(/\(([\w\W]+?)\)/)[1],
+	_unary_operator_handle_build_str = _unary_operator_handle_build_str.substring(_unary_operator_handle_build_str.indexOf("{")+1,_unary_operator_handle_build_str.length-1),
+	_unary_operator_handle_build_factory = function(operator) {
+		var result= Function(_unary_operator_handle_build_arguments, _unary_operator_handle_build_str.replace(/\+/g, operator))
+		return result
+	};
+$.ftE(_unary_operator_list, function(operator) {
+	V.rt(operator, _unary_operator_handle_build_factory(operator))
 });
 V.rt("#with", function(handle, index, parentHandle) {
 	// console.log(handle)
