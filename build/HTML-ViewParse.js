@@ -671,7 +671,7 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 				return Placeholder;
 			}),
 			result = str.replace(newTemplateMatchReg, function(matchStr, innerStr, index) {
-				innerStr = innerStr.replace(/&gt;/g,">").replace(/&lt;/g,"<").replace(/&amp;/g,"&")//Semantic confusion with HTML
+				innerStr = innerStr.replace(/&gt;/g, ">").replace(/&lt;/g, "<").replace(/&amp;/g, "&") //Semantic confusion with HTML
 				var fun_name = $.trim(innerStr).split(" ")[0];
 				if (fun_name in templateHandles) {
 					if (templateHandles[fun_name]) {
@@ -692,7 +692,9 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 				}
 			})
 			return result.replace(RegExp(Placeholder, "g"), function(p) {
-				return quotedString.splice(0, 1)
+				return quotedString.splice(0, 1);
+			}).replace(/\{\@\(\{\(([\w.]+?)\)\}\)\}/g, function(matchStr, matchKey) {
+				return "{@(" + matchKey + ")}";
 			});
 	},
 	parseArg = function(argStr) {
