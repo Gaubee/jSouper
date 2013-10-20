@@ -18,9 +18,11 @@
 		}
 	</script>
 </head>
-<body id="attr_dom">
-	<h3 attr-style="color:{{style.color}};">{(title)}</h3>
-	<input id="inp" type="text" value="{(title)}" bind-form="{@(title)}">
+<body >
+	<div id="attr_dom">
+		<h3 attr-style="color:{{style.color}};">{{title}}</h3>
+		<input id="inp" type="text" bind-form="{{@title}}"  attr-value="{{title}}"/>
+	</div>
 </body>
 
 </html>

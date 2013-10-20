@@ -16,7 +16,7 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 		"layout": $TRUE
 	},
 	templateOperatorNum = {
-		// "@": 1,
+		"@": 1//,
 		// "!": 1,
 		// "~": 1,
 		// "++": 1,
@@ -69,11 +69,13 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 					return parseIte(parseArg($.trim(innerStr))); //"{(" + innerStr + ")}";
 				}
 			})
-			return result.replace(RegExp(Placeholder, "g"), function(p) {
+
+			result = result.replace(RegExp(Placeholder, "g"), function(p) {
 				return quotedString.splice(0, 1);
 			}).replace(/\{\@\(\{\(([\w.]+?)\)\}\)\}/g, function(matchStr, matchKey) {
 				return "{@(" + matchKey + ")}";
 			});
+			return result
 	},
 	parseArg = function(argStr) {
 		var allStack = [],

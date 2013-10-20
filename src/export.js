@@ -142,9 +142,11 @@ var ViewParser = global.ViewParser = {
 			callbackFunStacks = [];
 
 		_registerEvent(doc, (_isIE && IEfix[ready]) || ready, function() {
-			$.ftE(callbackFunStacks, function(callbackObj) {
+			var callbackObj;
+			while(callbackFunStacks.length){
+				callbackObj = callbackFunStacks.splice(0,1)[0];
 				callbackObj.callback.call(callbackObj.scope)
-			})
+			}
 			ready_status = $TRUE;
 		});
 		return function(callbackFun, scope) {

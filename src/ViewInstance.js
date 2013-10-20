@@ -151,7 +151,7 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 		touchStacks: $NULL
 	};
 
-function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {
+function _bubbleTrigger(tiggerCollection, NodeList, dataManager/*, eventTrigger*/) {
 	var self = this, // result,
 		eventStack = [],
 		touchStacks = VI_session.touchStacks,
@@ -164,12 +164,12 @@ function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {
 				// Stop using the `return false` to prevent bubble triggered
 				// need to use `this. Mercifully = false` to control
 				var parentNode = NodeList[trigger.handleId].parentNode;
-				parentNode && _bubbleTrigger.call(self, parentNode._triggers, NodeList, dataManager, trigger);
+				parentNode && _bubbleTrigger.call(self, parentNode._triggers, NodeList, dataManager/*, trigger*/);
 			}
 			touchHandleIdSet[trigger.handleId]  = $TRUE;
-		}else{
+		}/*else{
 			console.log(trigger.handleId)
-		}
+		}*/
 	});
 
 };
