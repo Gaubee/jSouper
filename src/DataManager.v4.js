@@ -79,8 +79,8 @@ var DM_proto = DataManager.prototype = {
 		if (arrKey.length && (parent = self._parentDataManager)) { //key不在对象中，查询父级
 			result = parent.get(key);
 		}*/
-			DataManager.session.filterKey = key;
 		}
+		DataManager.session.filterKey = key;
 		if (result && result[_DM_extends_object_constructor]) {
 			result = result.get();
 		}

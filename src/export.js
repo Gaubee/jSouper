@@ -115,6 +115,7 @@ var ViewParser = global.ViewParser = {
 		$.fE(document.getElementsByTagName("script"), function(scriptNode) {
 			if (scriptNode.getAttribute("type") === "text/template") {
 				V.modules[scriptNode.getAttribute("name")] = V.parse(scriptNode.innerHTML);
+				$.D.rm(scriptNode)
 			}
 		});
 	},
@@ -174,6 +175,7 @@ var ViewParser = global.ViewParser = {
 		throw "config error:" + e.message;
 	}));
 	ViewParser.ready(function() {
+		ViewParser.scans();
 		var HVP_config = ViewParser.config,
 			App = document.getElementById(HVP_config.id); //configable
 		if (App) {
@@ -187,6 +189,5 @@ var ViewParser = global.ViewParser = {
 			App.innerHTML = "";
 			template.append(App);
 		}
-		ViewParser.scans();
 	})
 }());

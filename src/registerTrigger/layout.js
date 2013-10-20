@@ -1,4 +1,4 @@
-V.rt(">", V.rt("#layout", function(handle, index, parentHandle) {
+V.rt("layout", function(handle, index, parentHandle) {
 	// console.log(handle)
 	var id = handle.id,
 		childNodes = handle.childNodes,
@@ -9,16 +9,27 @@ V.rt(">", V.rt("#layout", function(handle, index, parentHandle) {
 
 	trigger = {
 		event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
-			var data = NodeList_of_ViewInstance[dataHandle_id]._data,
+			var key = NodeList_of_ViewInstance[dataHandle_id]._data,
 				AllLayoutViewInstance = V._instances[viewInstance_ID]._ALVI,
 				layoutViewInstance = AllLayoutViewInstance[id],
 				inserNew;
-			if (!layoutViewInstance) {
-				layoutViewInstance = AllLayoutViewInstance[id] = V.modules[NodeList_of_ViewInstance[templateHandle_id]._data]().insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
-				dataManager.subset(layoutViewInstance);
+			if (key /*!==$UNDEFINED*/ ) {
+				if (!layoutViewInstance) {
+					layoutViewInstance = AllLayoutViewInstance[id] = V.modules[NodeList_of_ViewInstance[templateHandle_id]._data]().insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
+					dataManager.get(key);
+					var DM_session = DataManager.session;
+					key  = DM_session.filterKey;
+					dataManager = DM_session.topGetter;
+					if (key) {
+						dataManager.subset(layoutViewInstance, key);
+					} else {
+						dataManager.collect(layoutViewInstance);
+					}
+				} else {
+					layoutViewInstance && layoutViewInstance.set(dataManager.get(key));
+				}
 			}
-			layoutViewInstance.set(data);
 		}
 	}
 	return trigger;
-}));
+});

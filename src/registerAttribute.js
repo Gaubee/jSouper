@@ -48,6 +48,7 @@ The full list of boolean attributes in HTML 4.01 (and hence XHTML 1.0) is (with 
 		attrKey = attrKey.toLowerCase()
 		attrKey = attrKey.indexOf(V.prefix) ? attrKey : attrKey.replace(V.prefix, "")
 		attrKey = (_isIE && IEfix[attrKey]) || attrKey
+		console.log(attrValue,":",_matchRule.test(attrValue)||_templateMatchRule.test(attrValue))
 		if (_matchRule.test(attrValue)||_templateMatchRule.test(attrValue)) {
 			var attrViewInstance = (V.attrModules[handle.id + attrKey] = ViewParser.parse(attrValue))(),
 				_shadowDIV = $.D.cl(shadowDIV), //parserNode

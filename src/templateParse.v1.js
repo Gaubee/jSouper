@@ -72,7 +72,7 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 
 			result = result.replace(RegExp(Placeholder, "g"), function(p) {
 				return quotedString.splice(0, 1);
-			}).replace(/\{\@\(\{\(([\w.]+?)\)\}\)\}/g, function(matchStr, matchKey) {
+			}).replace(/\{\@\(\{\(([\w\W]+?)\)\}\)\}/g, function(matchStr, matchKey) {
 				return "{@(" + matchKey + ")}";
 			});
 			return result

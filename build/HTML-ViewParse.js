@@ -179,6 +179,20 @@ var doc = document,
 				try {
 					parentNode.replaceChild(new_node, old_node);
 				} catch (e) {}
+			},
+			rm:_isIE ? function() {
+				//@大城小胖 http://fins.iteye.com/blog/172263
+				var d = doc.createElement("div");
+				return function(n) {
+					if (n && n.tagName != 'BODY') {
+						d.appendChild(n);
+						d.innerHTML = '';
+					}
+				}
+			}() : function(n) {
+				if (n && n.parentNode && n.tagName != 'BODY') {
+					delete n.parentNode.removeChild(n);
+				}
 			}
 		}
 	},
@@ -407,8 +421,8 @@ var DM_proto = DataManager.prototype = {
 		if (arrKey.length && (parent = self._parentDataManager)) { //key不在对象中，查询父级
 			result = parent.get(key);
 		}*/
-			DataManager.session.filterKey = key;
 		}
+		DataManager.session.filterKey = key;
 		if (result && result[_DM_extends_object_constructor]) {
 			result = result.get();
 		}
@@ -694,7 +708,7 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 
 			result = result.replace(RegExp(Placeholder, "g"), function(p) {
 				return quotedString.splice(0, 1);
-			}).replace(/\{\@\(\{\(([\w.]+?)\)\}\)\}/g, function(matchStr, matchKey) {
+			}).replace(/\{\@\(\{\(([\w\W]+?)\)\}\)\}/g, function(matchStr, matchKey) {
 				return "{@(" + matchKey + ")}";
 			});
 			return result
@@ -840,6 +854,7 @@ The full list of boolean attributes in HTML 4.01 (and hence XHTML 1.0) is (with 
 		attrKey = attrKey.toLowerCase()
 		attrKey = attrKey.indexOf(V.prefix) ? attrKey : attrKey.replace(V.prefix, "")
 		attrKey = (_isIE && IEfix[attrKey]) || attrKey
+		console.log(attrValue,":",_matchRule.test(attrValue)||_templateMatchRule.test(attrValue))
 		if (_matchRule.test(attrValue)||_templateMatchRule.test(attrValue)) {
 			var attrViewInstance = (V.attrModules[handle.id + attrKey] = ViewParser.parse(attrValue))(),
 				_shadowDIV = $.D.cl(shadowDIV), //parserNode
@@ -972,33 +987,31 @@ function _create(data) { //data maybe basedata or dataManager
 		var self = this,
 			DMSet = self._subsetDataManagers;
 		$.ftE(self._viewInstances, function(childViewInstance) {
-			var smartTriggerCollection =
-				$.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
-					var TEMP = smartTrigger.TEMP;
-					TEMP.dataManager.get(TEMP.sourceKey);
-					var topGetter = DataManager.session.topGetter;
-					if (topGetter !== TEMP.dataManager) {
-						smartTrigger.bind(topGetter._triggerKeys);
-						TEMP.dataManager = topGetter;
-					}
-					smartTrigger.event(topGetter._triggerKeys);
-				})
+			$.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
+				var TEMP = smartTrigger.TEMP;
+				TEMP.dataManager.get(TEMP.sourceKey);
+				var topGetter = DataManager.session.topGetter;
+				if (topGetter !== TEMP.dataManager) {
+					smartTrigger.bind(topGetter._triggerKeys);
+					TEMP.dataManager = topGetter;
+				}
+				smartTrigger.event(topGetter._triggerKeys);
+			})
 		})
 		$.ftE(self._subsetDataManagers, function(childDataManager) {
 			$.ftE(childDataManager._viewInstances, function(childViewInstance) {
-				var smartTriggerCollection =
-					$.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
-						if (smartTrigger.moveAble) {
-							var TEMP = smartTrigger.TEMP;
-							TEMP.dataManager.get(TEMP.sourceKey);
-							var topGetter = DataManager.session.topGetter;
-							if (topGetter !== TEMP.dataManager) {
-								smartTrigger.unbind(TEMP.dataManager._triggerKeys).bind(topGetter._triggerKeys);
-								TEMP.dataManager = topGetter;
-								smartTrigger.event(topGetter._triggerKeys);
-							}
+				$.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
+					if (smartTrigger.moveAble) {
+						var TEMP = smartTrigger.TEMP;
+						TEMP.dataManager.get(TEMP.sourceKey);
+						var topGetter = DataManager.session.topGetter;
+						if (topGetter !== TEMP.dataManager) {
+							smartTrigger.unbind(TEMP.dataManager._triggerKeys).bind(topGetter._triggerKeys);
+							TEMP.dataManager = topGetter;
+							smartTrigger.event(topGetter._triggerKeys);
 						}
-					})
+					}
+				})
 			})
 		})
 	}
@@ -1116,23 +1129,24 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 		touchStacks: $NULL
 	};
 
-function _bubbleTrigger(tiggerCollection, NodeList, dataManager/*, eventTrigger*/) {
+function _bubbleTrigger(tiggerCollection, NodeList, dataManager /*, eventTrigger*/ ) {
 	var self = this, // result,
 		eventStack = [],
 		touchStacks = VI_session.touchStacks,
 		touchHandleIdSet = VI_session.touchHandleIdSet;
-	$.p(touchStacks, eventStack);//Add a new layer event collector
+	$.p(touchStacks, eventStack); //Add a new layer event collector
 	$.fE(tiggerCollection, function(trigger) { //TODO:测试参数长度和效率的平衡点，减少参数传递的数量
-		if (!touchHandleIdSet[trigger.handleId]) {//To prevent repeated collection
-			$.p(eventStack,trigger)//collect trigger
-			if (/*result !== $FALSE &&*/ trigger.bubble) {
+		if (!touchHandleIdSet[trigger.handleId]) { //To prevent repeated collection
+			$.p(eventStack, trigger) //collect trigger
+			if ( /*result !== $FALSE &&*/ trigger.bubble) {
 				// Stop using the `return false` to prevent bubble triggered
 				// need to use `this. Mercifully = false` to control
 				var parentNode = NodeList[trigger.handleId].parentNode;
-				parentNode && _bubbleTrigger.call(self, parentNode._triggers, NodeList, dataManager/*, trigger*/);
+				parentNode && _bubbleTrigger.call(self, parentNode._triggers, NodeList, dataManager /*, trigger*/ );
 			}
-			touchHandleIdSet[trigger.handleId]  = $TRUE;
-		}/*else{
+			touchHandleIdSet[trigger.handleId] = $TRUE;
+		}
+		/*else{
 			console.log(trigger.handleId)
 		}*/
 	});
@@ -1229,9 +1243,9 @@ ViewInstance.prototype = {
 		var dm = this.dataManager;
 		return dm.get.apply(dm, $.s(arguments));
 	},
-	mix:function mix () {
+	mix: function mix() {
 		var dm = this.dataManager;
-		return dm.mix.apply(dm,$.s(arguments))
+		return dm.mix.apply(dm, $.s(arguments))
 	},
 	set: function set() {
 		var dm = this.dataManager;
@@ -1252,12 +1266,12 @@ ViewInstance.prototype = {
 			dataManager = self.dataManager,
 			NodeList = self.NodeList;
 		VI_session.touchHandleIdSet = {};
-		VI_session.touchStacks=[];
+		VI_session.touchStacks = [];
 		// collect trigger stack
 		_bubbleTrigger.call(self, self._triggers._[key], NodeList, dataManager)
 		// trigger trigger stack
-		$.ftE(VI_session.touchStacks,function (eventStack) {
-			$.ftE(eventStack,function (trigger) {
+		$.ftE(VI_session.touchStacks, function(eventStack) {
+			$.ftE(eventStack, function(trigger) {
 				trigger.event(NodeList, dataManager, /*trigger,*/ self._isAttr, self._id)
 			})
 		})
@@ -1516,6 +1530,7 @@ var ViewParser = global.ViewParser = {
 		$.fE(document.getElementsByTagName("script"), function(scriptNode) {
 			if (scriptNode.getAttribute("type") === "text/template") {
 				V.modules[scriptNode.getAttribute("name")] = V.parse(scriptNode.innerHTML);
+				$.D.rm(scriptNode)
 			}
 		});
 	},
@@ -1575,6 +1590,7 @@ var ViewParser = global.ViewParser = {
 		throw "config error:" + e.message;
 	}));
 	ViewParser.ready(function() {
+		ViewParser.scans();
 		var HVP_config = ViewParser.config,
 			App = document.getElementById(HVP_config.id); //configable
 		if (App) {
@@ -1588,7 +1604,6 @@ var ViewParser = global.ViewParser = {
 			App.innerHTML = "";
 			template.append(App);
 		}
-		ViewParser.scans();
 	})
 }());
 var _commentPlaceholder = function(handle, parentHandle, commentText) {
@@ -1700,7 +1715,7 @@ V.rh("@", function(handle, index, parentHandle) {
 			var nextNodeInstance = nextHandle && NodeList_of_ViewInstance[nextHandle.id].currentNode,
 				textNodeInstance = NodeList_of_ViewInstance[textHandle.id].currentNode,
 				parentNodeInstance = NodeList_of_ViewInstance[parentHandle.id].currentNode
-				$.D.iB(parentNodeInstance, textNodeInstance, nextNodeInstance); //Manually insert node
+				parentNodeInstance&&$.D.iB(parentNodeInstance, textNodeInstance, nextNodeInstance); //Manually insert node
 		}
 	}
 });
@@ -1726,10 +1741,10 @@ var _layout_display = function(show_or_hidden, NodeList_of_ViewInstance, dataMan
 	}
 
 };
-V.rh(">", V.rh("#layout", function(handle, index, parentHandle) {
+V.rh("layout", function(handle, index, parentHandle) {
 	handle.display = _layout_display; //Custom rendering function
 	_commentPlaceholder(handle, parentHandle);
-}));
+});
 var _operator_handle  = function(handle, index, parentHandle) {
 	var textHandle = handle.childNodes[0].childNodes[0];
 	if (parentHandle.type !== "handle") {
@@ -1910,16 +1925,21 @@ V.rt("@", function(handle, index, parentHandle) {
 	var textHandle = handle.childNodes[0],
 		textHandleId = textHandle.id,
 		key = textHandle.node.data,
-		trigger;
+		trigger = { //const 
+			key: key, //const trigger
+			bubble: $TRUE
+		};
 
-	trigger = { //const 
-		key: key, //const trigger
-		bubble: $TRUE,
-		event: function(NodeList_of_ViewInstance, dataManager) {
+	if (parentHandle.type !== "handle") { //as textHandle
+		trigger.event = function(NodeList_of_ViewInstance, dataManager) {
 			//trigger but no bind data
 			NodeList_of_ViewInstance[textHandleId].currentNode.data = key;
 		}
-	};
+	} else {
+		trigger.event = function(NodeList_of_ViewInstance, dataManager) {
+			NodeList_of_ViewInstance[this.handleId]._data = key;
+		}
+	}
 	return trigger;
 });
 V.rt("#if", function(handle, index, parentHandle) {
@@ -2011,7 +2031,7 @@ V.rt("#if", function(handle, index, parentHandle) {
 
 	return trigger;
 });
-V.rt(">", V.rt("#layout", function(handle, index, parentHandle) {
+V.rt("layout", function(handle, index, parentHandle) {
 	// console.log(handle)
 	var id = handle.id,
 		childNodes = handle.childNodes,
@@ -2022,19 +2042,30 @@ V.rt(">", V.rt("#layout", function(handle, index, parentHandle) {
 
 	trigger = {
 		event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
-			var data = NodeList_of_ViewInstance[dataHandle_id]._data,
+			var key = NodeList_of_ViewInstance[dataHandle_id]._data,
 				AllLayoutViewInstance = V._instances[viewInstance_ID]._ALVI,
 				layoutViewInstance = AllLayoutViewInstance[id],
 				inserNew;
-			if (!layoutViewInstance) {
-				layoutViewInstance = AllLayoutViewInstance[id] = V.modules[NodeList_of_ViewInstance[templateHandle_id]._data]().insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
-				dataManager.subset(layoutViewInstance);
+			if (key /*!==$UNDEFINED*/ ) {
+				if (!layoutViewInstance) {
+					layoutViewInstance = AllLayoutViewInstance[id] = V.modules[NodeList_of_ViewInstance[templateHandle_id]._data]().insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
+					dataManager.get(key);
+					var DM_session = DataManager.session;
+					key  = DM_session.filterKey;
+					dataManager = DM_session.topGetter;
+					if (key) {
+						dataManager.subset(layoutViewInstance, key);
+					} else {
+						dataManager.collect(layoutViewInstance);
+					}
+				} else {
+					layoutViewInstance && layoutViewInstance.set(dataManager.get(key));
+				}
 			}
-			layoutViewInstance.set(data);
 		}
 	}
 	return trigger;
-}));
+});
 V.rt("!", V.rt("nega", function(handle, index, parentHandle) { //Negate
 	var nageteHandlesId = handle.childNodes[0].id,
 		trigger;
@@ -2317,6 +2348,7 @@ var _formCache = {},
 		return newValue
 	},
 	formListerAttribute = function(key, currentNode, parserNode, vi, dm, handle, triggerTable) {
+		console.log(arguments)
 		var attrOuter = _getAttrOuter(parserNode),
 			eventConfig = _formKey[currentNode.tagName.toLowerCase()] || {
 				attributeName: "innerHTML",

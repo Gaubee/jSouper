@@ -7,33 +7,31 @@
 		var self = this,
 			DMSet = self._subsetDataManagers;
 		$.ftE(self._viewInstances, function(childViewInstance) {
-			var smartTriggerCollection =
-				$.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
-					var TEMP = smartTrigger.TEMP;
-					TEMP.dataManager.get(TEMP.sourceKey);
-					var topGetter = DataManager.session.topGetter;
-					if (topGetter !== TEMP.dataManager) {
-						smartTrigger.bind(topGetter._triggerKeys);
-						TEMP.dataManager = topGetter;
-					}
-					smartTrigger.event(topGetter._triggerKeys);
-				})
+			$.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
+				var TEMP = smartTrigger.TEMP;
+				TEMP.dataManager.get(TEMP.sourceKey);
+				var topGetter = DataManager.session.topGetter;
+				if (topGetter !== TEMP.dataManager) {
+					smartTrigger.bind(topGetter._triggerKeys);
+					TEMP.dataManager = topGetter;
+				}
+				smartTrigger.event(topGetter._triggerKeys);
+			})
 		})
 		$.ftE(self._subsetDataManagers, function(childDataManager) {
 			$.ftE(childDataManager._viewInstances, function(childViewInstance) {
-				var smartTriggerCollection =
-					$.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
-						if (smartTrigger.moveAble) {
-							var TEMP = smartTrigger.TEMP;
-							TEMP.dataManager.get(TEMP.sourceKey);
-							var topGetter = DataManager.session.topGetter;
-							if (topGetter !== TEMP.dataManager) {
-								smartTrigger.unbind(TEMP.dataManager._triggerKeys).bind(topGetter._triggerKeys);
-								TEMP.dataManager = topGetter;
-								smartTrigger.event(topGetter._triggerKeys);
-							}
+				$.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
+					if (smartTrigger.moveAble) {
+						var TEMP = smartTrigger.TEMP;
+						TEMP.dataManager.get(TEMP.sourceKey);
+						var topGetter = DataManager.session.topGetter;
+						if (topGetter !== TEMP.dataManager) {
+							smartTrigger.unbind(TEMP.dataManager._triggerKeys).bind(topGetter._triggerKeys);
+							TEMP.dataManager = topGetter;
+							smartTrigger.event(topGetter._triggerKeys);
 						}
-					})
+					}
+				})
 			})
 		})
 	}
@@ -151,23 +149,24 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 		touchStacks: $NULL
 	};
 
-function _bubbleTrigger(tiggerCollection, NodeList, dataManager/*, eventTrigger*/) {
+function _bubbleTrigger(tiggerCollection, NodeList, dataManager /*, eventTrigger*/ ) {
 	var self = this, // result,
 		eventStack = [],
 		touchStacks = VI_session.touchStacks,
 		touchHandleIdSet = VI_session.touchHandleIdSet;
-	$.p(touchStacks, eventStack);//Add a new layer event collector
+	$.p(touchStacks, eventStack); //Add a new layer event collector
 	$.fE(tiggerCollection, function(trigger) { //TODO:测试参数长度和效率的平衡点，减少参数传递的数量
-		if (!touchHandleIdSet[trigger.handleId]) {//To prevent repeated collection
-			$.p(eventStack,trigger)//collect trigger
-			if (/*result !== $FALSE &&*/ trigger.bubble) {
+		if (!touchHandleIdSet[trigger.handleId]) { //To prevent repeated collection
+			$.p(eventStack, trigger) //collect trigger
+			if ( /*result !== $FALSE &&*/ trigger.bubble) {
 				// Stop using the `return false` to prevent bubble triggered
 				// need to use `this. Mercifully = false` to control
 				var parentNode = NodeList[trigger.handleId].parentNode;
-				parentNode && _bubbleTrigger.call(self, parentNode._triggers, NodeList, dataManager/*, trigger*/);
+				parentNode && _bubbleTrigger.call(self, parentNode._triggers, NodeList, dataManager /*, trigger*/ );
 			}
-			touchHandleIdSet[trigger.handleId]  = $TRUE;
-		}/*else{
+			touchHandleIdSet[trigger.handleId] = $TRUE;
+		}
+		/*else{
 			console.log(trigger.handleId)
 		}*/
 	});
@@ -264,9 +263,9 @@ ViewInstance.prototype = {
 		var dm = this.dataManager;
 		return dm.get.apply(dm, $.s(arguments));
 	},
-	mix:function mix () {
+	mix: function mix() {
 		var dm = this.dataManager;
-		return dm.mix.apply(dm,$.s(arguments))
+		return dm.mix.apply(dm, $.s(arguments))
 	},
 	set: function set() {
 		var dm = this.dataManager;
@@ -287,12 +286,12 @@ ViewInstance.prototype = {
 			dataManager = self.dataManager,
 			NodeList = self.NodeList;
 		VI_session.touchHandleIdSet = {};
-		VI_session.touchStacks=[];
+		VI_session.touchStacks = [];
 		// collect trigger stack
 		_bubbleTrigger.call(self, self._triggers._[key], NodeList, dataManager)
 		// trigger trigger stack
-		$.ftE(VI_session.touchStacks,function (eventStack) {
-			$.ftE(eventStack,function (trigger) {
+		$.ftE(VI_session.touchStacks, function(eventStack) {
+			$.ftE(eventStack, function(trigger) {
 				trigger.event(NodeList, dataManager, /*trigger,*/ self._isAttr, self._id)
 			})
 		})
