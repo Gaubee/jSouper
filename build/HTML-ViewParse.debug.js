@@ -872,7 +872,7 @@ The full list of boolean attributes in HTML 4.01 (and hence XHTML 1.0) is (with 
 				handleId:handle.id+attrKey,
 				key:attrKey,
 				type:"attributesTrigger",
-				event: function(NodeList, dataManager, eventTrigger, isAttr, viewInstance_ID) { /*NodeList, dataManager, eventTrigger, self._isAttr, self._id*/
+				event: function(NodeList, dataManager,/* eventTrigger,*/ isAttr, viewInstance_ID) { /*NodeList, dataManager, eventTrigger, self._isAttr, self._id*/
 					var currentNode = NodeList[handle.id].currentNode,
 						viewInstance = V._instances[viewInstance_ID];
 					if (currentNode) {
@@ -2223,7 +2223,6 @@ var _AttributeHandleEvent = {
 	},
 	dir: function(key, currentNode, parserNode) {
 		var attrOuter = _getAttrOuter(parserNode);
-		console.log(attrOuter)
 		if (currentNode[key] !== attrOuter) {
 			currentNode[key] = attrOuter;
 		}
@@ -2351,7 +2350,6 @@ var _formCache = {},
 				outerFormHandle = function(e) {
 					outerFormHandle.inner.apply(this,e/*$.s(arguments)*/);
 				}
-				console.log("reigster form event")
 				_registerEvent(currentNode, eventName, outerFormHandle, elementHashCode);
 				formCollection[eventName] = outerFormHandle;
 			}

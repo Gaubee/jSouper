@@ -60,7 +60,6 @@ var _formCache = {},
 				outerFormHandle = function(e) {
 					outerFormHandle.inner.apply(this,e/*$.s(arguments)*/);
 				}
-				console.log("reigster form event")
 				_registerEvent(currentNode, eventName, outerFormHandle, elementHashCode);
 				formCollection[eventName] = outerFormHandle;
 			}

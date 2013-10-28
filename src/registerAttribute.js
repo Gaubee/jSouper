@@ -60,7 +60,7 @@ The full list of boolean attributes in HTML 4.01 (and hence XHTML 1.0) is (with 
 				handleId:handle.id+attrKey,
 				key:attrKey,
 				type:"attributesTrigger",
-				event: function(NodeList, dataManager, eventTrigger, isAttr, viewInstance_ID) { /*NodeList, dataManager, eventTrigger, self._isAttr, self._id*/
+				event: function(NodeList, dataManager,/* eventTrigger,*/ isAttr, viewInstance_ID) { /*NodeList, dataManager, eventTrigger, self._isAttr, self._id*/
 					var currentNode = NodeList[handle.id].currentNode,
 						viewInstance = V._instances[viewInstance_ID];
 					if (currentNode) {
