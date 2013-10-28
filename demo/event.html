@@ -11,9 +11,13 @@
 			app:"eventbind",
 			data:{
 				title:"Event test!",
+				style:{
+					color:"red"
+				},
 				Event:{
 					click:function () {
 						console.log(arguments);
+						eventbind.set("title","Resetted!")
 					}	
 				}
 			}
@@ -21,9 +25,9 @@
 	</script>
 </head>
 <body id="eventbind_dom">
-	<h3 attr-style="color:{{style.color}};">{(title)}</h3>
-	{!(title)}
-	<input type="button" id="inp" value="console click arguments">
+	<h3 attr-style="color:{{style.color}};">{{title}}</h3>
+	<input type="text" attr-value="{{title}}" bind-form="{{@ title}}">
+	<input type="button" id="inp" event-click="{{@ Event.click}}" value="console click arguments">
 </body>
 
 </html>

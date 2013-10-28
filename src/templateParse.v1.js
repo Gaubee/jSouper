@@ -6,7 +6,7 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 		"#if": $TRUE,
 		"#else": $FALSE, //no arguments
 		"/if": $FALSE,
-		// "@": $TRUE,
+		"@": $TRUE,
 		"#each": $TRUE,
 		"/each": $FALSE,
 		"#with": $TRUE,

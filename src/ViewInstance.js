@@ -158,7 +158,7 @@ function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {
 		touchHandleIdSet = VI_session.touchHandleIdSet;
 	$.p(touchStacks, eventStack);//Add a new layer event collector
 	$.fE(tiggerCollection, function(trigger) { //TODO:测试参数长度和效率的平衡点，减少参数传递的数量
-		if (!touchHandleIdSet[trigger.handleId]) {//To prevent repeated collection
+		if (!touchHandleIdSet[trigger.handleId]||!trigger.handleId) {//To prevent repeated collection
 			$.p(eventStack,trigger)//collect trigger
 			if (/*result !== $FALSE &&*/ trigger.bubble) {
 				// Stop using the `return false` to prevent bubble triggered
@@ -167,8 +167,6 @@ function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {
 				parentNode && _bubbleTrigger.call(self, parentNode._triggers, NodeList, dataManager, trigger);
 			}
 			touchHandleIdSet[trigger.handleId]  = $TRUE;
-		}else{
-			console.log(trigger.handleId)
 		}
 	});
 

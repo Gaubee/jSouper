@@ -628,7 +628,7 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 		"#if": $TRUE,
 		"#else": $FALSE, //no arguments
 		"/if": $FALSE,
-		// "@": $TRUE,
+		"@": $TRUE,
 		"#each": $TRUE,
 		"/each": $FALSE,
 		"#with": $TRUE,
@@ -847,13 +847,15 @@ The full list of boolean attributes in HTML 4.01 (and hence XHTML 1.0) is (with 
 				key: attrKey
 			}
 			var attrTrigger = {
+				handleId:handle.id+attrKey,
+				key:attrKey,
+				type:"attributesTrigger",
 				event: function(NodeList, dataManager, eventTrigger, isAttr, viewInstance_ID) { /*NodeList, dataManager, eventTrigger, self._isAttr, self._id*/
 					var currentNode = NodeList[handle.id].currentNode,
 						viewInstance = V._instances[viewInstance_ID];
 					if (currentNode) {
-						// dataManager.collect(attrViewInstance);
 						attrViewInstance.dataManager = dataManager;
-						$.fE(attrViewInstance._triggers, function(key) {
+						$.fE(attrViewInstance._triggers, function(key) {//touchoff all triggers
 							attrViewInstance.touchOff(key);
 						});
 						_attributeHandle(attrKey, currentNode, _shadowDIV, viewInstance, dataManager, handle, triggerTable);
@@ -1121,7 +1123,7 @@ function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {
 		touchHandleIdSet = VI_session.touchHandleIdSet;
 	$.p(touchStacks, eventStack);//Add a new layer event collector
 	$.fE(tiggerCollection, function(trigger) { //TODO:测试参数长度和效率的平衡点，减少参数传递的数量
-		if (!touchHandleIdSet[trigger.handleId]) {//To prevent repeated collection
+		if (!touchHandleIdSet[trigger.handleId]||!trigger.handleId) {//To prevent repeated collection
 			$.p(eventStack,trigger)//collect trigger
 			if (/*result !== $FALSE &&*/ trigger.bubble) {
 				// Stop using the `return false` to prevent bubble triggered
@@ -1130,8 +1132,6 @@ function _bubbleTrigger(tiggerCollection, NodeList, dataManager, eventTrigger) {
 				parentNode && _bubbleTrigger.call(self, parentNode._triggers, NodeList, dataManager, trigger);
 			}
 			touchHandleIdSet[trigger.handleId]  = $TRUE;
-		}else{
-			console.log(trigger.handleId)
 		}
 	});
 
@@ -2201,6 +2201,7 @@ var _AttributeHandleEvent = {
 	},
 	dir: function(key, currentNode, parserNode) {
 		var attrOuter = _getAttrOuter(parserNode);
+		console.log(attrOuter)
 		if (currentNode[key] !== attrOuter) {
 			currentNode[key] = attrOuter;
 		}

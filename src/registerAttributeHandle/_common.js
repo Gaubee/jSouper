@@ -24,6 +24,7 @@ var _AttributeHandleEvent = {
 	},
 	dir: function(key, currentNode, parserNode) {
 		var attrOuter = _getAttrOuter(parserNode);
+		console.log(attrOuter)
 		if (currentNode[key] !== attrOuter) {
 			currentNode[key] = attrOuter;
 		}
