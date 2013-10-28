@@ -7,19 +7,14 @@
 	</script>
 	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js">
 		{
-			id:"regiter_dom",
-			app:"regiter",
-			data:{
+			Id:"regiter_dom",
+			Var:"regiter",
+			Data:{
 				htmltext:"<a href='#'>???</a>",
 				b:20
 			}
 		}
 	</script>
-	<style>
-	.operator-color{
-		color: #a22;
-	}
-	</style>
 </head>
 <body id="regiter_dom">
 	{{gaubee htmltext,"xx"}}
@@ -33,7 +28,8 @@
 </html>
 
 <script type="text/javascript">
+	//before ready(onload).
 	registerHandle("gaubee",function (arg1,arg2) {
 		return Array.prototype.join.call(arguments,"-Gaubee-");
-	})
+	});
 </script>

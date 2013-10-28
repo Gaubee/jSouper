@@ -4,23 +4,23 @@
 	<title>HTML-ViewParse</title>
 	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js">
 	{
-		data:{
+		Data:{
 			title:"Observer",
 			fullName:Observer(function get (argument) {
-				return HVP.get("firstName")+" "+HVP.get("lastName")
+				return App.get("firstName")+" "+App.get("lastName")
 			}),
 			firstName:"Gaubee",
 			lastName:"bangeel",
 			name:Observer({
 				get:function(){
-					return "my name is "+HVP.get("firstName")+" "+HVP.get("lastName")
+					return "my name is "+App.get("firstName")+" "+App.get("lastName")
 				},
 				set:function(new_data){
 					console.log(new_data)
 					var name = new_data.split(" ");
 					if (name.length>1) {
-						HVP.set("firstName",name[0]);
-						HVP.set("lastName",name[name.length-1]);
+						App.set("firstName",name[0]);
+						App.set("lastName",name[name.length-1]);
 					}
 				}
 			})
@@ -37,6 +37,6 @@
 </html>
 <script>
 setTimeout(function(){
-	HVP.set("name","a b")
+	App.set("name","a b")
 },1000)
 </script>

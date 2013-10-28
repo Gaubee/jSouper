@@ -7,31 +7,25 @@
 	</script>
 	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js">
 		{
-			Id:"eventbind_dom",
-			Var:"eventbind",
 			Data:{
-				title:"Event test!",
-				style:{
-					color:"red"
-				},
-				Event:{
-					click:function () {
-						console.log(arguments);
-						eventbind.set("title","Resetted!")
-					}	
+				name:"Gaubee",
+				age:21,
+				child:{
+					name:"bangeel",
+					age:0
 				}
 			}
 		}
 	</script>
 </head>
-<body id="eventbind_dom">
-	<h3 attr-style="color:{{style.color}};">{{title}}</h3>
-	<input type="text" attr-value="{{title}}" bind-form="{{@title}}">
-	<input type="button" id="inp" event-click="{{@Event.click}}" value="console click arguments">
+<body id="HVP">
+	{{#layout 'me',$THIS}}
+	<!-- <br>
+	<p>my child's infomation:</p>
+	{{#layout 'me',child}} -->
 </body>
 
 </html>
-
-<script type="text/javascript">
-
+<script type="text/template" name="me">
+	<a href="#{{name}}">{{name}}</a> is {{age}} years old. <hr>
 </script>

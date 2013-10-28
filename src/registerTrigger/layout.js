@@ -1,4 +1,4 @@
-V.rt(">", V.rt("#layout", function(handle, index, parentHandle) {
+V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
 	// console.log(handle)
 	var id = handle.id,
 		childNodes = handle.childNodes,
@@ -15,8 +15,9 @@ V.rt(">", V.rt("#layout", function(handle, index, parentHandle) {
 				inserNew;
 			if (!layoutViewInstance) {
 				layoutViewInstance = AllLayoutViewInstance[id] = V.modules[NodeList_of_ViewInstance[templateHandle_id]._data]().insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
-				dataManager.subset(layoutViewInstance);
+				// dataManager.subset(layoutViewInstance);
 			}
+			console.log(L = layoutViewInstance,data)
 			layoutViewInstance.set(data);
 		}
 	}

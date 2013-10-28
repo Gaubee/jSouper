@@ -657,8 +657,8 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 		"#with": $TRUE,
 		"/with": $TRUE,
 		"HTML": $TRUE,
-		">": $TRUE,
-		"layout": $TRUE
+		"#>": $TRUE,
+		"#layout": $TRUE
 	},
 	templateOperatorNum = {
 		"@": 1
@@ -1518,7 +1518,7 @@ var ViewParser = global.ViewParser = {
 	scans: function() {
 		$.fE(document.getElementsByTagName("script"), function(scriptNode) {
 			if (scriptNode.getAttribute("type") === "text/template") {
-				V.modules[scriptNode.getAttribute("name")] = V.parse(scriptNode.innerHTML);
+				V.modules[scriptNode.getAttribute("name")] = ViewParser.parse(scriptNode.innerHTML);
 			}
 		});
 	},
@@ -1577,6 +1577,7 @@ var ViewParser = global.ViewParser = {
 		throw "config error:" + e.message;
 	}));
 	ViewParser.ready(function() {
+		ViewParser.scans();
 		var HVP_config = ViewParser.config,
 			App = document.getElementById(HVP_config.Id); //configable
 		if (App) {
@@ -1592,7 +1593,6 @@ var ViewParser = global.ViewParser = {
 			App.innerHTML = "";
 			template.append(App);
 		}
-		ViewParser.scans();
 	})
 }());
 var _commentPlaceholder = function(handle, parentHandle, commentText) {
@@ -2015,7 +2015,7 @@ V.rt("#if", function(handle, index, parentHandle) {
 
 	return trigger;
 });
-V.rt(">", V.rt("#layout", function(handle, index, parentHandle) {
+V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
 	// console.log(handle)
 	var id = handle.id,
 		childNodes = handle.childNodes,
@@ -2032,8 +2032,9 @@ V.rt(">", V.rt("#layout", function(handle, index, parentHandle) {
 				inserNew;
 			if (!layoutViewInstance) {
 				layoutViewInstance = AllLayoutViewInstance[id] = V.modules[NodeList_of_ViewInstance[templateHandle_id]._data]().insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
-				dataManager.subset(layoutViewInstance);
+				// dataManager.subset(layoutViewInstance);
 			}
+			console.log(L = layoutViewInstance,data)
 			layoutViewInstance.set(data);
 		}
 	}
