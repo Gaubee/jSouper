@@ -4,7 +4,7 @@
 	<title>HTML-ViewParse</title>
 	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js">
 	{
-		data:{
+		Data:{
 			title:"hehhe",
 			list:[{title:"1"},{title:"2"},{title:"3"},{title:"4"},{title:"5"}]
 		}
@@ -31,24 +31,24 @@
 </body>
 </html>
 <script>
-	ViewParser.scans();
-	setTimeout(function (argument) {
-		HVP.set("list.3",{title:"????"})
-	},500)
-	setTimeout(function (argument) {
-		HVP.set("list.4.title","?????")
-	},1000)
-	setTimeout(function (argument) {
-		HVP.set("list",[{title:"@1"}])
-	},1500)
-	setTimeout(function (argument) {
-		HVP.set("list",[{title:"@1"},{title:"@2"},{title:"@3"}])
-	},2000)
+	ViewParser.ready(function(){
+		setTimeout(function (argument) {
+			App.set("list.3",{title:"????"})
+		},500)
+		setTimeout(function (argument) {
+			App.set("list.4.title","?????")
+		},1000)
+		setTimeout(function (argument) {
+			App.set("list",[{title:"@1"}])
+		},1500)
+		setTimeout(function (argument) {
+			App.set("list",[{title:"@1"},{title:"@2"},{title:"@3"}])
+		},2000)
 
-	var subset = new DataManager;
-	HVP.dataManager.subset(subset,"list.0");
-	setTimeout(function(){
-		subset.set("title","???")
-		subset.set({})
-	},2500)
+		var subset = new DataManager;
+		App.dataManager.subset(subset,"list.0");
+		setTimeout(function(){
+			subset.set("title","???")
+		},2500)
+	});
 </script>

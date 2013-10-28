@@ -132,8 +132,9 @@ var ViewParser = global.ViewParser = {
 	},
 	modules: V.modules,
 	config: {
-		app: 'HVP',
-		data: {}
+		Id: 'HVP',
+		Var: 'App',
+		Data: {}
 	},
 	registerHandle:registerHandle,
 	ready: (function() {
@@ -173,15 +174,17 @@ var ViewParser = global.ViewParser = {
 	}));
 	ViewParser.ready(function() {
 		var HVP_config = ViewParser.config,
-			App = document.getElementById(HVP_config.id); //configable
+			App = document.getElementById(HVP_config.Id); //configable
 		if (App) {
-			var appName = HVP_config.app;
-			if (!appName || appName == HVP_config.id) {
+			var appName = HVP_config.Var;
+			if (/*!appName || */appName == HVP_config.Id) {
 				//IE does not support the use and the DOM ID of the same variable names, so automatically add '_App' after the most.
-				appName = HVP_config.id + "_App";
+				appName = HVP_config.Id + "_App";
+				console.error("App's name shouldn't the same of the DOM'ID");
+				console.warn("App's name will be set as "+appName);
 			}
-			var template = global[appName] = ViewParser.parseNode(App)( /*HVP_config.data*/ ); //App.getAttribute("template-data")//json or url or configable
-			template.set(HVP_config.data);
+			var template = global[appName] = ViewParser.parseNode(App)( /*HVP_config.Data*/ ); //App.getAttribute("template-data")//json or url or configable
+			template.set(HVP_config.Data);
 			App.innerHTML = "";
 			template.append(App);
 		}

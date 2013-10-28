@@ -4,7 +4,7 @@
 	<title>HTML-ViewParse</title>
 	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js">
 	{
-		data:{
+		Data:{
 			library_name:"HTML-ViewParse",
 			author:"Gaubee"
 		}
@@ -18,45 +18,46 @@
 </body>
 </html>
 <script>
-	ViewParser.scans();
-	var model = DataManager({
-		name:"Gaubee",
-		other:{
-			age:20,
-			good:"js"
-		}
+	ViewParser.ready(function(){
+		var model = DataManager({
+			name:"Gaubee",
+			other:{
+				age:20,
+				good:"js"
+			}
+		});
+		console.log(model.get("name"));
+		model.set("name","bangeel");
+		console.log(model.get("name"));
+		console.log(model.get("other"));
+		model.set("other.age",30);
+		console.log(model.get("other"));
+		model.set("other.??",20);
+		console.log(model.get("other"));
+		model.mix("other.xx",22);
+		console.log(model.get("other"));
+		model.mix("other",{"ww":23});
+		console.log(model.get("other"));
+		model.set("other",{"www":404});
+		console.log(model.get("other"));
+
+		console.log("-----------------");
+
+		console.log(trigger_id = model.registerTrigger("a",function(){console.log("a trigger")}));
+		console.warn("befor remove! touchOff 'a' key.");
+		model.touchOff("a");
+
+		model.removeTrigger(trigger_id);
+
+		console.warn("after remove! touchOff 'a' key.");
+		model.touchOff("a");
+
+		console.log("-----------------");
+		setTimeout(function(){
+			console.log("begin to collect HVP - VI")
+			model.set("author","Gaubee bangeel");
+			model.set("library_name","HVP");
+			model.collect(App)
+		},500)
 	});
-	console.log(model.get("name"));
-	model.set("name","bangeel");
-	console.log(model.get("name"));
-	console.log(model.get("other"));
-	model.set("other.age",30);
-	console.log(model.get("other"));
-	model.set("other.??",20);
-	console.log(model.get("other"));
-	model.mix("other.xx",22);
-	console.log(model.get("other"));
-	model.mix("other",{"ww":23});
-	console.log(model.get("other"));
-	model.set("other",{"www":404});
-	console.log(model.get("other"));
-
-	console.log("-----------------");
-
-	console.log(trigger_id = model.registerTrigger("a",function(){console.log("a trigger")}));
-	console.warn("befor remove! touchOff 'a' key.");
-	model.touchOff("a");
-
-	model.removeTrigger(trigger_id);
-
-	console.warn("after remove! touchOff 'a' key.");
-	model.touchOff("a");
-
-	console.log("-----------------");
-	setTimeout(function(){
-		console.log("begin to collect HVP - VI")
-		model.set("author","Gaubee bangeel");
-		model.set("library_name","HVP");
-		model.collect(HVP)
-	},500)
 </script>

@@ -4,7 +4,7 @@
 	<title>HTML-ViewParse</title>
 	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js">
 	{
-		data:{
+		Data:{
 			library_name:"HTML-ViewParse",
 			author:"Gaubee"
 		}
@@ -25,24 +25,25 @@
 </body>
 </html>
 <script>
-	ViewParser.scans();
-	var model = DataManager({
-		name: "Gaubee",
-		other: {
-			age: 20,
-			good: "js"
-		}
-	});
-	model.set("library_name", "HVP");
-	setTimeout(function(argument) {
-		console.log("begin to collect HVP - VI")
-		model.set("author", "Gaubee bangeel");
-		model.collect(HVP)
-		model.set("library_name", "HVP-app");
-		model.set("other",{
-			age:10000,
-			good:"???"
+	ViewParser.ready(function(){
+		var model = DataManager({
+			name: "Gaubee",
+			other: {
+				age: 20,
+				good: "js"
+			}
 		});
-		model.set("other.good","javascript")
-	}, 1000)
+		model.set("library_name", "HVP");
+		setTimeout(function(argument) {
+			console.log("begin to collect HVP - VI")
+			model.set("author", "Gaubee bangeel");
+			model.collect(App)
+			model.set("library_name", "HVP-app");
+			model.set("other",{
+				age:10000,
+				good:"???"
+			});
+			model.set("other.good","javascript")
+		}, 1000)
+	});
 </script>
