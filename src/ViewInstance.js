@@ -102,12 +102,11 @@
 		}
 	};
 }());
-var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
+var ViewInstance = function(handleNodeTree, NodeList, triggerTable, dataManager) {
 	if (!(this instanceof ViewInstance)) {
-		return new ViewInstance(handleNodeTree, NodeList, triggerTable, data);
+		return new ViewInstance(handleNodeTree, NodeList, triggerTable, dataManager);
 	}
-	var self = this,
-		dataManager;
+	var self = this;
 	self._isAttr = $FALSE; //if no null --> Storage the attribute key and current.
 	self._isEach = $FALSE; //if no null --> Storage the attribute key and current.
 	self.dataManager; //= dataManager;
@@ -138,10 +137,12 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, data) {
 		tiggerFun.event(NodeList, dataManager);
 	});*/
 
-	if (!(data instanceof DataManager)) {
-		dataManager = DataManager(data);
+	if (!(dataManager instanceof DataManager)) {
+		dataManager = DataManager(dataManager);
 	}
 	self._smartTriggers = [];
+
+	//self.dataManager = dataManager
 	dataManager.collect(self); //touchOff All triggers
 
 	delete self._triggers._["."] //remove "."(const) key,just touch one time;

@@ -37,7 +37,7 @@
 					</p>
 				</li>
 				<ul>
-					{{> 'tree',$THIS}}
+					{{layout 'tree',$THIS}}
 				</ul>
 			{{#else}}
 				<li>
@@ -59,8 +59,8 @@
 </html>
 
 <script type="text/javascript">
-	ViewParser.scans();
-	var model = DataManager({
+	ViewParser.ready(function(){
+		var model = DataManager({
 			title:"Unknown",
 			list:[{
 				title:"hehe",
@@ -76,7 +76,8 @@
 				type:"jsp"
 			}]
 		});
-	ViewParser.modules["tree"](model).append(document.getElementById('tree'));
+		ViewParser.modules["tree"](model).append(document.getElementById('tree'));
+	});
 	setTimeout(function(){
 		// model.set("list.1.type","folder")
 		// model.set("list.1.list",[{},{}])
