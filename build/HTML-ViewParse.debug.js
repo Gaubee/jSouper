@@ -431,6 +431,8 @@ var DM_proto = DataManager.prototype = {
 			result = parent.get(key);
 		}*/
 			DataManager.session.filterKey = key;
+		}else{
+			DataManager.session.filterKey = $UNDEFINED;
 		}
 		if (result && result[_DM_extends_object_constructor]) {
 			result = result.get();
@@ -613,23 +615,25 @@ var DM_proto = DataManager.prototype = {
 			dmTriggerKeys = dataManager._triggerKeys,
 			// dotPrefix = prefix ? prefix + "." : "",
 			data = prefix === $UNDEFINED ? self.get() : self.get(prefix);
-		dataManager._prefix = DataManager.session.filterKey || "";
-		dataManager._parentDataManager && dataManager._parentDataManager.remove(dataManager);
-		dataManager._parentDataManager = DataManager.session.topGetter;
+		if(dataManager._prefix = DataManager.session.filterKey/* || ""*/){
+			dataManager._parentDataManager && dataManager._parentDataManager.remove(dataManager);
+			dataManager._parentDataManager = DataManager.session.topGetter;
 
-		if (dataManager._database !== data) {
-			if (dataManager._database instanceof Object) {
-				data = _mix(dataManager._database, data)
+			if (dataManager._database !== data) {
+				if (dataManager._database instanceof Object) {
+					data = _mix(dataManager._database, data)
+				}
+				// console.log(prefix, data)
+				dataManager.set(data)
 			}
-			// console.log(prefix, data)
-			dataManager.set(data)
+			$.p(self._subsetDataManagers, dataManager);
+			/*
+			dmTriggerKeys.forIn(function(dmTriggerCollection, key) {
+				myTriggerKeys.push(dotPrefix + key, dmTriggerCollection);
+			});*/
+		}else{
+			self.collect(dataManager);
 		}
-		$.p(self._subsetDataManagers, dataManager);
-		/*
-		
-		dmTriggerKeys.forIn(function(dmTriggerCollection, key) {
-			myTriggerKeys.push(dotPrefix + key, dmTriggerCollection);
-		});*/
 		return self;
 	},
 	remove: function(dataManager) {
@@ -1070,12 +1074,17 @@ function _create(data) { //data maybe basedata or dataManager
 		if (viewInstance instanceof DataManager) {
 			_subset.call(self, viewInstance, prefix);
 		} else {
+			// debugger
+			var data = self.get(prefix),
+				filterKey = DataManager.session.filterKey;
 			var vi_DM = viewInstance.dataManager;
 			if (vi_DM) {
-				_subset.call(self, vi_DM, prefix);
+				if (filterKey) {
+					_subset.call(self, vi_DM, prefix);
+				}else{
+					self.collect(viewInstance);
+				}
 			} else {
-				var data = self.get(prefix),
-					filterKey = DataManager.session.filterKey;
 				// console.log(filterKey)
 				if (filterKey) {
 					vi_DM = DataManager(data);
@@ -1086,7 +1095,6 @@ function _create(data) { //data maybe basedata or dataManager
 				}
 				self.rebuildTree();
 			}
-			self.rebuildTree();
 		}
 	};
 }());
@@ -2032,10 +2040,8 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
 				inserNew;
 			if (!layoutViewInstance) {
 				layoutViewInstance = AllLayoutViewInstance[id] = V.modules[NodeList_of_ViewInstance[templateHandle_id]._data]().insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
-				// dataManager.subset(layoutViewInstance);
+				dataManager.subset(layoutViewInstance,data);
 			}
-			console.log(L = layoutViewInstance,data)
-			layoutViewInstance.set(data);
 		}
 	}
 	return trigger;
@@ -2133,10 +2139,9 @@ V.rt("#with", function(handle, index, parentHandle) {
 				inserNew;
 			if (!withViewInstance) {
 				withViewInstance = AllLayoutViewInstance[id] = V.withModules[id](data);
-				dataManager.subset(withViewInstance,NodeList_of_ViewInstance[dataHandle_id].childNodes[0].node.data);
+				dataManager.subset(withViewInstance,data);
 				withViewInstance.insert(NodeList_of_ViewInstance[comment_with_id].currentNode);
 			}
-			withViewInstance.set(data);
 		}
 	}
 	return trigger;

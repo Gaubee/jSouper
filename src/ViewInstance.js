@@ -82,12 +82,17 @@
 		if (viewInstance instanceof DataManager) {
 			_subset.call(self, viewInstance, prefix);
 		} else {
+			// debugger
+			var data = self.get(prefix),
+				filterKey = DataManager.session.filterKey;
 			var vi_DM = viewInstance.dataManager;
 			if (vi_DM) {
-				_subset.call(self, vi_DM, prefix);
+				if (filterKey) {
+					_subset.call(self, vi_DM, prefix);
+				}else{
+					self.collect(viewInstance);
+				}
 			} else {
-				var data = self.get(prefix),
-					filterKey = DataManager.session.filterKey;
 				// console.log(filterKey)
 				if (filterKey) {
 					vi_DM = DataManager(data);
@@ -98,7 +103,6 @@
 				}
 				self.rebuildTree();
 			}
-			self.rebuildTree();
 		}
 	};
 }());

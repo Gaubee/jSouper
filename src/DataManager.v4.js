@@ -80,6 +80,8 @@ var DM_proto = DataManager.prototype = {
 			result = parent.get(key);
 		}*/
 			DataManager.session.filterKey = key;
+		}else{
+			DataManager.session.filterKey = $UNDEFINED;
 		}
 		if (result && result[_DM_extends_object_constructor]) {
 			result = result.get();
@@ -262,23 +264,25 @@ var DM_proto = DataManager.prototype = {
 			dmTriggerKeys = dataManager._triggerKeys,
 			// dotPrefix = prefix ? prefix + "." : "",
 			data = prefix === $UNDEFINED ? self.get() : self.get(prefix);
-		dataManager._prefix = DataManager.session.filterKey || "";
-		dataManager._parentDataManager && dataManager._parentDataManager.remove(dataManager);
-		dataManager._parentDataManager = DataManager.session.topGetter;
+		if(dataManager._prefix = DataManager.session.filterKey/* || ""*/){
+			dataManager._parentDataManager && dataManager._parentDataManager.remove(dataManager);
+			dataManager._parentDataManager = DataManager.session.topGetter;
 
-		if (dataManager._database !== data) {
-			if (dataManager._database instanceof Object) {
-				data = _mix(dataManager._database, data)
+			if (dataManager._database !== data) {
+				if (dataManager._database instanceof Object) {
+					data = _mix(dataManager._database, data)
+				}
+				// console.log(prefix, data)
+				dataManager.set(data)
 			}
-			// console.log(prefix, data)
-			dataManager.set(data)
+			$.p(self._subsetDataManagers, dataManager);
+			/*
+			dmTriggerKeys.forIn(function(dmTriggerCollection, key) {
+				myTriggerKeys.push(dotPrefix + key, dmTriggerCollection);
+			});*/
+		}else{
+			self.collect(dataManager);
 		}
-		$.p(self._subsetDataManagers, dataManager);
-		/*
-		
-		dmTriggerKeys.forIn(function(dmTriggerCollection, key) {
-			myTriggerKeys.push(dotPrefix + key, dmTriggerCollection);
-		});*/
 		return self;
 	},
 	remove: function(dataManager) {

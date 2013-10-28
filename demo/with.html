@@ -19,7 +19,9 @@
 	</script>
 </head>
 <body id="HVP">
-	{{#layout 'me','$THIS'}}
+	{{#with '$THIS'}}
+		My name is <input type="text" bind-form="{{@name}}" attr-value="{{name}}">
+	{{/with}}
 	<br>
 	<p>my child's infomation:</p>
 	{{#layout "me","child"}}

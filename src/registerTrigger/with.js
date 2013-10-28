@@ -13,10 +13,9 @@ V.rt("#with", function(handle, index, parentHandle) {
 				inserNew;
 			if (!withViewInstance) {
 				withViewInstance = AllLayoutViewInstance[id] = V.withModules[id](data);
-				dataManager.subset(withViewInstance,NodeList_of_ViewInstance[dataHandle_id].childNodes[0].node.data);
+				dataManager.subset(withViewInstance,data);
 				withViewInstance.insert(NodeList_of_ViewInstance[comment_with_id].currentNode);
 			}
-			withViewInstance.set(data);
 		}
 	}
 	return trigger;
