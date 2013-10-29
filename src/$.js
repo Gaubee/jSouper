@@ -177,6 +177,20 @@ var doc = document,
 				try {
 					parentNode.replaceChild(new_node, old_node);
 				} catch (e) {}
+			},
+			rm:_isIE ? function() {
+				//@大城小胖 http://fins.iteye.com/blog/172263
+				var d = doc.createElement("div");
+				return function(n) {
+					if (n && n.tagName != 'BODY') {
+						d.appendChild(n);
+						d.innerHTML = '';
+					}
+				}
+			}() : function(n) {
+				if (n && n.parentNode && n.tagName != 'BODY') {
+					delete n.parentNode.removeChild(n);
+				}
 			}
 		}
 	},

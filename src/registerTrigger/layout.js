@@ -9,13 +9,13 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
 
 	trigger = {
 		event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
-			var data = NodeList_of_ViewInstance[dataHandle_id]._data,
+			var key = NodeList_of_ViewInstance[dataHandle_id]._data,
 				AllLayoutViewInstance = V._instances[viewInstance_ID]._ALVI,
 				layoutViewInstance = AllLayoutViewInstance[id],
 				inserNew;
 			if (!layoutViewInstance) {
 				layoutViewInstance = AllLayoutViewInstance[id] = V.modules[NodeList_of_ViewInstance[templateHandle_id]._data]().insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
-				dataManager.subset(layoutViewInstance,data);
+				dataManager.subset(layoutViewInstance,key);
 			}
 		}
 	}

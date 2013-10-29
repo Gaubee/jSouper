@@ -115,6 +115,7 @@ var ViewParser = global.ViewParser = {
 		$.fE(document.getElementsByTagName("script"), function(scriptNode) {
 			if (scriptNode.getAttribute("type") === "text/template") {
 				V.modules[scriptNode.getAttribute("name")] = ViewParser.parse(scriptNode.innerHTML);
+				$.D.rm(scriptNode)
 			}
 		});
 	},
@@ -143,9 +144,11 @@ var ViewParser = global.ViewParser = {
 			callbackFunStacks = [];
 
 		_registerEvent(doc, (_isIE && IEfix[ready]) || ready, function() {
-			$.ftE(callbackFunStacks, function(callbackObj) {
+			var callbackObj;
+			while(callbackFunStacks.length){
+				callbackObj = callbackFunStacks.splice(0,1)[0];
 				callbackObj.callback.call(callbackObj.scope)
-			})
+			}
 			ready_status = $TRUE;
 		});
 		return function(callbackFun, scope) {

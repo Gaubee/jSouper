@@ -15,7 +15,7 @@ V.rh("@", function(handle, index, parentHandle) {
 			var nextNodeInstance = nextHandle && NodeList_of_ViewInstance[nextHandle.id].currentNode,
 				textNodeInstance = NodeList_of_ViewInstance[textHandle.id].currentNode,
 				parentNodeInstance = NodeList_of_ViewInstance[parentHandle.id].currentNode
-				$.D.iB(parentNodeInstance, textNodeInstance, nextNodeInstance); //Manually insert node
+				parentNodeInstance&&$.D.iB(parentNodeInstance, textNodeInstance, nextNodeInstance); //Manually insert node
 		}
 	}
 });
