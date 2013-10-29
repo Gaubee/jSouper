@@ -26,7 +26,13 @@
 	<hr>
 	<h4>out of layout</h4>
 	{{name}} 's child is {{child.name}}
-
+	<hr>
+	{{#with 'child'}}
+		{{name}} 's parent is {{$PARENT.name}}
+		<!-- {{#with '$PARENT'}}
+			{{name}}
+		{{/with}} -->
+	{{/with}}
 </body>
 
 </html>

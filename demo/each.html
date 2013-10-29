@@ -7,33 +7,24 @@
 	</script>
 	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js">
 		{
-			Data:{
-				name:"Gaubee",
-				age:21,
-				child:{
-					name:"bangeel",
-					age:0
-				}
-			}
+			Data:[
+			 {name:"Gaubee"}
+			,{name:"Bangeel"}
+			,{name:"winter"}
+			,{name:"Rubylover"}
+			]
 		}
 	</script>
 </head>
 <body id="HVP">
-	{{#with '$THIS'}}
+	{{#each '$THIS'}}
 		My name is <input type="text" bind-form="{{@name}}" attr-value="{{name}}">
-	{{/with}}
-	<br>
-	{{#with 'child'}}
-		My child's name is <input type="text" bind-form="{{@name}}" attr-value="{{name}}">
-	{{/with}}
+		<br>
+	{{/each}}
 	<hr>
-	<h4>out of layout</h4>
-	{{name}} 's child is {{child.name}}
-
+	{{#each "$THIS"}}
+		My name is {{name}}
+		<br>
+	{{/each}}
 </body>
-
 </html>
-<script type="text/template" name="me">
-	<a href="#{{name}}">{{name}}</a> is {{age}} years old. <hr>
-	<input type="text" bind-form="{{@name}}" attr-value="{{name}}">
-</script>

@@ -46,7 +46,7 @@
 		} else if (viewInstance instanceof ViewInstance) {
 			var vi_DM = viewInstance.dataManager;
 			viewInstance.dataManager = self;
-			if (vi_DM) {
+			if (vi_DM) { // for VI init in constructor
 				_collect.call(self, vi_DM)
 				vi_DM.remove(viewInstance);
 			} else {
@@ -84,25 +84,28 @@
 		} else {
 			// debugger
 			var data = self.get(prefix),
-				filterKey = DataManager.session.filterKey;
+				filterKey = DataManager.session.filterKey,
+				self = DataManager.session.topGetter;
 			var vi_DM = viewInstance.dataManager;
-			if (vi_DM) {
-				if (filterKey) {
-					_subset.call(self, vi_DM, prefix);
-				}else{
-					self.collect(viewInstance);
-				}
-			} else {
-				// console.log(filterKey)
-				if (filterKey) {
-					vi_DM = DataManager(data);
-					vi_DM.collect(viewInstance);
-					_subset.call( /*DataManager.session.topGetter*/ self /*be lower*/ , vi_DM, filterKey); //!!!
-				} else {
-					self.collect(viewInstance);
-				}
-				self.rebuildTree();
+			if (!vi_DM) {
+				vi_DM = DataManager(data);
+				vi_DM.collect(viewInstance);
 			}
+			// else {
+			// 	// console.log(filterKey)
+			// 	if (filterKey) {
+			// 		_subset.call( self , vi_DM, filterKey); //!!!
+			// 	} else {
+			// 		self.collect(viewInstance);
+			// 	}
+			// }
+
+			if (filterKey) {
+				_subset.call(self, vi_DM, prefix);
+			}else{
+				self.collect(viewInstance);
+			}
+			self.rebuildTree();
 		}
 	};
 }());
@@ -299,5 +302,26 @@ ViewInstance.prototype = {
 				trigger.event(NodeList, dataManager, /*trigger,*/ self._isAttr, self._id)
 			})
 		})
+	},
+	_collectTrigger:function(trigger,sKey){
+		var self = this,
+			smartTriggers = self._smartTriggers;
+		self.get(sKey);
+		var baseKey = DataManager.session.filterKey,
+			topGetterTriggerKeys = DataManager.session.topGetter._triggerKeys,
+			smartTrigger = new SmartTriggerHandle(
+				baseKey, //match key
+
+				function(smartTriggerSet) { //event
+					self.touchOff(sKey);
+				}, { //TEMP data
+					viewInstance: self,
+					dataManager: self.dataManager,
+					// triggerSet: topGetterTriggerKeys,
+					sourceKey: sKey
+				}
+			);
+		$.p(smartTriggers, smartTrigger);
+		smartTrigger.bind(topGetterTriggerKeys);
 	}
 };

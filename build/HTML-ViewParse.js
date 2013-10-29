@@ -1016,7 +1016,7 @@ function _create(data) { //data maybe basedata or dataManager
 		} else if (viewInstance instanceof ViewInstance) {
 			var vi_DM = viewInstance.dataManager;
 			viewInstance.dataManager = self;
-			if (vi_DM) {
+			if (vi_DM) { // for VI init in constructor
 				_collect.call(self, vi_DM)
 				vi_DM.remove(viewInstance);
 			} else {
@@ -1054,25 +1054,28 @@ function _create(data) { //data maybe basedata or dataManager
 		} else {
 			// debugger
 			var data = self.get(prefix),
-				filterKey = DataManager.session.filterKey;
+				filterKey = DataManager.session.filterKey,
+				self = DataManager.session.topGetter;
 			var vi_DM = viewInstance.dataManager;
-			if (vi_DM) {
-				if (filterKey) {
-					_subset.call(self, vi_DM, prefix);
-				}else{
-					self.collect(viewInstance);
-				}
-			} else {
-				// console.log(filterKey)
-				if (filterKey) {
-					vi_DM = DataManager(data);
-					vi_DM.collect(viewInstance);
-					_subset.call( /*DataManager.session.topGetter*/ self /*be lower*/ , vi_DM, filterKey); //!!!
-				} else {
-					self.collect(viewInstance);
-				}
-				self.rebuildTree();
+			if (!vi_DM) {
+				vi_DM = DataManager(data);
+				vi_DM.collect(viewInstance);
 			}
+			// else {
+			// 	// console.log(filterKey)
+			// 	if (filterKey) {
+			// 		_subset.call( self , vi_DM, filterKey); //!!!
+			// 	} else {
+			// 		self.collect(viewInstance);
+			// 	}
+			// }
+
+			if (filterKey) {
+				_subset.call(self, vi_DM, prefix);
+			}else{
+				self.collect(viewInstance);
+			}
+			self.rebuildTree();
 		}
 	};
 }());
@@ -1269,6 +1272,27 @@ ViewInstance.prototype = {
 				trigger.event(NodeList, dataManager, /*trigger,*/ self._isAttr, self._id)
 			})
 		})
+	},
+	_collectTrigger:function(trigger,sKey){
+		var self = this,
+			smartTriggers = self._smartTriggers;
+		self.get(sKey);
+		var baseKey = DataManager.session.filterKey,
+			topGetterTriggerKeys = DataManager.session.topGetter._triggerKeys,
+			smartTrigger = new SmartTriggerHandle(
+				baseKey, //match key
+
+				function(smartTriggerSet) { //event
+					self.touchOff(sKey);
+				}, { //TEMP data
+					viewInstance: self,
+					dataManager: self.dataManager,
+					// triggerSet: topGetterTriggerKeys,
+					sourceKey: sKey
+				}
+			);
+		$.p(smartTriggers, smartTrigger);
+		smartTrigger.bind(topGetterTriggerKeys);
 	}
 };
 
@@ -1797,14 +1821,20 @@ var eachConfig = {
 }
 V.rt("#each", function(handle, index, parentHandle) {
 	var id = handle.id,
-		arrDataHandleKey = handle.childNodes[0].childNodes[0].node.data,
+		arrDataHandle_id = handle.childNodes[0].id,
 		comment_endeach_id = parentHandle.childNodes[index + 3].id, //eachHandle --> eachComment --> endeachHandle --> endeachComment
 		trigger;
-
+	// ;
 	trigger = {
+		// smartTrigger:$NULL,
+		// key:$NULL,
+		// key:$.isString(arrDataHandleKey)?arrDataHandleKey.substring(1,arrDataHandleKey.length-1):arrDataHandleKey+".length",
 		event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
-			var data = dataManager.get(arrDataHandleKey),
-				allArrViewInstances = V._instances[viewInstance_ID]._AVI,
+			var arrDataHandleKey = NodeList_of_ViewInstance[arrDataHandle_id]._data,
+				data = dataManager.get(arrDataHandleKey),
+				arrTriggerKey = arrDataHandleKey + ".length",
+				viewInstance = V._instances[viewInstance_ID],
+				allArrViewInstances = viewInstance._AVI,
 				arrViewInstances,
 				divideIndex = data ? data.length : 0,
 				eachModuleConstructor = V.eachModules[id],
@@ -1812,22 +1842,30 @@ V.rt("#each", function(handle, index, parentHandle) {
 				comment_endeach_node = NodeList_of_ViewInstance[comment_endeach_id].currentNode;
 
 			(arrViewInstances = allArrViewInstances[id] || (allArrViewInstances[id] = [])).len = divideIndex;
-			// console.log(data)
+			// debugger
+			console.log(arrDataHandleKey, data)
+			if (arrTriggerKey !== trigger.key) {
+				debugger
+				trigger.key = arrTriggerKey;
+				trigger.smartTrigger&&trigger.smartTrigger.remove(trigger.smartTrigger.TEMP.dataManager._triggerKeys)
+				trigger.smartTrigger = viewInstance._collectTrigger(trigger,arrTriggerKey)
+			}
 			$.fE(data, function(eachItemData, index) {
 
 				var viewInstance = arrViewInstances[index];
 				if (!viewInstance) {
 					viewInstance = arrViewInstances[index] = eachModuleConstructor(eachItemData);
 					viewInstance._isEach = {
-						index:index,
-						brotherVI:arrViewInstances
+						index: index,
+						brotherVI: arrViewInstances
 					}
-					dataManager.subset(viewInstance,arrDataHandleKey+"."+index);//+"."+index //reset arrViewInstance's dataManager
+					dataManager.subset(viewInstance, arrDataHandleKey + "." + index); //+"."+index //reset arrViewInstance's dataManager
 					inserNew = $TRUE;
-				} else {
-					viewInstance.set(eachItemData);
 				}
-				viewInstance.set(eachConfig.$I, index)
+				/* else {
+					viewInstance.set(eachItemData);
+				}*/
+				// viewInstance.set(eachConfig.$I, index)
 				if (!viewInstance._canRemoveAble) { //had being recovered into the packingBag
 					inserNew = $TRUE;
 				}

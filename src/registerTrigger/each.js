@@ -3,14 +3,20 @@ var eachConfig = {
 }
 V.rt("#each", function(handle, index, parentHandle) {
 	var id = handle.id,
-		arrDataHandleKey = handle.childNodes[0].childNodes[0].node.data,
+		arrDataHandle_id = handle.childNodes[0].id,
 		comment_endeach_id = parentHandle.childNodes[index + 3].id, //eachHandle --> eachComment --> endeachHandle --> endeachComment
 		trigger;
-
+	// ;
 	trigger = {
+		// smartTrigger:$NULL,
+		// key:$NULL,
+		// key:$.isString(arrDataHandleKey)?arrDataHandleKey.substring(1,arrDataHandleKey.length-1):arrDataHandleKey+".length",
 		event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
-			var data = dataManager.get(arrDataHandleKey),
-				allArrViewInstances = V._instances[viewInstance_ID]._AVI,
+			var arrDataHandleKey = NodeList_of_ViewInstance[arrDataHandle_id]._data,
+				data = dataManager.get(arrDataHandleKey),
+				arrTriggerKey = arrDataHandleKey + ".length",
+				viewInstance = V._instances[viewInstance_ID],
+				allArrViewInstances = viewInstance._AVI,
 				arrViewInstances,
 				divideIndex = data ? data.length : 0,
 				eachModuleConstructor = V.eachModules[id],
@@ -18,22 +24,30 @@ V.rt("#each", function(handle, index, parentHandle) {
 				comment_endeach_node = NodeList_of_ViewInstance[comment_endeach_id].currentNode;
 
 			(arrViewInstances = allArrViewInstances[id] || (allArrViewInstances[id] = [])).len = divideIndex;
-			// console.log(data)
+			// debugger
+			console.log(arrDataHandleKey, data)
+			if (arrTriggerKey !== trigger.key) {
+				debugger
+				trigger.key = arrTriggerKey;
+				trigger.smartTrigger&&trigger.smartTrigger.remove(trigger.smartTrigger.TEMP.dataManager._triggerKeys)
+				trigger.smartTrigger = viewInstance._collectTrigger(trigger,arrTriggerKey)
+			}
 			$.fE(data, function(eachItemData, index) {
 
 				var viewInstance = arrViewInstances[index];
 				if (!viewInstance) {
 					viewInstance = arrViewInstances[index] = eachModuleConstructor(eachItemData);
 					viewInstance._isEach = {
-						index:index,
-						brotherVI:arrViewInstances
+						index: index,
+						brotherVI: arrViewInstances
 					}
-					dataManager.subset(viewInstance,arrDataHandleKey+"."+index);//+"."+index //reset arrViewInstance's dataManager
+					dataManager.subset(viewInstance, arrDataHandleKey + "." + index); //+"."+index //reset arrViewInstance's dataManager
 					inserNew = $TRUE;
-				} else {
-					viewInstance.set(eachItemData);
 				}
-				viewInstance.set(eachConfig.$I, index)
+				/* else {
+					viewInstance.set(eachItemData);
+				}*/
+				// viewInstance.set(eachConfig.$I, index)
 				if (!viewInstance._canRemoveAble) { //had being recovered into the packingBag
 					inserNew = $TRUE;
 				}
