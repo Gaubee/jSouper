@@ -217,6 +217,7 @@ var DM_proto = DataManager.prototype = {
 		});
 		//child
 		$.ftE(self._subsetDataManagers, function(childDataManager) {
+			// debugger
 			var prefix = childDataManager._prefix,
 				childResult; // || "";
 			if (!key) {
@@ -242,8 +243,9 @@ var DM_proto = DataManager.prototype = {
 	},
 	_touchOffSubset: function(key) {},
 	_collectTriKey: function(viewInstance) {},
-	collect: function(dataManager) { /*收集dataManager的触发集*/
+	collect: function(dataManager) { /*抽取DM的触发器、子DM重新校准父对象*/
 		var self = this,
+			subsetDataManagers = self._subsetDataManagers,
 			myTriggerKeys = self._triggerKeys,
 			dmTriggerKeys = dataManager._triggerKeys;
 		dmTriggerKeys.forIn(function(dmTriggerCollection, key) {
@@ -254,8 +256,10 @@ var DM_proto = DataManager.prototype = {
 		});
 		$.ftE(dataManager._subsetDataManagers, function(childDataManager) {
 			dataManager.remove(childDataManager);
+			childDataManager._parentDataManager = self;
 			$.p(self._subsetDataManagers, childDataManager);
 		})
+
 		return self;
 	},
 	subset: function(dataManager, prefix) { /*收集dataManager的触发集*/

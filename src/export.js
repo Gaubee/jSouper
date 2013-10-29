@@ -146,7 +146,7 @@ var ViewParser = global.ViewParser = {
 		_registerEvent(doc, (_isIE && IEfix[ready]) || ready, function() {
 			var callbackObj;
 			while(callbackFunStacks.length){
-				callbackObj = callbackFunStacks.splice(0,1)[0];
+				callbackObj = callbackFunStacks.shift(0,1);
 				callbackObj.callback.call(callbackObj.scope)
 			}
 			ready_status = $TRUE;
