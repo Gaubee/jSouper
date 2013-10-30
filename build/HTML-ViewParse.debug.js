@@ -392,7 +392,7 @@ var _DM_extends_object_constructor = _placeholder();
 DataManager.Object = function(extendsObj) {
 	extendsObj[_DM_extends_object_constructor] = $TRUE;
 };
-
+var $LENGTH = "length";
 function _mix(sObj, nObj) {
 	var obj_nx,
 		obj_s,
@@ -517,7 +517,18 @@ var DM_proto = DataManager.prototype = {
 					}
 			}
 			// $.p(setStacks,self.id);
-			result = self.touchOff(key);
+			result = $UNDEFINED;
+			var linkKey="";
+			arrKey&&$.ftE(arrKey,function(maybeArrayKey){
+				linkKey = linkKey?linkKey+"."+maybeArrayKey:maybeArrayKey;
+				if(DM_proto.get.call(self,linkKey) instanceof Array){
+					result = self.touchOff(linkKey)
+				}
+			})
+			if(!result&&self.get() instanceof Array){
+				key = "";
+			}
+			result = result||self.touchOff(key);
 			// setStacks.pop();
 		}
 		return result;
@@ -620,7 +631,7 @@ var DM_proto = DataManager.prototype = {
 			// })
 		});
 		$.ftE(dataManager._subsetDataManagers, function(childDataManager) {
-			dataManager.remove(childDataManager);
+			// dataManager.remove(childDataManager);
 			childDataManager._parentDataManager = self;
 			$.p(self._subsetDataManagers, childDataManager);
 		});
@@ -1197,13 +1208,32 @@ ViewInstance.prototype = {
 		});
 		return self;
 	},
+	_moveChild:function(el){
+		var self = this,
+			AllEachViewInstance = self._AVI,
+			AllLayoutViewInstance = self._ALVI,
+			AllWithViewInstance = self._WVI;
+			
+		$.ftE(self.NodeList[self.handleNodeTree.id].childNodes, function(child_node) {
+			var viewInstance,
+				arrayViewInstances,
+				id = child_node.id;
+			if (viewInstance = AllLayoutViewInstance[child_node.id] || AllWithViewInstance[child_node.id]) {
+				_replaceTopHandleCurrent(viewInstance, el)
+			}else if(arrayViewInstances = AllEachViewInstance[id]){
+				$.ftE(arrayViewInstances,function(viewInstance){
+					_replaceTopHandleCurrent(viewInstance,el);
+				})
+			}
+		});
+	},
 	append: function(el) {
 		var self = this,
 			handleNodeTree = self.handleNodeTree,
 			NodeList = self.NodeList,
-			AllLayoutViewInstance = self._ALVI,
-			AllWithViewInstance = self._WVI,
-			viewInstance,
+			// AllEachViewInstance = self._AVI,
+			// AllLayoutViewInstance = self._ALVI,
+			// AllWithViewInstance = self._WVI,
 			currentTopNode = NodeList[handleNodeTree.id].currentNode;
 
 		$.fE(currentTopNode.childNodes, function(child_node) {
@@ -1211,11 +1241,19 @@ ViewInstance.prototype = {
 		});
 		_replaceTopHandleCurrent(self, el);
 
-		$.ftE(NodeList[handleNodeTree.id].childNodes, function(child_node) {
-			if (viewInstance = AllLayoutViewInstance[child_node.id] || AllWithViewInstance[child_node.id]) {
-				_replaceTopHandleCurrent(viewInstance, el)
-			}
-		});
+		// $.ftE(NodeList[handleNodeTree.id].childNodes, function(child_node) {
+		// 	var viewInstance,
+		// 		arrayViewInstances,
+		// 		id = child_node.id;
+		// 	if (viewInstance = AllLayoutViewInstance[child_node.id] || AllWithViewInstance[child_node.id]) {
+		// 		_replaceTopHandleCurrent(viewInstance, el)
+		// 	}else if(arrayViewInstances = AllEachViewInstance[id]){
+		// 		$.ftE(arrayViewInstances,function(viewInstance){
+		// 			_replaceTopHandleCurrent(viewInstance,el);
+		// 		})
+		// 	}
+		// });
+		self._moveChild(el);
 
 		return self;
 	},
@@ -1223,9 +1261,9 @@ ViewInstance.prototype = {
 		var self = this,
 			handleNodeTree = self.handleNodeTree,
 			NodeList = self.NodeList,
-			AllLayoutViewInstance = self._ALVI,
-			AllWithViewInstance = self._WVI,
-			viewInstance,
+			// AllEachViewInstance = self._AVI,
+			// AllLayoutViewInstance = self._ALVI,
+			// AllWithViewInstance = self._WVI,
 			currentTopNode = self.topNode(), //NodeList[handleNodeTree.id].currentNode,
 			elParentNode = el.parentNode;
 
@@ -1234,16 +1272,27 @@ ViewInstance.prototype = {
 		});
 		_replaceTopHandleCurrent(self, elParentNode);
 
-		$.ftE(NodeList[handleNodeTree.id].childNodes, function(child_node) {
-			if (viewInstance = AllLayoutViewInstance[child_node.id] || AllWithViewInstance[child_node.id]) {
-				_replaceTopHandleCurrent(viewInstance, elParentNode)
-			}
-		});
+		// $.ftE(NodeList[handleNodeTree.id].childNodes, function(child_node) {
+		// 	var viewInstance,
+		// 		arrayViewInstances,
+		// 		id = child_node.id;
+		// 	if (viewInstance = AllLayoutViewInstance[id] || AllWithViewInstance[id]) {
+		// 		_replaceTopHandleCurrent(viewInstance, elParentNode)
+		// 	}else if(arrayViewInstances = AllEachViewInstance[id]){
+		// 		$.ftE(arrayViewInstances,function(viewInstance){
+		// 			_replaceTopHandleCurrent(viewInstance,el);
+		// 		})
+		// 	}
+		// });
+		
+		self._moveChild(el);
+
 		return self;
 	},
 	remove: function() {
 		var self = this,
-			el = this._packingBag
+			el = this._packingBag;
+			// debugger
 		if (self._canRemoveAble) {
 			var handleNodeTree = self.handleNodeTree,
 				NodeList = self.NodeList,
@@ -1284,12 +1333,17 @@ ViewInstance.prototype = {
 	topNode: function(newCurrentTopNode) {
 		var self = this,
 			handleNodeTree = self.handleNodeTree,
-			NodeList = self.NodeList;
+			NodeList = self.NodeList,
+			result;
 		if (newCurrentTopNode) {
 			NodeList[handleNodeTree.id].currentNode = newCurrentTopNode
 		} else {
-			return NodeList[handleNodeTree.id].currentNode
+			result = NodeList[handleNodeTree.id].currentNode;
+			if (result.nodeType === 8) {
+				result = result.parentNode;
+			}
 		}
+		return result;
 	},
 	touchOff: function(key) {
 		var self = this,
@@ -1898,13 +1952,14 @@ V.rt("#each", function(handle, index, parentHandle) {
 
 			(arrViewInstances = allArrViewInstances[id] || (allArrViewInstances[id] = [])).len = divideIndex;
 			// debugger
-			console.log(arrDataHandleKey, data)
-			if (arrTriggerKey !== trigger.key) {
-				debugger
-				trigger.key = arrTriggerKey;
-				trigger.smartTrigger&&trigger.smartTrigger.remove(trigger.smartTrigger.TEMP.dataManager._triggerKeys)
-				trigger.smartTrigger = viewInstance._collectTrigger(trigger,arrTriggerKey)
-			}
+			// console.log(arrDataHandleKey, data)
+			// if (arrTriggerKey !== trigger.key) {
+			// 	debugger
+			// 	trigger.key = arrTriggerKey;
+			// 	trigger.smartTrigger&&trigger.smartTrigger.remove(trigger.smartTrigger.TEMP.dataManager._triggerKeys)
+			// 	trigger.smartTrigger = viewInstance._collectTrigger(trigger,arrTriggerKey)
+			// }
+			// console.log(data)
 			$.fE(data, function(eachItemData, index) {
 
 				var viewInstance = arrViewInstances[index];
@@ -1931,6 +1986,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 				}
 			});
 			$.fE(arrViewInstances, function(eachItemHandle) {
+				// console.log(eachItemHandle)
 				eachItemHandle.remove();
 			}, divideIndex);
 		}

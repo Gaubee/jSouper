@@ -25,13 +25,14 @@ V.rt("#each", function(handle, index, parentHandle) {
 
 			(arrViewInstances = allArrViewInstances[id] || (allArrViewInstances[id] = [])).len = divideIndex;
 			// debugger
-			console.log(arrDataHandleKey, data)
-			if (arrTriggerKey !== trigger.key) {
-				debugger
-				trigger.key = arrTriggerKey;
-				trigger.smartTrigger&&trigger.smartTrigger.remove(trigger.smartTrigger.TEMP.dataManager._triggerKeys)
-				trigger.smartTrigger = viewInstance._collectTrigger(trigger,arrTriggerKey)
-			}
+			// console.log(arrDataHandleKey, data)
+			// if (arrTriggerKey !== trigger.key) {
+			// 	debugger
+			// 	trigger.key = arrTriggerKey;
+			// 	trigger.smartTrigger&&trigger.smartTrigger.remove(trigger.smartTrigger.TEMP.dataManager._triggerKeys)
+			// 	trigger.smartTrigger = viewInstance._collectTrigger(trigger,arrTriggerKey)
+			// }
+			// console.log(data)
 			$.fE(data, function(eachItemData, index) {
 
 				var viewInstance = arrViewInstances[index];
@@ -58,6 +59,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 				}
 			});
 			$.fE(arrViewInstances, function(eachItemHandle) {
+				// console.log(eachItemHandle)
 				eachItemHandle.remove();
 			}, divideIndex);
 		}

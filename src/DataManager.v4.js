@@ -27,7 +27,7 @@ var _DM_extends_object_constructor = _placeholder();
 DataManager.Object = function(extendsObj) {
 	extendsObj[_DM_extends_object_constructor] = $TRUE;
 };
-
+var $LENGTH = "length";
 function _mix(sObj, nObj) {
 	var obj_nx,
 		obj_s,
@@ -152,7 +152,18 @@ var DM_proto = DataManager.prototype = {
 					}
 			}
 			// $.p(setStacks,self.id);
-			result = self.touchOff(key);
+			result = $UNDEFINED;
+			var linkKey="";
+			arrKey&&$.ftE(arrKey,function(maybeArrayKey){
+				linkKey = linkKey?linkKey+"."+maybeArrayKey:maybeArrayKey;
+				if(DM_proto.get.call(self,linkKey) instanceof Array){
+					result = self.touchOff(linkKey)
+				}
+			})
+			if(!result&&self.get() instanceof Array){
+				key = "";
+			}
+			result = result||self.touchOff(key);
 			// setStacks.pop();
 		}
 		return result;
@@ -255,7 +266,7 @@ var DM_proto = DataManager.prototype = {
 			// })
 		});
 		$.ftE(dataManager._subsetDataManagers, function(childDataManager) {
-			dataManager.remove(childDataManager);
+			// dataManager.remove(childDataManager);
 			childDataManager._parentDataManager = self;
 			$.p(self._subsetDataManagers, childDataManager);
 		});

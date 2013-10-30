@@ -17,14 +17,16 @@
 	</script>
 </head>
 <body id="HVP">
-	{{#each '$THIS'}}
+	{{#each @$THIS}}
 		My name is <input type="text" bind-form="{{@name}}" attr-value="{{name}}">
 		<br>
 	{{/each}}
 	<hr>
-	{{#each "$THIS"}}
+	{{#with '$THIS'}}
+	{{#each @$THIS}}
 		My name is {{name}}
 		<br>
 	{{/each}}
+	{{/with}}
 </body>
 </html>
