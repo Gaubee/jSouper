@@ -1950,7 +1950,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 				inserNew,
 				comment_endeach_node = NodeList_of_ViewInstance[comment_endeach_id].currentNode;
 
-			(arrViewInstances = allArrViewInstances[id] || (allArrViewInstances[id] = [])).len = divideIndex;
+			arrViewInstances = allArrViewInstances[id] || (allArrViewInstances[id] = []);
 			// debugger
 			// console.log(arrDataHandleKey, data)
 			// if (arrTriggerKey !== trigger.key) {
@@ -1960,35 +1960,41 @@ V.rt("#each", function(handle, index, parentHandle) {
 			// 	trigger.smartTrigger = viewInstance._collectTrigger(trigger,arrTriggerKey)
 			// }
 			// console.log(data)
-			$.fE(data, function(eachItemData, index) {
+			if (arrViewInstances.len !== divideIndex) {
+				$.fE(data, function(eachItemData, index) {
 
-				var viewInstance = arrViewInstances[index];
-				if (!viewInstance) {
-					viewInstance = arrViewInstances[index] = eachModuleConstructor(eachItemData);
-					viewInstance._isEach = {
-						index: index,
-						brotherVI: arrViewInstances
+					var viewInstance = arrViewInstances[index];
+					if (!viewInstance) {
+						viewInstance = arrViewInstances[index] = eachModuleConstructor(eachItemData);
+						viewInstance._isEach = {
+							index: index,
+							brotherVI: arrViewInstances
+						}
+						dataManager.subset(viewInstance, arrDataHandleKey + "." + index); //+"."+index //reset arrViewInstance's dataManager
+						inserNew = $TRUE;
 					}
-					dataManager.subset(viewInstance, arrDataHandleKey + "." + index); //+"."+index //reset arrViewInstance's dataManager
-					inserNew = $TRUE;
-				}
-				/* else {
-					viewInstance.set(eachItemData);
-				}*/
-				// viewInstance.set(eachConfig.$I, index)
-				if (!viewInstance._canRemoveAble) { //had being recovered into the packingBag
-					inserNew = $TRUE;
-				}
+					/* else {
+						viewInstance.set(eachItemData);
+					}*/
+					// viewInstance.set(eachConfig.$I, index)
+					if (!viewInstance._canRemoveAble) { //had being recovered into the packingBag
+						inserNew = $TRUE;
+					}
 
 
-				if (inserNew && !arrViewInstances.hidden) {
-					viewInstance.insert(comment_endeach_node)
+					if (inserNew && !arrViewInstances.hidden) {
+						viewInstance.insert(comment_endeach_node)
+					}
+				});
+				console.log(arrViewInstances.len,divideIndex)
+				if (arrViewInstances.len > divideIndex) {
+					$.fE(arrViewInstances, function(eachItemHandle) {
+						// console.log(eachItemHandle)
+						eachItemHandle.remove();
+					}, divideIndex);
 				}
-			});
-			$.fE(arrViewInstances, function(eachItemHandle) {
-				// console.log(eachItemHandle)
-				eachItemHandle.remove();
-			}, divideIndex);
+				arrViewInstances.len = divideIndex;
+			}
 		}
 	}
 	return trigger
