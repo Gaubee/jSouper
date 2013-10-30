@@ -26,7 +26,6 @@ var _formCache = {},
 		return newValue
 	},
 	formListerAttribute = function(key, currentNode, parserNode, vi, dm, handle, triggerTable) {
-		console.log(arguments)
 		var attrOuter = _getAttrOuter(parserNode),
 			eventConfig = _formKey[currentNode.tagName.toLowerCase()] || {
 				attributeName: "innerHTML",

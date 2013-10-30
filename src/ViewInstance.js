@@ -40,7 +40,11 @@
 		var self = this,
 			smartTriggers = viewInstance._smartTriggers;
 		if (viewInstance instanceof DataManager) {
-			_collect.call(self, viewInstance)
+			_collect.call(self, viewInstance);
+			$.ftE(viewInstance._viewInstances,function(viewInstance){
+				viewInstance.dataManager = self;
+			});
+			//TODO:release memory.
 		} else if (viewInstance instanceof ViewInstance) {
 			var vi_DM = viewInstance.dataManager;
 			viewInstance.dataManager = self;
@@ -86,7 +90,7 @@
 				vi_DM = DataManager();
 				vi_DM.collect(viewInstance);
 			}
-
+			console.log(prefix)
 			_subset.call(self, vi_DM, prefix);
 			self.rebuildTree();
 		}

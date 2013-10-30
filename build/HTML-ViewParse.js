@@ -601,7 +601,7 @@ var DM_proto = DataManager.prototype = {
 			dataManager.remove(childDataManager);
 			childDataManager._parentDataManager = self;
 			$.p(self._subsetDataManagers, childDataManager);
-		})
+		});
 
 		return self;
 	},
@@ -863,7 +863,7 @@ The full list of boolean attributes in HTML 4.01 (and hence XHTML 1.0) is (with 
 		attrKey = attrKey.toLowerCase()
 		attrKey = attrKey.indexOf(V.prefix) ? attrKey : attrKey.replace(V.prefix, "")
 		attrKey = (_isIE && IEfix[attrKey]) || attrKey
-		console.log(attrValue,":",_matchRule.test(attrValue)||_templateMatchRule.test(attrValue))
+		// console.log(attrValue,":",_matchRule.test(attrValue)||_templateMatchRule.test(attrValue))
 		if (_matchRule.test(attrValue)||_templateMatchRule.test(attrValue)) {
 			var attrViewInstance = (V.attrModules[handle.id + attrKey] = ViewParser.parse(attrValue))(),
 				_shadowDIV = $.D.cl(shadowDIV), //parserNode
@@ -1031,7 +1031,11 @@ function _create(data) { //data maybe basedata or dataManager
 		var self = this,
 			smartTriggers = viewInstance._smartTriggers;
 		if (viewInstance instanceof DataManager) {
-			_collect.call(self, viewInstance)
+			_collect.call(self, viewInstance);
+			$.ftE(viewInstance._viewInstances,function(viewInstance){
+				viewInstance.dataManager = self;
+			});
+			//TODO:release memory.
 		} else if (viewInstance instanceof ViewInstance) {
 			var vi_DM = viewInstance.dataManager;
 			viewInstance.dataManager = self;
@@ -1077,7 +1081,7 @@ function _create(data) { //data maybe basedata or dataManager
 				vi_DM = DataManager();
 				vi_DM.collect(viewInstance);
 			}
-
+			console.log(prefix)
 			_subset.call(self, vi_DM, prefix);
 			self.rebuildTree();
 		}
@@ -2378,7 +2382,6 @@ var _formCache = {},
 		return newValue
 	},
 	formListerAttribute = function(key, currentNode, parserNode, vi, dm, handle, triggerTable) {
-		console.log(arguments)
 		var attrOuter = _getAttrOuter(parserNode),
 			eventConfig = _formKey[currentNode.tagName.toLowerCase()] || {
 				attributeName: "innerHTML",

@@ -258,7 +258,7 @@ var DM_proto = DataManager.prototype = {
 			dataManager.remove(childDataManager);
 			childDataManager._parentDataManager = self;
 			$.p(self._subsetDataManagers, childDataManager);
-		})
+		});
 
 		return self;
 	},
