@@ -3,7 +3,8 @@
  */
 
 (function DM_extends_fot_VI() {
-	DM_proto.rebuildTree = function(key) {
+	var _rebuildTree = DM_proto.rebuildTree;
+	DM_proto.rebuildTree = function() {
 		var self = this,
 			DMSet = self._subsetDataManagers;
 		$.ftE(self._viewInstances, function(childViewInstance) {
@@ -33,7 +34,9 @@
 					}
 				})
 			})
+			childDataManager.rebuildTree()
 		})
+		return _rebuildTree.call(self);
 	}
 	var _collect = DM_proto.collect;
 	DM_proto.collect = function(viewInstance) {
@@ -41,9 +44,9 @@
 			smartTriggers = viewInstance._smartTriggers;
 		if (viewInstance instanceof DataManager) {
 			_collect.call(self, viewInstance);
-			$.ftE(viewInstance._viewInstances,function(viewInstance){
-				viewInstance.dataManager = self;
-			});
+			// $.ftE(viewInstance._viewInstances,function(viewInstance){
+			// 	viewInstance.dataManager = self;
+			// });
 			//TODO:release memory.
 		} else if (viewInstance instanceof ViewInstance) {
 			var vi_DM = viewInstance.dataManager;
@@ -81,6 +84,7 @@
 	var _subset = DM_proto.subset;
 	DM_proto.subset = function(viewInstance, prefix) {
 		var self = this;
+		
 		if (viewInstance instanceof DataManager) {
 			_subset.call(self, viewInstance, prefix);
 		} else {

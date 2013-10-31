@@ -151,6 +151,11 @@ var doc = document,
 				}
 			}
 		},
+		rm:function(arr,item){
+			var index = $.iO(arr,item);
+			arr.splice(index,1);
+			return arr;
+		},
 		c: function(proto) { //create
 			_Object_create_noop.prototype = proto;
 			return new _Object_create_noop;

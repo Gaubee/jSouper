@@ -24,7 +24,10 @@
 	{{/with}}
 	<br>
 	{{#with 'child'}}
-		My child's name is <input type="text" bind-form="{{@name}}" attr-value="{{name}}">
+		My child's name is <input type="text" bind-form="{{@name}}" attr-value="{{name}}"> , and his parent is 
+		{{#with '$PARENT'}}
+			{{name}}
+		{{/with}}
 	{{/with}}
 	<hr>
 	<h4>out of layout</h4>
@@ -36,4 +39,11 @@
 <script type="text/template" name="me">
 	<a href="#{{name}}">{{name}}</a> is {{age}} years old. <hr>
 	<input type="text" bind-form="{{@name}}" attr-value="{{name}}">
+</script>
+<script>
+	ViewParser.ready(function() {
+		W1 = App._WVI[39];
+		W2 = App._WVI[46];
+		W21 = W2._WVI[52];
+	})
 </script>
