@@ -1092,7 +1092,6 @@ function _create(data) { //data maybe basedata or dataManager
 				vi_DM = DataManager();
 				vi_DM.collect(viewInstance);
 			}
-			console.log(prefix)
 			_subset.call(self, vi_DM, prefix);
 			self.rebuildTree();
 		}
@@ -1171,24 +1170,8 @@ function _bubbleTrigger(tiggerCollection, NodeList, dataManager /*, eventTrigger
 	});
 
 };
-
-function _replaceTopHandleCurrent(self, el) {
-	self._canRemoveAble = $TRUE;
-	self.topNode(el);
-};
-ViewInstance.prototype = {
-	reDraw: function() {
-		var self = this,
-			dataManager = self.dataManager;
-
-		$.fE(self._triggers, function(key) {
-			dataManager._touchOffSubset(key)
-		});
-		return self;
-	},
-	_moveChild:function(el){
-		var self = this,
-			AllEachViewInstance = self._AVI,
+function _moveChild(self,el){
+		var AllEachViewInstance = self._AVI,
 			AllLayoutViewInstance = self._ALVI,
 			AllWithViewInstance = self._WVI;
 			
@@ -1204,14 +1187,25 @@ ViewInstance.prototype = {
 				})
 			}
 		});
+	};
+function _replaceTopHandleCurrent(self, el) {
+	self._canRemoveAble = $TRUE;
+	self.topNode(el);
+};
+ViewInstance.prototype = {
+	reDraw: function() {
+		var self = this,
+			dataManager = self.dataManager;
+
+		$.fE(self._triggers, function(key) {
+			dataManager._touchOffSubset(key)
+		});
+		return self;
 	},
 	append: function(el) {
 		var self = this,
 			handleNodeTree = self.handleNodeTree,
 			NodeList = self.NodeList,
-			// AllEachViewInstance = self._AVI,
-			// AllLayoutViewInstance = self._ALVI,
-			// AllWithViewInstance = self._WVI,
 			currentTopNode = NodeList[handleNodeTree.id].currentNode;
 
 		$.fE(currentTopNode.childNodes, function(child_node) {
@@ -1219,19 +1213,7 @@ ViewInstance.prototype = {
 		});
 		_replaceTopHandleCurrent(self, el);
 
-		// $.ftE(NodeList[handleNodeTree.id].childNodes, function(child_node) {
-		// 	var viewInstance,
-		// 		arrayViewInstances,
-		// 		id = child_node.id;
-		// 	if (viewInstance = AllLayoutViewInstance[child_node.id] || AllWithViewInstance[child_node.id]) {
-		// 		_replaceTopHandleCurrent(viewInstance, el)
-		// 	}else if(arrayViewInstances = AllEachViewInstance[id]){
-		// 		$.ftE(arrayViewInstances,function(viewInstance){
-		// 			_replaceTopHandleCurrent(viewInstance,el);
-		// 		})
-		// 	}
-		// });
-		self._moveChild(el);
+		_moveChild(self,el);
 
 		return self;
 	},
@@ -1239,9 +1221,6 @@ ViewInstance.prototype = {
 		var self = this,
 			handleNodeTree = self.handleNodeTree,
 			NodeList = self.NodeList,
-			// AllEachViewInstance = self._AVI,
-			// AllLayoutViewInstance = self._ALVI,
-			// AllWithViewInstance = self._WVI,
 			currentTopNode = self.topNode(), //NodeList[handleNodeTree.id].currentNode,
 			elParentNode = el.parentNode;
 
@@ -1249,21 +1228,8 @@ ViewInstance.prototype = {
 			$.D.iB(elParentNode, child_node, el);
 		});
 		_replaceTopHandleCurrent(self, elParentNode);
-
-		// $.ftE(NodeList[handleNodeTree.id].childNodes, function(child_node) {
-		// 	var viewInstance,
-		// 		arrayViewInstances,
-		// 		id = child_node.id;
-		// 	if (viewInstance = AllLayoutViewInstance[id] || AllWithViewInstance[id]) {
-		// 		_replaceTopHandleCurrent(viewInstance, elParentNode)
-		// 	}else if(arrayViewInstances = AllEachViewInstance[id]){
-		// 		$.ftE(arrayViewInstances,function(viewInstance){
-		// 			_replaceTopHandleCurrent(viewInstance,el);
-		// 		})
-		// 	}
-		// });
 		
-		self._moveChild(el);
+		_moveChild(self,elParentNode);
 
 		return self;
 	},
@@ -1360,6 +1326,7 @@ ViewInstance.prototype = {
 		smartTrigger.bind(topGetterTriggerKeys);
 	}
 };
+
 /*
  * parse function
  */
@@ -1922,13 +1889,13 @@ V.rt("#each", function(handle, index, parentHandle) {
 				arrTriggerKey = arrDataHandleKey + ".length",
 				viewInstance = V._instances[viewInstance_ID],
 				allArrViewInstances = viewInstance._AVI,
-				arrViewInstances,
+				arrViewInstances = allArrViewInstances[id] || (allArrViewInstances[id] = []),
+				arrViewInstances_len = arrViewInstances.len,
 				divideIndex = data ? data.length : 0,
 				eachModuleConstructor = V.eachModules[id],
 				inserNew,
 				comment_endeach_node = NodeList_of_ViewInstance[comment_endeach_id].currentNode;
 
-			arrViewInstances = allArrViewInstances[id] || (allArrViewInstances[id] = []);
 			// debugger
 			// console.log(arrDataHandleKey, data)
 			// if (arrTriggerKey !== trigger.key) {
@@ -1938,7 +1905,9 @@ V.rt("#each", function(handle, index, parentHandle) {
 			// 	trigger.smartTrigger = viewInstance._collectTrigger(trigger,arrTriggerKey)
 			// }
 			// console.log(data)
-			if (arrViewInstances.len !== divideIndex) {
+			if (arrViewInstances_len !== divideIndex) {
+				arrViewInstances.len = divideIndex;//change immediately,to avoid the `subset` trigger the `rebuildTree`,and than trigger each-trigger again.
+
 				$.fE(data, function(eachItemData, index) {
 
 					var viewInstance = arrViewInstances[index];
@@ -1959,19 +1928,16 @@ V.rt("#each", function(handle, index, parentHandle) {
 						inserNew = $TRUE;
 					}
 
-
 					if (inserNew && !arrViewInstances.hidden) {
 						viewInstance.insert(comment_endeach_node)
 					}
-				});
-				console.log(arrViewInstances.len,divideIndex)
-				if (arrViewInstances.len > divideIndex) {
+				},arrViewInstances_len);//arrViewInstances_len||0
+				if (arrViewInstances_len > divideIndex) {
 					$.fE(arrViewInstances, function(eachItemHandle) {
 						// console.log(eachItemHandle)
 						eachItemHandle.remove();
 					}, divideIndex);
 				}
-				arrViewInstances.len = divideIndex;
 			}
 		}
 	}

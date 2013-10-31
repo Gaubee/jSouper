@@ -90,7 +90,6 @@
 				vi_DM = DataManager();
 				vi_DM.collect(viewInstance);
 			}
-			console.log(prefix)
 			_subset.call(self, vi_DM, prefix);
 			self.rebuildTree();
 		}
@@ -169,24 +168,8 @@ function _bubbleTrigger(tiggerCollection, NodeList, dataManager /*, eventTrigger
 	});
 
 };
-
-function _replaceTopHandleCurrent(self, el) {
-	self._canRemoveAble = $TRUE;
-	self.topNode(el);
-};
-ViewInstance.prototype = {
-	reDraw: function() {
-		var self = this,
-			dataManager = self.dataManager;
-
-		$.fE(self._triggers, function(key) {
-			dataManager._touchOffSubset(key)
-		});
-		return self;
-	},
-	_moveChild:function(el){
-		var self = this,
-			AllEachViewInstance = self._AVI,
+function _moveChild(self,el){
+		var AllEachViewInstance = self._AVI,
 			AllLayoutViewInstance = self._ALVI,
 			AllWithViewInstance = self._WVI;
 			
@@ -202,14 +185,25 @@ ViewInstance.prototype = {
 				})
 			}
 		});
+	};
+function _replaceTopHandleCurrent(self, el) {
+	self._canRemoveAble = $TRUE;
+	self.topNode(el);
+};
+ViewInstance.prototype = {
+	reDraw: function() {
+		var self = this,
+			dataManager = self.dataManager;
+
+		$.fE(self._triggers, function(key) {
+			dataManager._touchOffSubset(key)
+		});
+		return self;
 	},
 	append: function(el) {
 		var self = this,
 			handleNodeTree = self.handleNodeTree,
 			NodeList = self.NodeList,
-			// AllEachViewInstance = self._AVI,
-			// AllLayoutViewInstance = self._ALVI,
-			// AllWithViewInstance = self._WVI,
 			currentTopNode = NodeList[handleNodeTree.id].currentNode;
 
 		$.fE(currentTopNode.childNodes, function(child_node) {
@@ -217,19 +211,7 @@ ViewInstance.prototype = {
 		});
 		_replaceTopHandleCurrent(self, el);
 
-		// $.ftE(NodeList[handleNodeTree.id].childNodes, function(child_node) {
-		// 	var viewInstance,
-		// 		arrayViewInstances,
-		// 		id = child_node.id;
-		// 	if (viewInstance = AllLayoutViewInstance[child_node.id] || AllWithViewInstance[child_node.id]) {
-		// 		_replaceTopHandleCurrent(viewInstance, el)
-		// 	}else if(arrayViewInstances = AllEachViewInstance[id]){
-		// 		$.ftE(arrayViewInstances,function(viewInstance){
-		// 			_replaceTopHandleCurrent(viewInstance,el);
-		// 		})
-		// 	}
-		// });
-		self._moveChild(el);
+		_moveChild(self,el);
 
 		return self;
 	},
@@ -237,9 +219,6 @@ ViewInstance.prototype = {
 		var self = this,
 			handleNodeTree = self.handleNodeTree,
 			NodeList = self.NodeList,
-			// AllEachViewInstance = self._AVI,
-			// AllLayoutViewInstance = self._ALVI,
-			// AllWithViewInstance = self._WVI,
 			currentTopNode = self.topNode(), //NodeList[handleNodeTree.id].currentNode,
 			elParentNode = el.parentNode;
 
@@ -247,21 +226,8 @@ ViewInstance.prototype = {
 			$.D.iB(elParentNode, child_node, el);
 		});
 		_replaceTopHandleCurrent(self, elParentNode);
-
-		// $.ftE(NodeList[handleNodeTree.id].childNodes, function(child_node) {
-		// 	var viewInstance,
-		// 		arrayViewInstances,
-		// 		id = child_node.id;
-		// 	if (viewInstance = AllLayoutViewInstance[id] || AllWithViewInstance[id]) {
-		// 		_replaceTopHandleCurrent(viewInstance, elParentNode)
-		// 	}else if(arrayViewInstances = AllEachViewInstance[id]){
-		// 		$.ftE(arrayViewInstances,function(viewInstance){
-		// 			_replaceTopHandleCurrent(viewInstance,el);
-		// 		})
-		// 	}
-		// });
 		
-		self._moveChild(el);
+		_moveChild(self,elParentNode);
 
 		return self;
 	},

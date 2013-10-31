@@ -17,13 +17,13 @@ V.rt("#each", function(handle, index, parentHandle) {
 				arrTriggerKey = arrDataHandleKey + ".length",
 				viewInstance = V._instances[viewInstance_ID],
 				allArrViewInstances = viewInstance._AVI,
-				arrViewInstances,
+				arrViewInstances = allArrViewInstances[id] || (allArrViewInstances[id] = []),
+				arrViewInstances_len = arrViewInstances.len,
 				divideIndex = data ? data.length : 0,
 				eachModuleConstructor = V.eachModules[id],
 				inserNew,
 				comment_endeach_node = NodeList_of_ViewInstance[comment_endeach_id].currentNode;
 
-			arrViewInstances = allArrViewInstances[id] || (allArrViewInstances[id] = []);
 			// debugger
 			// console.log(arrDataHandleKey, data)
 			// if (arrTriggerKey !== trigger.key) {
@@ -33,7 +33,9 @@ V.rt("#each", function(handle, index, parentHandle) {
 			// 	trigger.smartTrigger = viewInstance._collectTrigger(trigger,arrTriggerKey)
 			// }
 			// console.log(data)
-			if (arrViewInstances.len !== divideIndex) {
+			if (arrViewInstances_len !== divideIndex) {
+				arrViewInstances.len = divideIndex;//change immediately,to avoid the `subset` trigger the `rebuildTree`,and than trigger each-trigger again.
+
 				$.fE(data, function(eachItemData, index) {
 
 					var viewInstance = arrViewInstances[index];
@@ -54,19 +56,16 @@ V.rt("#each", function(handle, index, parentHandle) {
 						inserNew = $TRUE;
 					}
 
-
 					if (inserNew && !arrViewInstances.hidden) {
 						viewInstance.insert(comment_endeach_node)
 					}
-				});
-				console.log(arrViewInstances.len,divideIndex)
-				if (arrViewInstances.len > divideIndex) {
+				},arrViewInstances_len);//arrViewInstances_len||0
+				if (arrViewInstances_len > divideIndex) {
 					$.fE(arrViewInstances, function(eachItemHandle) {
 						// console.log(eachItemHandle)
 						eachItemHandle.remove();
 					}, divideIndex);
 				}
-				arrViewInstances.len = divideIndex;
 			}
 		}
 	}
