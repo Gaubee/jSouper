@@ -17,6 +17,7 @@
 </script>
 
 	<script type="text/template" name="tree">
+		<input bind-form="{{@name}}" attr-value="{{name}}">
 		{{#each @list}}
 			{{#if  type == '@folder'}}
 				<li>
@@ -26,7 +27,6 @@
 						{{#else}} 
 							{{$TOP.name}} 
 						{{/if}}
-						<input bind-form="{{@name}}" attr-value="{{name}}">
 					</p>
 				</li>
 				<ul>

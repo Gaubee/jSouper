@@ -380,9 +380,7 @@ function DataManager(baseData) {
 	}
 	baseData = baseData || {};
 	self.id = $.uid();
-	if (self.id > 200) {
-		debugger
-	};
+
 	self._database = baseData;
 	// self._cacheData = {};
 	self._viewInstances = []; //to touch off
@@ -663,53 +661,12 @@ var DM_proto = DataManager.prototype = {
 		}
 		return self;
 	},
-	subset: function(dataManager, prefix) { /*收集dataManager的触发集*/
-		var self = this,
-			myTriggerKeys = self._triggerKeys,
-			dmTriggerKeys = dataManager._triggerKeys,
-			// dotPrefix = prefix ? prefix + "." : "",
-			data = prefix === $UNDEFINED ? self.get() : self.get(prefix),
-			filterKey = DataManager.session.filterKey,
-			topGetter = DataManager.session.topGetter;
-
-		console.log("subset:", prefix, filterKey, topGetter, dataManager.id, self.id)
-
-		// # alone
-		var siblingDataManagers = _getAllSiblingDataManagers(dataManager);
-		// / alone
-		$.ftE(siblingDataManagers, function(dataManager) {
-			dataManager._siblingDataManagers.length = 0;
-			$.ftE(siblingDataManagers, function(sublingDM) {
-				$.rm(sublingDM._siblingDataManagers, dataManager)
-			});
-			dataManager.remove();
-
-			if (dataManager._prefix = filterKey ) {
-
-				if (dataManager._database !== data) { //update base date
-					if (dataManager._database instanceof Object) {
-						data = _mix(dataManager._database, data)
-					}
-					dataManager.set(data)
-				}
-				//then link with parent
-				dataManager._parentDataManager = topGetter;
-				/*$.iO(topGetter._subsetDataManagers,dataManager)===-1&&*/
-				$.p(topGetter._subsetDataManagers, dataManager);
-
-			} else {
-
-				if (topGetter) { //if undefined,is no $PARENT,it is smart
-					if (dataManager._parentDataManager = topGetter._parentDataManager) {
-						/*$.iO(topGetter._subsetDataManagers,dataManager)===-1&&*/
-						$.p(topGetter._subsetDataManagers, dataManager)
-						dataManager._prefix = topGetter._prefix
-					}
-					topGetter.collect(dataManager);
-				}
-			}
-		});
-		self.rebuildTree();
+	subset:function(dataManager,prefixKey){
+		var self = this;
+		dataManager.remove();
+		dataManager._prefix = prefixKey;
+		dataManager._parentDataManager = self;
+		$.p(self._subsetDataManagers,dataManager);
 		return self;
 	},
 	remove: function(dataManager) {
@@ -871,8 +828,9 @@ var DM_proto = DataManager.prototype = {
 
 	function _getAllSmartDataManagers(self, result) {
 		result ? $.p(result, self) : (result = []);
-		var dmSmartDataManagers = self._smartDataManagers;
+		var dmSmartDataManagers = self._smartDMs_id;
 		dmSmartDataManagers && $.ftE(dmSmartDataManagers, function(dm) {
+			dm = DataManager.get(dm);
 			if ($.iO(result, dm) === -1) {
 				_getAllSmartDataManagers(dm, result);
 			}
@@ -891,12 +849,12 @@ var DM_proto = DataManager.prototype = {
 				if (smart_prefix.indexOf(prefix.Parent) === 0 || smart_prefix.indexOf(prefix.Top) === 0) {
 					var data = smart_dataManager.get(smart_prefix);
 					var topGetter = DataManager.session.topGetter
-					if (topGetter !== smartSource.topGetter&&(smartSource.topGetter = topGetter)) {
+					if (topGetter !== smartSource.topGetter && (smartSource.topGetter = topGetter)) {
 						console.log("rebuild", dm.id,
 							"\n\tself:", self.id,
 							"\n\ttopGetter:", topGetter.id,
 							"\n\tparent:", dm._parentDataManager && dm._parentDataManager.id)
-						
+
 						smart_dataManager.subset(dm, smart_prefix);
 						// console.log(data)
 					}
@@ -905,26 +863,38 @@ var DM_proto = DataManager.prototype = {
 		})
 		return _rebuildTree.call(self);
 	};
-	DM_proto.subset = function(dataManager, _prefix) {
+	DM_proto.subset = function(dataManager, prefixKey) {
 		var self = this,
-			result;
-		if (_prefix.indexOf(prefix.Parent) === 0 || _prefix.indexOf(prefix.Top) === 0) { //need smart fellow the data tree
-			console.warn(_prefix)
-			if (dataManager instanceof ViewInstance) {
-				dataManager = dataManager.dataManager;
-			}
-			if (dataManager instanceof DataManager) {
-				if (!dataManager._smartSource) {
-					dataManager._smartSource = {
-						topGetter: $TRUE, // current coordinate
-						dm_id: self.id,
-						prefix: _prefix
-					};
+			data = self.get(prefixKey),
+			result,
+			topGetter = DataManager.session.topGetter,
+			filterKey = DataManager.session.filterKey;
+		if (filterKey !== prefixKey) { //is smart key
+
+			if (prefixKey.indexOf(prefix.This) === 0) {
+				if (filterKey) {
+					_subset.call(self, dataManager, filterKey)
+				} else { //prefixKey === "$THIS"
+					dataManager.replaceAs(self);
 				}
-				$.p(self._smartDataManagers || (self._smartDataManagers = []), dataManager);
+			} else {
+				dataManager._smartSource = {
+					topGetter: topGetter, // current coordinate
+					dm_id: self.id,
+					prefix: prefixKey
+				};
+				$.p(self._smartDMs_id || (self._smartDMs_id = []), dataManager.id);
+				if (topGetter) { // smart dm maybe change coodition
+					if (filterKey) {
+						_subset.call(topGetter, dataManager, filterKey)
+					} else {
+						topGetter.collect(dataManager);
+					}
+				}
 			}
-		};
-		result = _subset.apply(self, $.s(arguments))
+		} else {
+			result = _subset.apply(self, $.s(arguments));
+		}
 		return result;
 	}
 }());

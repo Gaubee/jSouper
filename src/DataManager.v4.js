@@ -10,9 +10,7 @@ function DataManager(baseData) {
 	}
 	baseData = baseData || {};
 	self.id = $.uid();
-	if (self.id > 200) {
-		debugger
-	};
+
 	self._database = baseData;
 	// self._cacheData = {};
 	self._viewInstances = []; //to touch off
@@ -293,53 +291,12 @@ var DM_proto = DataManager.prototype = {
 		}
 		return self;
 	},
-	subset: function(dataManager, prefix) { /*收集dataManager的触发集*/
-		var self = this,
-			myTriggerKeys = self._triggerKeys,
-			dmTriggerKeys = dataManager._triggerKeys,
-			// dotPrefix = prefix ? prefix + "." : "",
-			data = prefix === $UNDEFINED ? self.get() : self.get(prefix),
-			filterKey = DataManager.session.filterKey,
-			topGetter = DataManager.session.topGetter;
-
-		console.log("subset:", prefix, filterKey, topGetter, dataManager.id, self.id)
-
-		// # alone
-		var siblingDataManagers = _getAllSiblingDataManagers(dataManager);
-		// / alone
-		$.ftE(siblingDataManagers, function(dataManager) {
-			dataManager._siblingDataManagers.length = 0;
-			$.ftE(siblingDataManagers, function(sublingDM) {
-				$.rm(sublingDM._siblingDataManagers, dataManager)
-			});
-			dataManager.remove();
-
-			if (dataManager._prefix = filterKey ) {
-
-				if (dataManager._database !== data) { //update base date
-					if (dataManager._database instanceof Object) {
-						data = _mix(dataManager._database, data)
-					}
-					dataManager.set(data)
-				}
-				//then link with parent
-				dataManager._parentDataManager = topGetter;
-				/*$.iO(topGetter._subsetDataManagers,dataManager)===-1&&*/
-				$.p(topGetter._subsetDataManagers, dataManager);
-
-			} else {
-
-				if (topGetter) { //if undefined,is no $PARENT,it is smart
-					if (dataManager._parentDataManager = topGetter._parentDataManager) {
-						/*$.iO(topGetter._subsetDataManagers,dataManager)===-1&&*/
-						$.p(topGetter._subsetDataManagers, dataManager)
-						dataManager._prefix = topGetter._prefix
-					}
-					topGetter.collect(dataManager);
-				}
-			}
-		});
-		self.rebuildTree();
+	subset:function(dataManager,prefixKey){
+		var self = this;
+		dataManager.remove();
+		dataManager._prefix = prefixKey;
+		dataManager._parentDataManager = self;
+		$.p(self._subsetDataManagers,dataManager);
 		return self;
 	},
 	remove: function(dataManager) {

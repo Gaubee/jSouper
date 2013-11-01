@@ -21,7 +21,7 @@
 <body >
 	<div id="attr_dom">
 		<h3 attr-style="color:{{style.color}};">{{title}}</h3>
-		{{layout "inp", "$THIS"}}
+		{{#layout "inp", "$THIS"}}
 	</div>
 	<script type="text/template" name="inp">
 		<input id="inp" type="text" bind-form="{{@title}}"  attr-value="{{title}}"/>
