@@ -10,12 +10,17 @@ function DataManager(baseData) {
 	}
 	baseData = baseData || {};
 	self.id = $.uid();
+	if (self.id > 200) {
+		debugger
+	};
 	self._database = baseData;
 	// self._cacheData = {};
 	self._viewInstances = []; //to touch off
 	self._parentDataManager // = $UNDEFINED; //to get data
 	self._prefix // = $NULL; //冒泡时需要加上的前缀
-	self._smartSource // = $NULL; //store how to get parentDataManager
+	// self._smartSource // = $NULL; //store how to get parentDataManager
+	// self._smartDataManagers = [];//store smart dm which has prefix key 
+
 	self._siblingDataManagers = [];
 	self._subsetDataManagers = []; //to touch off
 	self._triggerKeys = new SmartTriggerSet({
@@ -29,6 +34,9 @@ var _DM_extends_object_constructor = _placeholder();
 DataManager.Object = function(extendsObj) {
 	extendsObj[_DM_extends_object_constructor] = $TRUE;
 };
+DataManager.get = function(id){
+	return DataManager._instances[id];
+}
 var $LENGTH = "length";
 
 function _mix(sObj, nObj) {
@@ -222,7 +230,7 @@ var DM_proto = DataManager.prototype = {
 		}
 		return result;
 	},
-	touchOff: function(key) {
+	touchOff: function(key) { //always touchoff from toppest dm
 		var database = this._database;
 		$.ftE($.s(_getAllSiblingDataManagers(this)), function(dm) {
 			dm._database = database;
@@ -252,14 +260,14 @@ var DM_proto = DataManager.prototype = {
 			// debugger
 			var prefix = childDataManager._prefix,
 				childResult; // || "";
-			if (!key) {
+			if (!key) {//key === "",touchoff all
 				childResult = childDataManager.set(prefix ? self.get(prefix) : self.get())
-			} else if (!prefix) {
+			} else if (!prefix) {//prefix==="" equal to $THIS
 				childResult = childDataManager.set(key, self.get(key))
-			} else if (key === prefix || prefix.indexOf(key + ".") === 0) {
+			} else if (key === prefix || prefix.indexOf(key + ".") === 0) {//prefix is a part of key,just maybe had been changed
 				// childDataManager.touchOff(prefix.replace(key + ".", ""));
 				childResult = childDataManager.set(self.get(prefix))
-			} else if (key.indexOf(prefix + ".") === 0) {
+			} else if (key.indexOf(prefix + ".") === 0) {//key is a part of prefix,must had be changed
 				prefix = key.replace(prefix + ".", "")
 				childResult = childDataManager.set(prefix, self.get(key))
 				// childDataManager.touchOff("")
@@ -276,9 +284,13 @@ var DM_proto = DataManager.prototype = {
 	rebuildTree: $.noop,
 	collect: function(dataManager) {
 		var self = this
-		$.p(self._siblingDataManagers, dataManager);
-		$.p(dataManager._siblingDataManagers, self);
-		self.rebuildTree()
+		if ($.iO(self._siblingDataManagers, dataManager) === -1) {
+			$.p(self._siblingDataManagers, dataManager);
+			$.p(dataManager._siblingDataManagers, self);
+			self.rebuildTree()
+			dataManager._database = self._database;
+			dataManager.touchOff("")
+		}
 		return self;
 	},
 	subset: function(dataManager, prefix) { /*收集dataManager的触发集*/
@@ -289,30 +301,44 @@ var DM_proto = DataManager.prototype = {
 			data = prefix === $UNDEFINED ? self.get() : self.get(prefix),
 			filterKey = DataManager.session.filterKey,
 			topGetter = DataManager.session.topGetter;
-		// console.log(prefix, filterKey, topGetter, dataManager.id, self.id)
 
-		dataManager._smartSource = {
-			dataManager: self,
-			prefix: prefix
-		};
-		dataManager.remove();
-		dataManager._parentDataManager = topGetter;
+		console.log("subset:", prefix, filterKey, topGetter, dataManager.id, self.id)
 
-		if (dataManager._prefix = filterKey /* || ""*/ ) {
+		// # alone
+		var siblingDataManagers = _getAllSiblingDataManagers(dataManager);
+		// / alone
+		$.ftE(siblingDataManagers, function(dataManager) {
+			dataManager._siblingDataManagers.length = 0;
+			$.ftE(siblingDataManagers, function(sublingDM) {
+				$.rm(sublingDM._siblingDataManagers, dataManager)
+			});
+			dataManager.remove();
 
-			if (dataManager._database !== data) {
-				if (dataManager._database instanceof Object) {
-					data = _mix(dataManager._database, data)
+			if (dataManager._prefix = filterKey ) {
+
+				if (dataManager._database !== data) { //update base date
+					if (dataManager._database instanceof Object) {
+						data = _mix(dataManager._database, data)
+					}
+					dataManager.set(data)
 				}
-				// console.log(prefix, data)
-				dataManager.set(data)
-			}
-			$.p(topGetter._subsetDataManagers, dataManager);
+				//then link with parent
+				dataManager._parentDataManager = topGetter;
+				/*$.iO(topGetter._subsetDataManagers,dataManager)===-1&&*/
+				$.p(topGetter._subsetDataManagers, dataManager);
 
-		} else {
-			topGetter||(topGetter=self);//just save
-			topGetter.collect(dataManager);
-		}
+			} else {
+
+				if (topGetter) { //if undefined,is no $PARENT,it is smart
+					if (dataManager._parentDataManager = topGetter._parentDataManager) {
+						/*$.iO(topGetter._subsetDataManagers,dataManager)===-1&&*/
+						$.p(topGetter._subsetDataManagers, dataManager)
+						dataManager._prefix = topGetter._prefix
+					}
+					topGetter.collect(dataManager);
+				}
+			}
+		});
 		self.rebuildTree();
 		return self;
 	},
@@ -334,7 +360,41 @@ var DM_proto = DataManager.prototype = {
 		}
 		return self;
 	},
-	destroy: function() {},
+	replaceAs:function(dataManager){
+		var self = this;
+		$.ftE(self._subsetDataManagers,function(subsetDM){
+			subsetDM._parentDataManager = dataManager;
+			$.p(dataManager._subsetDataManagers,subsetDM)
+		});
+		var new_siblingDataManagers = dataManager._siblingDataManagers;
+		$.ftE(_getAllSiblingDataManagers(self),function(sublingDM){
+			var siblingDataManagers = sublingDM._siblingDataManagers;
+			$.rm(siblingDataManagers,self)
+			if ($.iO(new_siblingDataManagers,sublingDM)===-1) {
+				$.p(new_siblingDataManagers,sublingDM)
+			}
+			if ($.iO(siblingDataManagers,dataManager)===-1) {
+				$.p(siblingDataManagers,dataManager)
+			}
+		});
+		$.rm(new_siblingDataManagers,self)
+		$.ftE(self._viewInstances,function(viewInstance){
+			viewInstance.dataManager = dataManager;
+			$.p(dataManager._viewInstances,viewInstance)
+		});
+		self._triggerKeys.forIn(function(smartTriggerSet,key){
+			dataManager._triggerKeys.push(key,smartTriggerSet)
+		})
+		dataManager.set(dataManager.get());
+		DataManager._instances[self.id] = dataManager;
+		self.destroy()
+		return $NULL;
+	},
+	destroy: function() {
+		for(var i in this){
+			delete this[i]
+		}
+	},
 	buildGetter: function(key) {},
 	buildSetter: function(key) {}
 };

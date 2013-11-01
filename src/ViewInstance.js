@@ -10,11 +10,11 @@
 		$.ftE(self._viewInstances, function(childViewInstance) {
 			$.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
 				var TEMP = smartTrigger.TEMP;
-				TEMP.dataManager.get(TEMP.sourceKey);
+				DataManager.get(TEMP.dm_id).get(TEMP.sourceKey);
 				var topGetter = DataManager.session.topGetter;
-				if (topGetter !== TEMP.dataManager) {
+				if (topGetter !== DataManager.get(TEMP.dm_id)) {
 					smartTrigger.bind(topGetter._triggerKeys);
-					TEMP.dataManager = topGetter;
+					TEMP.dm_id = topGetter.id;
 				}
 				smartTrigger.event(topGetter._triggerKeys);
 			})
@@ -24,11 +24,11 @@
 				$.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
 					if (smartTrigger.moveAble) {
 						var TEMP = smartTrigger.TEMP;
-						TEMP.dataManager.get(TEMP.sourceKey);
+						DataManager.get(TEMP.dm_id).get(TEMP.sourceKey);
 						var topGetter = DataManager.session.topGetter;
-						if (topGetter !== TEMP.dataManager) {
-							smartTrigger.unbind(TEMP.dataManager._triggerKeys).bind(topGetter._triggerKeys);
-							TEMP.dataManager = topGetter;
+						if (topGetter !== DataManager.get(TEMP.dm_id)) {
+							smartTrigger.unbind(DataManager.get(TEMP.dm_id)._triggerKeys).bind(topGetter._triggerKeys);
+							TEMP.dm_id = topGetter.id;
 							smartTrigger.event(topGetter._triggerKeys);
 						}
 					}
@@ -44,9 +44,6 @@
 			smartTriggers = viewInstance._smartTriggers;
 		if (viewInstance instanceof DataManager) {
 			_collect.call(self, viewInstance);
-			// $.ftE(viewInstance._viewInstances,function(viewInstance){
-			// 	viewInstance.dataManager = self;
-			// });
 			//TODO:release memory.
 		} else if (viewInstance instanceof ViewInstance) {
 			var vi_DM = viewInstance.dataManager;
@@ -67,7 +64,7 @@
 								viewInstance.touchOff(sKey);
 							}, { //TEMP data
 								viewInstance: viewInstance,
-								dataManager: self,
+								dm_id: self.id,
 								// triggerSet: topGetterTriggerKeys,
 								sourceKey: sKey
 							}

@@ -380,12 +380,17 @@ function DataManager(baseData) {
 	}
 	baseData = baseData || {};
 	self.id = $.uid();
+	if (self.id > 200) {
+		debugger
+	};
 	self._database = baseData;
 	// self._cacheData = {};
 	self._viewInstances = []; //to touch off
 	self._parentDataManager // = $UNDEFINED; //to get data
 	self._prefix // = $NULL; //冒泡时需要加上的前缀
-	self._smartSource // = $NULL; //store how to get parentDataManager
+	// self._smartSource // = $NULL; //store how to get parentDataManager
+	// self._smartDataManagers = [];//store smart dm which has prefix key 
+
 	self._siblingDataManagers = [];
 	self._subsetDataManagers = []; //to touch off
 	self._triggerKeys = new SmartTriggerSet({
@@ -399,6 +404,9 @@ var _DM_extends_object_constructor = _placeholder();
 DataManager.Object = function(extendsObj) {
 	extendsObj[_DM_extends_object_constructor] = $TRUE;
 };
+DataManager.get = function(id){
+	return DataManager._instances[id];
+}
 var $LENGTH = "length";
 
 function _mix(sObj, nObj) {
@@ -592,7 +600,7 @@ var DM_proto = DataManager.prototype = {
 		}
 		return result;
 	},
-	touchOff: function(key) {
+	touchOff: function(key) { //always touchoff from toppest dm
 		var database = this._database;
 		$.ftE($.s(_getAllSiblingDataManagers(this)), function(dm) {
 			dm._database = database;
@@ -622,14 +630,14 @@ var DM_proto = DataManager.prototype = {
 			// debugger
 			var prefix = childDataManager._prefix,
 				childResult; // || "";
-			if (!key) {
+			if (!key) {//key === "",touchoff all
 				childResult = childDataManager.set(prefix ? self.get(prefix) : self.get())
-			} else if (!prefix) {
+			} else if (!prefix) {//prefix==="" equal to $THIS
 				childResult = childDataManager.set(key, self.get(key))
-			} else if (key === prefix || prefix.indexOf(key + ".") === 0) {
+			} else if (key === prefix || prefix.indexOf(key + ".") === 0) {//prefix is a part of key,just maybe had been changed
 				// childDataManager.touchOff(prefix.replace(key + ".", ""));
 				childResult = childDataManager.set(self.get(prefix))
-			} else if (key.indexOf(prefix + ".") === 0) {
+			} else if (key.indexOf(prefix + ".") === 0) {//key is a part of prefix,must had be changed
 				prefix = key.replace(prefix + ".", "")
 				childResult = childDataManager.set(prefix, self.get(key))
 				// childDataManager.touchOff("")
@@ -646,9 +654,13 @@ var DM_proto = DataManager.prototype = {
 	rebuildTree: $.noop,
 	collect: function(dataManager) {
 		var self = this
-		$.p(self._siblingDataManagers, dataManager);
-		$.p(dataManager._siblingDataManagers, self);
-		self.rebuildTree()
+		if ($.iO(self._siblingDataManagers, dataManager) === -1) {
+			$.p(self._siblingDataManagers, dataManager);
+			$.p(dataManager._siblingDataManagers, self);
+			self.rebuildTree()
+			dataManager._database = self._database;
+			dataManager.touchOff("")
+		}
 		return self;
 	},
 	subset: function(dataManager, prefix) { /*收集dataManager的触发集*/
@@ -659,30 +671,44 @@ var DM_proto = DataManager.prototype = {
 			data = prefix === $UNDEFINED ? self.get() : self.get(prefix),
 			filterKey = DataManager.session.filterKey,
 			topGetter = DataManager.session.topGetter;
-		// console.log(prefix, filterKey, topGetter, dataManager.id, self.id)
 
-		dataManager._smartSource = {
-			dataManager: self,
-			prefix: prefix
-		};
-		dataManager.remove();
-		dataManager._parentDataManager = topGetter;
+		console.log("subset:", prefix, filterKey, topGetter, dataManager.id, self.id)
 
-		if (dataManager._prefix = filterKey /* || ""*/ ) {
+		// # alone
+		var siblingDataManagers = _getAllSiblingDataManagers(dataManager);
+		// / alone
+		$.ftE(siblingDataManagers, function(dataManager) {
+			dataManager._siblingDataManagers.length = 0;
+			$.ftE(siblingDataManagers, function(sublingDM) {
+				$.rm(sublingDM._siblingDataManagers, dataManager)
+			});
+			dataManager.remove();
 
-			if (dataManager._database !== data) {
-				if (dataManager._database instanceof Object) {
-					data = _mix(dataManager._database, data)
+			if (dataManager._prefix = filterKey ) {
+
+				if (dataManager._database !== data) { //update base date
+					if (dataManager._database instanceof Object) {
+						data = _mix(dataManager._database, data)
+					}
+					dataManager.set(data)
 				}
-				// console.log(prefix, data)
-				dataManager.set(data)
-			}
-			$.p(topGetter._subsetDataManagers, dataManager);
+				//then link with parent
+				dataManager._parentDataManager = topGetter;
+				/*$.iO(topGetter._subsetDataManagers,dataManager)===-1&&*/
+				$.p(topGetter._subsetDataManagers, dataManager);
 
-		} else {
-			topGetter||(topGetter=self);//just save
-			topGetter.collect(dataManager);
-		}
+			} else {
+
+				if (topGetter) { //if undefined,is no $PARENT,it is smart
+					if (dataManager._parentDataManager = topGetter._parentDataManager) {
+						/*$.iO(topGetter._subsetDataManagers,dataManager)===-1&&*/
+						$.p(topGetter._subsetDataManagers, dataManager)
+						dataManager._prefix = topGetter._prefix
+					}
+					topGetter.collect(dataManager);
+				}
+			}
+		});
 		self.rebuildTree();
 		return self;
 	},
@@ -704,9 +730,353 @@ var DM_proto = DataManager.prototype = {
 		}
 		return self;
 	},
-	destroy: function() {},
+	replaceAs:function(dataManager){
+		var self = this;
+		$.ftE(self._subsetDataManagers,function(subsetDM){
+			subsetDM._parentDataManager = dataManager;
+			$.p(dataManager._subsetDataManagers,subsetDM)
+		});
+		var new_siblingDataManagers = dataManager._siblingDataManagers;
+		$.ftE(_getAllSiblingDataManagers(self),function(sublingDM){
+			var siblingDataManagers = sublingDM._siblingDataManagers;
+			$.rm(siblingDataManagers,self)
+			if ($.iO(new_siblingDataManagers,sublingDM)===-1) {
+				$.p(new_siblingDataManagers,sublingDM)
+			}
+			if ($.iO(siblingDataManagers,dataManager)===-1) {
+				$.p(siblingDataManagers,dataManager)
+			}
+		});
+		$.rm(new_siblingDataManagers,self)
+		$.ftE(self._viewInstances,function(viewInstance){
+			viewInstance.dataManager = dataManager;
+			$.p(dataManager._viewInstances,viewInstance)
+		});
+		self._triggerKeys.forIn(function(smartTriggerSet,key){
+			dataManager._triggerKeys.push(key,smartTriggerSet)
+		})
+		dataManager.set(dataManager.get());
+		DataManager._instances[self.id] = dataManager;
+		self.destroy()
+		return $NULL;
+	},
+	destroy: function() {
+		for(var i in this){
+			delete this[i]
+		}
+	},
 	buildGetter: function(key) {},
 	buildSetter: function(key) {}
+};
+;
+(function() {
+	var _get = DM_proto.get,
+		_set = DM_proto.set,
+		prefix = DM_config.prefix,
+		set = DM_proto.set = function(key) {
+			var self = this,
+				args = $.s(arguments),
+				result;
+			if (args.length > 1) {
+				if (key.indexOf(prefix.Parent) === 0) { //$parent
+					if (self = self._parentDataManager) {
+						if (key === prefix.Parent) {
+							args.splice(0, 1);
+						} else if (key.charAt(prefix.Parent.length) === ".") {
+							args[0] = key.replace(prefix.Parent + ".", "");
+						}
+						result = set.apply(self, args);
+					} else {
+						DataManager.session.filterKey = $UNDEFINED;
+						DataManager.session.topGetter = $UNDEFINED;
+						key = ""
+					}
+				} else if (key.indexOf(prefix.This) === 0) { //$this
+					if (key === prefix.This) {
+						args.splice(0, 1);
+					} else if (key.charAt(prefix.This.length) === ".") {
+						args[0] = key.replace(prefix.This + ".", "");
+					}
+					result = set.apply(self, args);
+				} else if (key.indexOf(prefix.Top) === 0) {
+					var next;
+					while (next = self._parentDataManager) {
+						self = next;
+					}
+					if (key === prefix.Top) {
+						args.splice(0, 1);
+					} else if (key.charAt(prefix.Top.length) === ".") {
+						args[0] = key.replace(prefix.Top + ".", "");
+					}
+					result = set.apply(self, args);
+				} else { //no prefix key
+					result = _set.apply(self, args);
+				}
+			} else { //one argument
+				result = _set.apply(self, args);
+			}
+			return result || {
+				key: key,
+				// allUpdateKey: allUpdateKey,
+				updateKey: [key],
+				chidlUpdateKey: []
+			};
+		},
+		get = DM_proto.get = function(key) {
+			var self = this,
+				args = $.s(arguments),
+				result;
+			if (args.length > 0) {
+				if (key.indexOf(prefix.Parent) === 0) { //$parent
+					if (self = self._parentDataManager) {
+						if (key === prefix.Parent) {
+							args.splice(0, 1);
+						} else if (key.charAt(prefix.Parent.length) === ".") {
+							args[0] = key.replace(prefix.Parent + ".", "");
+						}
+						result = get.apply(self, args);
+					} else {
+						DataManager.session.filterKey = $UNDEFINED;
+						DataManager.session.topGetter = $UNDEFINED;
+						key = ""
+					}
+				} else if (key.indexOf(prefix.This) === 0) { //$this
+					if (key === prefix.This) {
+						args.splice(0, 1);
+					} else if (key.charAt(prefix.This.length) === ".") {
+						args[0] = key.replace(prefix.This + ".", "");
+					}
+					result = get.apply(self, args);
+				} else if (key.indexOf(prefix.Top) === 0) {
+					var next;
+					while (next = self._parentDataManager) {
+						self = next;
+					}
+					if (key === prefix.Top) {
+						args.splice(0, 1);
+					} else if (key.charAt(prefix.Top.length) === ".") {
+						args[0] = key.replace(prefix.Top + ".", "");
+					}
+					result = get.apply(self, args);
+				} else { //no prefix key
+					result = _get.apply(self, args);
+				}
+			} else { //one argument
+				result = _get.apply(self, args);
+			}
+			return result;
+		},
+		_rebuildTree = DM_proto.rebuildTree,
+		_subset = DM_proto.subset;
+
+	function _getAllSmartDataManagers(self, result) {
+		result ? $.p(result, self) : (result = []);
+		var dmSmartDataManagers = self._smartDataManagers;
+		dmSmartDataManagers && $.ftE(dmSmartDataManagers, function(dm) {
+			if ($.iO(result, dm) === -1) {
+				_getAllSmartDataManagers(dm, result);
+			}
+		});
+		// console.table(result)
+		return result;
+	};
+	DM_proto.rebuildTree = function() {
+		var self = this,
+			smartSource;
+		$.ftE(_getAllSmartDataManagers(self), function(dm) {
+			if (smartSource = dm._smartSource) {
+				var smart_prefix = smartSource.prefix,
+					smart_dataManager = DataManager.get(smartSource.dm_id);
+				// console.log(smart_prefix)
+				if (smart_prefix.indexOf(prefix.Parent) === 0 || smart_prefix.indexOf(prefix.Top) === 0) {
+					var data = smart_dataManager.get(smart_prefix);
+					var topGetter = DataManager.session.topGetter
+					if (topGetter !== smartSource.topGetter&&(smartSource.topGetter = topGetter)) {
+						console.log("rebuild", dm.id,
+							"\n\tself:", self.id,
+							"\n\ttopGetter:", topGetter.id,
+							"\n\tparent:", dm._parentDataManager && dm._parentDataManager.id)
+						
+						smart_dataManager.subset(dm, smart_prefix);
+						// console.log(data)
+					}
+				}
+			}
+		})
+		return _rebuildTree.call(self);
+	};
+	DM_proto.subset = function(dataManager, _prefix) {
+		var self = this,
+			result;
+		if (_prefix.indexOf(prefix.Parent) === 0 || _prefix.indexOf(prefix.Top) === 0) { //need smart fellow the data tree
+			console.warn(_prefix)
+			if (dataManager instanceof ViewInstance) {
+				dataManager = dataManager.dataManager;
+			}
+			if (dataManager instanceof DataManager) {
+				if (!dataManager._smartSource) {
+					dataManager._smartSource = {
+						topGetter: $TRUE, // current coordinate
+						dm_id: self.id,
+						prefix: _prefix
+					};
+				}
+				$.p(self._smartDataManagers || (self._smartDataManagers = []), dataManager);
+			}
+		};
+		result = _subset.apply(self, $.s(arguments))
+		return result;
+	}
+}());
+var relyStack = [], //用于搜集依赖的堆栈数据集
+	allRelyContainer = {}, //存储处理过的依赖关系集，在set运作后链式触发 TODO：注意处理循环依赖
+	chain_update_rely = function(id, updataKeys) {
+		var relyContainer = allRelyContainer[id]; // || (allRelyContainer[this.id] = {});
+
+		relyContainer && $.ftE(updataKeys, function(updataKey) { //触发依赖
+			var leaderArr;
+			if (leaderArr = relyContainer[updataKey]) {
+				$.ftE(leaderArr, function(leaderObj) {
+					var leader = leaderObj.dm,
+						key = leaderObj.key;
+					chain_update_rely(leader.id, leader.set(key, leader._getSource(key).get())) //递归:链式更新
+				})
+			}
+		})
+	}
+
+	function Observer(obs) { //动态计算类
+		var self = this;
+		if (!(this instanceof Observer)) {
+			return new Observer(obs);
+		}
+		DataManager.Object(self);
+		if (obs instanceof Function) {
+			self._get = Try(obs, self);
+			self.set = $.noop;/*function(new_value){
+				self._value = new_value;
+			};*///; //默认更新value并触发更新
+			self._form = $NULL;
+		} else {
+			self._get = obs.get || function() {
+				return self._value
+			};
+			self.set = Try(obs.set, self) || $.noop;
+			self._form = Try(obs.form, self) || $NULL;
+		}
+		self._value;
+		self._valueOf = Observer._initGetData;
+		self._toString = Observer._getData;
+	};
+Observer._initGetData = function() {
+	var self = this;
+	self.valueOf = self.toString = Observer._getData;
+	return self._value = self.get();
+};
+Observer._getData = function() {
+	return this._value
+};
+Observer.collect = function(leader_id, follower_id) {
+	//allRelyContainer;
+};
+Observer.pickUp = function(leader, leader_key, relySet) {
+	var leader_id = leader.id;
+	$.ftE(relySet, function(relyNode) { //处理依赖结果
+		var relyId = relyNode.id,
+			relyKey = relyNode.key,
+			relyContainer = allRelyContainer[relyId] || (allRelyContainer[relyId] = {});
+
+		if (!(leader_id === relyId && leader_key === relyKey)) { //避免直接的循环依赖
+			cache = relyContainer[relyKey];
+			if (!cache) {
+				cache = relyContainer[relyKey] = [];
+				cache._ = {};
+			}
+			var cache_key = cache._[leader_key] || (cache._[leader_key] = "|");
+
+			if (cache_key.indexOf("|" + leader_id + "|") === -1) {
+				$.p(cache, {
+					dm: leader,
+					key: leader_key
+				});
+				cache._[leader_key] += leader_id + "|";
+			}
+		}
+	});
+};
+Observer.prototype = {
+	get: function() {
+
+		var self = this,
+			dm = DataManager.session.topGetter,
+			key = DataManager.session.filterKey,
+			result;
+		$.p(relyStack, []); //开始收集
+
+		result = self._value = self._get();
+
+		var relySet = relyStack.pop(); //获取收集结果
+		// console.log(relySet); //debugger;
+		relySet.length && Observer.pickUp(dm, key, relySet);
+
+		return result;
+	},
+	toString: Observer._initGetData,
+	valueOf: Observer._initGetData
+};
+
+(function() {
+	var _get = DM_proto.get,
+		_set = DM_proto.set,
+		_collect = DM_proto.collect;
+	DM_proto.get = function() {
+		var result = _get.apply(this, $.s(arguments));
+		// console.log(result)
+		// if (result instanceof Observer) {
+		// 	result = result.get()
+		// }
+		if (relyStack.length) {
+			$.p($.lI(relyStack), {
+				id: DataManager.session.topGetter.id,
+				// dataManager: DataManager.session.topGetter,
+				key: DataManager.session.filterKey
+			})
+		}
+		return result;
+	};
+	DM_proto.set = function() {
+		var self= this,
+			result = _set.apply(this, $.s(arguments)),
+			relyContainer = allRelyContainer[self.id];
+		if (relyContainer) {
+			// console.log(result,relyContainer)
+			$.ftE(result.updateKey,function(updateKey){
+				var relyObjects = relyContainer[updateKey];
+				relyObjects&&$.ftE(relyObjects,function(relyObject){
+					relyObject.dm.touchOff(relyObject.key)
+				});
+			});
+		}
+		return result;
+	};
+	DM_proto.collect = function(dataManager) {
+		var result = _collect.apply(this, $.s(arguments));
+		if (dataManager instanceof DataManager) {
+			Observer.collect(this.id, dataManager.id);
+		}
+		return result;
+	}
+}());
+var _cacheGet = Observer.get;
+function StaticObserver(obs) { //静态计算类（只收集一次的依赖，适合于简单的计算属性，没有逻辑嵌套）
+	var observerInstance = new Observer(obs);
+	observerInstance.get = StaticObserver.staticGet;
+}
+StaticObserver.staticGet = function() { //转化成静态计算类
+	var self = this,
+		result = _cacheGet.apply(self, $.s(arguments));
+	self.get = self._get; //剥离依赖收集器
+	return result;
 };
 var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 	// DoubleQuotedString = /"(?:\.|(\\\")|[^\""\n])*"/g, //双引号字符串
@@ -1066,11 +1436,11 @@ function _create(data) { //data maybe basedata or dataManager
 		$.ftE(self._viewInstances, function(childViewInstance) {
 			$.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
 				var TEMP = smartTrigger.TEMP;
-				TEMP.dataManager.get(TEMP.sourceKey);
+				DataManager.get(TEMP.dm_id).get(TEMP.sourceKey);
 				var topGetter = DataManager.session.topGetter;
-				if (topGetter !== TEMP.dataManager) {
+				if (topGetter !== DataManager.get(TEMP.dm_id)) {
 					smartTrigger.bind(topGetter._triggerKeys);
-					TEMP.dataManager = topGetter;
+					TEMP.dm_id = topGetter.id;
 				}
 				smartTrigger.event(topGetter._triggerKeys);
 			})
@@ -1080,11 +1450,11 @@ function _create(data) { //data maybe basedata or dataManager
 				$.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
 					if (smartTrigger.moveAble) {
 						var TEMP = smartTrigger.TEMP;
-						TEMP.dataManager.get(TEMP.sourceKey);
+						DataManager.get(TEMP.dm_id).get(TEMP.sourceKey);
 						var topGetter = DataManager.session.topGetter;
-						if (topGetter !== TEMP.dataManager) {
-							smartTrigger.unbind(TEMP.dataManager._triggerKeys).bind(topGetter._triggerKeys);
-							TEMP.dataManager = topGetter;
+						if (topGetter !== DataManager.get(TEMP.dm_id)) {
+							smartTrigger.unbind(DataManager.get(TEMP.dm_id)._triggerKeys).bind(topGetter._triggerKeys);
+							TEMP.dm_id = topGetter.id;
 							smartTrigger.event(topGetter._triggerKeys);
 						}
 					}
@@ -1100,9 +1470,6 @@ function _create(data) { //data maybe basedata or dataManager
 			smartTriggers = viewInstance._smartTriggers;
 		if (viewInstance instanceof DataManager) {
 			_collect.call(self, viewInstance);
-			// $.ftE(viewInstance._viewInstances,function(viewInstance){
-			// 	viewInstance.dataManager = self;
-			// });
 			//TODO:release memory.
 		} else if (viewInstance instanceof ViewInstance) {
 			var vi_DM = viewInstance.dataManager;
@@ -1123,7 +1490,7 @@ function _create(data) { //data maybe basedata or dataManager
 								viewInstance.touchOff(sKey);
 							}, { //TEMP data
 								viewInstance: viewInstance,
-								dataManager: self,
+								dm_id: self.id,
 								// triggerSet: topGetterTriggerKeys,
 								sourceKey: sKey
 							}
@@ -1852,10 +2219,10 @@ var _layout_display = function(show_or_hidden, NodeList_of_ViewInstance, dataMan
 	}
 
 };
-V.rh("layout", function(handle, index, parentHandle) {
+V.rh("#>",V.rh("#layout", function(handle, index, parentHandle) {
 	handle.display = _layout_display; //Custom rendering function
 	_commentPlaceholder(handle, parentHandle);
-});
+}));
 var _operator_handle  = function(handle, index, parentHandle) {
 	var textHandle = handle.childNodes[0].childNodes[0];
 	if (parentHandle.type !== "handle") {
@@ -2529,279 +2896,3 @@ V.ra(function(attrKey){
 V.ra("style",function () {
 	return _isIE&&_AttributeHandleEvent.style;
 })
-;
-(function() {
-	var _get = DM_proto.get,
-		_set = DM_proto.set,
-		prefix = DM_config.prefix,
-		set = DM_proto.set = function(key) {
-			var self = this,
-				args = $.s(arguments),
-				result;
-			if (args.length > 1) {
-				if (key.indexOf(prefix.Parent) === 0) { //$parent
-					if (self = self._parentDataManager) {
-						if (key === prefix.Parent) {
-							args.splice(0, 1);
-						} else if (key.charAt(prefix.Parent.length) === ".") {
-							args[0] = key.replace(prefix.Parent + ".", "");
-						}
-						result = set.apply(self, args);
-					} else {
-						DataManager.session.filterKey = $UNDEFINED;
-						DataManager.session.topGetter = $UNDEFINED;
-						key = ""
-					}
-				} else if (key.indexOf(prefix.This) === 0) { //$this
-					if (key === prefix.This) {
-						args.splice(0, 1);
-					} else if (key.charAt(prefix.This.length) === ".") {
-						args[0] = key.replace(prefix.This + ".", "");
-					}
-					result = set.apply(self, args);
-				} else if (key.indexOf(prefix.Top) === 0) {
-					var next;
-					while (next = self._parentDataManager) {
-						self = next;
-					}
-					if (key === prefix.Top) {
-						args.splice(0, 1);
-					} else if (key.charAt(prefix.Top.length) === ".") {
-						args[0] = key.replace(prefix.Top + ".", "");
-					}
-					result = set.apply(self, args);
-				} else { //no prefix key
-					result = _set.apply(self, args);
-				}
-			} else { //one argument
-				result = _set.apply(self, args);
-			}
-			return result || {
-				key: key,
-				// allUpdateKey: allUpdateKey,
-				updateKey: [key],
-				chidlUpdateKey: []
-			};
-		},
-		get = DM_proto.get = function(key) {
-			var self = this,
-				args = $.s(arguments),
-				result;
-			if (args.length > 0) {
-				if (key.indexOf(prefix.Parent) === 0) { //$parent
-					if (self = self._parentDataManager) {
-						if (key === prefix.Parent) {
-							args.splice(0, 1);
-						} else if (key.charAt(prefix.Parent.length) === ".") {
-							args[0] = key.replace(prefix.Parent + ".", "");
-						}
-						result = get.apply(self, args);
-					} else {
-						DataManager.session.filterKey = $UNDEFINED;
-						DataManager.session.topGetter = $UNDEFINED;
-						key = ""
-					}
-				} else if (key.indexOf(prefix.This) === 0) { //$this
-					if (key === prefix.This) {
-						args.splice(0, 1);
-					} else if (key.charAt(prefix.This.length) === ".") {
-						args[0] = key.replace(prefix.This + ".", "");
-					}
-					result = get.apply(self, args);
-				} else if (key.indexOf(prefix.Top) === 0) {
-					var next;
-					while (next = self._parentDataManager) {
-						self = next;
-					}
-					if (key === prefix.Top) {
-						args.splice(0, 1);
-					} else if (key.charAt(prefix.Top.length) === ".") {
-						args[0] = key.replace(prefix.Top + ".", "");
-					}
-					result = get.apply(self, args);
-				} else { //no prefix key
-					result = _get.apply(self, args);
-				}
-			} else { //one argument
-				result = _get.apply(self, args);
-			}
-			return result;
-		},
-		_rebuildTree = DM_proto.rebuildTree;
-	DM_proto.rebuildTree = function() {
-		var self = this,
-			smartSource;
-		$.ftE($.rm(_getAllSiblingDataManagers(self), self), function(dm) {
-			if (smartSource = dm._smartSource) {
-				var prefixKey = smartSource.prefix;
-				// console.log(prefixKey)
-				if (prefixKey.indexOf(prefix.Parent)===0||prefixKey.indexOf(prefix.Top)===0) {
-					smartSource.dataManager.get(smartSource.prefix);
-					var topGetter = DataManager.session.topGetter
-					if (topGetter && topGetter !== dm._parentDataManager) {
-						// console.log("rebuild", dm.id,
-						// 	"\n\tself:", self.id,
-						// 	"\n\ttopGetter:", topGetter.id,
-						// 	"\n\tparent:", dm._parentDataManager && dm._parentDataManager.id)
-						$.ftE(dm._siblingDataManagers,function(sublingDM){
-							$.rm(sublingDM._siblingDataManagers,dm)
-						});
-						dm._siblingDataManagers.length=0;
-						smartSource.dataManager.subset(dm, smartSource.prefix);
-					}
-				}
-			}
-		})
-		return _rebuildTree.call(self);
-	}
-}());
-var relyStack = [], //用于搜集依赖的堆栈数据集
-	allRelyContainer = {}, //存储处理过的依赖关系集，在set运作后链式触发 TODO：注意处理循环依赖
-	chain_update_rely = function(id, updataKeys) {
-		var relyContainer = allRelyContainer[id]; // || (allRelyContainer[this.id] = {});
-
-		relyContainer && $.ftE(updataKeys, function(updataKey) { //触发依赖
-			var leaderArr;
-			if (leaderArr = relyContainer[updataKey]) {
-				$.ftE(leaderArr, function(leaderObj) {
-					var leader = leaderObj.dm,
-						key = leaderObj.key;
-					chain_update_rely(leader.id, leader.set(key, leader._getSource(key).get())) //递归:链式更新
-				})
-			}
-		})
-	}
-
-	function Observer(obs) { //动态计算类
-		var self = this;
-		if (!(this instanceof Observer)) {
-			return new Observer(obs);
-		}
-		DataManager.Object(self);
-		if (obs instanceof Function) {
-			self._get = Try(obs, self);
-			self.set = $.noop;/*function(new_value){
-				self._value = new_value;
-			};*///; //默认更新value并触发更新
-			self._form = $NULL;
-		} else {
-			self._get = obs.get || function() {
-				return self._value
-			};
-			self.set = Try(obs.set, self) || $.noop;
-			self._form = Try(obs.form, self) || $NULL;
-		}
-		self._value;
-		self._valueOf = Observer._initGetData;
-		self._toString = Observer._getData;
-	};
-Observer._initGetData = function() {
-	var self = this;
-	self.valueOf = self.toString = Observer._getData;
-	return self._value = self.get();
-};
-Observer._getData = function() {
-	return this._value
-};
-Observer.collect = function(leader_id, follower_id) {
-	//allRelyContainer;
-};
-Observer.pickUp = function(leader, leader_key, relySet) {
-	var leader_id = leader.id;
-	$.ftE(relySet, function(relyNode) { //处理依赖结果
-		var relyId = relyNode.id,
-			relyKey = relyNode.key,
-			relyContainer = allRelyContainer[relyId] || (allRelyContainer[relyId] = {});
-
-		if (!(leader_id === relyId && leader_key === relyKey)) { //避免直接的循环依赖
-			cache = relyContainer[relyKey];
-			if (!cache) {
-				cache = relyContainer[relyKey] = [];
-				cache._ = {};
-			}
-			var cache_key = cache._[leader_key] || (cache._[leader_key] = "|");
-
-			if (cache_key.indexOf("|" + leader_id + "|") === -1) {
-				$.p(cache, {
-					dm: leader,
-					key: leader_key
-				});
-				cache._[leader_key] += leader_id + "|";
-			}
-		}
-	});
-};
-Observer.prototype = {
-	get: function() {
-
-		var self = this,
-			dm = DataManager.session.topGetter,
-			key = DataManager.session.filterKey,
-			result;
-		$.p(relyStack, []); //开始收集
-
-		result = self._value = self._get();
-
-		var relySet = relyStack.pop(); //获取收集结果
-		// console.log(relySet); //debugger;
-		relySet.length && Observer.pickUp(dm, key, relySet);
-
-		return result;
-	},
-	toString: Observer._initGetData,
-	valueOf: Observer._initGetData
-};
-
-(function() {
-	var _get = DM_proto.get,
-		_set = DM_proto.set,
-		_collect = DM_proto.collect;
-	DM_proto.get = function() {
-		var result = _get.apply(this, $.s(arguments));
-		// console.log(result)
-		// if (result instanceof Observer) {
-		// 	result = result.get()
-		// }
-		if (relyStack.length) {
-			$.p($.lI(relyStack), {
-				id: DataManager.session.topGetter.id,
-				// dataManager: DataManager.session.topGetter,
-				key: DataManager.session.filterKey
-			})
-		}
-		return result;
-	};
-	DM_proto.set = function() {
-		var self= this,
-			result = _set.apply(this, $.s(arguments)),
-			relyContainer = allRelyContainer[self.id];
-		if (relyContainer) {
-			// console.log(result,relyContainer)
-			$.ftE(result.updateKey,function(updateKey){
-				var relyObjects = relyContainer[updateKey];
-				relyObjects&&$.ftE(relyObjects,function(relyObject){
-					relyObject.dm.touchOff(relyObject.key)
-				});
-			});
-		}
-		return result;
-	};
-	DM_proto.collect = function(dataManager) {
-		var result = _collect.apply(this, $.s(arguments));
-		if (dataManager instanceof DataManager) {
-			Observer.collect(this.id, dataManager.id);
-		}
-		return result;
-	}
-}());
-var _cacheGet = Observer.get;
-function StaticObserver(obs) { //静态计算类（只收集一次的依赖，适合于简单的计算属性，没有逻辑嵌套）
-	var observerInstance = new Observer(obs);
-	observerInstance.get = StaticObserver.staticGet;
-}
-StaticObserver.staticGet = function() { //转化成静态计算类
-	var self = this,
-		result = _cacheGet.apply(self, $.s(arguments));
-	self.get = self._get; //剥离依赖收集器
-	return result;
-};

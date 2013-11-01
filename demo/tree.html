@@ -11,46 +11,40 @@
 </head>
 <body>
 	<ul id="tree"></ul>
+<script type="text/template" name="me">
+	<a href="#{{name}}">{{name}}</a> is {{age}} years old. <hr>
+	<input type="text" bind-form="{{@name}}" attr-value="{{name}}">
+</script>
 
 	<script type="text/template" name="tree">
-		{#each( {($THIS.list)} )}
-			{#if( {==({($THIS.type)}{('folder')})} )}
-				<li><p> {#if( {($THIS.title)} )} {(title)} {#else()} {($TOP.title)} {/if()}</p></li>
-				<ul>
-					{>( {('tree')} {($THIS)} )}
-				</ul>
-			{#else()}
-				<li><a attr-href="#{(title)}">{#if( {($THIS.title)} )} {(title)} {#else()} {($TOP.title)} {/if()} {#if( {($THIS.type)})}.{(type)}{/if()}</a></li>
-			{/if()}
-		{/each()}
-	</script>
-	<script type="text/template" name="treebak">
-		{{#each $THIS.list}}
-			{{#if  $THIS.type == 'folder'}}
+		{{#each @list}}
+			{{#if  type == '@folder'}}
 				<li>
 					<p> 
-						{{#if $THIS.title}} 
-							{{title}} 
+						{{#if name}} 
+							{{name}} 
 						{{#else}} 
-							{{$TOP.title}} 
+							{{$TOP.name}} 
 						{{/if}}
+						<input bind-form="{{@name}}" attr-value="{{name}}">
 					</p>
 				</li>
 				<ul>
-					{{layout 'tree',$THIS}}
+					{{#> 'tree','$THIS'}}
 				</ul>
 			{{#else}}
 				<li>
-					<a attr-href="#{{title}}">
-					{{#if  $THIS.title}}
-						{{title}}
+					<a attr-href="#{{name}}">
+					{{#if  name}}
+						{{name}}
 					{{#else}} 
-						{{$TOP.title}}
+						{{$TOP.name}}
 					{{/if}} 
-					{{#if $THIS.type}}
-						.{{$TOP.title}}
+					{{#if type}}
+						.{{type}}
 					{{/if}}
 					</a>
+					<input bind-form="{{@name}}" attr-value="{{name}}">
 				</li>
 			{{/if}}
 		{{/each}}
@@ -59,24 +53,50 @@
 </html>
 
 <script type="text/javascript">
-	ViewParser.ready(function(){
-		var model = DataManager({
-			title:"Unknown",
-			list:[{
-				title:"hehe",
-				type:"folder",
-				list:[{
-					title:"child",
-					type:"css"
-				},{
-					title:"child_tree"
-				},{},{},{},{},{}]
-			},{
-				title:"jser",
-				type:"jsp"
+	ViewParser.ready(function() {
+		model = DataManager({
+			name: "Unknown",
+			list: [{
+				name: "WEB.INF",
+				type: "@folder",
+				list: [{
+					name: "child",
+					type: "css"
+				}, {
+					name: "lib",
+					type: "@folder",
+					list: [{
+						name: "base",
+						type: "jar"
+					}]
+				}, {}]
+			}, {
+				name: "index",
+				type: "jsp"
 			}]
 		});
-		ViewParser.modules["tree"](model).append(document.getElementById('tree'));
+		model2 = DataManager({
+			name: "zzzzz",
+			list: [{
+				name: "zzzz.INF",
+				type: "@folder",
+				list: [{
+					name: "cc",
+					type: "zzz"
+				}, {
+					name: "xxx",
+					type: "@folder",
+					list: [{
+						name: "baxxxse",
+						type: "jar"
+					}]
+				}, {}]
+			}, {
+				name: "inxxxdex",
+				type: "jsp"
+			}]
+		});
+		vm = ViewParser.modules["tree"](model).append(document.getElementById('tree'));
 	});
 	setTimeout(function(){
 		// model.set("list.1.type","folder")

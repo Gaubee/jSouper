@@ -19,7 +19,7 @@ var _layout_display = function(show_or_hidden, NodeList_of_ViewInstance, dataMan
 	}
 
 };
-V.rh("layout", function(handle, index, parentHandle) {
+V.rh("#>",V.rh("#layout", function(handle, index, parentHandle) {
 	handle.display = _layout_display; //Custom rendering function
 	_commentPlaceholder(handle, parentHandle);
-});
+}));

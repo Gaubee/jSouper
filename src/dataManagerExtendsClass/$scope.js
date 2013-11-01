@@ -96,31 +96,65 @@
 			}
 			return result;
 		},
-		_rebuildTree = DM_proto.rebuildTree;
+		_rebuildTree = DM_proto.rebuildTree,
+		_subset = DM_proto.subset;
+
+	function _getAllSmartDataManagers(self, result) {
+		result ? $.p(result, self) : (result = []);
+		var dmSmartDataManagers = self._smartDataManagers;
+		dmSmartDataManagers && $.ftE(dmSmartDataManagers, function(dm) {
+			if ($.iO(result, dm) === -1) {
+				_getAllSmartDataManagers(dm, result);
+			}
+		});
+		// console.table(result)
+		return result;
+	};
 	DM_proto.rebuildTree = function() {
 		var self = this,
 			smartSource;
-		$.ftE($.rm(_getAllSiblingDataManagers(self), self), function(dm) {
+		$.ftE(_getAllSmartDataManagers(self), function(dm) {
 			if (smartSource = dm._smartSource) {
-				var prefixKey = smartSource.prefix;
-				// console.log(prefixKey)
-				if (prefixKey.indexOf(prefix.Parent)===0||prefixKey.indexOf(prefix.Top)===0) {
-					smartSource.dataManager.get(smartSource.prefix);
+				var smart_prefix = smartSource.prefix,
+					smart_dataManager = DataManager.get(smartSource.dm_id);
+				// console.log(smart_prefix)
+				if (smart_prefix.indexOf(prefix.Parent) === 0 || smart_prefix.indexOf(prefix.Top) === 0) {
+					var data = smart_dataManager.get(smart_prefix);
 					var topGetter = DataManager.session.topGetter
-					if (topGetter && topGetter !== dm._parentDataManager) {
-						// console.log("rebuild", dm.id,
-						// 	"\n\tself:", self.id,
-						// 	"\n\ttopGetter:", topGetter.id,
-						// 	"\n\tparent:", dm._parentDataManager && dm._parentDataManager.id)
-						$.ftE(dm._siblingDataManagers,function(sublingDM){
-							$.rm(sublingDM._siblingDataManagers,dm)
-						});
-						dm._siblingDataManagers.length=0;
-						smartSource.dataManager.subset(dm, smartSource.prefix);
+					if (topGetter !== smartSource.topGetter&&(smartSource.topGetter = topGetter)) {
+						console.log("rebuild", dm.id,
+							"\n\tself:", self.id,
+							"\n\ttopGetter:", topGetter.id,
+							"\n\tparent:", dm._parentDataManager && dm._parentDataManager.id)
+						
+						smart_dataManager.subset(dm, smart_prefix);
+						// console.log(data)
 					}
 				}
 			}
 		})
 		return _rebuildTree.call(self);
+	};
+	DM_proto.subset = function(dataManager, _prefix) {
+		var self = this,
+			result;
+		if (_prefix.indexOf(prefix.Parent) === 0 || _prefix.indexOf(prefix.Top) === 0) { //need smart fellow the data tree
+			console.warn(_prefix)
+			if (dataManager instanceof ViewInstance) {
+				dataManager = dataManager.dataManager;
+			}
+			if (dataManager instanceof DataManager) {
+				if (!dataManager._smartSource) {
+					dataManager._smartSource = {
+						topGetter: $TRUE, // current coordinate
+						dm_id: self.id,
+						prefix: _prefix
+					};
+				}
+				$.p(self._smartDataManagers || (self._smartDataManagers = []), dataManager);
+			}
+		};
+		result = _subset.apply(self, $.s(arguments))
+		return result;
 	}
 }());
