@@ -137,8 +137,8 @@ var doc = document,
 				callback(obj[i], i, obj);
 			}
 		},
-		ftE: function(arr, callback, scope) { //fastEach
-			for (var i = 0, len = arr.length; i < len; i += 1) {
+		ftE: function(arr, callback, index) { //fastEach
+			for (var i = index||0, len = arr.length; i < len; i += 1) {
 				callback(arr[i], i);
 			}
 		},

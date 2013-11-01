@@ -187,8 +187,8 @@ var ViewParser = global.ViewParser = {
 				console.error("App's name shouldn't the same of the DOM'ID");
 				console.warn("App's name will be set as "+appName);
 			}
-			var template = global[appName] = ViewParser.parseNode(App)( /*HVP_config.Data*/ ); //App.getAttribute("template-data")//json or url or configable
-			template.set(HVP_config.Data);
+			var template = global[appName] = ViewParser.parseNode(App)( HVP_config.Data ); //App.getAttribute("template-data")//json or url or configable
+			// template.set(HVP_config.Data);
 			App.innerHTML = "";
 			template.append(App);
 		}

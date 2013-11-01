@@ -2,34 +2,33 @@
 <html>
 <head>
 	<title>HTML-ViewParse</title>
-	<!-- --><script type="text/javascript">
+	<!--<script type="text/javascript">
 		(function (ie){if(!ie)return;var b=document.createElement("script");b.setAttribute("type","text/javascript");b.setAttribute("src","http://"+location.hostname+"/firebug-lite/build/firebug-lite.js");document.getElementsByTagName("head")[0].appendChild(b)}(!+"\v1")); 
-	</script>
+	</script> -->
 	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js">
 		{
-			Data:{list:[
-						 {name:"Gaubee"}
-						,{name:"Bangeel"}
-						,{name:"winter"}
-						,{name:"Rubylover"}
-						]}
+			Data:[
+			 {name:"Gaubee"}
+			,{name:"Bangeel"}
+			,{name:"winter"}
+			,{name:"Rubylover"}
+			]
 		}
 	</script>
 </head>
 <body id="HVP">
-	<h3>input number:</h3><input type="text" bind-form="{{@list.length}}" attr-value="{{list.length}}">
+	<h3>input number:</h3><input type="text" bind-form="{{@length}}" attr-value="{{length}}">
 	<hr>
-	{{#each @list}}
+	{{#each @$THIS}}
+	<div>
 		My name is <input type="text" bind-form="{{@name}}" attr-value="{{name}}">
-		<br>
-	{{/each}}
-	<hr>
-	<!-- {{#with '$THIS'}} -->
-		{{#each @list}}
+		<div style="float:right;">
 			My name is {{name}}
-			<br>
-		{{/each}}
-	<!-- {{/with}} -->
+		</div>
+	</div>
+	<hr>
+	{{/each}}
+
 </body>
 </html>
 

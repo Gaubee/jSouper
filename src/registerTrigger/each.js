@@ -18,24 +18,25 @@ V.rt("#each", function(handle, index, parentHandle) {
 				viewInstance = V._instances[viewInstance_ID],
 				allArrViewInstances = viewInstance._AVI,
 				arrViewInstances = allArrViewInstances[id] || (allArrViewInstances[id] = []),
-				arrViewInstances_len = arrViewInstances.len,
-				divideIndex = data ? data.length : 0,
+				showed_vi_len = arrViewInstances.len,
+				new_data_len = data ? data.length : 0,
 				eachModuleConstructor = V.eachModules[id],
 				inserNew,
 				comment_endeach_node = NodeList_of_ViewInstance[comment_endeach_id].currentNode,
 				_rebuildTree;
 
-			if (arrViewInstances_len !== divideIndex) {
-				arrViewInstances.len = divideIndex; //change immediately,to avoid the `subset` trigger the `rebuildTree`,and than trigger each-trigger again.
+			// console.log("showed_vi_len:",showed_vi_len," new_data_len:",new_data_len," result:",showed_vi_len !== new_data_len)
+			if (showed_vi_len !== new_data_len) {
+				arrViewInstances.len = new_data_len; //change immediately,to avoid the `subset` trigger the `rebuildTree`,and than trigger each-trigger again.
 
 				_rebuildTree = dataManager.rebuildTree;
 				dataManager.rebuildTree = $.noop//doesn't need rebuild every subset
 
-				$.fE(data, function(eachItemData, index) {
-
+				$.ftE(data, function(eachItemData, index) {
+					//TODO:if too mush vi will be create, maybe asyn
 					var viewInstance = arrViewInstances[index];
 					if (!viewInstance) {
-						viewInstance = arrViewInstances[index] = eachModuleConstructor();
+						viewInstance = arrViewInstances[index] = eachModuleConstructor(eachItemData);
 						viewInstance._isEach = {
 							index: index,
 							brotherVI: arrViewInstances
@@ -50,11 +51,11 @@ V.rt("#each", function(handle, index, parentHandle) {
 					if (inserNew && !arrViewInstances.hidden) {
 						viewInstance.insert(comment_endeach_node)
 					}
-				}, arrViewInstances_len); //arrViewInstances_len||0
-				if (arrViewInstances_len > divideIndex) {
+				}, showed_vi_len); //showed_vi_len||0
+				if (showed_vi_len > new_data_len) {
 					$.fE(arrViewInstances, function(eachItemHandle) {
 						eachItemHandle.remove();
-					}, divideIndex);
+					}, new_data_len);
 				}
 				dataManager.rebuildTree = _rebuildTree
 				dataManager.rebuildTree();
