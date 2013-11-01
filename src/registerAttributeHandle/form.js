@@ -58,7 +58,7 @@ var _formCache = {},
 			if (!(outerFormHandle = formCollection[eventName])) {
 				// _cancelEvent(currentNode, eventName, outerFormHandle, elementHashCode)
 				outerFormHandle = function(e) {
-					outerFormHandle.inner.apply(this,e/*$.s(arguments)*/);
+					outerFormHandle.inner.call(this,e/*$.s(arguments)*/);
 				}
 				_registerEvent(currentNode, eventName, outerFormHandle, elementHashCode);
 				formCollection[eventName] = outerFormHandle;

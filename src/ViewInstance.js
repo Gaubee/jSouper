@@ -241,20 +241,25 @@ ViewInstance.prototype = {
 				currentTopNode = self.topNode(), //NodeList[handleNodeTree.id].currentNode,
 				openNode = self._open,
 				closeNode = self._close,
-				startIndex = 0;
+				childNodes = $.s(currentTopNode.childNodes),
 
-			$.fE(currentTopNode.childNodes, function(child_node, index) {
+				startIndex = 0,
+				child_node;
+
+			//TODO:use nextSilingNode
+			while(child_node = childNodes[startIndex]){
 				if (child_node === openNode) {
-					startIndex = index
+					break;
 				}
-			});
-			$.fE(currentTopNode.childNodes, function(child_node, index) {
-				// console.log(index,child_node,el)
+				startIndex+=1
+			}
+			while(child_node = childNodes[startIndex]){
 				$.D.ap(el, child_node);
 				if (child_node === closeNode) {
-					return $FALSE;
+					break;
 				}
-			}, startIndex);
+				startIndex+=1
+			}
 			_replaceTopHandleCurrent(self, el);
 			this._canRemoveAble = $FALSE; //Has being recovered into the _packingBag,can't no be remove again. --> it should be insert
 		}

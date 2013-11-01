@@ -1621,20 +1621,25 @@ ViewInstance.prototype = {
 				currentTopNode = self.topNode(), //NodeList[handleNodeTree.id].currentNode,
 				openNode = self._open,
 				closeNode = self._close,
-				startIndex = 0;
+				childNodes = $.s(currentTopNode.childNodes),
 
-			$.fE(currentTopNode.childNodes, function(child_node, index) {
+				startIndex = 0,
+				child_node;
+
+			//TODO:use nextSilingNode
+			while(child_node = childNodes[startIndex]){
 				if (child_node === openNode) {
-					startIndex = index
+					break;
 				}
-			});
-			$.fE(currentTopNode.childNodes, function(child_node, index) {
-				// console.log(index,child_node,el)
+				startIndex+=1
+			}
+			while(child_node = childNodes[startIndex]){
 				$.D.ap(el, child_node);
 				if (child_node === closeNode) {
-					return $FALSE;
+					break;
 				}
-			}, startIndex);
+				startIndex+=1
+			}
 			_replaceTopHandleCurrent(self, el);
 			this._canRemoveAble = $FALSE; //Has being recovered into the _packingBag,can't no be remove again. --> it should be insert
 		}
@@ -2272,25 +2277,20 @@ V.rt("#each", function(handle, index, parentHandle) {
 				divideIndex = data ? data.length : 0,
 				eachModuleConstructor = V.eachModules[id],
 				inserNew,
-				comment_endeach_node = NodeList_of_ViewInstance[comment_endeach_id].currentNode;
+				comment_endeach_node = NodeList_of_ViewInstance[comment_endeach_id].currentNode,
+				_rebuildTree;
 
-			// debugger
-			// console.log(arrDataHandleKey, data)
-			// if (arrTriggerKey !== trigger.key) {
-			// 	debugger
-			// 	trigger.key = arrTriggerKey;
-			// 	trigger.smartTrigger&&trigger.smartTrigger.remove(trigger.smartTrigger.TEMP.dataManager._triggerKeys)
-			// 	trigger.smartTrigger = viewInstance._collectTrigger(trigger,arrTriggerKey)
-			// }
-			// console.log(data)
 			if (arrViewInstances_len !== divideIndex) {
-				arrViewInstances.len = divideIndex;//change immediately,to avoid the `subset` trigger the `rebuildTree`,and than trigger each-trigger again.
+				arrViewInstances.len = divideIndex; //change immediately,to avoid the `subset` trigger the `rebuildTree`,and than trigger each-trigger again.
+
+				_rebuildTree = dataManager.rebuildTree;
+				dataManager.rebuildTree = $.noop//doesn't need rebuild every subset
 
 				$.fE(data, function(eachItemData, index) {
 
 					var viewInstance = arrViewInstances[index];
 					if (!viewInstance) {
-						viewInstance = arrViewInstances[index] = eachModuleConstructor(eachItemData);
+						viewInstance = arrViewInstances[index] = eachModuleConstructor();
 						viewInstance._isEach = {
 							index: index,
 							brotherVI: arrViewInstances
@@ -2298,10 +2298,6 @@ V.rt("#each", function(handle, index, parentHandle) {
 						dataManager.subset(viewInstance, arrDataHandleKey + "." + index); //+"."+index //reset arrViewInstance's dataManager
 						inserNew = $TRUE;
 					}
-					/* else {
-						viewInstance.set(eachItemData);
-					}*/
-					// viewInstance.set(eachConfig.$I, index)
 					if (!viewInstance._canRemoveAble) { //had being recovered into the packingBag
 						inserNew = $TRUE;
 					}
@@ -2309,13 +2305,14 @@ V.rt("#each", function(handle, index, parentHandle) {
 					if (inserNew && !arrViewInstances.hidden) {
 						viewInstance.insert(comment_endeach_node)
 					}
-				},arrViewInstances_len);//arrViewInstances_len||0
+				}, arrViewInstances_len); //arrViewInstances_len||0
 				if (arrViewInstances_len > divideIndex) {
 					$.fE(arrViewInstances, function(eachItemHandle) {
-						// console.log(eachItemHandle)
 						eachItemHandle.remove();
 					}, divideIndex);
 				}
+				dataManager.rebuildTree = _rebuildTree
+				dataManager.rebuildTree();
 			}
 		}
 	}
@@ -2341,14 +2338,18 @@ V.rt("", function(handle, index, parentHandle) {
 				key: key,
 				event: function(NodeList_of_ViewInstance, dataManager,/* triggerBy,*/ isAttr, vi) { //call by ViewInstance's Node
 					var data = dataManager.get(key),
-						currentNode = NodeList_of_ViewInstance[textHandleId].currentNode;
+						nodeHandle = NodeList_of_ViewInstance[textHandleId],
+						currentNode = nodeHandle.currentNode;
 					if (isAttr) {
 						//IE浏览器直接编译，故不需要转义，其他浏览器需要以字符串绑定到属性中。需要转义，否则会出现引号冲突
 						if (isAttr.key.indexOf("on") === 0 && !_isIE) {
 							data = String(data).replace(/"/g, '\\"').replace(/'/g, "\\'");
 						}
 					}
-					currentNode.data = data;
+					if (nodeHandle._data!==data) {
+						nodeHandle._data = data;
+						currentNode.data = data;
+					}
 				}
 			}
 		}
@@ -2820,7 +2821,7 @@ var _formCache = {},
 			if (!(outerFormHandle = formCollection[eventName])) {
 				// _cancelEvent(currentNode, eventName, outerFormHandle, elementHashCode)
 				outerFormHandle = function(e) {
-					outerFormHandle.inner.apply(this,e/*$.s(arguments)*/);
+					outerFormHandle.inner.call(this,e/*$.s(arguments)*/);
 				}
 				_registerEvent(currentNode, eventName, outerFormHandle, elementHashCode);
 				formCollection[eventName] = outerFormHandle;

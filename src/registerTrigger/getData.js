@@ -18,14 +18,18 @@ V.rt("", function(handle, index, parentHandle) {
 				key: key,
 				event: function(NodeList_of_ViewInstance, dataManager,/* triggerBy,*/ isAttr, vi) { //call by ViewInstance's Node
 					var data = dataManager.get(key),
-						currentNode = NodeList_of_ViewInstance[textHandleId].currentNode;
+						nodeHandle = NodeList_of_ViewInstance[textHandleId],
+						currentNode = nodeHandle.currentNode;
 					if (isAttr) {
 						//IE浏览器直接编译，故不需要转义，其他浏览器需要以字符串绑定到属性中。需要转义，否则会出现引号冲突
 						if (isAttr.key.indexOf("on") === 0 && !_isIE) {
 							data = String(data).replace(/"/g, '\\"').replace(/'/g, "\\'");
 						}
 					}
-					currentNode.data = data;
+					if (nodeHandle._data!==data) {
+						nodeHandle._data = data;
+						currentNode.data = data;
+					}
 				}
 			}
 		}
