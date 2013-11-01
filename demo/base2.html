@@ -25,12 +25,12 @@
 </body>
 </html>
 <script>
-	ViewParser.ready(function(){
+	ViewParser.ready(function() {
 		model = DataManager({
 			name: "Gaubee",
 			other: {
-				age: 20,
-				good: "js"
+				age: 0,
+				good: "none"
 			}
 		});
 		model.set("library_name", "HVP");
@@ -39,11 +39,17 @@
 			model.set("author", "Gaubee bangeel");
 			model.collect(App)
 			model.set("library_name", "HVP-app");
-			model.set("other",{
-				age:10000,
-				good:"???"
-			});
-			model.set("other.good","javascript")
+
 		}, 1000)
+		setTimeout(function(argument) {
+			model.set("other", {
+				age: 21
+			});
+		}, 2000)
+		setTimeout(function(argument) {
+			model.mix("other", {
+				good: "javascript"
+			})
+		}, 3000)
 	});
 </script>

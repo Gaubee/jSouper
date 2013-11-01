@@ -17,6 +17,8 @@
 	</script>
 </head>
 <body id="HVP">
+	<h3>input number:</h3><input type="text" bind-form="{{@length}}" attr-value="{{length}}">
+	<hr>
 	{{#each @$THIS}}
 		My name is <input type="text" bind-form="{{@name}}" attr-value="{{name}}">
 		<br>
@@ -30,3 +32,4 @@
 	<!-- {{/with}} -->
 </body>
 </html>
+

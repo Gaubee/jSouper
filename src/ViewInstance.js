@@ -47,11 +47,10 @@
 			//TODO:release memory.
 		} else if (viewInstance instanceof ViewInstance) {
 			var vi_DM = viewInstance.dataManager;
-			viewInstance.dataManager = self;
 			if (vi_DM) { // for VI init in constructor
 				_collect.call(self, vi_DM)
-				vi_DM.remove(viewInstance);
 			} else {
+				viewInstance.dataManager = self;
 				var viewInstanceTriggers = viewInstance._triggers;
 				$.ftE(viewInstanceTriggers, function(sKey) {
 					self.get(sKey);

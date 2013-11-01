@@ -382,6 +382,7 @@ function DataManager(baseData) {
 	self.id = $.uid();
 
 	self._database = baseData;
+	self.__arrayLen = {}; //cache array length with key
 	// self._cacheData = {};
 	self._viewInstances = []; //to touch off
 	self._parentDataManager // = $UNDEFINED; //to get data
@@ -402,7 +403,7 @@ var _DM_extends_object_constructor = _placeholder();
 DataManager.Object = function(extendsObj) {
 	extendsObj[_DM_extends_object_constructor] = $TRUE;
 };
-DataManager.get = function(id){
+DataManager.get = function(id) {
 	return DataManager._instances[id];
 }
 var $LENGTH = "length";
@@ -543,16 +544,21 @@ var DM_proto = DataManager.prototype = {
 			}
 			// $.p(setStacks,self.id);
 			result = $UNDEFINED;
-			var linkKey = "";
+			var linkKey = "",
+				__arrayLen = self.__arrayLen,
+				__arrayData;
 			arrKey && $.ftE(arrKey, function(maybeArrayKey) {
 				linkKey = linkKey ? linkKey + "." + maybeArrayKey : maybeArrayKey;
-				if (DM_proto.get.call(self, linkKey) instanceof Array) {
+				if ((__arrayData = DM_proto.get.call(self, linkKey)) instanceof Array && __arrayLen[linkKey] !== __arrayData.length) {
+					__arrayLen[linkKey] = __arrayData.length
 					result = self.touchOff(linkKey)
 				}
 			})
-			if (!result && self.get() instanceof Array) {
+			if (!result && (__arrayData = self.get()) instanceof Array && __arrayLen[""] !== __arrayData.length) {
+				__arrayLen[""] = __arrayData.length
 				key = "";
 			}
+			// console.log(key)
 			result = result || self.touchOff(key);
 			// setStacks.pop();
 		}
@@ -628,14 +634,14 @@ var DM_proto = DataManager.prototype = {
 			// debugger
 			var prefix = childDataManager._prefix,
 				childResult; // || "";
-			if (!key) {//key === "",touchoff all
+			if (!key) { //key === "",touchoff all
 				childResult = childDataManager.set(prefix ? self.get(prefix) : self.get())
-			} else if (!prefix) {//prefix==="" equal to $THIS
+			} else if (!prefix) { //prefix==="" equal to $THIS
 				childResult = childDataManager.set(key, self.get(key))
-			} else if (key === prefix || prefix.indexOf(key + ".") === 0) {//prefix is a part of key,just maybe had been changed
+			} else if (key === prefix || prefix.indexOf(key + ".") === 0) { //prefix is a part of key,just maybe had been changed
 				// childDataManager.touchOff(prefix.replace(key + ".", ""));
 				childResult = childDataManager.set(self.get(prefix))
-			} else if (key.indexOf(prefix + ".") === 0) {//key is a part of prefix,must had be changed
+			} else if (key.indexOf(prefix + ".") === 0) { //key is a part of prefix,must had be changed
 				prefix = key.replace(prefix + ".", "")
 				childResult = childDataManager.set(prefix, self.get(key))
 				// childDataManager.touchOff("")
@@ -661,12 +667,12 @@ var DM_proto = DataManager.prototype = {
 		}
 		return self;
 	},
-	subset:function(dataManager,prefixKey){
+	subset: function(dataManager, prefixKey) {
 		var self = this;
 		dataManager.remove();
 		dataManager._prefix = prefixKey;
 		dataManager._parentDataManager = self;
-		$.p(self._subsetDataManagers,dataManager);
+		$.p(self._subsetDataManagers, dataManager);
 		return self;
 	},
 	remove: function(dataManager) {
@@ -687,30 +693,30 @@ var DM_proto = DataManager.prototype = {
 		}
 		return self;
 	},
-	replaceAs:function(dataManager){
+	replaceAs: function(dataManager) {
 		var self = this;
-		$.ftE(self._subsetDataManagers,function(subsetDM){
+		$.ftE(self._subsetDataManagers, function(subsetDM) {
 			subsetDM._parentDataManager = dataManager;
-			$.p(dataManager._subsetDataManagers,subsetDM)
+			$.p(dataManager._subsetDataManagers, subsetDM)
 		});
 		var new_siblingDataManagers = dataManager._siblingDataManagers;
-		$.ftE(_getAllSiblingDataManagers(self),function(sublingDM){
+		$.ftE(_getAllSiblingDataManagers(self), function(sublingDM) {
 			var siblingDataManagers = sublingDM._siblingDataManagers;
-			$.rm(siblingDataManagers,self)
-			if ($.iO(new_siblingDataManagers,sublingDM)===-1) {
-				$.p(new_siblingDataManagers,sublingDM)
+			$.rm(siblingDataManagers, self)
+			if ($.iO(new_siblingDataManagers, sublingDM) === -1) {
+				$.p(new_siblingDataManagers, sublingDM)
 			}
-			if ($.iO(siblingDataManagers,dataManager)===-1) {
-				$.p(siblingDataManagers,dataManager)
+			if ($.iO(siblingDataManagers, dataManager) === -1) {
+				$.p(siblingDataManagers, dataManager)
 			}
 		});
-		$.rm(new_siblingDataManagers,self)
-		$.ftE(self._viewInstances,function(viewInstance){
+		$.rm(new_siblingDataManagers, self)
+		$.ftE(self._viewInstances, function(viewInstance) {
 			viewInstance.dataManager = dataManager;
-			$.p(dataManager._viewInstances,viewInstance)
+			$.p(dataManager._viewInstances, viewInstance)
 		});
-		self._triggerKeys.forIn(function(smartTriggerSet,key){
-			dataManager._triggerKeys.push(key,smartTriggerSet)
+		self._triggerKeys.forIn(function(smartTriggerSet, key) {
+			dataManager._triggerKeys.push(key, smartTriggerSet)
 		})
 		dataManager.set(dataManager.get());
 		DataManager._instances[self.id] = dataManager;
@@ -718,7 +724,7 @@ var DM_proto = DataManager.prototype = {
 		return $NULL;
 	},
 	destroy: function() {
-		for(var i in this){
+		for (var i in this) {
 			delete this[i]
 		}
 	},
@@ -1443,11 +1449,10 @@ function _create(data) { //data maybe basedata or dataManager
 			//TODO:release memory.
 		} else if (viewInstance instanceof ViewInstance) {
 			var vi_DM = viewInstance.dataManager;
-			viewInstance.dataManager = self;
 			if (vi_DM) { // for VI init in constructor
 				_collect.call(self, vi_DM)
-				vi_DM.remove(viewInstance);
 			} else {
+				viewInstance.dataManager = self;
 				var viewInstanceTriggers = viewInstance._triggers;
 				$.ftE(viewInstanceTriggers, function(sKey) {
 					self.get(sKey);
