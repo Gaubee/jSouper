@@ -1,9 +1,9 @@
 
 var _elementCache = {},
-	eventListerAttribute = function(key, currentNode, parserNode, vi, dm) {
+	eventListerAttribute = function(key, currentNode, parserNode, vi/*, dm_id*/) {
 		var attrOuter = _getAttrOuter(parserNode),
 			eventName = key.replace("event-on", "").replace("event-", ""),
-			eventFun = dm.get(attrOuter), //在重用函数的过程中会出现问题
+			eventFun = vi.get(attrOuter), //在重用函数的过程中会出现问题
 			elementHashCode = $.hashCode(currentNode, "event"),
 			eventCollection,
 			oldEventFun;

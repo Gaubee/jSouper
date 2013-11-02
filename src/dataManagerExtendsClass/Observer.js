@@ -116,7 +116,7 @@ Observer.prototype = {
 	};
 	DM_proto.set = function() {
 		var self= this,
-			result = _set.apply(this, $.s(arguments)),
+			result = _set.apply(self, $.s(arguments)),
 			relyContainer = allRelyContainer[self.id];
 		if (relyContainer) {
 			// console.log(result,relyContainer)

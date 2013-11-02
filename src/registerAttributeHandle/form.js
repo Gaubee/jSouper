@@ -25,7 +25,7 @@ var _formCache = {},
 	_noopFormHandle = function(e, newValue) {
 		return newValue
 	},
-	formListerAttribute = function(key, currentNode, parserNode, vi, dm, handle, triggerTable) {
+	formListerAttribute = function(key, currentNode, parserNode, vi, /*dm_id,*/ handle, triggerTable) {
 		var attrOuter = _getAttrOuter(parserNode),
 			eventNameHashCode = $.hashCode(currentNode, "form-key");
 		if (handle[eventNameHashCode] !== attrOuter) {
@@ -40,7 +40,7 @@ var _formCache = {},
 				formCollection,
 				outerFormHandle,
 				innerFormHandle,
-				obj = dm.get(attrOuter, $NULL);
+				obj = vi.get(attrOuter, $NULL);
 			typeof eventConfig === "function" && (eventConfig = eventConfig(currentNode));
 			eventNames = eventConfig.eventNames;
 			formCollection = _formCache[elementHashCode] || (_formCache[elementHashCode] = {});
@@ -50,14 +50,14 @@ var _formCache = {},
 					var baseFormHandle = obj.form === $NULL ? _noopFormHandle : obj.form;
 					innerFormHandle = function(e) {
 						// console.log(eventConfig.attributeName, this[eventConfig.attributeName])
-						dm.set(attrOuter, baseFormHandle.call(this, e, this[eventConfig.attributeName], vi))
+						vi.set(attrOuter, baseFormHandle.call(this, e, this[eventConfig.attributeName], vi))
 					};
 					// _registerEvent(currentNode, eventName, innerFormHandle, elementHashCode);
 				} else /*if (typeof obj === "string") */ {
 					// console.log(attrOuter,eventConfig.attributeName,currentNode[eventConfig.attributeName])
 					innerFormHandle = function(e) {
 						// console.log(attrOuter,":",this[eventConfig.attributeName],vi.get(attrOuter))
-						dm.set(attrOuter, this[eventConfig.attributeName])
+						vi.set(attrOuter, this[eventConfig.attributeName])
 					};
 				}
 				if (!(outerFormHandle = formCollection[eventName])) {

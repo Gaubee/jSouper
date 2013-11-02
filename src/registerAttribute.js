@@ -69,7 +69,7 @@ The full list of boolean attributes in HTML 4.01 (and hence XHTML 1.0) is (with 
 						$.fE(attrViewInstance._triggers, function(key) {//touchoff all triggers
 							attrViewInstance.touchOff(key);
 						});
-						_attributeHandle(attrKey, currentNode, _shadowDIV, viewInstance, dataManager, handle, triggerTable);
+						_attributeHandle(attrKey, currentNode, _shadowDIV, viewInstance, /*dataManager.id,*/ handle, triggerTable);
 						// dataManager.remove(attrViewInstance); //?
 					}
 				}

@@ -1027,7 +1027,7 @@ Observer.prototype = {
 	};
 	DM_proto.set = function() {
 		var self= this,
-			result = _set.apply(this, $.s(arguments)),
+			result = _set.apply(self, $.s(arguments)),
 			relyContainer = allRelyContainer[self.id];
 		if (relyContainer) {
 			// console.log(result,relyContainer)
@@ -1300,7 +1300,7 @@ The full list of boolean attributes in HTML 4.01 (and hence XHTML 1.0) is (with 
 						$.fE(attrViewInstance._triggers, function(key) {//touchoff all triggers
 							attrViewInstance.touchOff(key);
 						});
-						_attributeHandle(attrKey, currentNode, _shadowDIV, viewInstance, dataManager, handle, triggerTable);
+						_attributeHandle(attrKey, currentNode, _shadowDIV, viewInstance, /*dataManager.id,*/ handle, triggerTable);
 						// dataManager.remove(attrViewInstance); //?
 					}
 				}
@@ -2766,10 +2766,10 @@ V.ra(function(attrKey){
 })
 
 var _elementCache = {},
-	eventListerAttribute = function(key, currentNode, parserNode, vi, dm) {
+	eventListerAttribute = function(key, currentNode, parserNode, vi/*, dm_id*/) {
 		var attrOuter = _getAttrOuter(parserNode),
 			eventName = key.replace("event-on", "").replace("event-", ""),
-			eventFun = dm.get(attrOuter), //在重用函数的过程中会出现问题
+			eventFun = vi.get(attrOuter), //在重用函数的过程中会出现问题
 			elementHashCode = $.hashCode(currentNode, "event"),
 			eventCollection,
 			oldEventFun;
@@ -2815,7 +2815,7 @@ var _formCache = {},
 	_noopFormHandle = function(e, newValue) {
 		return newValue
 	},
-	formListerAttribute = function(key, currentNode, parserNode, vi, dm, handle, triggerTable) {
+	formListerAttribute = function(key, currentNode, parserNode, vi, /*dm_id,*/ handle, triggerTable) {
 		var attrOuter = _getAttrOuter(parserNode),
 			eventNameHashCode = $.hashCode(currentNode, "form-key");
 		if (handle[eventNameHashCode] !== attrOuter) {
@@ -2830,7 +2830,7 @@ var _formCache = {},
 				formCollection,
 				outerFormHandle,
 				innerFormHandle,
-				obj = dm.get(attrOuter, $NULL);
+				obj = vi.get(attrOuter, $NULL);
 			typeof eventConfig === "function" && (eventConfig = eventConfig(currentNode));
 			eventNames = eventConfig.eventNames;
 			formCollection = _formCache[elementHashCode] || (_formCache[elementHashCode] = {});
@@ -2840,14 +2840,14 @@ var _formCache = {},
 					var baseFormHandle = obj.form === $NULL ? _noopFormHandle : obj.form;
 					innerFormHandle = function(e) {
 						// console.log(eventConfig.attributeName, this[eventConfig.attributeName])
-						dm.set(attrOuter, baseFormHandle.call(this, e, this[eventConfig.attributeName], vi))
+						vi.set(attrOuter, baseFormHandle.call(this, e, this[eventConfig.attributeName], vi))
 					};
 					// _registerEvent(currentNode, eventName, innerFormHandle, elementHashCode);
 				} else /*if (typeof obj === "string") */ {
 					// console.log(attrOuter,eventConfig.attributeName,currentNode[eventConfig.attributeName])
 					innerFormHandle = function(e) {
 						// console.log(attrOuter,":",this[eventConfig.attributeName],vi.get(attrOuter))
-						dm.set(attrOuter, this[eventConfig.attributeName])
+						vi.set(attrOuter, this[eventConfig.attributeName])
 					};
 				}
 				if (!(outerFormHandle = formCollection[eventName])) {

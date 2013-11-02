@@ -2,9 +2,9 @@
 <html>
 <head>
 	<title>HTML-ViewParse</title>
-	<!-- --><script type="text/javascript">
+	<!--<script type="text/javascript">
 		(function (ie){if(!ie)return;var b=document.createElement("script");b.setAttribute("type","text/javascript");b.setAttribute("src","http://"+location.hostname+"/firebug-lite/build/firebug-lite.js");document.getElementsByTagName("head")[0].appendChild(b)}(!+"\v1")); 
-	</script>
+	</script> -->
 	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js">
 		{
 			Id:"attr_dom",
@@ -24,7 +24,7 @@
 		{{#layout "inp", "$THIS"}}
 	</div>
 	<script type="text/template" name="inp">
-		<input id="inp" type="text" bind-form="{{@title}}"  attr-value="{{title}}"/>
+		<input id="inp" type="text" bind-form="{{'title'}}"  attr-value="{{title}}"/>
 	</script>
 </body>
 
@@ -35,9 +35,9 @@
 		return "#"+Math.random().toString(16).substring(2,8);
 	};
 
-	setInterval(function() {
-		var color = randomColor();
-		attr.set("style.color",color);
-		attr.set("title",color);
-	},500);
+	// setInterval(function() {
+	// 	var color = randomColor();
+	// 	attr.set("style.color",color);
+	// 	attr.set("title",color);
+	// },500);
 </script>
