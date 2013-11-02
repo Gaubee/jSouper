@@ -16,7 +16,7 @@ V.rt("", function(handle, index, parentHandle) {
 		} else { //String for databese by key
 			trigger = {
 				key: key,
-				event: function(NodeList_of_ViewInstance, dataManager,/* triggerBy,*/ isAttr, vi) { //call by ViewInstance's Node
+				event: function(NodeList_of_ViewInstance, dataManager, /* triggerBy,*/ isAttr/*, vi*/) { //call by ViewInstance's Node
 					var data = dataManager.get(key),
 						nodeHandle = NodeList_of_ViewInstance[textHandleId],
 						currentNode = nodeHandle.currentNode;
@@ -26,9 +26,8 @@ V.rt("", function(handle, index, parentHandle) {
 							data = String(data).replace(/"/g, '\\"').replace(/'/g, "\\'");
 						}
 					}
-					if (nodeHandle._data!==data) {
-						nodeHandle._data = data;
-						currentNode.data = data;
+					if (nodeHandle._data !== data) {
+						currentNode.data = nodeHandle._data = data;
 					}
 				}
 			}

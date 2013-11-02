@@ -1,5 +1,5 @@
 'use strict';
-var global =  global||this /*strict model use "global" else than "this"*/;
+var global = global || this /*strict model use "global" else than "this"*/ ;
 
 var doc = document,
 	_isIE = !global.dispatchEvent, //!+"\v1",
@@ -14,27 +14,33 @@ var doc = document,
 	$FALSE = !$TRUE,
 
 	_event_cache = {},
-	_addEventListener = function(Element, eventName, eventFun, elementHash) {
+	_registerEventBase = function(Element, eventFun, elementHash) {
 		var args = $.s(arguments).splice(_addEventListener.length),
+			wrapEventFun;
+		if (args.length) {
 			wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = function() {
 				var wrapArgs = $.s(arguments);
 				Array.prototype.push.apply(wrapArgs, args);
 				eventFun.apply(Element, wrapArgs)
 			};
-		Element.addEventListener(eventName, wrapEventFun, $FALSE);
+		} else if (_isIE) {
+			wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = function(e) {
+				eventFun.call(Element, e)
+			};
+		} else {
+			wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = eventFun;
+		}
+		return wrapEventFun;
+	},
+	_addEventListener = function(Element, eventName, eventFun, elementHash) {
+		Element.addEventListener(eventName, _registerEventBase(Element, eventFun, elementHash), $FALSE);
 	},
 	_removeEventListener = function(Element, eventName, eventFun, elementHash) {
 		var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
 		wrapEventFun && Element.removeEventListener(eventName, wrapEventFun, $FALSE);
 	},
 	_attachEvent = function(Element, eventName, eventFun, elementHash) {
-		var args = $.s(arguments).splice(_attachEvent.length),
-			wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = function() {
-				var wrapArgs = $.s(arguments);
-				Array.prototype.push.apply(wrapArgs, args);
-				eventFun.apply(Element, wrapArgs)
-			};
-		Element.attachEvent("on" + eventName, wrapEventFun);
+		Element.attachEvent("on" + eventName, _registerEventBase(Element, eventFun, elementHash));
 	},
 	_detachEvent = function(Element, eventName, eventFun, elementHash) {
 		var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
@@ -138,7 +144,7 @@ var doc = document,
 			}
 		},
 		ftE: function(arr, callback, index) { //fastEach
-			for (var i = index||0, len = arr.length; i < len; i += 1) {
+			for (var i = index || 0, len = arr.length; i < len; i += 1) {
 				callback(arr[i], i);
 			}
 		},
@@ -151,9 +157,9 @@ var doc = document,
 				}
 			}
 		},
-		rm:function(arr,item){
-			var index = $.iO(arr,item);
-			arr.splice(index,1);
+		rm: function(arr, item) {
+			var index = $.iO(arr, item);
+			arr.splice(index, 1);
 			return arr;
 		},
 		c: function(proto) { //create
@@ -183,7 +189,7 @@ var doc = document,
 					parentNode.replaceChild(new_node, old_node);
 				} catch (e) {}
 			},
-			rm:_isIE ? function() {
+			rm: _isIE ? function() {
 				//@大城小胖 http://fins.iteye.com/blog/172263
 				var d = doc.createElement("div");
 				return function(n) {

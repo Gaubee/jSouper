@@ -17,11 +17,11 @@
 	</script>
 </head>
 <body id="HVP">
-	<h3>input number:</h3><input type="text" bind-form="{{@length}}" attr-value="{{length}}">
+	<h3>input number:</h3><input type="text" bind-form="{{'length'}}" attr-value="{{length}}">
 	<hr>
 	{{#each @$THIS}}
 	<div>
-		My name is <input type="text" bind-form="{{@name}}" attr-value="{{name}}">
+		My name is <input type="text" bind-form="{{'name'}}" attr-value="{{name}}">
 		<div style="float:right;">
 			My name is {{name}}
 		</div>

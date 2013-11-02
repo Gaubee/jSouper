@@ -58,7 +58,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 					}, new_data_len);
 				}
 				dataManager.rebuildTree = _rebuildTree
-				dataManager.rebuildTree();
+				// dataManager.rebuildTree();
 			}
 		}
 	}

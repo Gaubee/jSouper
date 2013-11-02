@@ -17,7 +17,7 @@ var _formCache = {},
 			}
 			return {
 				attributeName: "value",
-				eventNames: _isIE ? ["propertychange"/*, "keyup"*/] : ["input"/*, "keyup"*/]
+				eventNames: _isIE ? ["propertychange" /*, "keyup"*/ ] : ["input" /*, "keyup"*/ ]
 			};
 		},
 		"button": "innerHTML"
@@ -27,44 +27,50 @@ var _formCache = {},
 	},
 	formListerAttribute = function(key, currentNode, parserNode, vi, dm, handle, triggerTable) {
 		var attrOuter = _getAttrOuter(parserNode),
-			eventConfig = _formKey[currentNode.tagName.toLowerCase()] || {
-				attributeName: "innerHTML",
-				eventNames: ["click"]
-			},
-			eventNames,
-			elementHashCode = $.hashCode(currentNode, "form"),
-			formCollection,
-			outerFormHandle,
-			innerFormHandle,
-			obj = dm.get(attrOuter, $NULL);
-		typeof eventConfig === "function" && (eventConfig = eventConfig(currentNode));
-		eventNames = eventConfig.eventNames;
-		formCollection = _formCache[elementHashCode] || (_formCache[elementHashCode] = {});
-		$.ftE(eventNames, function(eventName) {
-			if (obj && obj[_DM_extends_object_constructor]) {
-				var baseFormHandle = obj.form === $NULL ? _noopFormHandle : obj.form;
-				innerFormHandle = function(e) {
-					// console.log(eventConfig.attributeName, this[eventConfig.attributeName])
-					dm.set(attrOuter, baseFormHandle.call(this, e, this[eventConfig.attributeName], vi))
-				};
-				// _registerEvent(currentNode, eventName, innerFormHandle, elementHashCode);
-			} else /*if (typeof obj === "string") */ {
-				// console.log(attrOuter,eventConfig.attributeName,currentNode[eventConfig.attributeName])
-				innerFormHandle = function(e) {
-					// console.log(attrOuter, eventConfig.attributeName, this[eventConfig.attributeName])
-					dm.set(attrOuter, this[eventConfig.attributeName])
-				};
-			}
-			if (!(outerFormHandle = formCollection[eventName])) {
-				// _cancelEvent(currentNode, eventName, outerFormHandle, elementHashCode)
-				outerFormHandle = function(e) {
-					outerFormHandle.inner.call(this,e/*$.s(arguments)*/);
+			eventNameHashCode = $.hashCode(currentNode, "form-key");
+		if (handle[eventNameHashCode] !== attrOuter) {
+			// console.log(handle[eventNameHashCode], attrOuter, arguments)
+			handle[eventNameHashCode] = attrOuter;
+			var eventNames,
+				eventConfig = _formKey[currentNode.tagName.toLowerCase()] || {
+					attributeName: "innerHTML",
+					eventNames: ["click"]
+				},
+				elementHashCode = $.hashCode(currentNode, "form"),
+				formCollection,
+				outerFormHandle,
+				innerFormHandle,
+				obj = dm.get(attrOuter, $NULL);
+			typeof eventConfig === "function" && (eventConfig = eventConfig(currentNode));
+			eventNames = eventConfig.eventNames;
+			formCollection = _formCache[elementHashCode] || (_formCache[elementHashCode] = {});
+
+			$.ftE(eventNames, function(eventName) {
+				if (obj && obj[_DM_extends_object_constructor]) {
+					var baseFormHandle = obj.form === $NULL ? _noopFormHandle : obj.form;
+					innerFormHandle = function(e) {
+						// console.log(eventConfig.attributeName, this[eventConfig.attributeName])
+						dm.set(attrOuter, baseFormHandle.call(this, e, this[eventConfig.attributeName], vi))
+					};
+					// _registerEvent(currentNode, eventName, innerFormHandle, elementHashCode);
+				} else /*if (typeof obj === "string") */ {
+					// console.log(attrOuter,eventConfig.attributeName,currentNode[eventConfig.attributeName])
+					innerFormHandle = function(e) {
+						// console.log(attrOuter,":",this[eventConfig.attributeName],vi.get(attrOuter))
+						dm.set(attrOuter, this[eventConfig.attributeName])
+					};
 				}
-				_registerEvent(currentNode, eventName, outerFormHandle, elementHashCode);
-				formCollection[eventName] = outerFormHandle;
-			}
-			outerFormHandle.inner = innerFormHandle;
-		});
+				if (!(outerFormHandle = formCollection[eventName])) {
+					// _cancelEvent(currentNode, eventName, outerFormHandle, elementHashCode)
+					outerFormHandle = function(e) {
+						outerFormHandle.inner.call(this, e /*$.s(arguments)*/ );
+					}
+					_registerEvent(currentNode, eventName, outerFormHandle, elementHashCode);
+					formCollection[eventName] = outerFormHandle;
+				}
+				outerFormHandle.inner = innerFormHandle;
+			});
+		}
 	};
 V.ra("bind-form", function(attrKey) {
 	return formListerAttribute;

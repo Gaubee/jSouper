@@ -23,7 +23,7 @@
 
 // Place any jQuery/helper plugins in here.
 'use strict';
-var global =  global||this /*strict model use "global" else than "this"*/;
+var global = global || this /*strict model use "global" else than "this"*/ ;
 
 var doc = document,
 	_isIE = !global.dispatchEvent, //!+"\v1",
@@ -38,27 +38,33 @@ var doc = document,
 	$FALSE = !$TRUE,
 
 	_event_cache = {},
-	_addEventListener = function(Element, eventName, eventFun, elementHash) {
+	_registerEventBase = function(Element, eventFun, elementHash) {
 		var args = $.s(arguments).splice(_addEventListener.length),
+			wrapEventFun;
+		if (args.length) {
 			wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = function() {
 				var wrapArgs = $.s(arguments);
 				Array.prototype.push.apply(wrapArgs, args);
 				eventFun.apply(Element, wrapArgs)
 			};
-		Element.addEventListener(eventName, wrapEventFun, $FALSE);
+		} else if (_isIE) {
+			wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = function(e) {
+				eventFun.call(Element, e)
+			};
+		} else {
+			wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = eventFun;
+		}
+		return wrapEventFun;
+	},
+	_addEventListener = function(Element, eventName, eventFun, elementHash) {
+		Element.addEventListener(eventName, _registerEventBase(Element, eventFun, elementHash), $FALSE);
 	},
 	_removeEventListener = function(Element, eventName, eventFun, elementHash) {
 		var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
 		wrapEventFun && Element.removeEventListener(eventName, wrapEventFun, $FALSE);
 	},
 	_attachEvent = function(Element, eventName, eventFun, elementHash) {
-		var args = $.s(arguments).splice(_attachEvent.length),
-			wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = function() {
-				var wrapArgs = $.s(arguments);
-				Array.prototype.push.apply(wrapArgs, args);
-				eventFun.apply(Element, wrapArgs)
-			};
-		Element.attachEvent("on" + eventName, wrapEventFun);
+		Element.attachEvent("on" + eventName, _registerEventBase(Element, eventFun, elementHash));
 	},
 	_detachEvent = function(Element, eventName, eventFun, elementHash) {
 		var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
@@ -162,7 +168,7 @@ var doc = document,
 			}
 		},
 		ftE: function(arr, callback, index) { //fastEach
-			for (var i = index||0, len = arr.length; i < len; i += 1) {
+			for (var i = index || 0, len = arr.length; i < len; i += 1) {
 				callback(arr[i], i);
 			}
 		},
@@ -175,9 +181,9 @@ var doc = document,
 				}
 			}
 		},
-		rm:function(arr,item){
-			var index = $.iO(arr,item);
-			arr.splice(index,1);
+		rm: function(arr, item) {
+			var index = $.iO(arr, item);
+			arr.splice(index, 1);
 			return arr;
 		},
 		c: function(proto) { //create
@@ -207,7 +213,7 @@ var doc = document,
 					parentNode.replaceChild(new_node, old_node);
 				} catch (e) {}
 			},
-			rm:_isIE ? function() {
+			rm: _isIE ? function() {
 				//@大城小胖 http://fins.iteye.com/blog/172263
 				var d = doc.createElement("div");
 				return function(n) {
@@ -286,7 +292,6 @@ function Try(tryFun, scope, errorCallback) {
 		return result;
 	}
 };
-
 /*
  * SmartTriggerSet constructor
  */
@@ -2335,7 +2340,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 					}, new_data_len);
 				}
 				dataManager.rebuildTree = _rebuildTree
-				dataManager.rebuildTree();
+				// dataManager.rebuildTree();
 			}
 		}
 	}
@@ -2359,7 +2364,7 @@ V.rt("", function(handle, index, parentHandle) {
 		} else { //String for databese by key
 			trigger = {
 				key: key,
-				event: function(NodeList_of_ViewInstance, dataManager,/* triggerBy,*/ isAttr, vi) { //call by ViewInstance's Node
+				event: function(NodeList_of_ViewInstance, dataManager, /* triggerBy,*/ isAttr/*, vi*/) { //call by ViewInstance's Node
 					var data = dataManager.get(key),
 						nodeHandle = NodeList_of_ViewInstance[textHandleId],
 						currentNode = nodeHandle.currentNode;
@@ -2369,9 +2374,8 @@ V.rt("", function(handle, index, parentHandle) {
 							data = String(data).replace(/"/g, '\\"').replace(/'/g, "\\'");
 						}
 					}
-					if (nodeHandle._data!==data) {
-						nodeHandle._data = data;
-						currentNode.data = data;
+					if (nodeHandle._data !== data) {
+						currentNode.data = nodeHandle._data = data;
 					}
 				}
 			}
@@ -2803,7 +2807,7 @@ var _formCache = {},
 			}
 			return {
 				attributeName: "value",
-				eventNames: _isIE ? ["propertychange"/*, "keyup"*/] : ["input"/*, "keyup"*/]
+				eventNames: _isIE ? ["propertychange" /*, "keyup"*/ ] : ["input" /*, "keyup"*/ ]
 			};
 		},
 		"button": "innerHTML"
@@ -2813,44 +2817,50 @@ var _formCache = {},
 	},
 	formListerAttribute = function(key, currentNode, parserNode, vi, dm, handle, triggerTable) {
 		var attrOuter = _getAttrOuter(parserNode),
-			eventConfig = _formKey[currentNode.tagName.toLowerCase()] || {
-				attributeName: "innerHTML",
-				eventNames: ["click"]
-			},
-			eventNames,
-			elementHashCode = $.hashCode(currentNode, "form"),
-			formCollection,
-			outerFormHandle,
-			innerFormHandle,
-			obj = dm.get(attrOuter, $NULL);
-		typeof eventConfig === "function" && (eventConfig = eventConfig(currentNode));
-		eventNames = eventConfig.eventNames;
-		formCollection = _formCache[elementHashCode] || (_formCache[elementHashCode] = {});
-		$.ftE(eventNames, function(eventName) {
-			if (obj && obj[_DM_extends_object_constructor]) {
-				var baseFormHandle = obj.form === $NULL ? _noopFormHandle : obj.form;
-				innerFormHandle = function(e) {
-					// console.log(eventConfig.attributeName, this[eventConfig.attributeName])
-					dm.set(attrOuter, baseFormHandle.call(this, e, this[eventConfig.attributeName], vi))
-				};
-				// _registerEvent(currentNode, eventName, innerFormHandle, elementHashCode);
-			} else /*if (typeof obj === "string") */ {
-				// console.log(attrOuter,eventConfig.attributeName,currentNode[eventConfig.attributeName])
-				innerFormHandle = function(e) {
-					// console.log(attrOuter, eventConfig.attributeName, this[eventConfig.attributeName])
-					dm.set(attrOuter, this[eventConfig.attributeName])
-				};
-			}
-			if (!(outerFormHandle = formCollection[eventName])) {
-				// _cancelEvent(currentNode, eventName, outerFormHandle, elementHashCode)
-				outerFormHandle = function(e) {
-					outerFormHandle.inner.call(this,e/*$.s(arguments)*/);
+			eventNameHashCode = $.hashCode(currentNode, "form-key");
+		if (handle[eventNameHashCode] !== attrOuter) {
+			// console.log(handle[eventNameHashCode], attrOuter, arguments)
+			handle[eventNameHashCode] = attrOuter;
+			var eventNames,
+				eventConfig = _formKey[currentNode.tagName.toLowerCase()] || {
+					attributeName: "innerHTML",
+					eventNames: ["click"]
+				},
+				elementHashCode = $.hashCode(currentNode, "form"),
+				formCollection,
+				outerFormHandle,
+				innerFormHandle,
+				obj = dm.get(attrOuter, $NULL);
+			typeof eventConfig === "function" && (eventConfig = eventConfig(currentNode));
+			eventNames = eventConfig.eventNames;
+			formCollection = _formCache[elementHashCode] || (_formCache[elementHashCode] = {});
+
+			$.ftE(eventNames, function(eventName) {
+				if (obj && obj[_DM_extends_object_constructor]) {
+					var baseFormHandle = obj.form === $NULL ? _noopFormHandle : obj.form;
+					innerFormHandle = function(e) {
+						// console.log(eventConfig.attributeName, this[eventConfig.attributeName])
+						dm.set(attrOuter, baseFormHandle.call(this, e, this[eventConfig.attributeName], vi))
+					};
+					// _registerEvent(currentNode, eventName, innerFormHandle, elementHashCode);
+				} else /*if (typeof obj === "string") */ {
+					// console.log(attrOuter,eventConfig.attributeName,currentNode[eventConfig.attributeName])
+					innerFormHandle = function(e) {
+						// console.log(attrOuter,":",this[eventConfig.attributeName],vi.get(attrOuter))
+						dm.set(attrOuter, this[eventConfig.attributeName])
+					};
 				}
-				_registerEvent(currentNode, eventName, outerFormHandle, elementHashCode);
-				formCollection[eventName] = outerFormHandle;
-			}
-			outerFormHandle.inner = innerFormHandle;
-		});
+				if (!(outerFormHandle = formCollection[eventName])) {
+					// _cancelEvent(currentNode, eventName, outerFormHandle, elementHashCode)
+					outerFormHandle = function(e) {
+						outerFormHandle.inner.call(this, e /*$.s(arguments)*/ );
+					}
+					_registerEvent(currentNode, eventName, outerFormHandle, elementHashCode);
+					formCollection[eventName] = outerFormHandle;
+				}
+				outerFormHandle.inner = innerFormHandle;
+			});
+		}
 	};
 V.ra("bind-form", function(attrKey) {
 	return formListerAttribute;
