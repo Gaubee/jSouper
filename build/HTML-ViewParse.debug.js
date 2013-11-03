@@ -536,15 +536,21 @@ var DM_proto = DataManager.prototype = {
 					var database = self._database || (self._database = {}),
 						sObj,
 						cache_n_Obj = database,
+						cache_cache_n_Obj,
 						arrKey = key.split("."),
 						lastKey = arrKey.pop();
 					$.ftE(arrKey, function(currentKey) {
+						cache_cache_n_Obj = cache_n_Obj;
 						cache_n_Obj = cache_n_Obj[currentKey] || (cache_n_Obj[currentKey] = {})
 					});
 					if ((sObj = cache_n_Obj[lastKey]) && sObj[_DM_extends_object_constructor]) {
 						sObj.set(nObj) //call ExtendsClass API
-					} else {
+					} else if(cache_n_Obj instanceof Object){
 						cache_n_Obj[lastKey] = nObj;
+					}else if(cache_cache_n_Obj){
+						(cache_cache_n_Obj[$.lI(arrKey)] = {})[lastKey] = nObj
+					}else{//arrKey.length === 0,and database instanceof no-Object
+						(self._database = {})[lastKey] = nObj
 					}
 			}
 			// $.p(setStacks,self.id);
@@ -598,7 +604,7 @@ var DM_proto = DataManager.prototype = {
 			result,
 			prefix;
 		if (parent) {
-			prefix = self._prefix //||""
+			prefix = self._prefix //||"" ,all prefix has been filter $scope key
 			key ? (prefix && (key = prefix + "." + key) /*else key = key*/ ) : (prefix && (key = prefix) /*key=""*/ );
 			result = parent.getTopDataManager(key)
 		} else {

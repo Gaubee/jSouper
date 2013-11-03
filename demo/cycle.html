@@ -28,7 +28,7 @@
 </script>
 <script type="text/javascript">
 	ViewParser.ready(function () {
-		Appchild = ViewParser.modules["other"]();
+		Appchild = ViewParser.modules["other"](/*App.dataManager*/);
 		Appchild.append(document.body);
 		App.dataManager.subset(Appchild,"child");
 		// App.dataManager.subset(Appchild,"$THIS");
