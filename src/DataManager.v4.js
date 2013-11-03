@@ -303,6 +303,8 @@ var DM_proto = DataManager.prototype = {
 		dataManager._prefix = prefixKey;
 		dataManager._parentDataManager = self;
 		$.p(self._subsetDataManagers, dataManager);
+		dataManager._database = self.get(prefixKey);
+		dataManager.touchOff("");
 		return self;
 	},
 	remove: function(dataManager) {

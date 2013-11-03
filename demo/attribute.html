@@ -35,9 +35,14 @@
 		return "#"+Math.random().toString(16).substring(2,8);
 	};
 
+	setTimeout(function() {
 	// setInterval(function() {
-	// 	var color = randomColor();
-	// 	attr.set("style.color",color);
-	// 	attr.set("title",color);
-	// },500);
+		var color = randomColor();
+		console.profile("1")
+		attr.set("style.color",color);
+		console.profileEnd("1") 
+		console.profile("2")
+		attr.set("title",color);
+		console.profileEnd("2") 
+	},1000);
 </script>
