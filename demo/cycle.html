@@ -7,7 +7,7 @@
 		Id:"aboutMe",
 		Data:{
 			name:"Gaubee",
-			age:20,
+			age:21,
 			child:{
 				name:"bangeel",
 				age:0
@@ -23,8 +23,10 @@
 
 <script type="text/template" name="other">
 	<h2>my name is {{name}}</h2>
+{{#if $THIS}}
 	<span>I am a {{age}} years old.</span>
 	<hr>
+{{/if}}
 </script>
 <script type="text/javascript">
 	ViewParser.ready(function () {
@@ -33,5 +35,12 @@
 		App.dataManager.subset(Appchild,"child");
 		// App.dataManager.subset(Appchild,"$THIS");
 		// App.dataManager.collect(Appchild)
+		setTimeout(function(){
+			App.set("");//set to no-Object
+		},1000)
+		setTimeout(function(){
+			App.set("child.name","Gaubee")//transform to Object
+			App.set("child.age","21")//transform to Object
+		},2000)
 	});
 </script>

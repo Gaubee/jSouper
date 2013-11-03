@@ -496,7 +496,7 @@ var DM_proto = DataManager.prototype = {
 			setStacks = DataManager.session.setStacks,
 			result_dm = result.dataManager,
 			result_dm_id = result_dm.id;
-		if ($.iO(setStacks, result_dm_id) === -1) { //maybe have many fork by the ExtendsClass
+		if ($.iO(setStacks, result_dm_id) === -1 ) { //maybe have many fork by the ExtendsClass
 			$.p(setStacks, result_dm_id);
 			result = result.key ? result_dm.set(result.key, nObj) : result_dm.set(nObj);
 			// result = result_dm.touchOff(result.key)
@@ -523,16 +523,16 @@ var DM_proto = DataManager.prototype = {
 					});
 					if ((sObj = cache_n_Obj[lastKey]) && sObj[_DM_extends_object_constructor]) {
 						sObj.set(nObj) //call ExtendsClass API
-					} else if(cache_n_Obj instanceof Object){
+					} else if (cache_n_Obj instanceof Object) {
 						cache_n_Obj[lastKey] = nObj;
-					}else if(cache_cache_n_Obj){
+					} else if (cache_cache_n_Obj) {
 						(cache_cache_n_Obj[$.lI(arrKey)] = {})[lastKey] = nObj
-					}else{//arrKey.length === 0,and database instanceof no-Object
+					} else { //arrKey.length === 0,and database instanceof no-Object
 						(self._database = {})[lastKey] = nObj
 					}
 			}
 			// $.p(setStacks,self.id);
-			result = $UNDEFINED;
+			result = $UNDEFINED; //var result
 			var linkKey = "",
 				__arrayLen = self.__arrayLen,
 				__arrayData;
@@ -610,8 +610,10 @@ var DM_proto = DataManager.prototype = {
 			triggerCollection;
 		//self
 		triggerKeys.forIn(function(triggerCollection, triggerKey) {
-			if ( /*triggerKey.indexOf(key ) === 0 || key.indexOf(triggerKey ) === 0*/ !key || key === triggerKey || triggerKey.indexOf(key + ".") === 0 || key.indexOf(triggerKey + ".") === 0) {
-				// console.log("triggerKey:",triggerKey,"key:",key)
+			// console.log("All triggerKey:",triggerKey)
+
+			if ( /*triggerKey.indexOf(key ) === 0 || key.indexOf(triggerKey ) === 0*/ !key||!triggerKey || key === triggerKey || triggerKey.indexOf(key + ".") === 0 || key.indexOf(triggerKey + ".") === 0) {
+				// console.log("filter triggerKey:",triggerKey)
 				$.p(updateKey, triggerKey)
 				$.ftE(triggerCollection, function(smartTriggerHandle) {
 					smartTriggerHandle.event(triggerKeys);
@@ -1450,7 +1452,7 @@ function _create(data) { //data maybe basedata or dataManager
 					var baseKey = DataManager.session.filterKey,
 						topGetterTriggerKeys = DataManager.session.topGetter._triggerKeys,
 						smartTrigger = new SmartTriggerHandle(
-							baseKey, //match key
+							baseKey||"", //match key
 
 							function(smartTriggerSet) { //event
 								viewInstance.touchOff(sKey);

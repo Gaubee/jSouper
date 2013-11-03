@@ -57,7 +57,7 @@
 					var baseKey = DataManager.session.filterKey,
 						topGetterTriggerKeys = DataManager.session.topGetter._triggerKeys,
 						smartTrigger = new SmartTriggerHandle(
-							baseKey, //match key
+							baseKey||"", //match key
 
 							function(smartTriggerSet) { //event
 								viewInstance.touchOff(sKey);
