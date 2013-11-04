@@ -8,12 +8,15 @@ var _elementCache = {},
 			eventCollection,
 			oldEventFun;
 		if (eventFun) {
+			var wrapEventFun = function (e) {
+				return eventFun.call(this,e,vi)
+			}
 			eventCollection = _elementCache[elementHashCode] || (_elementCache[elementHashCode] = {});
 			if (oldEventFun = eventCollection[eventName]) {
 				_cancelEvent(currentNode, eventName, oldEventFun, elementHashCode)
 			}
-			_registerEvent(currentNode, eventName, eventFun, elementHashCode, vi); //只能定位到属性操作的VI，需要重新构架！！如果完成这个，则_isEach的each元素需要全新的ViewInstance方法，包括remove等来调整次序
-			eventCollection[eventName] = eventFun;
+			_registerEvent(currentNode, eventName, wrapEventFun, elementHashCode); 
+			eventCollection[eventName] = wrapEventFun;
 		}
 	};
 

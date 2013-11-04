@@ -15,16 +15,17 @@ var doc = document,
 
 	_event_cache = {},
 	_registerEventBase = function(Element, eventFun, elementHash) {
-		var args = $.s(arguments).splice(_addEventListener.length),
-			wrapEventFun;
-		if (args.length) {
-			wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = function() {
-				var wrapArgs = $.s(arguments);
-				Array.prototype.push.apply(wrapArgs, args);
-				eventFun.apply(Element, wrapArgs)
-			};
-		} else if (_isIE) {
-			wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = function(e) {
+		// var args = arguments = /*arguments*/$.s(arguments).splice(_addEventListener.length),
+		// 	wrapEventFun;
+		// if (args.length>_addEventListener.length) {
+		// 	wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = function() {
+		// 		var wrapArgs = arguments/*$.s(arguments)*/;
+		// 		Array.prototype.push.apply(wrapArgs, args);
+		// 		eventFun.apply(Element, wrapArgs)
+		// 	};
+		// } else
+		if (_isIE) {
+			var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = function(e) {
 				eventFun.call(Element, e)
 			};
 		} else {
@@ -114,6 +115,7 @@ var doc = document,
 			}
 			return array;
 		},
+		sp:Array.prototype.splice,
 		pI: function(arr, item) { //pushByID
 			arr[item.id] = item;
 			return item;
@@ -162,7 +164,12 @@ var doc = document,
 			arr.splice(index, 1);
 			return arr;
 		},
-		c: function(proto) { //create
+		// b: function(fun,scope){//Function.prototype.bind
+		// 	return function() {
+		// 		return fun.apply(scope, _s.call(arguments));
+		// 	}
+		// },
+		c: function(proto) { //quitter than Object.create , use same memory
 			_Object_create_noop.prototype = proto;
 			return new _Object_create_noop;
 		},
@@ -261,7 +268,7 @@ function Try(tryFun, scope, errorCallback) {
 	return function() {
 		var result;
 		try {
-			result = tryFun.apply(scope, $.s(arguments));
+			result = tryFun.apply(scope, arguments/*$.s(arguments)*/);
 		} catch (e) {
 			errorCallback(e);
 		}

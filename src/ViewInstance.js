@@ -267,15 +267,15 @@ ViewInstance.prototype = {
 	},
 	get: function get() {
 		var dm = this.dataManager;
-		return dm.get.apply(dm, $.s(arguments));
+		return dm.get.apply(dm, arguments/*$.s(arguments)*/);
 	},
 	mix: function mix() {
 		var dm = this.dataManager;
-		return dm.mix.apply(dm, $.s(arguments))
+		return dm.mix.apply(dm, arguments/*$.s(arguments)*/)
 	},
 	set: function set() {
 		var dm = this.dataManager;
-		return dm.set.apply(dm, $.s(arguments))
+		return dm.set.apply(dm, arguments/*$.s(arguments)*/)
 	},
 	topNode: function(newCurrentTopNode) {
 		var self = this,

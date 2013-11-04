@@ -39,16 +39,17 @@ var doc = document,
 
 	_event_cache = {},
 	_registerEventBase = function(Element, eventFun, elementHash) {
-		var args = $.s(arguments).splice(_addEventListener.length),
-			wrapEventFun;
-		if (args.length) {
-			wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = function() {
-				var wrapArgs = $.s(arguments);
-				Array.prototype.push.apply(wrapArgs, args);
-				eventFun.apply(Element, wrapArgs)
-			};
-		} else if (_isIE) {
-			wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = function(e) {
+		// var args = arguments = /*arguments*/$.s(arguments).splice(_addEventListener.length),
+		// 	wrapEventFun;
+		// if (args.length>_addEventListener.length) {
+		// 	wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = function() {
+		// 		var wrapArgs = arguments/*$.s(arguments)*/;
+		// 		Array.prototype.push.apply(wrapArgs, args);
+		// 		eventFun.apply(Element, wrapArgs)
+		// 	};
+		// } else
+		if (_isIE) {
+			var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = function(e) {
 				eventFun.call(Element, e)
 			};
 		} else {
@@ -138,6 +139,7 @@ var doc = document,
 			}
 			return array;
 		},
+		sp:Array.prototype.splice,
 		pI: function(arr, item) { //pushByID
 			arr[item.id] = item;
 			return item;
@@ -186,7 +188,12 @@ var doc = document,
 			arr.splice(index, 1);
 			return arr;
 		},
-		c: function(proto) { //create
+		// b: function(fun,scope){//Function.prototype.bind
+		// 	return function() {
+		// 		return fun.apply(scope, _s.call(arguments));
+		// 	}
+		// },
+		c: function(proto) { //quitter than Object.create , use same memory
 			_Object_create_noop.prototype = proto;
 			return new _Object_create_noop;
 		},
@@ -285,7 +292,7 @@ function Try(tryFun, scope, errorCallback) {
 	return function() {
 		var result;
 		try {
-			result = tryFun.apply(scope, $.s(arguments));
+			result = tryFun.apply(scope, arguments/*$.s(arguments)*/);
 		} catch (e) {
 			errorCallback(e);
 		}
@@ -753,13 +760,14 @@ var DM_proto = DataManager.prototype = {
 		prefix = DM_config.prefix,
 		set = DM_proto.set = function(key) {
 			var self = this,
-				args = $.s(arguments),
+				args = arguments/*$.s(arguments)*/,
 				result;
 			if (args.length > 1) {
 				if (key.indexOf(prefix.Parent) === 0) { //$parent
 					if (self = self._parentDataManager) {
 						if (key === prefix.Parent) {
-							args.splice(0, 1);
+							// args.splice(0, 1);
+							$.sp.call(args,0,1)
 						} else if (key.charAt(prefix.Parent.length) === ".") {
 							args[0] = key.replace(prefix.Parent + ".", "");
 						}
@@ -771,7 +779,8 @@ var DM_proto = DataManager.prototype = {
 					}
 				} else if (key.indexOf(prefix.This) === 0) { //$this
 					if (key === prefix.This) {
-						args.splice(0, 1);
+						// args.splice(0, 1);
+						$.sp.call(args,0,1)
 					} else if (key.charAt(prefix.This.length) === ".") {
 						args[0] = key.replace(prefix.This + ".", "");
 					}
@@ -782,7 +791,8 @@ var DM_proto = DataManager.prototype = {
 						self = next;
 					}
 					if (key === prefix.Top) {
-						args.splice(0, 1);
+						// args.splice(0, 1);
+						$.sp.call(args,0,1)
 					} else if (key.charAt(prefix.Top.length) === ".") {
 						args[0] = key.replace(prefix.Top + ".", "");
 					}
@@ -802,13 +812,14 @@ var DM_proto = DataManager.prototype = {
 		},
 		get = DM_proto.get = function(key) {
 			var self = this,
-				args = $.s(arguments),
+				args = arguments/*$.s(arguments)*/,
 				result;
 			if (args.length > 0) {
 				if (key.indexOf(prefix.Parent) === 0) { //$parent
 					if (self = self._parentDataManager) {
 						if (key === prefix.Parent) {
-							args.splice(0, 1);
+							// args.splice(0, 1);
+							$.sp.call(args,0,1)
 						} else if (key.charAt(prefix.Parent.length) === ".") {
 							args[0] = key.replace(prefix.Parent + ".", "");
 						}
@@ -820,7 +831,8 @@ var DM_proto = DataManager.prototype = {
 					}
 				} else if (key.indexOf(prefix.This) === 0) { //$this
 					if (key === prefix.This) {
-						args.splice(0, 1);
+						// args.splice(0, 1);
+						$.sp.call(args,0,1)
 					} else if (key.charAt(prefix.This.length) === ".") {
 						args[0] = key.replace(prefix.This + ".", "");
 					}
@@ -831,7 +843,8 @@ var DM_proto = DataManager.prototype = {
 						self = next;
 					}
 					if (key === prefix.Top) {
-						args.splice(0, 1);
+						// args.splice(0, 1);
+						$.sp.call(args,0,1)
 					} else if (key.charAt(prefix.Top.length) === ".") {
 						args[0] = key.replace(prefix.Top + ".", "");
 					}
@@ -914,7 +927,7 @@ var DM_proto = DataManager.prototype = {
 				}
 			}
 		} else {
-			result = _subset.apply(self, $.s(arguments));
+			result = _subset.apply(self, arguments/*$.s(arguments)*/);
 		}
 		return result;
 	}
@@ -1021,7 +1034,7 @@ Observer.prototype = {
 		_set = DM_proto.set,
 		_collect = DM_proto.collect;
 	DM_proto.get = function() {
-		var result = _get.apply(this, $.s(arguments));
+		var result = _get.apply(this, arguments/*$.s(arguments)*/);
 		// console.log(result)
 		// if (result instanceof Observer) {
 		// 	result = result.get()
@@ -1037,7 +1050,7 @@ Observer.prototype = {
 	};
 	DM_proto.set = function() {
 		var self= this,
-			result = _set.apply(self, $.s(arguments)),
+			result = _set.apply(self, arguments/*$.s(arguments)*/),
 			relyContainer = allRelyContainer[self.id];
 		if (relyContainer) {
 			// console.log(result,relyContainer)
@@ -1051,7 +1064,7 @@ Observer.prototype = {
 		return result;
 	};
 	DM_proto.collect = function(dataManager) {
-		var result = _collect.apply(this, $.s(arguments));
+		var result = _collect.apply(this, arguments/*$.s(arguments)*/);
 		if (dataManager instanceof DataManager) {
 			Observer.collect(this.id, dataManager.id);
 		}
@@ -1065,7 +1078,7 @@ function StaticObserver(obs) { //静态计算类（只收集一次的依赖，�
 }
 StaticObserver.staticGet = function() { //转化成静态计算类
 	var self = this,
-		result = _cacheGet.apply(self, $.s(arguments));
+		result = _cacheGet.apply(self, arguments/*$.s(arguments)*/);
 	self.get = self._get; //剥离依赖收集器
 	return result;
 };
@@ -1684,15 +1697,15 @@ ViewInstance.prototype = {
 	},
 	get: function get() {
 		var dm = this.dataManager;
-		return dm.get.apply(dm, $.s(arguments));
+		return dm.get.apply(dm, arguments/*$.s(arguments)*/);
 	},
 	mix: function mix() {
 		var dm = this.dataManager;
-		return dm.mix.apply(dm, $.s(arguments))
+		return dm.mix.apply(dm, arguments/*$.s(arguments)*/)
 	},
 	set: function set() {
 		var dm = this.dataManager;
-		return dm.set.apply(dm, $.s(arguments))
+		return dm.set.apply(dm, arguments/*$.s(arguments)*/)
 	},
 	topNode: function(newCurrentTopNode) {
 		var self = this,
@@ -2784,12 +2797,15 @@ var _elementCache = {},
 			eventCollection,
 			oldEventFun;
 		if (eventFun) {
+			var wrapEventFun = function (e) {
+				return eventFun.call(this,e,vi)
+			}
 			eventCollection = _elementCache[elementHashCode] || (_elementCache[elementHashCode] = {});
 			if (oldEventFun = eventCollection[eventName]) {
 				_cancelEvent(currentNode, eventName, oldEventFun, elementHashCode)
 			}
-			_registerEvent(currentNode, eventName, eventFun, elementHashCode, vi); //只能定位到属性操作的VI，需要重新构架！！如果完成这个，则_isEach的each元素需要全新的ViewInstance方法，包括remove等来调整次序
-			eventCollection[eventName] = eventFun;
+			_registerEvent(currentNode, eventName, wrapEventFun, elementHashCode); 
+			eventCollection[eventName] = wrapEventFun;
 		}
 	};
 
@@ -2863,7 +2879,7 @@ var _formCache = {},
 				if (!(outerFormHandle = formCollection[eventName])) {
 					// _cancelEvent(currentNode, eventName, outerFormHandle, elementHashCode)
 					outerFormHandle = function(e) {
-						outerFormHandle.inner.call(this, e /*$.s(arguments)*/ );
+						outerFormHandle.inner.call(this, e /*arguments*/ );
 					}
 					_registerEvent(currentNode, eventName, outerFormHandle, elementHashCode);
 					formCollection[eventName] = outerFormHandle;

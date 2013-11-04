@@ -100,7 +100,7 @@ Observer.prototype = {
 		_set = DM_proto.set,
 		_collect = DM_proto.collect;
 	DM_proto.get = function() {
-		var result = _get.apply(this, $.s(arguments));
+		var result = _get.apply(this, arguments/*$.s(arguments)*/);
 		// console.log(result)
 		// if (result instanceof Observer) {
 		// 	result = result.get()
@@ -116,7 +116,7 @@ Observer.prototype = {
 	};
 	DM_proto.set = function() {
 		var self= this,
-			result = _set.apply(self, $.s(arguments)),
+			result = _set.apply(self, arguments/*$.s(arguments)*/),
 			relyContainer = allRelyContainer[self.id];
 		if (relyContainer) {
 			// console.log(result,relyContainer)
@@ -130,7 +130,7 @@ Observer.prototype = {
 		return result;
 	};
 	DM_proto.collect = function(dataManager) {
-		var result = _collect.apply(this, $.s(arguments));
+		var result = _collect.apply(this, arguments/*$.s(arguments)*/);
 		if (dataManager instanceof DataManager) {
 			Observer.collect(this.id, dataManager.id);
 		}

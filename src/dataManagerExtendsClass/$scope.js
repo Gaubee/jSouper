@@ -5,13 +5,14 @@
 		prefix = DM_config.prefix,
 		set = DM_proto.set = function(key) {
 			var self = this,
-				args = $.s(arguments),
+				args = arguments/*$.s(arguments)*/,
 				result;
 			if (args.length > 1) {
 				if (key.indexOf(prefix.Parent) === 0) { //$parent
 					if (self = self._parentDataManager) {
 						if (key === prefix.Parent) {
-							args.splice(0, 1);
+							// args.splice(0, 1);
+							$.sp.call(args,0,1)
 						} else if (key.charAt(prefix.Parent.length) === ".") {
 							args[0] = key.replace(prefix.Parent + ".", "");
 						}
@@ -23,7 +24,8 @@
 					}
 				} else if (key.indexOf(prefix.This) === 0) { //$this
 					if (key === prefix.This) {
-						args.splice(0, 1);
+						// args.splice(0, 1);
+						$.sp.call(args,0,1)
 					} else if (key.charAt(prefix.This.length) === ".") {
 						args[0] = key.replace(prefix.This + ".", "");
 					}
@@ -34,7 +36,8 @@
 						self = next;
 					}
 					if (key === prefix.Top) {
-						args.splice(0, 1);
+						// args.splice(0, 1);
+						$.sp.call(args,0,1)
 					} else if (key.charAt(prefix.Top.length) === ".") {
 						args[0] = key.replace(prefix.Top + ".", "");
 					}
@@ -54,13 +57,14 @@
 		},
 		get = DM_proto.get = function(key) {
 			var self = this,
-				args = $.s(arguments),
+				args = arguments/*$.s(arguments)*/,
 				result;
 			if (args.length > 0) {
 				if (key.indexOf(prefix.Parent) === 0) { //$parent
 					if (self = self._parentDataManager) {
 						if (key === prefix.Parent) {
-							args.splice(0, 1);
+							// args.splice(0, 1);
+							$.sp.call(args,0,1)
 						} else if (key.charAt(prefix.Parent.length) === ".") {
 							args[0] = key.replace(prefix.Parent + ".", "");
 						}
@@ -72,7 +76,8 @@
 					}
 				} else if (key.indexOf(prefix.This) === 0) { //$this
 					if (key === prefix.This) {
-						args.splice(0, 1);
+						// args.splice(0, 1);
+						$.sp.call(args,0,1)
 					} else if (key.charAt(prefix.This.length) === ".") {
 						args[0] = key.replace(prefix.This + ".", "");
 					}
@@ -83,7 +88,8 @@
 						self = next;
 					}
 					if (key === prefix.Top) {
-						args.splice(0, 1);
+						// args.splice(0, 1);
+						$.sp.call(args,0,1)
 					} else if (key.charAt(prefix.Top.length) === ".") {
 						args[0] = key.replace(prefix.Top + ".", "");
 					}
@@ -166,7 +172,7 @@
 				}
 			}
 		} else {
-			result = _subset.apply(self, $.s(arguments));
+			result = _subset.apply(self, arguments/*$.s(arguments)*/);
 		}
 		return result;
 	}
