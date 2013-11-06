@@ -48,7 +48,7 @@ var placeholder = {
 
 	V = {
 		prefix: "attr-",
-		parse: function(htmlStr) {
+		_nodeTree:function (htmlStr) {
 			var _shadowBody = $.D.cl(shadowBody);
 			_shadowBody.innerHTML = htmlStr;
 			var insertBefore = [];
@@ -61,12 +61,11 @@ var placeholder = {
 					});
 				}
 			});
-
-			$.fE(insertBefore, function(item) {
+			$.fE(insertBefore, function(item,i) {
 				var node = item.baseNode,
 					parentNode = item.parentNode,
 					insertNodesHTML = item.insertNodesHTML;
-				shadowDIV.innerHTML = insertNodesHTML;
+				shadowDIV.innerHTML = $.trim(insertNodesHTML);//optimization
 				//Using innerHTML rendering is complete immediate operation DOM, 
 				//innerHTML otherwise covered again, the node if it is not, 
 				//then memory leaks, IE can not get to the full node.
@@ -75,9 +74,11 @@ var placeholder = {
 				})
 				$.D.rC(parentNode, node);
 			});
-			_shadowBody.innerHTML = _shadowBody.innerHTML;
-			var result = new ElementHandle(_shadowBody);
-			return View(result);
+			//when re-rendering,select node's child will be filter by ``` _shadowBody.innerHTML = _shadowBody.innerHTML;```
+			return new ElementHandle(_shadowBody);
+		},
+		parse: function(htmlStr) {
+			return View(this._nodeTree(htmlStr));
 		},
 		rt: function(handleName, triggerFactory) {
 			return V.triggers[handleName] = triggerFactory;
