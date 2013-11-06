@@ -14,23 +14,33 @@ var doc = document,
 	$FALSE = !$TRUE,
 
 	_event_cache = {},
-	_registerEventBase = function(Element, eventFun, elementHash) {
-		// var args = arguments = /*arguments*/$.s(arguments).splice(_addEventListener.length),
-		// 	wrapEventFun;
-		// if (args.length>_addEventListener.length) {
-		// 	wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = function() {
-		// 		var wrapArgs = arguments/*$.s(arguments)*/;
-		// 		Array.prototype.push.apply(wrapArgs, args);
-		// 		eventFun.apply(Element, wrapArgs)
-		// 	};
-		// } else
-		if (_isIE) {
-			var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = function(e) {
-				eventFun.call(Element, e)
-			};
-		} else {
-			wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = eventFun;
+	_box,
+	_fixEvent = function(event) { //@Rybylouvre
+		var target = event.target = event.srcElement;
+		event.which = a.charCode != $NULL ? event.charCode : event.keyCode;
+		if (/mouse|click/.test(event.type)) {
+			if (_box) {
+				_box = target.ownerDocument || doc;
+				_box = "BackCompat" === _box.compatMode ? _box.body : _box.documentElement;
+			}
+			event.pageX = event.clientX + ~~_box.scrollLeft - ~~_box.clientLeft;
+			event.pageY = event.clientY + ~~_box.scrollTop - ~~_box.clientTop;
 		}
+		event.preventDefault = function() {
+			event.returnValue = $FALSE
+		};
+		event.stopPropagation = function() {
+			event.cancelBubble = $TRUE
+		};
+		// return event
+	},
+	_registerEventBase = function(Element, eventFun, elementHash) {
+		var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = function(e) {//in DOM2,e always exits
+			e.target || _fixEvent(e);
+			var result = eventFun.call(Element, e);
+			(result === $FALSE)&&(e.preventDefault()||e.stopPropagation());
+			return result;
+		};
 		return wrapEventFun;
 	},
 	_addEventListener = function(Element, eventName, eventFun, elementHash) {
@@ -115,7 +125,7 @@ var doc = document,
 			}
 			return array;
 		},
-		sp:Array.prototype.splice,
+		sp: Array.prototype.splice,
 		pI: function(arr, item) { //pushByID
 			arr[item.id] = item;
 			return item;
@@ -185,7 +195,7 @@ var doc = document,
 			ap: function(parentNode, node) { //append
 				parentNode.appendChild(node);
 			},
-			cl: function(node, deep) { //clone
+			cl: function(node, deep) { //clone,do not need detached clone
 				return node.cloneNode(deep);
 			},
 			rC: function(parentNode, node) { //removeChild
@@ -268,7 +278,7 @@ function Try(tryFun, scope, errorCallback) {
 	return function() {
 		var result;
 		try {
-			result = tryFun.apply(scope, arguments/*$.s(arguments)*/);
+			result = tryFun.apply(scope, arguments /*$.s(arguments)*/ );
 		} catch (e) {
 			errorCallback(e);
 		}
