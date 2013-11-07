@@ -26,25 +26,46 @@ var doc = document,
 			event.pageX = event.clientX + ~~_box.scrollLeft - ~~_box.clientLeft;
 			event.pageY = event.clientY + ~~_box.scrollTop - ~~_box.clientTop;
 		}
-		event.preventDefault = function() {
+		event.preventDefault = function() { //for ie
 			event.returnValue = $FALSE
 		};
-		event.stopPropagation = function() {
+		event.stopPropagation = function() { //for ie
 			event.cancelBubble = $TRUE
 		};
 		// return event
 	},
-	_registerEventBase = function(Element, eventFun, elementHash) {
-		var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = function(e) {//in DOM2,e always exits
-			e.target || _fixEvent(e);
-			var result = eventFun.call(Element, e);
-			(result === $FALSE)&&(e.preventDefault()||e.stopPropagation());
-			return result;
-		};
-		return wrapEventFun;
+	_fixMouseEvent = function(event) {
+		_fixEvent(event);
+		if (_box) {
+			_box = target.ownerDocument || doc;
+			_box = "BackCompat" === _box.compatMode ? _box.body : _box.documentElement;
+		}
+		event.pageX = event.clientX + ~~_box.scrollLeft - ~~_box.clientLeft;
+		event.pageY = event.clientY + ~~_box.scrollTop - ~~_box.clientTop;
+	},
+	_registerEventBase = function(Element, eventName, eventFun, elementHash) {
+		var result = eventFun;
+		if (_isIE) {
+			/*if (/mouse|click/.test(eventName)) {
+				result = function(e) { //in DOM2,e always exits
+					var result = eventFun.call(Element, e.target || _fixMouseEvent(e));
+					(result === $FALSE) && (e.preventDefault() || e.stopPropagation());
+					return result;
+				}
+			} else {
+				result = function(e) { //in DOM2,e always exits
+					var result = eventFun.call(Element, e.target || _fixEvent(e));
+					(result === $FALSE) && (e.preventDefault() || e.stopPropagation());
+					return result;
+				}
+			}*/
+			result = (Function('n,f,_' /*element_node,eventFun,_fix[Mouse]Event*/ , 'return function(e){var r=f.call(n,e.target||_(e));(f===false)&&(e.preventDefault()||e.stopPropagation());return f;}')(Element, eventFun, (/mouse|click/.test(eventName)) ? _fixMouseEvent : _fixEvent))
+		}
+		_event_cache[elementHash + $.hashCode(eventFun)] = result;
+		return result;
 	},
 	_addEventListener = function(Element, eventName, eventFun, elementHash) {
-		Element.addEventListener(eventName, _registerEventBase(Element, eventFun, elementHash), $FALSE);
+		Element.addEventListener(eventName, _registerEventBase(Element, eventName, eventFun, elementHash), $FALSE);
 	},
 	_removeEventListener = function(Element, eventName, eventFun, elementHash) {
 		var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
