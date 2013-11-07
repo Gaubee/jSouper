@@ -1,4 +1,4 @@
-var iecheck = function(key, currentNode, parserNode) {
+var _ieCheck = function(key, currentNode, parserNode) {
 	var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
 
 	if (attrOuter) {
@@ -11,5 +11,5 @@ var iecheck = function(key, currentNode, parserNode) {
 	(this._attributeHandle = _AttributeHandleEvent.bool)(key, currentNode, parserNode);
 }
 V.ra("checked", function() {
-	return _isIE ? iecheck : _AttributeHandleEvent.com;
+	return _isIE ? _ieCheck : _AttributeHandleEvent.com;
 })

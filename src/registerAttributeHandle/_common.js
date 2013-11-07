@@ -36,5 +36,11 @@ var _AttributeHandleEvent = {
 		} else { // currentNode.removeAttribute(key);
 			currentNode[key] = $FALSE;
 		}
+	},
+	radio: function(key, currentNode, parserNode) { //radio checked
+		var attrOuter = _getAttrOuter(parserNode);
+		if (attrOuter === currentNode.value) {
+			currentNode[key] = attrOuter;
+		}
 	}
 };

@@ -88,7 +88,7 @@ var doc = document,
 			var uidAvator = (prefix || "") + $.uidAvator,
 				codeID;
 			if (!(codeID = obj[uidAvator])) {
-				codeID = obj[uidAvator] = $.uid();
+				codeID = obj[uidAvator] = uidAvator+$.uid();
 			}
 			return codeID;
 		},
@@ -280,22 +280,19 @@ ArraySet.prototype = {
 			callback(store[key], key, store);
 		})
 	},
-	// ftE: function(callback) { //fastEach ==> forIn
-	// 	var self = this,
-	// 		store = self.store,
-	// 		value;
-	// 	return $.ftE(self.keys, function(key, index) {
-	// 		value = store[key];
-	// 		callback(value, key);
-	// 	})
-	// },
 	has: function(key) {
 		return key in this.store;
 	}
 };
 
 function Try(tryFun, scope, errorCallback) {
-	errorCallback = errorCallback || $.noop;
+	errorCallback = errorCallback || function(e) {
+		if (console) {
+			console.error(e)
+		} else {
+			throw e
+		};
+	};
 	return function() {
 		var result;
 		try {

@@ -12,11 +12,13 @@
 				var TEMP = smartTrigger.TEMP;
 				DataManager.get(TEMP.dm_id).get(TEMP.sourceKey);
 				var topGetter = DataManager.session.topGetter;
-				if (topGetter !== DataManager.get(TEMP.dm_id)) {
-					smartTrigger.bind(topGetter._triggerKeys);
-					TEMP.dm_id = topGetter.id;
+				if(topGetter){
+					if (topGetter !== DataManager.get(TEMP.dm_id)) {
+						smartTrigger.bind(topGetter._triggerKeys);
+						TEMP.dm_id = topGetter.id;
+					}
+					smartTrigger.event(topGetter._triggerKeys);
 				}
-				smartTrigger.event(topGetter._triggerKeys);
 			})
 		})
 		$.ftE(self._subsetDataManagers, function(childDataManager) {
@@ -26,7 +28,7 @@
 						var TEMP = smartTrigger.TEMP;
 						DataManager.get(TEMP.dm_id).get(TEMP.sourceKey);
 						var topGetter = DataManager.session.topGetter;
-						if (topGetter !== DataManager.get(TEMP.dm_id)) {
+						if (topGetter&&topGetter !== DataManager.get(TEMP.dm_id)) {
 							smartTrigger.unbind(DataManager.get(TEMP.dm_id)._triggerKeys).bind(topGetter._triggerKeys);
 							TEMP.dm_id = topGetter.id;
 							smartTrigger.event(topGetter._triggerKeys);
@@ -55,7 +57,7 @@
 				$.ftE(viewInstanceTriggers, function(sKey) {
 					self.get(sKey);
 					var baseKey = DataManager.session.filterKey,
-						topGetterTriggerKeys = DataManager.session.topGetter._triggerKeys,
+						topGetterTriggerKeys = DataManager.session.topGetter&&DataManager.session.topGetter._triggerKeys,
 						smartTrigger = new SmartTriggerHandle(
 							baseKey||"", //match key
 
@@ -69,7 +71,7 @@
 							}
 						);
 					$.p(smartTriggers, smartTrigger);
-					smartTrigger.bind(topGetterTriggerKeys); // topGetterTriggerKeys.push(baseKey, smartTrigger);
+					topGetterTriggerKeys&&smartTrigger.bind(topGetterTriggerKeys); // topGetterTriggerKeys.push(baseKey, smartTrigger);
 				});
 			}
 			$.p(viewInstance.dataManager._viewInstances, viewInstance);

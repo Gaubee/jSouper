@@ -22,17 +22,17 @@ var relyStack = [], //用于搜集依赖的堆栈数据集
 		}
 		DataManager.Object(self);
 		if (obs instanceof Function) {
-			self._get = Try(obs, self);
-			self.set = $.noop;/*function(new_value){
-				self._value = new_value;
-			};*///; //默认更新value并触发更新
-			self._form = $NULL;
+			self._get = obs;//完全暴露错误给用户，方便调试Try(obs, self);
+			self.set = $.noop;//与defineGetter|defineSetter一样的机制
+			// self._form = $NULL;
 		} else {
 			self._get = obs.get || function() {
 				return self._value
 			};
-			self.set = Try(obs.set, self) || $.noop;
-			self._form = Try(obs.form, self) || $NULL;
+			self.set = obs.set?function(){
+				self._value = obs.set.apply(this.arguments)
+			}:$.noop;//Try(obs.set, self) || $.noop;
+			self._form = obs.form//Try(obs.form, self) || $NULL;
 		}
 		self._value;
 		self._valueOf = Observer._initGetData;

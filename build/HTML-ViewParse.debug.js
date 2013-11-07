@@ -38,27 +38,58 @@ var doc = document,
 	$FALSE = !$TRUE,
 
 	_event_cache = {},
-	_registerEventBase = function(Element, eventFun, elementHash) {
-		// var args = arguments = /*arguments*/$.s(arguments).splice(_addEventListener.length),
-		// 	wrapEventFun;
-		// if (args.length>_addEventListener.length) {
-		// 	wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = function() {
-		// 		var wrapArgs = arguments/*$.s(arguments)*/;
-		// 		Array.prototype.push.apply(wrapArgs, args);
-		// 		eventFun.apply(Element, wrapArgs)
-		// 	};
-		// } else
-		if (_isIE) {
-			var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = function(e) {
-				eventFun.call(Element, e)
-			};
-		} else {
-			wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)] = eventFun;
+	_box,
+	_fixEvent = function(event) { //@Rybylouvre
+		var target = event.target = event.srcElement;
+		event.which = a.charCode != $NULL ? event.charCode : event.keyCode;
+		if (/mouse|click/.test(event.type)) {
+			if (_box) {
+				_box = target.ownerDocument || doc;
+				_box = "BackCompat" === _box.compatMode ? _box.body : _box.documentElement;
+			}
+			event.pageX = event.clientX + ~~_box.scrollLeft - ~~_box.clientLeft;
+			event.pageY = event.clientY + ~~_box.scrollTop - ~~_box.clientTop;
 		}
-		return wrapEventFun;
+		event.preventDefault = function() { //for ie
+			event.returnValue = $FALSE
+		};
+		event.stopPropagation = function() { //for ie
+			event.cancelBubble = $TRUE
+		};
+		// return event
+	},
+	_fixMouseEvent = function(event) {
+		_fixEvent(event);
+		if (_box) {
+			_box = target.ownerDocument || doc;
+			_box = "BackCompat" === _box.compatMode ? _box.body : _box.documentElement;
+		}
+		event.pageX = event.clientX + ~~_box.scrollLeft - ~~_box.clientLeft;
+		event.pageY = event.clientY + ~~_box.scrollTop - ~~_box.clientTop;
+	},
+	_registerEventBase = function(Element, eventName, eventFun, elementHash) {
+		var result = eventFun;
+		if (_isIE) {
+			/*if (/mouse|click/.test(eventName)) {
+				result = function(e) { //in DOM2,e always exits
+					var result = eventFun.call(Element, e.target || _fixMouseEvent(e));
+					(result === $FALSE) && (e.preventDefault() || e.stopPropagation());
+					return result;
+				}
+			} else {
+				result = function(e) { //in DOM2,e always exits
+					var result = eventFun.call(Element, e.target || _fixEvent(e));
+					(result === $FALSE) && (e.preventDefault() || e.stopPropagation());
+					return result;
+				}
+			}*/
+			result = (Function('n,f,_' /*element_node,eventFun,_fix[Mouse]Event*/ , 'return function(e){var r=f.call(n,e.target||_(e));(f===false)&&(e.preventDefault()||e.stopPropagation());return f;}')(Element, eventFun, (/mouse|click/.test(eventName)) ? _fixMouseEvent : _fixEvent))
+		}
+		_event_cache[elementHash + $.hashCode(eventFun)] = result;
+		return result;
 	},
 	_addEventListener = function(Element, eventName, eventFun, elementHash) {
-		Element.addEventListener(eventName, _registerEventBase(Element, eventFun, elementHash), $FALSE);
+		Element.addEventListener(eventName, _registerEventBase(Element, eventName, eventFun, elementHash), $FALSE);
 	},
 	_removeEventListener = function(Element, eventName, eventFun, elementHash) {
 		var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
@@ -81,7 +112,7 @@ var doc = document,
 			var uidAvator = (prefix || "") + $.uidAvator,
 				codeID;
 			if (!(codeID = obj[uidAvator])) {
-				codeID = obj[uidAvator] = $.uid();
+				codeID = obj[uidAvator] = uidAvator+$.uid();
 			}
 			return codeID;
 		},
@@ -139,7 +170,7 @@ var doc = document,
 			}
 			return array;
 		},
-		sp:Array.prototype.splice,
+		sp: Array.prototype.splice,
 		pI: function(arr, item) { //pushByID
 			arr[item.id] = item;
 			return item;
@@ -209,7 +240,7 @@ var doc = document,
 			ap: function(parentNode, node) { //append
 				parentNode.appendChild(node);
 			},
-			cl: function(node, deep) { //clone
+			cl: function(node, deep) { //clone,do not need detached clone
 				return node.cloneNode(deep);
 			},
 			rC: function(parentNode, node) { //removeChild
@@ -273,26 +304,23 @@ ArraySet.prototype = {
 			callback(store[key], key, store);
 		})
 	},
-	// ftE: function(callback) { //fastEach ==> forIn
-	// 	var self = this,
-	// 		store = self.store,
-	// 		value;
-	// 	return $.ftE(self.keys, function(key, index) {
-	// 		value = store[key];
-	// 		callback(value, key);
-	// 	})
-	// },
 	has: function(key) {
 		return key in this.store;
 	}
 };
 
 function Try(tryFun, scope, errorCallback) {
-	errorCallback = errorCallback || $.noop;
+	errorCallback = errorCallback || function(e) {
+		if (console) {
+			console.error(e)
+		} else {
+			throw e
+		};
+	};
 	return function() {
 		var result;
 		try {
-			result = tryFun.apply(scope, arguments/*$.s(arguments)*/);
+			result = tryFun.apply(scope, arguments /*$.s(arguments)*/ );
 		} catch (e) {
 			errorCallback(e);
 		}
@@ -540,24 +568,28 @@ var DM_proto = DataManager.prototype = {
 					};
 					break;
 				default: //find Object by the key-dot-path and change it
-					var database = self._database || (self._database = {}),
-						sObj,
-						cache_n_Obj = database,
-						cache_cache_n_Obj,
-						arrKey = key.split("."),
-						lastKey = arrKey.pop();
-					$.ftE(arrKey, function(currentKey) {
-						cache_cache_n_Obj = cache_n_Obj;
-						cache_n_Obj = cache_n_Obj[currentKey] || (cache_n_Obj[currentKey] = {})
-					});
-					if ((sObj = cache_n_Obj[lastKey]) && sObj[_DM_extends_object_constructor]) {
-						sObj.set(nObj) //call ExtendsClass API
-					} else if (cache_n_Obj instanceof Object) {
-						cache_n_Obj[lastKey] = nObj;
-					} else if (cache_cache_n_Obj) {
-						(cache_cache_n_Obj[$.lI(arrKey)] = {})[lastKey] = nObj
-					} else { //arrKey.length === 0,and database instanceof no-Object
-						(self._database = {})[lastKey] = nObj
+					if (nObj !== DM_proto.get.call(self,key)) {
+						var database = self._database || (self._database = {}),
+							sObj,
+							cache_n_Obj = database,
+							cache_cache_n_Obj,
+							arrKey = key.split("."),
+							lastKey = arrKey.pop();
+						$.ftE(arrKey, function(currentKey) {
+							cache_cache_n_Obj = cache_n_Obj;
+							cache_n_Obj = cache_n_Obj[currentKey] || (cache_n_Obj[currentKey] = {})
+						});
+						if ((sObj = cache_n_Obj[lastKey]) && sObj[_DM_extends_object_constructor]) {
+							sObj.set(nObj) //call ExtendsClass API
+						} else if (cache_n_Obj instanceof Object) {
+							cache_n_Obj[lastKey] = nObj;
+						} else if (cache_cache_n_Obj) {
+							(cache_cache_n_Obj[$.lI(arrKey)] = {})[lastKey] = nObj
+						} else { //arrKey.length === 0,and database instanceof no-Object
+							(self._database = {})[lastKey] = nObj
+						}
+					}else if(!(nObj instanceof Object)){//no any change
+						return;
 					}
 			}
 			// $.p(setStacks,self.id);
@@ -956,17 +988,17 @@ var relyStack = [], //用于搜集依赖的堆栈数据集
 		}
 		DataManager.Object(self);
 		if (obs instanceof Function) {
-			self._get = Try(obs, self);
-			self.set = $.noop;/*function(new_value){
-				self._value = new_value;
-			};*///; //默认更新value并触发更新
-			self._form = $NULL;
+			self._get = obs;//完全暴露错误给用户，方便调试Try(obs, self);
+			self.set = $.noop;//与defineGetter|defineSetter一样的机制
+			// self._form = $NULL;
 		} else {
 			self._get = obs.get || function() {
 				return self._value
 			};
-			self.set = Try(obs.set, self) || $.noop;
-			self._form = Try(obs.form, self) || $NULL;
+			self.set = obs.set?function(){
+				self._value = obs.set.apply(this.arguments)
+			}:$.noop;//Try(obs.set, self) || $.noop;
+			self._form = obs.form//Try(obs.form, self) || $NULL;
 		}
 		self._value;
 		self._valueOf = Observer._initGetData;
@@ -1282,14 +1314,55 @@ var IEfix = {
 		DOMContentLoaded:"readystatechange"
 	},
 	/*
-The full list of boolean attributes in HTML 4.01 (and hence XHTML 1.0) is (with property names where they differ in case): \n \n checked             (input type=checkbox/radio) \n selected            (option) \n disabled            (input, textarea, button, select, option, optgroup) \n readonly            (input type=text/password, textarea) \n multiple            (select) \n ismap     isMap     (img, input type=image) \n \n defer               (script) \n declare             (object; never used) \n noresize  noResize  (frame) \n nowrap    noWrap    (td, th; deprecated) \n noshade   noShade   (hr; deprecated) \n compact             (ul, ol, dl, menu, dir; deprecated) \n //------------anyother answer \n all elements: hidden \n script: async, defer \n button: autofocus, formnovalidate, disabled \n input: autofocus, formnovalidate, multiple, readonly, required, disabled, checked \n keygen: autofocus, disabled \n select: autofocus, multiple, required, disabled \n textarea: autofocus, readonly, required, disabled \n style: scoped \n ol: reversed \n command: disabled, checked \n fieldset: disabled \n optgroup: disabled \n option: selected, disabled \n audio: autoplay, controls, loop, muted \n video: autoplay, controls, loop, muted \n iframe: seamless \n track: default \n img: ismap \n form: novalidate \n details: open \n object: typemustmatch \n marquee: truespeed \n //---- \n editable \n draggable \n */
-	_AttributeHandle = function(attrKey) {
+The full list of boolean attributes in HTML 4.01 (and hence XHTML 1.0) is (with property names where they differ in case): 
+
+checked             (input type=checkbox/radio) 
+selected            (option) 
+disabled            (input, textarea, button, select, option, optgroup) 
+readonly            (input type=text/password, textarea) 
+multiple            (select) 
+ismap     isMap     (img, input type=image) 
+
+defer               (script) 
+declare             (object; never used) 
+noresize  noResize  (frame) 
+nowrap    noWrap    (td, th; deprecated) 
+noshade   noShade   (hr; deprecated) 
+compact             (ul, ol, dl, menu, dir; deprecated) 
+//------------anyother answer 
+all elements: hidden 
+script: async, defer 
+button: autofocus, formnovalidate, disabled 
+input: autofocus, formnovalidate, multiple, readonly, required, disabled, checked 
+keygen: autofocus, disabled 
+select: autofocus, multiple, required, disabled 
+textarea: autofocus, readonly, required, disabled 
+style: scoped 
+ol: reversed 
+command: disabled, checked 
+fieldset: disabled 
+optgroup: disabled 
+option: selected, disabled 
+audio: autoplay, controls, loop, muted 
+video: autoplay, controls, loop, muted 
+iframe: seamless 
+track: default 
+img: ismap 
+form: novalidate 
+details: open 
+object: typemustmatch 
+marquee: truespeed 
+//---- 
+editable 
+draggable 
+*/
+	_AttributeHandle = function(attrKey,element) {
 		var assign;
 		var attrHandles = V.attrHandles,
 			result;
 		$.fE(attrHandles, function(attrHandle) {
 			if (attrHandle.match(attrKey)) {
-				result = attrHandle.handle(attrKey);
+				result = attrHandle.handle(attrKey,element);
 				return $FALSE
 			}
 		});
@@ -1306,7 +1379,7 @@ The full list of boolean attributes in HTML 4.01 (and hence XHTML 1.0) is (with 
 		if (_matchRule.test(attrValue)||_templateMatchRule.test(attrValue)) {
 			var attrViewInstance = (V.attrModules[handle.id + attrKey] = ViewParser.parse(attrValue))(),
 				_shadowDIV = $.D.cl(shadowDIV), //parserNode
-				_attributeHandle = _AttributeHandle(attrKey);
+				_attributeHandle = _AttributeHandle(attrKey,node);
 			attrViewInstance.append(_shadowDIV);
 			attrViewInstance._isAttr = {
 				key: attrKey
@@ -1442,11 +1515,13 @@ function _create(data) { //data maybe basedata or dataManager
 				var TEMP = smartTrigger.TEMP;
 				DataManager.get(TEMP.dm_id).get(TEMP.sourceKey);
 				var topGetter = DataManager.session.topGetter;
-				if (topGetter !== DataManager.get(TEMP.dm_id)) {
-					smartTrigger.bind(topGetter._triggerKeys);
-					TEMP.dm_id = topGetter.id;
+				if(topGetter){
+					if (topGetter !== DataManager.get(TEMP.dm_id)) {
+						smartTrigger.bind(topGetter._triggerKeys);
+						TEMP.dm_id = topGetter.id;
+					}
+					smartTrigger.event(topGetter._triggerKeys);
 				}
-				smartTrigger.event(topGetter._triggerKeys);
 			})
 		})
 		$.ftE(self._subsetDataManagers, function(childDataManager) {
@@ -1456,7 +1531,7 @@ function _create(data) { //data maybe basedata or dataManager
 						var TEMP = smartTrigger.TEMP;
 						DataManager.get(TEMP.dm_id).get(TEMP.sourceKey);
 						var topGetter = DataManager.session.topGetter;
-						if (topGetter !== DataManager.get(TEMP.dm_id)) {
+						if (topGetter&&topGetter !== DataManager.get(TEMP.dm_id)) {
 							smartTrigger.unbind(DataManager.get(TEMP.dm_id)._triggerKeys).bind(topGetter._triggerKeys);
 							TEMP.dm_id = topGetter.id;
 							smartTrigger.event(topGetter._triggerKeys);
@@ -1485,7 +1560,7 @@ function _create(data) { //data maybe basedata or dataManager
 				$.ftE(viewInstanceTriggers, function(sKey) {
 					self.get(sKey);
 					var baseKey = DataManager.session.filterKey,
-						topGetterTriggerKeys = DataManager.session.topGetter._triggerKeys,
+						topGetterTriggerKeys = DataManager.session.topGetter&&DataManager.session.topGetter._triggerKeys,
 						smartTrigger = new SmartTriggerHandle(
 							baseKey||"", //match key
 
@@ -1499,7 +1574,7 @@ function _create(data) { //data maybe basedata or dataManager
 							}
 						);
 					$.p(smartTriggers, smartTrigger);
-					smartTrigger.bind(topGetterTriggerKeys); // topGetterTriggerKeys.push(baseKey, smartTrigger);
+					topGetterTriggerKeys&&smartTrigger.bind(topGetterTriggerKeys); // topGetterTriggerKeys.push(baseKey, smartTrigger);
 				});
 			}
 			$.p(viewInstance.dataManager._viewInstances, viewInstance);
@@ -1946,7 +2021,7 @@ var placeholder = {
 
 	V = {
 		prefix: "attr-",
-		parse: function(htmlStr) {
+		_nodeTree:function (htmlStr) {
 			var _shadowBody = $.D.cl(shadowBody);
 			_shadowBody.innerHTML = htmlStr;
 			var insertBefore = [];
@@ -1959,12 +2034,11 @@ var placeholder = {
 					});
 				}
 			});
-
-			$.fE(insertBefore, function(item) {
+			$.fE(insertBefore, function(item,i) {
 				var node = item.baseNode,
 					parentNode = item.parentNode,
 					insertNodesHTML = item.insertNodesHTML;
-				shadowDIV.innerHTML = insertNodesHTML;
+				shadowDIV.innerHTML = $.trim(insertNodesHTML);//optimization
 				//Using innerHTML rendering is complete immediate operation DOM, 
 				//innerHTML otherwise covered again, the node if it is not, 
 				//then memory leaks, IE can not get to the full node.
@@ -1973,9 +2047,11 @@ var placeholder = {
 				})
 				$.D.rC(parentNode, node);
 			});
-			_shadowBody.innerHTML = _shadowBody.innerHTML;
-			var result = new ElementHandle(_shadowBody);
-			return View(result);
+			//when re-rendering,select node's child will be filter by ``` _shadowBody.innerHTML = _shadowBody.innerHTML;```
+			return new ElementHandle(_shadowBody);
+		},
+		parse: function(htmlStr) {
+			return View(this._nodeTree(htmlStr));
 		},
 		rt: function(handleName, triggerFactory) {
 			return V.triggers[handleName] = triggerFactory;
@@ -2311,7 +2387,6 @@ V.rt("#each", function(handle, index, parentHandle) {
 		arrDataHandle_id = handle.childNodes[0].id,
 		comment_endeach_id = parentHandle.childNodes[index + 3].id, //eachHandle --> eachComment --> endeachHandle --> endeachComment
 		trigger;
-	// ;
 	trigger = {
 		// smartTrigger:$NULL,
 		// key:$NULL,
@@ -2336,7 +2411,6 @@ V.rt("#each", function(handle, index, parentHandle) {
 
 				_rebuildTree = dataManager.rebuildTree;
 				dataManager.rebuildTree = $.noop//doesn't need rebuild every subset
-
 				$.ftE(data, function(eachItemData, index) {
 					//TODO:if too mush vi will be create, maybe asyn
 					var viewInstance = arrViewInstances[index];
@@ -2758,15 +2832,30 @@ var _AttributeHandleEvent = {
 		} else { // currentNode.removeAttribute(key);
 			currentNode[key] = $FALSE;
 		}
+	},
+	radio: function(key, currentNode, parserNode) { //radio checked
+		var attrOuter = _getAttrOuter(parserNode);
+		if (attrOuter === currentNode.value) {
+			currentNode[key] = attrOuter;
+		}
 	}
 };
-var _boolAssignment = ["checked", "selected", "disabled", "readonly", "multiple", "defer", "declare", "noresize", "nowrap", "noshade", "compact", "truespeed", "async", "typemustmatch", "open", "novalidate", "ismap", "default", "seamless", "autoplay", "controls", "loop", "muted", "reversed", "scoped", "autofocus", "required", "formnovalidate", "editable", "draggable", "hidden"];
-V.ra(function(attrKey){
-	return $.iO(_boolAssignment,attrKey) !==-1;
-}, function() {
-	return _AttributeHandleEvent.bool;
+var _boolAssignment = "|checked|selected|disabled|readonly|multiple|defer|declare|noresize|nowrap|noshade|compact|truespeed|async|typemustmatch|open|novalidate|ismap|default|seamless|autoplay|controls|loop|muted|reversed|scoped|autofocus|required|formnovalidate|editable|draggable|hidden|";
+V.ra(function(attrKey) {
+	return _boolAssignment.indexOf("|" + attrKey + "|") !== -1;
+}, function(attrKey, element) {
+	var result = _AttributeHandleEvent.bool
+	switch (element.type.toLowerCase()) {
+		case "radio":
+			(attrKey === "checked") && (result = _AttributeHandleEvent.radio)
+			break
+		case "select-one":
+			(attrKey === "selected") && (result = _AttributeHandleEvent.select)
+			break
+	}
+	return result;
 })
-var iecheck = function(key, currentNode, parserNode) {
+var _ieCheck = function(key, currentNode, parserNode) {
 	var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
 
 	if (attrOuter) {
@@ -2779,7 +2868,7 @@ var iecheck = function(key, currentNode, parserNode) {
 	(this._attributeHandle = _AttributeHandleEvent.bool)(key, currentNode, parserNode);
 }
 V.ra("checked", function() {
-	return _isIE ? iecheck : _AttributeHandleEvent.com;
+	return _isIE ? _ieCheck : _AttributeHandleEvent.com;
 })
 var _dirAssignment = RegExp(["className","value"].join("|"),"gi")
 V.ra(function(attrKey){
@@ -2827,6 +2916,12 @@ var _formCache = {},
 						attributeName: "checked",
 						eventNames: ["change"]
 					}
+				case "radio":
+					return {
+						// attributeName: "checked",
+						attributeName: "value",
+						eventNames: ["change"]
+					}
 				case "button":
 				case "reset":
 				case "submit":
@@ -2836,56 +2931,73 @@ var _formCache = {},
 				eventNames: _isIE ? ["propertychange" /*, "keyup"*/ ] : ["input" /*, "keyup"*/ ]
 			};
 		},
-		"button": "innerHTML"
-	},
-	_noopFormHandle = function(e, newValue) {
-		return newValue
+		"select": {
+			eventNames: ["change"],
+			inner: function(e, vi, attrOuter, value /*for arguments*/ ) {
+				var ele = this;
+				var obj = vi.get(attrOuter)
+				value = ele.value;
+				if (ele.multiple) {
+					value = [];
+					$.ftE(ele.options, function(option) {
+						if (option.selected) {
+							$.p(value, option.value);
+						}
+					})
+				}
+				if (obj && obj[_DM_extends_object_constructor] && obj.form) {
+					arguments[3] = value;
+					vi.set(attrOuter, obj.form.apply(ele, arguments))
+				} else {
+					vi.set(attrOuter, value)
+				}
+			}
+		}
 	},
 	formListerAttribute = function(key, currentNode, parserNode, vi, /*dm_id,*/ handle, triggerTable) {
 		var attrOuter = _getAttrOuter(parserNode),
-			eventNameHashCode = $.hashCode(currentNode, "form-key");
+			eventNameHashCode = $.hashCode(currentNode, "bind-form");
 		if (handle[eventNameHashCode] !== attrOuter) {
 			// console.log(handle[eventNameHashCode], attrOuter, arguments)
 			handle[eventNameHashCode] = attrOuter;
 			var eventNames,
-				eventConfig = _formKey[currentNode.tagName.toLowerCase()] || {
-					attributeName: "innerHTML",
-					eventNames: ["click"]
-				},
-				elementHashCode = $.hashCode(currentNode, "form"),
+				eventConfig = _formKey[currentNode.tagName.toLowerCase()];
+			if (!eventConfig) return;
+			var elementHashCode = $.hashCode(currentNode, "form"),
 				formCollection,
 				outerFormHandle,
-				innerFormHandle,
-				obj = vi.get(attrOuter, $NULL);
-			typeof eventConfig === "function" && (eventConfig = eventConfig(currentNode));
-			eventNames = eventConfig.eventNames;
-			formCollection = _formCache[elementHashCode] || (_formCache[elementHashCode] = {});
+				innerFormHandle;
+			if (eventConfig) {
+				typeof eventConfig === "function" && (eventConfig = eventConfig(currentNode));
+				eventNames = eventConfig.eventNames;
+				formCollection = _formCache[elementHashCode] || (_formCache[elementHashCode] = {});
 
-			$.ftE(eventNames, function(eventName) {
-				if (obj && obj[_DM_extends_object_constructor]) {
-					var baseFormHandle = obj.form === $NULL ? _noopFormHandle : obj.form;
-					innerFormHandle = function(e) {
-						// console.log(eventConfig.attributeName, this[eventConfig.attributeName])
-						vi.set(attrOuter, baseFormHandle.call(this, e, this[eventConfig.attributeName], vi))
+				if (!eventConfig.inner) {
+					innerFormHandle = function(e /*, vi, attrOuter*/ ) {
+						var obj = vi.get(attrOuter)
+						if (obj && obj[_DM_extends_object_constructor] && obj.form) {
+							vi.set(attrOuter, obj.form.apply(this, arguments))
+						} else {
+							vi.set(attrOuter, this[eventConfig.attributeName])
+						}
 					};
-					// _registerEvent(currentNode, eventName, innerFormHandle, elementHashCode);
-				} else /*if (typeof obj === "string") */ {
-					// console.log(attrOuter,eventConfig.attributeName,currentNode[eventConfig.attributeName])
-					innerFormHandle = function(e) {
-						// console.log(attrOuter,":",this[eventConfig.attributeName],vi.get(attrOuter))
-						vi.set(attrOuter, this[eventConfig.attributeName])
-					};
+					eventConfig.inner = innerFormHandle;
 				}
-				if (!(outerFormHandle = formCollection[eventName])) {
-					// _cancelEvent(currentNode, eventName, outerFormHandle, elementHashCode)
-					outerFormHandle = function(e) {
-						outerFormHandle.inner.call(this, e /*arguments*/ );
+				$.ftE(eventNames, function(eventName) {
+					if (!(outerFormHandle = formCollection[eventName])) {
+						// outerFormHandle = function(e) {
+						// 	var self = this;
+						// 	outerFormHandle.before && outerFormHandle.before.call(this, e, vi)
+						// 	outerFormHandle.inner.call(this, e, vi);
+						// 	outerFormHandle.after && outerFormHandle.after.call(this, e, vi)
+						// }
+						outerFormHandle = Function('o,v,k' /*eventConfig,vi,attrOuter(bind-key)*/ , 'return function(e){var s=this;' + (eventConfig.before ? 'o.before.call(s,e,v,k);' : '') + 'o.inner.call(s,e,v,k);' + (eventConfig.after ? 'o.after.call(s,e,v,k);' : '') + '}')(eventConfig, vi, attrOuter);
+						_registerEvent(currentNode, eventName, outerFormHandle, elementHashCode);
+						formCollection[eventName] = outerFormHandle;
 					}
-					_registerEvent(currentNode, eventName, outerFormHandle, elementHashCode);
-					formCollection[eventName] = outerFormHandle;
-				}
-				outerFormHandle.inner = innerFormHandle;
-			});
+
+				});
+			}
 		}
 	};
 V.ra("bind-form", function(attrKey) {
@@ -2905,6 +3017,36 @@ V.ra(function(attrKey){
 	attrKey.indexOf("on") === 0;
 },function () {
 	return _event_by_fun&&_AttributeHandleEvent.event;
+})
+_AttributeHandleEvent.select = function(key, currentNode, parserNode, vi) { //select selected
+	var attrOuter = _getAttrOuter(parserNode),
+		data = vi.get(attrOuter),
+		selectHashCode = $.hashCode(currentNode, "selected");
+	currentNode[selectHashCode] = attrOuter;
+	// console.log(typeof , currentNode, selectHashCode)
+	if (data instanceof Array) {
+		$.ftE(currentNode.options, function(option) {
+			option.selected = ($.iO(data, option.value) !== -1)
+		})
+	} else {
+		$.ftE(currentNode.options, function(option) {
+			option.selected = data === option.value
+		})
+	}
+}
+var _triggersEach = V.triggers["#each"];
+V.rt("#each",function(handle, index, parentHandle){
+	var trigger = _triggersEach(handle, index, parentHandle);
+	if (parentHandle.type==="element"&&parentHandle.node.type.toLowerCase()==="select-one") {
+		var _triggerEvent = trigger.event;
+		trigger.event = function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID){
+			var result= _triggerEvent.apply(this,arguments)
+			var currentNode =NodeList_of_ViewInstance[parentHandle.id].currentNode;
+			dataManager.touchOff(currentNode[$.hashCode(currentNode, "selected")])
+			return result;
+		}
+	}
+	return trigger;
 })
 V.ra("style",function () {
 	return _isIE&&_AttributeHandleEvent.style;

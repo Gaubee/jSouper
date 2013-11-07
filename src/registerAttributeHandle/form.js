@@ -11,6 +11,12 @@ var _formCache = {},
 						attributeName: "checked",
 						eventNames: ["change"]
 					}
+				case "radio":
+					return {
+						// attributeName: "checked",
+						attributeName: "value",
+						eventNames: ["change"]
+					}
 				case "button":
 				case "reset":
 				case "submit":
@@ -20,56 +26,73 @@ var _formCache = {},
 				eventNames: _isIE ? ["propertychange" /*, "keyup"*/ ] : ["input" /*, "keyup"*/ ]
 			};
 		},
-		"button": "innerHTML"
-	},
-	_noopFormHandle = function(e, newValue) {
-		return newValue
+		"select": {
+			eventNames: ["change"],
+			inner: function(e, vi, attrOuter, value /*for arguments*/ ) {
+				var ele = this;
+				var obj = vi.get(attrOuter)
+				value = ele.value;
+				if (ele.multiple) {
+					value = [];
+					$.ftE(ele.options, function(option) {
+						if (option.selected) {
+							$.p(value, option.value);
+						}
+					})
+				}
+				if (obj && obj[_DM_extends_object_constructor] && obj.form) {
+					arguments[3] = value;
+					vi.set(attrOuter, obj.form.apply(ele, arguments))
+				} else {
+					vi.set(attrOuter, value)
+				}
+			}
+		}
 	},
 	formListerAttribute = function(key, currentNode, parserNode, vi, /*dm_id,*/ handle, triggerTable) {
 		var attrOuter = _getAttrOuter(parserNode),
-			eventNameHashCode = $.hashCode(currentNode, "form-key");
+			eventNameHashCode = $.hashCode(currentNode, "bind-form");
 		if (handle[eventNameHashCode] !== attrOuter) {
 			// console.log(handle[eventNameHashCode], attrOuter, arguments)
 			handle[eventNameHashCode] = attrOuter;
 			var eventNames,
-				eventConfig = _formKey[currentNode.tagName.toLowerCase()] || {
-					attributeName: "innerHTML",
-					eventNames: ["click"]
-				},
-				elementHashCode = $.hashCode(currentNode, "form"),
+				eventConfig = _formKey[currentNode.tagName.toLowerCase()];
+			if (!eventConfig) return;
+			var elementHashCode = $.hashCode(currentNode, "form"),
 				formCollection,
 				outerFormHandle,
-				innerFormHandle,
-				obj = vi.get(attrOuter, $NULL);
-			typeof eventConfig === "function" && (eventConfig = eventConfig(currentNode));
-			eventNames = eventConfig.eventNames;
-			formCollection = _formCache[elementHashCode] || (_formCache[elementHashCode] = {});
+				innerFormHandle;
+			if (eventConfig) {
+				typeof eventConfig === "function" && (eventConfig = eventConfig(currentNode));
+				eventNames = eventConfig.eventNames;
+				formCollection = _formCache[elementHashCode] || (_formCache[elementHashCode] = {});
 
-			$.ftE(eventNames, function(eventName) {
-				if (obj && obj[_DM_extends_object_constructor]) {
-					var baseFormHandle = obj.form === $NULL ? _noopFormHandle : obj.form;
-					innerFormHandle = function(e) {
-						// console.log(eventConfig.attributeName, this[eventConfig.attributeName])
-						vi.set(attrOuter, baseFormHandle.call(this, e, this[eventConfig.attributeName], vi))
+				if (!eventConfig.inner) {
+					innerFormHandle = function(e /*, vi, attrOuter*/ ) {
+						var obj = vi.get(attrOuter)
+						if (obj && obj[_DM_extends_object_constructor] && obj.form) {
+							vi.set(attrOuter, obj.form.apply(this, arguments))
+						} else {
+							vi.set(attrOuter, this[eventConfig.attributeName])
+						}
 					};
-					// _registerEvent(currentNode, eventName, innerFormHandle, elementHashCode);
-				} else /*if (typeof obj === "string") */ {
-					// console.log(attrOuter,eventConfig.attributeName,currentNode[eventConfig.attributeName])
-					innerFormHandle = function(e) {
-						// console.log(attrOuter,":",this[eventConfig.attributeName],vi.get(attrOuter))
-						vi.set(attrOuter, this[eventConfig.attributeName])
-					};
+					eventConfig.inner = innerFormHandle;
 				}
-				if (!(outerFormHandle = formCollection[eventName])) {
-					// _cancelEvent(currentNode, eventName, outerFormHandle, elementHashCode)
-					outerFormHandle = function(e) {
-						outerFormHandle.inner.call(this, e /*arguments*/ );
+				$.ftE(eventNames, function(eventName) {
+					if (!(outerFormHandle = formCollection[eventName])) {
+						// outerFormHandle = function(e) {
+						// 	var self = this;
+						// 	outerFormHandle.before && outerFormHandle.before.call(this, e, vi)
+						// 	outerFormHandle.inner.call(this, e, vi);
+						// 	outerFormHandle.after && outerFormHandle.after.call(this, e, vi)
+						// }
+						outerFormHandle = Function('o,v,k' /*eventConfig,vi,attrOuter(bind-key)*/ , 'return function(e){var s=this;' + (eventConfig.before ? 'o.before.call(s,e,v,k);' : '') + 'o.inner.call(s,e,v,k);' + (eventConfig.after ? 'o.after.call(s,e,v,k);' : '') + '}')(eventConfig, vi, attrOuter);
+						_registerEvent(currentNode, eventName, outerFormHandle, elementHashCode);
+						formCollection[eventName] = outerFormHandle;
 					}
-					_registerEvent(currentNode, eventName, outerFormHandle, elementHashCode);
-					formCollection[eventName] = outerFormHandle;
-				}
-				outerFormHandle.inner = innerFormHandle;
-			});
+
+				});
+			}
 		}
 	};
 V.ra("bind-form", function(attrKey) {

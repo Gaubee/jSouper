@@ -6,7 +6,6 @@ V.rt("#each", function(handle, index, parentHandle) {
 		arrDataHandle_id = handle.childNodes[0].id,
 		comment_endeach_id = parentHandle.childNodes[index + 3].id, //eachHandle --> eachComment --> endeachHandle --> endeachComment
 		trigger;
-	// ;
 	trigger = {
 		// smartTrigger:$NULL,
 		// key:$NULL,
@@ -31,7 +30,6 @@ V.rt("#each", function(handle, index, parentHandle) {
 
 				_rebuildTree = dataManager.rebuildTree;
 				dataManager.rebuildTree = $.noop//doesn't need rebuild every subset
-
 				$.ftE(data, function(eachItemData, index) {
 					//TODO:if too mush vi will be create, maybe asyn
 					var viewInstance = arrViewInstances[index];
