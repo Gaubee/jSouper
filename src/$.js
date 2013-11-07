@@ -17,9 +17,9 @@ var doc = document,
 	_box,
 	_fixEvent = function(event) { //@Rybylouvre
 		var target = event.target = event.srcElement;
-		event.which = a.charCode != $NULL ? event.charCode : event.keyCode;
+		event.which = event.charCode != $NULL ? event.charCode : event.keyCode;
 		if (/mouse|click/.test(event.type)) {
-			if (_box) {
+			if (!_box) {
 				_box = target.ownerDocument || doc;
 				_box = "BackCompat" === _box.compatMode ? _box.body : _box.documentElement;
 			}
@@ -36,7 +36,8 @@ var doc = document,
 	},
 	_fixMouseEvent = function(event) {
 		_fixEvent(event);
-		if (_box) {
+		alert(!_box)
+		if (!_box) {
 			_box = target.ownerDocument || doc;
 			_box = "BackCompat" === _box.compatMode ? _box.body : _box.documentElement;
 		}
@@ -72,7 +73,7 @@ var doc = document,
 		wrapEventFun && Element.removeEventListener(eventName, wrapEventFun, $FALSE);
 	},
 	_attachEvent = function(Element, eventName, eventFun, elementHash) {
-		Element.attachEvent("on" + eventName, _registerEventBase(Element, eventFun, elementHash));
+		Element.attachEvent("on" + eventName, _registerEventBase(Element, eventFun, eventFun, elementHash));
 	},
 	_detachEvent = function(Element, eventName, eventFun, elementHash) {
 		var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
@@ -88,7 +89,7 @@ var doc = document,
 			var uidAvator = (prefix || "") + $.uidAvator,
 				codeID;
 			if (!(codeID = obj[uidAvator])) {
-				codeID = obj[uidAvator] = uidAvator+$.uid();
+				codeID = obj[uidAvator] = uidAvator + $.uid();
 			}
 			return codeID;
 		},

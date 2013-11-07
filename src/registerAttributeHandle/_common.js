@@ -1,6 +1,7 @@
 var _testDIV = $.D.cl(shadowDIV),
 	_getAttrOuter = Function("n", "return n." + (("textContent" in _testDIV) ? "textContent" : "innerText") + "||''"),
-	_booleanFalseRegExp = /false|undefined|null|NaN/;
+	_booleanFalseRegExp = /false|undefined|null|NaN/,
+	_fixPropertychange; //fix ie
 
 var _AttributeHandleEvent = {
 	event: function(key, currentNode, parserNode) { //on开头的事件绑定，IE需要绑定Function类型，现代浏览器绑定String类型（_AttributeHandleEvent.com）
@@ -44,3 +45,11 @@ var _AttributeHandleEvent = {
 		}
 	}
 };
+if (_isIE) {
+	var __dir = _AttributeHandleEvent.dir;
+	_AttributeHandleEvent.dir = function() {
+		_fixPropertychange = $TRUE;
+		__dir.apply(this, arguments)
+		_fixPropertychange = $FALSE;
+	}
+}

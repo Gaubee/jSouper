@@ -41,9 +41,9 @@ var doc = document,
 	_box,
 	_fixEvent = function(event) { //@Rybylouvre
 		var target = event.target = event.srcElement;
-		event.which = a.charCode != $NULL ? event.charCode : event.keyCode;
+		event.which = event.charCode != $NULL ? event.charCode : event.keyCode;
 		if (/mouse|click/.test(event.type)) {
-			if (_box) {
+			if (!_box) {
 				_box = target.ownerDocument || doc;
 				_box = "BackCompat" === _box.compatMode ? _box.body : _box.documentElement;
 			}
@@ -60,7 +60,8 @@ var doc = document,
 	},
 	_fixMouseEvent = function(event) {
 		_fixEvent(event);
-		if (_box) {
+		alert(!_box)
+		if (!_box) {
 			_box = target.ownerDocument || doc;
 			_box = "BackCompat" === _box.compatMode ? _box.body : _box.documentElement;
 		}
@@ -96,7 +97,7 @@ var doc = document,
 		wrapEventFun && Element.removeEventListener(eventName, wrapEventFun, $FALSE);
 	},
 	_attachEvent = function(Element, eventName, eventFun, elementHash) {
-		Element.attachEvent("on" + eventName, _registerEventBase(Element, eventFun, elementHash));
+		Element.attachEvent("on" + eventName, _registerEventBase(Element, eventFun, eventFun, elementHash));
 	},
 	_detachEvent = function(Element, eventName, eventFun, elementHash) {
 		var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
@@ -112,7 +113,7 @@ var doc = document,
 			var uidAvator = (prefix || "") + $.uidAvator,
 				codeID;
 			if (!(codeID = obj[uidAvator])) {
-				codeID = obj[uidAvator] = uidAvator+$.uid();
+				codeID = obj[uidAvator] = uidAvator + $.uid();
 			}
 			return codeID;
 		},
@@ -1362,6 +1363,7 @@ draggable
 			result;
 		$.fE(attrHandles, function(attrHandle) {
 			if (attrHandle.match(attrKey)) {
+				// if (element.type==="textarea") {debugger}
 				result = attrHandle.handle(attrKey,element);
 				return $FALSE
 			}
@@ -2796,7 +2798,8 @@ registerHandle("HTML",function () {
 })
 var _testDIV = $.D.cl(shadowDIV),
 	_getAttrOuter = Function("n", "return n." + (("textContent" in _testDIV) ? "textContent" : "innerText") + "||''"),
-	_booleanFalseRegExp = /false|undefined|null|NaN/;
+	_booleanFalseRegExp = /false|undefined|null|NaN/,
+	_fixPropertychange; //fix ie
 
 var _AttributeHandleEvent = {
 	event: function(key, currentNode, parserNode) { //on开头的事件绑定，IE需要绑定Function类型，现代浏览器绑定String类型（_AttributeHandleEvent.com）
@@ -2840,7 +2843,16 @@ var _AttributeHandleEvent = {
 		}
 	}
 };
-var _boolAssignment = "|checked|selected|disabled|readonly|multiple|defer|declare|noresize|nowrap|noshade|compact|truespeed|async|typemustmatch|open|novalidate|ismap|default|seamless|autoplay|controls|loop|muted|reversed|scoped|autofocus|required|formnovalidate|editable|draggable|hidden|";
+if (_isIE) {
+	var __dir = _AttributeHandleEvent.dir;
+	_AttributeHandleEvent.dir = function() {
+		_fixPropertychange = $TRUE;
+		__dir.apply(this, arguments)
+		_fixPropertychange = $FALSE;
+	}
+}
+var _boolAssignment = "|checked|selected|disabled|readonly|multiple|defer|declare|noresize|nowrap|noshade|compact|truespeed|async|typemustmatch|open|novalidate|ismap|default|seamless|autoplay|controls|loop|muted|reversed|scoped|autofocus|required|formnovalidate|editable|draggable|hidden|"
+/*for ie fix*/+"defaultSelected|";
 V.ra(function(attrKey) {
 	return _boolAssignment.indexOf("|" + attrKey + "|") !== -1;
 }, function(attrKey, element) {
@@ -2850,7 +2862,7 @@ V.ra(function(attrKey) {
 			(attrKey === "checked") && (result = _AttributeHandleEvent.radio)
 			break
 		case "select-one":
-			(attrKey === "selected") && (result = _AttributeHandleEvent.select)
+			/selected|defaultSelected/.test(attrKey) && (result = _AttributeHandleEvent.select)
 			break
 	}
 	return result;
@@ -2870,9 +2882,9 @@ var _ieCheck = function(key, currentNode, parserNode) {
 V.ra("checked", function() {
 	return _isIE ? _ieCheck : _AttributeHandleEvent.com;
 })
-var _dirAssignment = RegExp(["className","value"].join("|"),"gi")
+var _dirAssignment = "|className|value|";
 V.ra(function(attrKey){
-	return _dirAssignment.test(attrKey);
+	return _dirAssignment.indexOf("|"+attrKey+"|")!==-1;
 }, function() {
 	return _AttributeHandleEvent.dir;
 })
@@ -2907,36 +2919,38 @@ V.ra(function(attrKey) {
  *form-bind只做绑定form处理事件，value绑定需要另外通过attr-value={(XX)}来绑定，避免重复
  */
 var _formCache = {},
+	__text = {
+		attributeName: "value",
+		eventNames: _isIE ? ["propertychange" /*, "keyup"*/ ] : ["input" /*, "keyup"*/ ]
+	},
 	_formKey = {
 		"input": function(node) { //需阻止默认事件，比如Checked需要被重写，否则数据没有变动而Checked因用户点击而变动，没有达到V->M的数据同步
-			var result = "value";
+			var result = __text;
 			switch (node.type.toLowerCase()) {
 				case "checkbox":
-					return {
+					result = {
 						attributeName: "checked",
-						eventNames: ["change"]
+						eventNames: _isIE?["change","click"]:["change"]
 					}
+					break;
 				case "radio":
-					return {
+					result =  {
 						// attributeName: "checked",
 						attributeName: "value",
-						eventNames: ["change"]
+						eventNames: _isIE?["change","click"]:["change"]
 					}
-				case "button":
-				case "reset":
-				case "submit":
+					break;
+				// case "button":
+				// case "reset":
+				// case "submit":
 			}
-			return {
-				attributeName: "value",
-				eventNames: _isIE ? ["propertychange" /*, "keyup"*/ ] : ["input" /*, "keyup"*/ ]
-			};
+			return result
 		},
 		"select": {
 			eventNames: ["change"],
 			inner: function(e, vi, attrOuter, value /*for arguments*/ ) {
 				var ele = this;
 				var obj = vi.get(attrOuter)
-				value = ele.value;
 				if (ele.multiple) {
 					value = [];
 					$.ftE(ele.options, function(option) {
@@ -2944,6 +2958,8 @@ var _formCache = {},
 							$.p(value, option.value);
 						}
 					})
+				}else{
+					value = ele.options[ele.selectedIndex].value;
 				}
 				if (obj && obj[_DM_extends_object_constructor] && obj.form) {
 					arguments[3] = value;
@@ -2952,7 +2968,8 @@ var _formCache = {},
 					vi.set(attrOuter, value)
 				}
 			}
-		}
+		},
+		"textarea": __text
 	},
 	formListerAttribute = function(key, currentNode, parserNode, vi, /*dm_id,*/ handle, triggerTable) {
 		var attrOuter = _getAttrOuter(parserNode),
@@ -2965,15 +2982,14 @@ var _formCache = {},
 			if (!eventConfig) return;
 			var elementHashCode = $.hashCode(currentNode, "form"),
 				formCollection,
-				outerFormHandle,
-				innerFormHandle;
+				outerFormHandle;
 			if (eventConfig) {
 				typeof eventConfig === "function" && (eventConfig = eventConfig(currentNode));
 				eventNames = eventConfig.eventNames;
 				formCollection = _formCache[elementHashCode] || (_formCache[elementHashCode] = {});
 
 				if (!eventConfig.inner) {
-					innerFormHandle = function(e /*, vi, attrOuter*/ ) {
+					function innerForHashCode(e, vi, attrOuter /**/ ) {
 						var obj = vi.get(attrOuter)
 						if (obj && obj[_DM_extends_object_constructor] && obj.form) {
 							vi.set(attrOuter, obj.form.apply(this, arguments))
@@ -2981,17 +2997,21 @@ var _formCache = {},
 							vi.set(attrOuter, this[eventConfig.attributeName])
 						}
 					};
-					eventConfig.inner = innerFormHandle;
+					eventConfig.inner = _isIE? function(e, vi, attrOuter){
+						if (!_fixPropertychange) {
+							innerForHashCode.apply(this,arguments);
+						}
+					}:innerForHashCode;
 				}
 				$.ftE(eventNames, function(eventName) {
 					if (!(outerFormHandle = formCollection[eventName])) {
-						// outerFormHandle = function(e) {
-						// 	var self = this;
-						// 	outerFormHandle.before && outerFormHandle.before.call(this, e, vi)
-						// 	outerFormHandle.inner.call(this, e, vi);
-						// 	outerFormHandle.after && outerFormHandle.after.call(this, e, vi)
-						// }
-						outerFormHandle = Function('o,v,k' /*eventConfig,vi,attrOuter(bind-key)*/ , 'return function(e){var s=this;' + (eventConfig.before ? 'o.before.call(s,e,v,k);' : '') + 'o.inner.call(s,e,v,k);' + (eventConfig.after ? 'o.after.call(s,e,v,k);' : '') + '}')(eventConfig, vi, attrOuter);
+						outerFormHandle = function(e) {
+							var self = this;
+							eventConfig.before && eventConfig.before.call(this, e, vi, attrOuter)
+							eventConfig.inner.call(this, e, vi, attrOuter);
+							eventConfig.after && eventConfig.after.call(this, e, vi, attrOuter)
+						}
+						// outerFormHandle = Function('o,v,k' /*eventConfig,vi,attrOuter(bind-key)*/ , 'return function(e){var s=this;' + (eventConfig.before ? 'o.before.call(s,e,v,k);' : '') + 'o.inner.call(s,e,v,k);' + (eventConfig.after ? 'o.after.call(s,e,v,k);' : '') + '}')(eventConfig, vi, attrOuter);
 						_registerEvent(currentNode, eventName, outerFormHandle, elementHashCode);
 						formCollection[eventName] = outerFormHandle;
 					}
@@ -3023,7 +3043,7 @@ _AttributeHandleEvent.select = function(key, currentNode, parserNode, vi) { //se
 		data = vi.get(attrOuter),
 		selectHashCode = $.hashCode(currentNode, "selected");
 	currentNode[selectHashCode] = attrOuter;
-	// console.log(typeof , currentNode, selectHashCode)
+	// console.log(attrOuter,typeof data, currentNode, selectHashCode)
 	if (data instanceof Array) {
 		$.ftE(currentNode.options, function(option) {
 			option.selected = ($.iO(data, option.value) !== -1)
@@ -3035,14 +3055,15 @@ _AttributeHandleEvent.select = function(key, currentNode, parserNode, vi) { //se
 	}
 }
 var _triggersEach = V.triggers["#each"];
-V.rt("#each",function(handle, index, parentHandle){
+V.rt("#each", function(handle, index, parentHandle) {
 	var trigger = _triggersEach(handle, index, parentHandle);
-	if (parentHandle.type==="element"&&parentHandle.node.type.toLowerCase()==="select-one") {
+	if (parentHandle.type === "element" && parentHandle.node.tagName.toLowerCase() === "select") {
 		var _triggerEvent = trigger.event;
-		trigger.event = function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID){
-			var result= _triggerEvent.apply(this,arguments)
-			var currentNode =NodeList_of_ViewInstance[parentHandle.id].currentNode;
-			dataManager.touchOff(currentNode[$.hashCode(currentNode, "selected")])
+		trigger.event = function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
+			var result = _triggerEvent.apply(this, arguments),
+				currentNode = NodeList_of_ViewInstance[parentHandle.id].currentNode,
+				touchKey = currentNode[$.hashCode(currentNode, "selected")];
+			touchKey && dataManager.touchOff(touchKey)
 			return result;
 		}
 	}

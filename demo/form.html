@@ -25,7 +25,7 @@
 		<fieldset>
 			<legend>text</legend>
 			<input type="text" bind-form="{{'text'}}" attr-value="{{text}}">
-			<p>result:{{text}}</p>
+			<p>result: {{text}}</p>
 		</fieldset>
 		<fieldset>
 			<legend>radio</legend>
@@ -37,13 +37,14 @@
 			<input id="r2_{{$THIS}}" type="radio" bind-form="{{'$PARENT.radio'}}" attr-checked="{{$PARENT.radio}}" name="radio_2" value="Radio{{$THIS}}">
 			<!-- the name="radio_2" couldn't same as "radio" which will be two same radio-input and ony one will be selected -->
 			{{/each}}
-			<p>result:{{radio}}</p>
+			<p>result: {{radio}}</p>
+			<input id="radio_input" type="text" attr-value="{{radio}}" bind-form="{{'radio'}}">
 		</fieldset>
 		<fieldset>
 			<legend>checkbox</legend>
 			<input type="checkbox" bind-form="{{'checkbox1'}}" attr-checked="{{checkbox1}}">
 			<input type="checkbox" bind-form="{{'checkbox2'}}" attr-checked="{{checkbox2}}">
-			<p>result:{{checkbox1}} & {{checkbox2}}</p>
+			<p>result: {{checkbox1}} & {{checkbox2}}</p>
 		</fieldset>
 		<fieldset>
 			<legend>selected</legend>
@@ -61,11 +62,15 @@
 			</select>
 			<select name="select" bind-form="{{'select.value'}}" attr-selected="{{@select.value}}" attr-multiple="{{select.is_multiple}}" >
 				{{#each @select.items}}
-				<option attr-value="{{$THIS}}">{{$THIS}}</option>
+				<option attr-value="{{$THIS}}">···{{$THIS}}</option>
 				{{/each}}
 			</select>
-			<p>result:{{select.value}}</p>
+			<p>result: {{select.value}}</p>
 			<input type="text" bind-form="{{'select.value'}}" attr-value="{{select.value}}">
+		</fieldset>
+		<fieldset>
+			<legend>textared</legend>
+			<textarea name="bigtext" id="bigtext" cols="30" rows="10" attr-value="{{text}}"  bind-form="{{'text'}}" ></textarea>
 		</fieldset>
 	</div>
 </body>
@@ -74,9 +79,6 @@
 
 <script type="text/javascript">
 ViewParser.ready(function  (argument) {
-	select = document.getElementsByName("select")[0]
-	span = document.createElement("span");
-	span.innerHTML = "???"
-	select.appendChild(span)
+
 })
 </script>

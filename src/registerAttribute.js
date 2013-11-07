@@ -76,6 +76,7 @@ draggable
 			result;
 		$.fE(attrHandles, function(attrHandle) {
 			if (attrHandle.match(attrKey)) {
+				// if (element.type==="textarea") {debugger}
 				result = attrHandle.handle(attrKey,element);
 				return $FALSE
 			}
