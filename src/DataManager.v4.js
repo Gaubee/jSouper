@@ -158,24 +158,28 @@ var DM_proto = DataManager.prototype = {
 					};
 					break;
 				default: //find Object by the key-dot-path and change it
-					var database = self._database || (self._database = {}),
-						sObj,
-						cache_n_Obj = database,
-						cache_cache_n_Obj,
-						arrKey = key.split("."),
-						lastKey = arrKey.pop();
-					$.ftE(arrKey, function(currentKey) {
-						cache_cache_n_Obj = cache_n_Obj;
-						cache_n_Obj = cache_n_Obj[currentKey] || (cache_n_Obj[currentKey] = {})
-					});
-					if ((sObj = cache_n_Obj[lastKey]) && sObj[_DM_extends_object_constructor]) {
-						sObj.set(nObj) //call ExtendsClass API
-					} else if (cache_n_Obj instanceof Object) {
-						cache_n_Obj[lastKey] = nObj;
-					} else if (cache_cache_n_Obj) {
-						(cache_cache_n_Obj[$.lI(arrKey)] = {})[lastKey] = nObj
-					} else { //arrKey.length === 0,and database instanceof no-Object
-						(self._database = {})[lastKey] = nObj
+					if (nObj !== DM_proto.get.call(self,key)) {
+						var database = self._database || (self._database = {}),
+							sObj,
+							cache_n_Obj = database,
+							cache_cache_n_Obj,
+							arrKey = key.split("."),
+							lastKey = arrKey.pop();
+						$.ftE(arrKey, function(currentKey) {
+							cache_cache_n_Obj = cache_n_Obj;
+							cache_n_Obj = cache_n_Obj[currentKey] || (cache_n_Obj[currentKey] = {})
+						});
+						if ((sObj = cache_n_Obj[lastKey]) && sObj[_DM_extends_object_constructor]) {
+							sObj.set(nObj) //call ExtendsClass API
+						} else if (cache_n_Obj instanceof Object) {
+							cache_n_Obj[lastKey] = nObj;
+						} else if (cache_cache_n_Obj) {
+							(cache_cache_n_Obj[$.lI(arrKey)] = {})[lastKey] = nObj
+						} else { //arrKey.length === 0,and database instanceof no-Object
+							(self._database = {})[lastKey] = nObj
+						}
+					}else if(!(nObj instanceof Object)){//no any change
+						return;
 					}
 			}
 			// $.p(setStacks,self.id);
