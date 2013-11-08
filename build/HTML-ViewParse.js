@@ -532,7 +532,7 @@ var DM_proto = DataManager.prototype = {
 			setStacks = DataManager.session.setStacks,
 			result_dm = result.dataManager,
 			result_dm_id = result_dm.id;
-		if ($.iO(setStacks, result_dm_id) === -1 ) { //maybe have many fork by the ExtendsClass
+		if ($.iO(setStacks, result_dm_id) === -1) { //maybe have many fork by the ExtendsClass
 			$.p(setStacks, result_dm_id);
 			result = result.key ? result_dm.set(result.key, nObj) : result_dm.set(nObj);
 			// result = result_dm.touchOff(result.key)
@@ -547,7 +547,7 @@ var DM_proto = DataManager.prototype = {
 					};
 					break;
 				default: //find Object by the key-dot-path and change it
-					if (nObj !== DM_proto.get.call(self,key)) {
+					if (nObj !== DM_proto.get.call(self, key)) {
 						var database = self._database || (self._database = {}),
 							sObj,
 							cache_n_Obj = database,
@@ -567,7 +567,7 @@ var DM_proto = DataManager.prototype = {
 						} else { //arrKey.length === 0,and database instanceof no-Object
 							(self._database = {})[lastKey] = nObj
 						}
-					}else if(!(nObj instanceof Object)){//no any change
+					} else if (!(nObj instanceof Object)) { //no any change
 						return;
 					}
 			}
@@ -634,8 +634,9 @@ var DM_proto = DataManager.prototype = {
 		return result;
 	},
 	touchOff: function(key) { //always touchoff from toppest dm
-		var database = this._database;
-		$.ftE($.s(_getAllSiblingDataManagers(this)), function(dm) {
+		var self = this,
+			database = self._database;
+		$.ftE($.s(_getAllSiblingDataManagers(self)), function(dm) {
 			dm._database = database;
 			dm._touchOff(key)
 		})
@@ -648,18 +649,6 @@ var DM_proto = DataManager.prototype = {
 			chidlUpdateKey = [],
 			allUpdateKey,
 			triggerCollection;
-		//self
-		triggerKeys.forIn(function(triggerCollection, triggerKey) {
-			// console.log("All triggerKey:",triggerKey)
-
-			if ( /*triggerKey.indexOf(key ) === 0 || key.indexOf(triggerKey ) === 0*/ !key||!triggerKey || key === triggerKey || triggerKey.indexOf(key + ".") === 0 || key.indexOf(triggerKey + ".") === 0) {
-				// console.log("filter triggerKey:",triggerKey)
-				$.p(updateKey, triggerKey)
-				$.ftE(triggerCollection, function(smartTriggerHandle) {
-					smartTriggerHandle.event(triggerKeys);
-				})
-			}
-		});
 		//child
 		$.ftE(self._subsetDataManagers, function(childDataManager) {
 			// debugger
@@ -678,6 +667,18 @@ var DM_proto = DataManager.prototype = {
 				// childDataManager.touchOff("")
 			}
 			$.p(chidlUpdateKey, childResult);
+		});
+		//self
+		triggerKeys.forIn(function(triggerCollection, triggerKey) {
+			// console.log("All triggerKey:",triggerKey)
+
+			if ( /*triggerKey.indexOf(key ) === 0 || key.indexOf(triggerKey ) === 0*/ !key || !triggerKey || key === triggerKey || triggerKey.indexOf(key + ".") === 0 || key.indexOf(triggerKey + ".") === 0) {
+				// console.log("filter triggerKey:",triggerKey)
+				$.p(updateKey, triggerKey)
+				$.ftE(triggerCollection, function(smartTriggerHandle) {
+					smartTriggerHandle.event(triggerKeys);
+				})
+			}
 		});
 		return {
 			key: key,
@@ -3032,16 +3033,24 @@ _AttributeHandleEvent.select = function(key, currentNode, parserNode, vi) { //se
 		})
 	}
 }
-var _triggersEach = V.triggers["#each"];
+var _triggersEach = V.triggers["#each"],
+	_touchOffLock;//不好的字段设计可能会造成死循环，使用锁避免重复注册触发事件。
 V.rt("#each", function(handle, index, parentHandle) {
 	var trigger = _triggersEach(handle, index, parentHandle);
 	if (parentHandle.type === "element" && parentHandle.node.tagName.toLowerCase() === "select") {
 		var _triggerEvent = trigger.event;
 		trigger.event = function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
-			var result = _triggerEvent.apply(this, arguments),
-				currentNode = NodeList_of_ViewInstance[parentHandle.id].currentNode,
-				touchKey = currentNode[$.hashCode(currentNode, "selected")];
-			touchKey && dataManager.touchOff(touchKey)
+			var result = _triggerEvent.apply(this, arguments);
+			if (!_touchOffLock) {
+				var currentNode = NodeList_of_ViewInstance[parentHandle.id].currentNode,
+					touchKey = currentNode[$.hashCode(currentNode, "selected")];
+					// setTimeout(function(){
+						_touchOffLock = $TRUE;
+						console.log("touchOff selected")
+						touchKey && dataManager.touchOff(touchKey)
+						_touchOffLock = $FALSE;
+					// },0)
+			}
 			return result;
 		}
 	}

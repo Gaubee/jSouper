@@ -143,7 +143,7 @@ var DM_proto = DataManager.prototype = {
 			setStacks = DataManager.session.setStacks,
 			result_dm = result.dataManager,
 			result_dm_id = result_dm.id;
-		if ($.iO(setStacks, result_dm_id) === -1 ) { //maybe have many fork by the ExtendsClass
+		if ($.iO(setStacks, result_dm_id) === -1) { //maybe have many fork by the ExtendsClass
 			$.p(setStacks, result_dm_id);
 			result = result.key ? result_dm.set(result.key, nObj) : result_dm.set(nObj);
 			// result = result_dm.touchOff(result.key)
@@ -158,7 +158,7 @@ var DM_proto = DataManager.prototype = {
 					};
 					break;
 				default: //find Object by the key-dot-path and change it
-					if (nObj !== DM_proto.get.call(self,key)) {
+					if (nObj !== DM_proto.get.call(self, key)) {
 						var database = self._database || (self._database = {}),
 							sObj,
 							cache_n_Obj = database,
@@ -178,7 +178,7 @@ var DM_proto = DataManager.prototype = {
 						} else { //arrKey.length === 0,and database instanceof no-Object
 							(self._database = {})[lastKey] = nObj
 						}
-					}else if(!(nObj instanceof Object)){//no any change
+					} else if (!(nObj instanceof Object)) { //no any change
 						return;
 					}
 			}
@@ -245,8 +245,9 @@ var DM_proto = DataManager.prototype = {
 		return result;
 	},
 	touchOff: function(key) { //always touchoff from toppest dm
-		var database = this._database;
-		$.ftE($.s(_getAllSiblingDataManagers(this)), function(dm) {
+		var self = this,
+			database = self._database;
+		$.ftE($.s(_getAllSiblingDataManagers(self)), function(dm) {
 			dm._database = database;
 			dm._touchOff(key)
 		})
@@ -259,18 +260,6 @@ var DM_proto = DataManager.prototype = {
 			chidlUpdateKey = [],
 			allUpdateKey,
 			triggerCollection;
-		//self
-		triggerKeys.forIn(function(triggerCollection, triggerKey) {
-			// console.log("All triggerKey:",triggerKey)
-
-			if ( /*triggerKey.indexOf(key ) === 0 || key.indexOf(triggerKey ) === 0*/ !key||!triggerKey || key === triggerKey || triggerKey.indexOf(key + ".") === 0 || key.indexOf(triggerKey + ".") === 0) {
-				// console.log("filter triggerKey:",triggerKey)
-				$.p(updateKey, triggerKey)
-				$.ftE(triggerCollection, function(smartTriggerHandle) {
-					smartTriggerHandle.event(triggerKeys);
-				})
-			}
-		});
 		//child
 		$.ftE(self._subsetDataManagers, function(childDataManager) {
 			// debugger
@@ -289,6 +278,18 @@ var DM_proto = DataManager.prototype = {
 				// childDataManager.touchOff("")
 			}
 			$.p(chidlUpdateKey, childResult);
+		});
+		//self
+		triggerKeys.forIn(function(triggerCollection, triggerKey) {
+			// console.log("All triggerKey:",triggerKey)
+
+			if ( /*triggerKey.indexOf(key ) === 0 || key.indexOf(triggerKey ) === 0*/ !key || !triggerKey || key === triggerKey || triggerKey.indexOf(key + ".") === 0 || key.indexOf(triggerKey + ".") === 0) {
+				// console.log("filter triggerKey:",triggerKey)
+				$.p(updateKey, triggerKey)
+				$.ftE(triggerCollection, function(smartTriggerHandle) {
+					smartTriggerHandle.event(triggerKeys);
+				})
+			}
 		});
 		return {
 			key: key,
