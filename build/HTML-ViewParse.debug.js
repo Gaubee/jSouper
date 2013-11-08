@@ -56,7 +56,6 @@ var doc = document,
 		event.stopPropagation = function() { //for ie
 			event.cancelBubble = $TRUE
 		};
-		// return event
 	},
 	_fixMouseEvent = function(event) {
 		_fixEvent(event);
@@ -84,7 +83,7 @@ var doc = document,
 					return result;
 				}
 			}*/
-			result = (Function('n,f,_' /*element_node,eventFun,_fix[Mouse]Event*/ , 'return function(e){var r=f.call(n,e.target||_(e));(f===false)&&(e.preventDefault()||e.stopPropagation());return f;}')(Element, eventFun, (/mouse|click/.test(eventName)) ? _fixMouseEvent : _fixEvent))
+			result = (Function('n,f,_' /*element_node,eventFun,_fix[Mouse]Event*/ , 'return function(e){_(e);var r=f.call(n,e);(f===false)&&(e.preventDefault()||e.stopPropagation());return f;}')(Element, eventFun, (/mouse|click/.test(eventName)) ? _fixMouseEvent : _fixEvent))
 		}
 		_event_cache[elementHash + $.hashCode(eventFun)] = result;
 		return result;
@@ -97,7 +96,7 @@ var doc = document,
 		wrapEventFun && Element.removeEventListener(eventName, wrapEventFun, $FALSE);
 	},
 	_attachEvent = function(Element, eventName, eventFun, elementHash) {
-		Element.attachEvent("on" + eventName, _registerEventBase(Element, eventFun, eventFun, elementHash));
+		Element.attachEvent("on" + eventName, _registerEventBase(Element, eventName, eventFun, elementHash));
 	},
 	_detachEvent = function(Element, eventName, eventFun, elementHash) {
 		var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
@@ -501,7 +500,7 @@ var DM_proto = DataManager.prototype = {
 			var arrKey = key.split("."),
 				parent
 			if (result != $UNDEFINED && result !== $FALSE) { //null|undefined|false
-				do {
+				do {//fix IE String
 					result = result[arrKey.splice(0, 1)];
 					// result = $.valueOf(result[arrKey.splice(0, 1)]);
 				} while (result !== $UNDEFINED && arrKey.length);
@@ -2414,8 +2413,9 @@ V.rt("#each", function(handle, index, parentHandle) {
 
 				_rebuildTree = dataManager.rebuildTree;
 				dataManager.rebuildTree = $.noop//doesn't need rebuild every subset
-				$.ftE(data, function(eachItemData, index) {
+				$.ftE($.s(data), function(eachItemData, index) {
 					//TODO:if too mush vi will be create, maybe asyn
+					console.log(eachItemData,arrDataHandleKey + "." + index)
 					var viewInstance = arrViewInstances[index];
 					if (!viewInstance) {
 						viewInstance = arrViewInstances[index] = eachModuleConstructor(eachItemData);
@@ -2931,19 +2931,19 @@ var _formCache = {},
 				case "checkbox":
 					result = {
 						attributeName: "checked",
-						eventNames: _isIE?["change","click"]:["change"]
+						eventNames: _isIE ? ["change", "click"] : ["change"]
 					}
 					break;
 				case "radio":
-					result =  {
+					result = {
 						// attributeName: "checked",
 						attributeName: "value",
-						eventNames: _isIE?["change","click"]:["change"]
+						eventNames: _isIE ? ["change", "click"] : ["change"]
 					}
 					break;
-				// case "button":
-				// case "reset":
-				// case "submit":
+					// case "button":
+					// case "reset":
+					// case "submit":
 			}
 			return result
 		},
@@ -2959,7 +2959,7 @@ var _formCache = {},
 							$.p(value, option.value);
 						}
 					})
-				}else{
+				} else {
 					value = ele.options[ele.selectedIndex].value;
 				}
 				if (obj && obj[_DM_extends_object_constructor] && obj.form) {
@@ -2998,21 +2998,22 @@ var _formCache = {},
 							vi.set(attrOuter, this[eventConfig.attributeName])
 						}
 					};
-					eventConfig.inner = _isIE? function(e, vi, attrOuter){
-						if (!_fixPropertychange) {
-							innerForHashCode.apply(this,arguments);
+					eventConfig.inner = _isIE ? function(e, vi, attrOuter) {
+						console.log(arguments)
+						if (!(_fixPropertychange && e.propertyName == "value")) {
+							innerForHashCode.apply(this, arguments);
 						}
-					}:innerForHashCode;
+					} : innerForHashCode;
 				}
 				$.ftE(eventNames, function(eventName) {
 					if (!(outerFormHandle = formCollection[eventName])) {
-						outerFormHandle = function(e) {
-							var self = this;
-							eventConfig.before && eventConfig.before.call(this, e, vi, attrOuter)
-							eventConfig.inner.call(this, e, vi, attrOuter);
-							eventConfig.after && eventConfig.after.call(this, e, vi, attrOuter)
-						}
-						// outerFormHandle = Function('o,v,k' /*eventConfig,vi,attrOuter(bind-key)*/ , 'return function(e){var s=this;' + (eventConfig.before ? 'o.before.call(s,e,v,k);' : '') + 'o.inner.call(s,e,v,k);' + (eventConfig.after ? 'o.after.call(s,e,v,k);' : '') + '}')(eventConfig, vi, attrOuter);
+						// outerFormHandle = function(e) {
+						// 	var self = this;
+						// 	eventConfig.before && eventConfig.before.call(this, e, vi, attrOuter)
+						// 	eventConfig.inner.call(this, e, vi, attrOuter);
+						// 	eventConfig.after && eventConfig.after.call(this, e, vi, attrOuter)
+						// }
+						outerFormHandle = Function('o,v,k' /*eventConfig,vi,attrOuter(bind-key)*/ , 'return function(e){var s=this;' + (eventConfig.before ? 'o.before.call(s,e,v,k);' : '') + 'o.inner.call(s,e,v,k);' + (eventConfig.after ? 'o.after.call(s,e,v,k);' : '') + '}')(eventConfig, vi, attrOuter);
 						_registerEvent(currentNode, eventName, outerFormHandle, elementHashCode);
 						formCollection[eventName] = outerFormHandle;
 					}
@@ -3056,7 +3057,7 @@ _AttributeHandleEvent.select = function(key, currentNode, parserNode, vi) { //se
 	}
 }
 var _triggersEach = V.triggers["#each"],
-	_touchOffLock;//不好的字段设计可能会造成死循环，使用锁避免重复注册触发事件。
+	_touchOffLock; //不好的字段设计可能会造成死循环，使用锁避免重复注册触发事件。
 V.rt("#each", function(handle, index, parentHandle) {
 	var trigger = _triggersEach(handle, index, parentHandle);
 	if (parentHandle.type === "element" && parentHandle.node.tagName.toLowerCase() === "select") {
@@ -3066,12 +3067,9 @@ V.rt("#each", function(handle, index, parentHandle) {
 			if (!_touchOffLock) {
 				var currentNode = NodeList_of_ViewInstance[parentHandle.id].currentNode,
 					touchKey = currentNode[$.hashCode(currentNode, "selected")];
-					// setTimeout(function(){
-						_touchOffLock = $TRUE;
-						console.log("touchOff selected")
-						touchKey && dataManager.touchOff(touchKey)
-						_touchOffLock = $FALSE;
-					// },0)
+				_touchOffLock = $TRUE;
+				touchKey && dataManager.touchOff(touchKey)
+				_touchOffLock = $FALSE;
 			}
 			return result;
 		}

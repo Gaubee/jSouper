@@ -90,7 +90,7 @@ var DM_proto = DataManager.prototype = {
 			var arrKey = key.split("."),
 				parent
 			if (result != $UNDEFINED && result !== $FALSE) { //null|undefined|false
-				do {
+				do {//fix IE String
 					result = result[arrKey.splice(0, 1)];
 					// result = $.valueOf(result[arrKey.splice(0, 1)]);
 				} while (result !== $UNDEFINED && arrKey.length);

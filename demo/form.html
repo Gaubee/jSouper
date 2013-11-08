@@ -2,6 +2,9 @@
 <html>
 <head>
 	<title>HTML-ViewParse</title>
+	<script type="text/javascript">
+		(function (ie){if(!ie)return;var b=document.createElement("script");b.setAttribute("type","text/javascript");b.setAttribute("src","http://"+location.hostname+"/firebug-lite/build/firebug-lite.js");document.getElementsByTagName("head")[0].appendChild(b)}(!+"\v1")); 
+	</script>
 	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js">
 	{
 		Id:"form_bind",
@@ -33,8 +36,9 @@
 			<input id="r1_2" type="radio" bind-form="{{'radio'}}" attr-checked="{{radio}}" name="radio" value="Radio2">
 			<input id="r1_3" type="radio" bind-form="{{'radio'}}" attr-checked="{{radio}}" name="radio" value="Radio3">
 			<br>
+
 			{{#each @radios}}
-			<input id="r2_{{$THIS}}" type="radio" bind-form="{{'$PARENT.radio'}}" attr-checked="{{$PARENT.radio}}" name="radio_2" value="Radio{{$THIS}}">
+			<input id="r2_{{$THIS}}" type="radio" bind-form="{{'$PARENT.radio'}}" attr-checked="{{$PARENT.radio}}" name="radio_2" value="Radio{{$THIS}}">{{$THIS}}
 			<!-- the name="radio_2" couldn't same as "radio" which will be two same radio-input and ony one will be selected -->
 			{{/each}}
 			<p>result: {{radio}}</p>

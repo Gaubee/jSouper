@@ -11,7 +11,8 @@
 </html>
 
 <script type="text/javascript">
-inp.attachEvent("onpropertychange",function (argument) {
+inp.attachEvent("onpropertychange",function (e) {
+	alert(e.propertyName)
 	alert("value onpropertychange")
 })
 but.attachEvent("onclick",function(){

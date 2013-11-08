@@ -32,7 +32,6 @@ var doc = document,
 		event.stopPropagation = function() { //for ie
 			event.cancelBubble = $TRUE
 		};
-		// return event
 	},
 	_fixMouseEvent = function(event) {
 		_fixEvent(event);
@@ -60,7 +59,7 @@ var doc = document,
 					return result;
 				}
 			}*/
-			result = (Function('n,f,_' /*element_node,eventFun,_fix[Mouse]Event*/ , 'return function(e){var r=f.call(n,e.target||_(e));(f===false)&&(e.preventDefault()||e.stopPropagation());return f;}')(Element, eventFun, (/mouse|click/.test(eventName)) ? _fixMouseEvent : _fixEvent))
+			result = (Function('n,f,_' /*element_node,eventFun,_fix[Mouse]Event*/ , 'return function(e){_(e);var r=f.call(n,e);(f===false)&&(e.preventDefault()||e.stopPropagation());return f;}')(Element, eventFun, (/mouse|click/.test(eventName)) ? _fixMouseEvent : _fixEvent))
 		}
 		_event_cache[elementHash + $.hashCode(eventFun)] = result;
 		return result;
@@ -73,7 +72,7 @@ var doc = document,
 		wrapEventFun && Element.removeEventListener(eventName, wrapEventFun, $FALSE);
 	},
 	_attachEvent = function(Element, eventName, eventFun, elementHash) {
-		Element.attachEvent("on" + eventName, _registerEventBase(Element, eventFun, eventFun, elementHash));
+		Element.attachEvent("on" + eventName, _registerEventBase(Element, eventName, eventFun, elementHash));
 	},
 	_detachEvent = function(Element, eventName, eventFun, elementHash) {
 		var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
