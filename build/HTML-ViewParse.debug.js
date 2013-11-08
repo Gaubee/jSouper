@@ -66,8 +66,34 @@ var doc = document,
 		event.pageX = event.clientX + ~~_box.scrollLeft - ~~_box.clientLeft;
 		event.pageY = event.clientY + ~~_box.scrollTop - ~~_box.clientTop;
 	},
+	_fixMouseEnterAndLeave = function(eventFun) {
+		return function(e) {
+			var topNode = e.relatedTarget,
+				self = this;
+			/*compareDocumentPosition
+			0 self == topNode ===> 
+			1 self in deffriend Document with topNode
+			2 topNode befor self
+			4 self befor topNode
+			8 topNode contains self
+			16 self contains topNode  ==>  
+			32 Brower private*/
+			if (!topNode || (topNode !== self && !(self.compareDocumentPosition(topNode) & 16))) {//@Rubylouvre
+				var e_type = e.type[6] === "v" ? "mouseenter" : "mouseleave";
+				delete e.type;
+				e.type = e_type;
+				return eventFun.call(self, e);
+			}
+			/*else{
+				return _fixMouseEnterAndLeave;//stop run 
+			}*/
+		}
+	},
 	_registerEventBase = function(Element, eventName, eventFun, elementHash) {
-		var result = eventFun;
+		var result = {
+			name: eventName,
+			fn: eventFun
+		};
 		if (_isIE) {
 			/*if (/mouse|click/.test(eventName)) {
 				result = function(e) { //in DOM2,e always exits
@@ -82,20 +108,25 @@ var doc = document,
 					return result;
 				}
 			}*/
-			result = (Function('n,f,_' /*element_node,eventFun,_fix[Mouse]Event*/ , 'return function(e){_(e);var r=f.call(n,e);(f===false)&&(e.preventDefault()||e.stopPropagation());return f;}')(Element, eventFun, (/mouse|click/.test(eventName)) ? _fixMouseEvent : _fixEvent))
+			result.fn = (Function('n,f,_' /*element_node,eventFun,_fix[Mouse]Event*/ , 'return function(e){_(e);var r=f.call(n,e);(f===false)&&(e.preventDefault()||e.stopPropagation());return f;}')(Element, eventFun, (/mouse|click/.test(eventName)) ? _fixMouseEvent : _fixEvent))
+		} else if (/mouseenter|mouseleave/.test(eventName)) {
+			result.fn = _fixMouseEnterAndLeave(eventFun)
+			result.name = eventName[5] === "e" ? "mouseover" : "mouseout";
 		}
 		_event_cache[elementHash + $.hashCode(eventFun)] = result;
 		return result;
 	},
 	_addEventListener = function(Element, eventName, eventFun, elementHash) {
-		Element.addEventListener(eventName, _registerEventBase(Element, eventName, eventFun, elementHash), $FALSE);
+		var eventConfig = _registerEventBase(Element, eventName, eventFun, elementHash)
+		Element.addEventListener(eventConfig.name, eventConfig.fn, $FALSE);
 	},
 	_removeEventListener = function(Element, eventName, eventFun, elementHash) {
 		var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
 		wrapEventFun && Element.removeEventListener(eventName, wrapEventFun, $FALSE);
 	},
 	_attachEvent = function(Element, eventName, eventFun, elementHash) {
-		Element.attachEvent("on" + eventName, _registerEventBase(Element, eventName, eventFun, elementHash));
+		var eventConfig = _registerEventBase(Element, eventName, eventFun, elementHash)
+		Element.attachEvent("on" + eventConfig.name, eventConfig.fn);
 	},
 	_detachEvent = function(Element, eventName, eventFun, elementHash) {
 		var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
@@ -1525,7 +1556,7 @@ function _create(data) { //data maybe basedata or dataManager
  * View Instance constructor
  */
 
-(function DM_extends_fot_VI() {
+(function() { //DM_extends_fot_VI
 	var _rebuildTree = DM_proto.rebuildTree;
 	DM_proto.rebuildTree = function() {
 		var self = this,
@@ -1535,7 +1566,7 @@ function _create(data) { //data maybe basedata or dataManager
 				var TEMP = smartTrigger.TEMP;
 				DataManager.get(TEMP.dm_id).get(TEMP.sourceKey);
 				var topGetter = DataManager.session.topGetter;
-				if(topGetter){
+				if (topGetter) {
 					if (topGetter !== DataManager.get(TEMP.dm_id)) {
 						smartTrigger.bind(topGetter._triggerKeys);
 						TEMP.dm_id = topGetter.id;
@@ -1551,7 +1582,7 @@ function _create(data) { //data maybe basedata or dataManager
 						var TEMP = smartTrigger.TEMP;
 						DataManager.get(TEMP.dm_id).get(TEMP.sourceKey);
 						var topGetter = DataManager.session.topGetter;
-						if (topGetter&&topGetter !== DataManager.get(TEMP.dm_id)) {
+						if (topGetter && topGetter !== DataManager.get(TEMP.dm_id)) {
 							smartTrigger.unbind(DataManager.get(TEMP.dm_id)._triggerKeys).bind(topGetter._triggerKeys);
 							TEMP.dm_id = topGetter.id;
 							smartTrigger.event(topGetter._triggerKeys);
@@ -1580,9 +1611,9 @@ function _create(data) { //data maybe basedata or dataManager
 				$.ftE(viewInstanceTriggers, function(sKey) {
 					self.get(sKey);
 					var baseKey = DataManager.session.filterKey,
-						topGetterTriggerKeys = DataManager.session.topGetter&&DataManager.session.topGetter._triggerKeys,
+						topGetterTriggerKeys = DataManager.session.topGetter && DataManager.session.topGetter._triggerKeys,
 						smartTrigger = new SmartTriggerHandle(
-							baseKey||"", //match key
+							baseKey || "", //match key
 
 							function(smartTriggerSet) { //event
 								viewInstance.touchOff(sKey);
@@ -1594,7 +1625,7 @@ function _create(data) { //data maybe basedata or dataManager
 							}
 						);
 					$.p(smartTriggers, smartTrigger);
-					topGetterTriggerKeys&&smartTrigger.bind(topGetterTriggerKeys); // topGetterTriggerKeys.push(baseKey, smartTrigger);
+					topGetterTriggerKeys && smartTrigger.bind(topGetterTriggerKeys); // topGetterTriggerKeys.push(baseKey, smartTrigger);
 				});
 			}
 			$.p(viewInstance.dataManager._viewInstances, viewInstance);
@@ -1605,7 +1636,7 @@ function _create(data) { //data maybe basedata or dataManager
 	var _subset = DM_proto.subset;
 	DM_proto.subset = function(viewInstance, prefix) {
 		var self = this;
-		
+
 		if (viewInstance instanceof DataManager) {
 			_subset.call(self, viewInstance, prefix);
 		} else {
@@ -1677,15 +1708,15 @@ function _bubbleTrigger(tiggerCollection, NodeList, dataManager /*, eventTrigger
 		touchHandleIdSet = VI_session.touchHandleIdSet;
 	$.p(touchStacks, eventStack); //Add a new layer event collector
 	$.fE(tiggerCollection, function(trigger) { //TODO:测试参数长度和效率的平衡点，减少参数传递的数量
-		if (!touchHandleIdSet[trigger.handleId]) {//To prevent repeated collection
-			$.p(eventStack,trigger)//collect trigger
-			if (/*result !== $FALSE &&*/ trigger.bubble) {
+		if (!touchHandleIdSet[trigger.handleId]) { //To prevent repeated collection
+			$.p(eventStack, trigger) //collect trigger
+			if ( /*result !== $FALSE &&*/ trigger.bubble) {
 				// Stop using the `return false` to prevent bubble triggered
 				// need to use `this. Mercifully = false` to control
 				var parentNode = NodeList[trigger.handleId].parentNode;
 				parentNode && _bubbleTrigger.call(self, parentNode._triggers, NodeList, dataManager /*, trigger*/ );
 			}
-			touchHandleIdSet[trigger.handleId]  = $TRUE;
+			touchHandleIdSet[trigger.handleId] = $TRUE;
 		}
 		/*else{
 			console.log(trigger.handleId)
@@ -1693,29 +1724,31 @@ function _bubbleTrigger(tiggerCollection, NodeList, dataManager /*, eventTrigger
 	});
 
 };
-function _moveChild(self,el){
-		var AllEachViewInstance = self._AVI,
-			AllLayoutViewInstance = self._ALVI,
-			AllWithViewInstance = self._WVI;
-			
-		$.ftE(self.NodeList[self.handleNodeTree.id].childNodes, function(child_node) {
-			var viewInstance,
-				arrayViewInstances,
-				id = child_node.id;
-			if (viewInstance = AllLayoutViewInstance[child_node.id] || AllWithViewInstance[child_node.id]) {
-				_replaceTopHandleCurrent(viewInstance, el)
-			}else if(arrayViewInstances = AllEachViewInstance[id]){
-				$.ftE(arrayViewInstances,function(viewInstance){
-					_replaceTopHandleCurrent(viewInstance,el);
-				})
-			}
-		});
-	};
+
+function _moveChild(self, el) {
+	var AllEachViewInstance = self._AVI,
+		AllLayoutViewInstance = self._ALVI,
+		AllWithViewInstance = self._WVI;
+
+	$.ftE(self.NodeList[self.handleNodeTree.id].childNodes, function(child_node) {
+		var viewInstance,
+			arrayViewInstances,
+			id = child_node.id;
+		if (viewInstance = AllLayoutViewInstance[child_node.id] || AllWithViewInstance[child_node.id]) {
+			_replaceTopHandleCurrent(viewInstance, el)
+		} else if (arrayViewInstances = AllEachViewInstance[id]) {
+			$.ftE(arrayViewInstances, function(viewInstance) {
+				_replaceTopHandleCurrent(viewInstance, el);
+			})
+		}
+	});
+};
+
 function _replaceTopHandleCurrent(self, el) {
 	self._canRemoveAble = $TRUE;
 	self.topNode(el);
 };
-ViewInstance.prototype = {
+var VI_proto = ViewInstance.prototype = {
 	reDraw: function() {
 		var self = this,
 			dataManager = self.dataManager;
@@ -1736,7 +1769,7 @@ ViewInstance.prototype = {
 		});
 		_replaceTopHandleCurrent(self, el);
 
-		_moveChild(self,el);
+		_moveChild(self, el);
 
 		return self;
 	},
@@ -1751,15 +1784,15 @@ ViewInstance.prototype = {
 			$.D.iB(elParentNode, child_node, el);
 		});
 		_replaceTopHandleCurrent(self, elParentNode);
-		
-		_moveChild(self,elParentNode);
+
+		_moveChild(self, elParentNode);
 
 		return self;
 	},
 	remove: function() {
 		var self = this,
 			el = this._packingBag;
-			// debugger
+		// debugger
 		if (self._canRemoveAble) {
 			var handleNodeTree = self.handleNodeTree,
 				NodeList = self.NodeList,
@@ -1772,18 +1805,18 @@ ViewInstance.prototype = {
 				child_node;
 
 			//TODO:use nextSilingNode
-			while(child_node = childNodes[startIndex]){
+			while (child_node = childNodes[startIndex]) {
 				if (child_node === openNode) {
 					break;
 				}
-				startIndex+=1
+				startIndex += 1
 			}
-			while(child_node = childNodes[startIndex]){
+			while (child_node = childNodes[startIndex]) {
 				$.D.ap(el, child_node);
 				if (child_node === closeNode) {
 					break;
 				}
-				startIndex+=1
+				startIndex += 1
 			}
 			_replaceTopHandleCurrent(self, el);
 			this._canRemoveAble = $FALSE; //Has being recovered into the _packingBag,can't no be remove again. --> it should be insert
@@ -1792,15 +1825,15 @@ ViewInstance.prototype = {
 	},
 	get: function get() {
 		var dm = this.dataManager;
-		return dm.get.apply(dm, arguments/*$.s(arguments)*/);
+		return dm.get.apply(dm, arguments /*$.s(arguments)*/ );
 	},
 	mix: function mix() {
 		var dm = this.dataManager;
-		return dm.mix.apply(dm, arguments/*$.s(arguments)*/)
+		return dm.mix.apply(dm, arguments /*$.s(arguments)*/ )
 	},
 	set: function set() {
 		var dm = this.dataManager;
-		return dm.set.apply(dm, arguments/*$.s(arguments)*/)
+		return dm.set.apply(dm, arguments /*$.s(arguments)*/ )
 	},
 	topNode: function(newCurrentTopNode) {
 		var self = this,
@@ -1832,6 +1865,13 @@ ViewInstance.prototype = {
 			})
 		})
 	},
+	on: function(eventName, fun) {
+
+	},
+	trigger: function(eventName) {
+
+	}
+	/*,
 	_collectTrigger:function(trigger,sKey){
 		var self = this,
 			smartTriggers = self._smartTriggers;
@@ -1852,9 +1892,17 @@ ViewInstance.prototype = {
 			);
 		$.p(smartTriggers, smartTrigger);
 		smartTrigger.bind(topGetterTriggerKeys);
-	}
+	}*/
 };
-
+var _allEventNames = ("blur focus focusin focusout load resize" +
+	"scroll unload click dblclick mousedown mouseup mousemove" +
+	"mouseover mouseout mouseenter mouseleave change select" +
+	"submit keydown keypress keyup error contextmenu").split(" ");
+$.ftE(_allEventNames, function(eventName) {
+	VI_proto[eventName] = function(fun) {
+		return fun ? this.on(eventName, fun) : this.trigger(eventName);
+	}
+})
 /*
  * parse function
  */
@@ -2891,10 +2939,10 @@ if (_isIE) {
 		(this._attributeHandle = __bool)(key, currentNode, parserNode);
 	}
 }
-var _boolAssignment = "|checked|selected|disabled|readonly|multiple|defer|declare|noresize|nowrap|noshade|compact|truespeed|async|typemustmatch|open|novalidate|ismap|default|seamless|autoplay|controls|loop|muted|reversed|scoped|autofocus|required|formnovalidate|editable|draggable|hidden|"
-/*for ie fix*/+"defaultSelected|";
+var _boolAssignment = " checked selected disabled readonly multiple defer declare noresize nowrap noshade compact truespeed async typemustmatch open novalidate ismap default seamless autoplay controls loop muted reversed scoped autofocus required formnovalidate editable draggable hidden "
+/*for ie fix*/+"defaultSelected ";
 V.ra(function(attrKey) {
-	return _boolAssignment.indexOf("|" + attrKey + "|") !== -1;
+	return _boolAssignment.indexOf(" " + attrKey + " ") !== -1;
 }, function(attrKey, element) {
 	var result = _AttributeHandleEvent.bool
 	switch (element.type.toLowerCase()) {
@@ -2907,30 +2955,29 @@ V.ra(function(attrKey) {
 	}
 	return result;
 })
-var _dirAssignment = "|className|value|";
+var _dirAssignment = " className value ";
 V.ra(function(attrKey){
-	return _dirAssignment.indexOf("|"+attrKey+"|")!==-1;
+	return _dirAssignment.indexOf(" "+attrKey+" ")!==-1;
 }, function() {
 	return _AttributeHandleEvent.dir;
 })
-
 var _elementCache = {},
-	eventListerAttribute = function(key, currentNode, parserNode, vi/*, dm_id*/) {
+	eventListerAttribute = function(key, currentNode, parserNode, vi /*, dm_id*/ ) {
 		var attrOuter = _getAttrOuter(parserNode),
-			eventName = key.replace("event-on", "").replace("event-", ""),
+			eventName = key.replace("event-on", "").replace("event-", "").toLowerCase(),
 			eventFun = vi.get(attrOuter), //在重用函数的过程中会出现问题
 			elementHashCode = $.hashCode(currentNode, "event"),
 			eventCollection,
 			oldEventFun;
 		if (eventFun) {
-			var wrapEventFun = function (e) {
-				return eventFun.call(this,e,vi)
+			var wrapEventFun = function(e) {
+				return eventFun.call(this, e, vi)
 			}
 			eventCollection = _elementCache[elementHashCode] || (_elementCache[elementHashCode] = {});
 			if (oldEventFun = eventCollection[eventName]) {
 				_cancelEvent(currentNode, eventName, oldEventFun, elementHashCode)
 			}
-			_registerEvent(currentNode, eventName, wrapEventFun, elementHashCode); 
+			_registerEvent(currentNode, eventName, wrapEventFun, elementHashCode);
 			eventCollection[eventName] = wrapEventFun;
 		}
 	};
@@ -3011,6 +3058,7 @@ var _formCache = {},
 			if (eventConfig) {
 				typeof eventConfig === "function" && (eventConfig = eventConfig(currentNode));
 				eventNames = eventConfig.eventNames;
+				eventConfig = $.c(eventConfig);//wrap eventConfig to set inner in diffrent eventConfig
 				formCollection = _formCache[elementHashCode] || (_formCache[elementHashCode] = {});
 
 				if (!eventConfig.inner) {
@@ -3029,16 +3077,24 @@ var _formCache = {},
 					} : innerForHashCode;
 				}
 				$.ftE(eventNames, function(eventName) {
+					eventConfig.key = attrOuter;
+					eventConfig.vi = vi;
 					if (!(outerFormHandle = formCollection[eventName])) {
-						// outerFormHandle = function(e) {
-						// 	var self = this;
-						// 	eventConfig.before && eventConfig.before.call(this, e, vi, attrOuter)
-						// 	eventConfig.inner.call(this, e, vi, attrOuter);
-						// 	eventConfig.after && eventConfig.after.call(this, e, vi, attrOuter)
-						// }
-						outerFormHandle = Function('o,v,k' /*eventConfig,vi,attrOuter(bind-key)*/ , 'return function(e){var s=this;' + (eventConfig.before ? 'o.before.call(s,e,v,k);' : '') + 'o.inner.call(s,e,v,k);' + (eventConfig.after ? 'o.after.call(s,e,v,k);' : '') + '}')(eventConfig, vi, attrOuter);
+						outerFormHandle = function(e) {
+							var self = this;
+							eventConfig.before && eventConfig.before.call(this, e, eventConfig.vi, eventConfig.key)
+							eventConfig.inner.call(this, e, eventConfig.vi, eventConfig.key);
+							eventConfig.after && eventConfig.after.call(this, e, eventConfig.vi, eventConfig.key)
+						}
+						// outerFormHandle = Function('o' /*eventConfig*/ , 'return function(e){var s=this;' + (eventConfig.before ? 'o.before.call(s,e,o.vi, o.key);' : '') + 'o.inner.call(s,e,o.vi, o.key);' + (eventConfig.after ? 'o.after.call(s,e,o.vi, o.key);' : '') + '}')(eventConfig);
+						outerFormHandle.eventConfig = eventConfig
 						_registerEvent(currentNode, eventName, outerFormHandle, elementHashCode);
 						formCollection[eventName] = outerFormHandle;
+					}else{
+						for(var i in eventConfig){
+							outerFormHandle.eventConfig[i] = eventConfig[i];
+							try{outerFormHandle.call(currentNode)}catch(e){};
+						}
 					}
 
 				});

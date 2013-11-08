@@ -42,8 +42,34 @@ var doc = document,
 		event.pageX = event.clientX + ~~_box.scrollLeft - ~~_box.clientLeft;
 		event.pageY = event.clientY + ~~_box.scrollTop - ~~_box.clientTop;
 	},
+	_fixMouseEnterAndLeave = function(eventFun) {
+		return function(e) {
+			var topNode = e.relatedTarget,
+				self = this;
+			/*compareDocumentPosition
+			0 self == topNode ===> 
+			1 self in deffriend Document with topNode
+			2 topNode befor self
+			4 self befor topNode
+			8 topNode contains self
+			16 self contains topNode  ==>  
+			32 Brower private*/
+			if (!topNode || (topNode !== self && !(self.compareDocumentPosition(topNode) & 16))) {//@Rubylouvre
+				var e_type = e.type[6] === "v" ? "mouseenter" : "mouseleave";
+				delete e.type;
+				e.type = e_type;
+				return eventFun.call(self, e);
+			}
+			/*else{
+				return _fixMouseEnterAndLeave;//stop run 
+			}*/
+		}
+	},
 	_registerEventBase = function(Element, eventName, eventFun, elementHash) {
-		var result = eventFun;
+		var result = {
+			name: eventName,
+			fn: eventFun
+		};
 		if (_isIE) {
 			/*if (/mouse|click/.test(eventName)) {
 				result = function(e) { //in DOM2,e always exits
@@ -58,20 +84,25 @@ var doc = document,
 					return result;
 				}
 			}*/
-			result = (Function('n,f,_' /*element_node,eventFun,_fix[Mouse]Event*/ , 'return function(e){_(e);var r=f.call(n,e);(f===false)&&(e.preventDefault()||e.stopPropagation());return f;}')(Element, eventFun, (/mouse|click/.test(eventName)) ? _fixMouseEvent : _fixEvent))
+			result.fn = (Function('n,f,_' /*element_node,eventFun,_fix[Mouse]Event*/ , 'return function(e){_(e);var r=f.call(n,e);(f===false)&&(e.preventDefault()||e.stopPropagation());return f;}')(Element, eventFun, (/mouse|click/.test(eventName)) ? _fixMouseEvent : _fixEvent))
+		} else if (/mouseenter|mouseleave/.test(eventName)) {
+			result.fn = _fixMouseEnterAndLeave(eventFun)
+			result.name = eventName[5] === "e" ? "mouseover" : "mouseout";
 		}
 		_event_cache[elementHash + $.hashCode(eventFun)] = result;
 		return result;
 	},
 	_addEventListener = function(Element, eventName, eventFun, elementHash) {
-		Element.addEventListener(eventName, _registerEventBase(Element, eventName, eventFun, elementHash), $FALSE);
+		var eventConfig = _registerEventBase(Element, eventName, eventFun, elementHash)
+		Element.addEventListener(eventConfig.name, eventConfig.fn, $FALSE);
 	},
 	_removeEventListener = function(Element, eventName, eventFun, elementHash) {
 		var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
 		wrapEventFun && Element.removeEventListener(eventName, wrapEventFun, $FALSE);
 	},
 	_attachEvent = function(Element, eventName, eventFun, elementHash) {
-		Element.attachEvent("on" + eventName, _registerEventBase(Element, eventName, eventFun, elementHash));
+		var eventConfig = _registerEventBase(Element, eventName, eventFun, elementHash)
+		Element.attachEvent("on" + eventConfig.name, eventConfig.fn);
 	},
 	_detachEvent = function(Element, eventName, eventFun, elementHash) {
 		var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];

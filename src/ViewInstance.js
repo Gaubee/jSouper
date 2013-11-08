@@ -2,7 +2,7 @@
  * View Instance constructor
  */
 
-(function DM_extends_fot_VI() {
+(function() { //DM_extends_fot_VI
 	var _rebuildTree = DM_proto.rebuildTree;
 	DM_proto.rebuildTree = function() {
 		var self = this,
@@ -12,7 +12,7 @@
 				var TEMP = smartTrigger.TEMP;
 				DataManager.get(TEMP.dm_id).get(TEMP.sourceKey);
 				var topGetter = DataManager.session.topGetter;
-				if(topGetter){
+				if (topGetter) {
 					if (topGetter !== DataManager.get(TEMP.dm_id)) {
 						smartTrigger.bind(topGetter._triggerKeys);
 						TEMP.dm_id = topGetter.id;
@@ -28,7 +28,7 @@
 						var TEMP = smartTrigger.TEMP;
 						DataManager.get(TEMP.dm_id).get(TEMP.sourceKey);
 						var topGetter = DataManager.session.topGetter;
-						if (topGetter&&topGetter !== DataManager.get(TEMP.dm_id)) {
+						if (topGetter && topGetter !== DataManager.get(TEMP.dm_id)) {
 							smartTrigger.unbind(DataManager.get(TEMP.dm_id)._triggerKeys).bind(topGetter._triggerKeys);
 							TEMP.dm_id = topGetter.id;
 							smartTrigger.event(topGetter._triggerKeys);
@@ -57,9 +57,9 @@
 				$.ftE(viewInstanceTriggers, function(sKey) {
 					self.get(sKey);
 					var baseKey = DataManager.session.filterKey,
-						topGetterTriggerKeys = DataManager.session.topGetter&&DataManager.session.topGetter._triggerKeys,
+						topGetterTriggerKeys = DataManager.session.topGetter && DataManager.session.topGetter._triggerKeys,
 						smartTrigger = new SmartTriggerHandle(
-							baseKey||"", //match key
+							baseKey || "", //match key
 
 							function(smartTriggerSet) { //event
 								viewInstance.touchOff(sKey);
@@ -71,7 +71,7 @@
 							}
 						);
 					$.p(smartTriggers, smartTrigger);
-					topGetterTriggerKeys&&smartTrigger.bind(topGetterTriggerKeys); // topGetterTriggerKeys.push(baseKey, smartTrigger);
+					topGetterTriggerKeys && smartTrigger.bind(topGetterTriggerKeys); // topGetterTriggerKeys.push(baseKey, smartTrigger);
 				});
 			}
 			$.p(viewInstance.dataManager._viewInstances, viewInstance);
@@ -82,7 +82,7 @@
 	var _subset = DM_proto.subset;
 	DM_proto.subset = function(viewInstance, prefix) {
 		var self = this;
-		
+
 		if (viewInstance instanceof DataManager) {
 			_subset.call(self, viewInstance, prefix);
 		} else {
@@ -154,15 +154,15 @@ function _bubbleTrigger(tiggerCollection, NodeList, dataManager /*, eventTrigger
 		touchHandleIdSet = VI_session.touchHandleIdSet;
 	$.p(touchStacks, eventStack); //Add a new layer event collector
 	$.fE(tiggerCollection, function(trigger) { //TODO:测试参数长度和效率的平衡点，减少参数传递的数量
-		if (!touchHandleIdSet[trigger.handleId]) {//To prevent repeated collection
-			$.p(eventStack,trigger)//collect trigger
-			if (/*result !== $FALSE &&*/ trigger.bubble) {
+		if (!touchHandleIdSet[trigger.handleId]) { //To prevent repeated collection
+			$.p(eventStack, trigger) //collect trigger
+			if ( /*result !== $FALSE &&*/ trigger.bubble) {
 				// Stop using the `return false` to prevent bubble triggered
 				// need to use `this. Mercifully = false` to control
 				var parentNode = NodeList[trigger.handleId].parentNode;
 				parentNode && _bubbleTrigger.call(self, parentNode._triggers, NodeList, dataManager /*, trigger*/ );
 			}
-			touchHandleIdSet[trigger.handleId]  = $TRUE;
+			touchHandleIdSet[trigger.handleId] = $TRUE;
 		}
 		/*else{
 			console.log(trigger.handleId)
@@ -170,29 +170,31 @@ function _bubbleTrigger(tiggerCollection, NodeList, dataManager /*, eventTrigger
 	});
 
 };
-function _moveChild(self,el){
-		var AllEachViewInstance = self._AVI,
-			AllLayoutViewInstance = self._ALVI,
-			AllWithViewInstance = self._WVI;
-			
-		$.ftE(self.NodeList[self.handleNodeTree.id].childNodes, function(child_node) {
-			var viewInstance,
-				arrayViewInstances,
-				id = child_node.id;
-			if (viewInstance = AllLayoutViewInstance[child_node.id] || AllWithViewInstance[child_node.id]) {
-				_replaceTopHandleCurrent(viewInstance, el)
-			}else if(arrayViewInstances = AllEachViewInstance[id]){
-				$.ftE(arrayViewInstances,function(viewInstance){
-					_replaceTopHandleCurrent(viewInstance,el);
-				})
-			}
-		});
-	};
+
+function _moveChild(self, el) {
+	var AllEachViewInstance = self._AVI,
+		AllLayoutViewInstance = self._ALVI,
+		AllWithViewInstance = self._WVI;
+
+	$.ftE(self.NodeList[self.handleNodeTree.id].childNodes, function(child_node) {
+		var viewInstance,
+			arrayViewInstances,
+			id = child_node.id;
+		if (viewInstance = AllLayoutViewInstance[child_node.id] || AllWithViewInstance[child_node.id]) {
+			_replaceTopHandleCurrent(viewInstance, el)
+		} else if (arrayViewInstances = AllEachViewInstance[id]) {
+			$.ftE(arrayViewInstances, function(viewInstance) {
+				_replaceTopHandleCurrent(viewInstance, el);
+			})
+		}
+	});
+};
+
 function _replaceTopHandleCurrent(self, el) {
 	self._canRemoveAble = $TRUE;
 	self.topNode(el);
 };
-ViewInstance.prototype = {
+var VI_proto = ViewInstance.prototype = {
 	reDraw: function() {
 		var self = this,
 			dataManager = self.dataManager;
@@ -213,7 +215,7 @@ ViewInstance.prototype = {
 		});
 		_replaceTopHandleCurrent(self, el);
 
-		_moveChild(self,el);
+		_moveChild(self, el);
 
 		return self;
 	},
@@ -228,15 +230,15 @@ ViewInstance.prototype = {
 			$.D.iB(elParentNode, child_node, el);
 		});
 		_replaceTopHandleCurrent(self, elParentNode);
-		
-		_moveChild(self,elParentNode);
+
+		_moveChild(self, elParentNode);
 
 		return self;
 	},
 	remove: function() {
 		var self = this,
 			el = this._packingBag;
-			// debugger
+		// debugger
 		if (self._canRemoveAble) {
 			var handleNodeTree = self.handleNodeTree,
 				NodeList = self.NodeList,
@@ -249,18 +251,18 @@ ViewInstance.prototype = {
 				child_node;
 
 			//TODO:use nextSilingNode
-			while(child_node = childNodes[startIndex]){
+			while (child_node = childNodes[startIndex]) {
 				if (child_node === openNode) {
 					break;
 				}
-				startIndex+=1
+				startIndex += 1
 			}
-			while(child_node = childNodes[startIndex]){
+			while (child_node = childNodes[startIndex]) {
 				$.D.ap(el, child_node);
 				if (child_node === closeNode) {
 					break;
 				}
-				startIndex+=1
+				startIndex += 1
 			}
 			_replaceTopHandleCurrent(self, el);
 			this._canRemoveAble = $FALSE; //Has being recovered into the _packingBag,can't no be remove again. --> it should be insert
@@ -269,15 +271,15 @@ ViewInstance.prototype = {
 	},
 	get: function get() {
 		var dm = this.dataManager;
-		return dm.get.apply(dm, arguments/*$.s(arguments)*/);
+		return dm.get.apply(dm, arguments /*$.s(arguments)*/ );
 	},
 	mix: function mix() {
 		var dm = this.dataManager;
-		return dm.mix.apply(dm, arguments/*$.s(arguments)*/)
+		return dm.mix.apply(dm, arguments /*$.s(arguments)*/ )
 	},
 	set: function set() {
 		var dm = this.dataManager;
-		return dm.set.apply(dm, arguments/*$.s(arguments)*/)
+		return dm.set.apply(dm, arguments /*$.s(arguments)*/ )
 	},
 	topNode: function(newCurrentTopNode) {
 		var self = this,
@@ -309,6 +311,13 @@ ViewInstance.prototype = {
 			})
 		})
 	},
+	on: function(eventName, fun) {
+
+	},
+	trigger: function(eventName) {
+
+	}
+	/*,
 	_collectTrigger:function(trigger,sKey){
 		var self = this,
 			smartTriggers = self._smartTriggers;
@@ -329,5 +338,14 @@ ViewInstance.prototype = {
 			);
 		$.p(smartTriggers, smartTrigger);
 		smartTrigger.bind(topGetterTriggerKeys);
-	}
+	}*/
 };
+var _allEventNames = ("blur focus focusin focusout load resize" +
+	"scroll unload click dblclick mousedown mouseup mousemove" +
+	"mouseover mouseout mouseenter mouseleave change select" +
+	"submit keydown keypress keyup error contextmenu").split(" ");
+$.ftE(_allEventNames, function(eventName) {
+	VI_proto[eventName] = function(fun) {
+		return fun ? this.on(eventName, fun) : this.trigger(eventName);
+	}
+})

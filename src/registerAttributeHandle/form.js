@@ -69,6 +69,7 @@ var _formCache = {},
 			if (eventConfig) {
 				typeof eventConfig === "function" && (eventConfig = eventConfig(currentNode));
 				eventNames = eventConfig.eventNames;
+				eventConfig = $.c(eventConfig);//wrap eventConfig to set inner in diffrent eventConfig
 				formCollection = _formCache[elementHashCode] || (_formCache[elementHashCode] = {});
 
 				if (!eventConfig.inner) {
@@ -87,16 +88,24 @@ var _formCache = {},
 					} : innerForHashCode;
 				}
 				$.ftE(eventNames, function(eventName) {
+					eventConfig.key = attrOuter;
+					eventConfig.vi = vi;
 					if (!(outerFormHandle = formCollection[eventName])) {
-						// outerFormHandle = function(e) {
-						// 	var self = this;
-						// 	eventConfig.before && eventConfig.before.call(this, e, vi, attrOuter)
-						// 	eventConfig.inner.call(this, e, vi, attrOuter);
-						// 	eventConfig.after && eventConfig.after.call(this, e, vi, attrOuter)
-						// }
-						outerFormHandle = Function('o,v,k' /*eventConfig,vi,attrOuter(bind-key)*/ , 'return function(e){var s=this;' + (eventConfig.before ? 'o.before.call(s,e,v,k);' : '') + 'o.inner.call(s,e,v,k);' + (eventConfig.after ? 'o.after.call(s,e,v,k);' : '') + '}')(eventConfig, vi, attrOuter);
+						outerFormHandle = function(e) {
+							var self = this;
+							eventConfig.before && eventConfig.before.call(this, e, eventConfig.vi, eventConfig.key)
+							eventConfig.inner.call(this, e, eventConfig.vi, eventConfig.key);
+							eventConfig.after && eventConfig.after.call(this, e, eventConfig.vi, eventConfig.key)
+						}
+						// outerFormHandle = Function('o' /*eventConfig*/ , 'return function(e){var s=this;' + (eventConfig.before ? 'o.before.call(s,e,o.vi, o.key);' : '') + 'o.inner.call(s,e,o.vi, o.key);' + (eventConfig.after ? 'o.after.call(s,e,o.vi, o.key);' : '') + '}')(eventConfig);
+						outerFormHandle.eventConfig = eventConfig
 						_registerEvent(currentNode, eventName, outerFormHandle, elementHashCode);
 						formCollection[eventName] = outerFormHandle;
+					}else{
+						for(var i in eventConfig){
+							outerFormHandle.eventConfig[i] = eventConfig[i];
+							try{outerFormHandle.call(currentNode)}catch(e){};
+						}
 					}
 
 				});
