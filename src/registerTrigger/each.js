@@ -32,7 +32,6 @@ V.rt("#each", function(handle, index, parentHandle) {
 				dataManager.rebuildTree = $.noop//doesn't need rebuild every subset
 				$.ftE($.s(data), function(eachItemData, index) {
 					//TODO:if too mush vi will be create, maybe asyn
-					console.log(eachItemData,arrDataHandleKey + "." + index)
 					var viewInstance = arrViewInstances[index];
 					if (!viewInstance) {
 						viewInstance = arrViewInstances[index] = eachModuleConstructor(eachItemData);

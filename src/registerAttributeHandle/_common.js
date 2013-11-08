@@ -31,7 +31,7 @@ var _AttributeHandleEvent = {
 	},
 	bool: function(key, currentNode, parserNode) {
 		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
-
+		console.log("key:", key, "attrOuter:", attrOuter)
 		if (attrOuter) { // currentNode.setAttribute(key, key);
 			currentNode[key] = key;
 		} else { // currentNode.removeAttribute(key);
@@ -51,5 +51,27 @@ if (_isIE) {
 		_fixPropertychange = $TRUE;
 		__dir.apply(this, arguments)
 		_fixPropertychange = $FALSE;
+	}
+	var __radio = _AttributeHandleEvent.radio;
+	_AttributeHandleEvent.radio = function(key, currentNode, parserNode) {
+		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
+		console.log("IE checked", attrOuter)
+		if (attrOuter === currentNode.value) {
+			currentNode.defaultChecked = attrOuter;
+		} else {
+			currentNode.defaultChecked = $FALSE;
+		}
+		(this._attributeHandle = __radio)(key, currentNode, parserNode);
+	}
+	var __bool = _AttributeHandleEvent.bool;
+	_AttributeHandleEvent.bool = function(key, currentNode, parserNode) {
+		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
+		console.log("IE selected", attrOuter)
+		if (attrOuter) {
+			currentNode.defaultChecked = attrOuter;
+		} else {
+			currentNode.defaultChecked = $FALSE;
+		}
+		(this._attributeHandle = __bool)(key, currentNode, parserNode);
 	}
 }

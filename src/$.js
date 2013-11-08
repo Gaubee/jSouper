@@ -35,7 +35,6 @@ var doc = document,
 	},
 	_fixMouseEvent = function(event) {
 		_fixEvent(event);
-		alert(!_box)
 		if (!_box) {
 			_box = target.ownerDocument || doc;
 			_box = "BackCompat" === _box.compatMode ? _box.body : _box.documentElement;

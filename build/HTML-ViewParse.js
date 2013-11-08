@@ -37,7 +37,6 @@ var doc = document,
 	},
 	_fixMouseEvent = function(event) {
 		_fixEvent(event);
-		alert(!_box)
 		if (!_box) {
 			_box = target.ownerDocument || doc;
 			_box = "BackCompat" === _box.compatMode ? _box.body : _box.documentElement;
@@ -476,13 +475,32 @@ var DM_proto = DataManager.prototype = {
 			result = self._database;
 		if (arguments.length !== 0) {
 			var arrKey = key.split("."),
-				parent
+				// lastKey = arrKey.pop(),
+				anchor = 0;
 			if (result != $UNDEFINED && result !== $FALSE) { //null|undefined|false
-				do {//fix IE String
-					result = result[arrKey.splice(0, 1)];
-					// result = $.valueOf(result[arrKey.splice(0, 1)]);
-				} while (result !== $UNDEFINED && arrKey.length);
+				if (_isIE) {
+					do { //fix IE String
+						var perkey = arrKey[anchor++];
+						if (typeof result === "string" && ~~perkey == perkey) {
+							result = result.charAt(perkey)
+						} else {
+							result = result[perkey];
+						}
+					} while (result !== $UNDEFINED && arrKey.length - anchor);
+				} else {
+					do { //fix IE String
+						result = result[arrKey[anchor++]];
+						// result = $.valueOf(result[arrKey.splice(0, 1)]);
+					} while (result !== $UNDEFINED && arrKey.length - anchor);
+				}
 			}
+			// if (lastKey!==$UNDEFINED) {
+			// 	if (typeof result === "string" && /*parseInt(lastKey)*/ ~~lastKey === lastKey) { //avoid get NaN
+			// 		result = result.charAt(lastKey)
+			// 	} else if (result !== $UNDEFINED) {
+			// 		result = result[lastKey]
+			// 	}
+			// }
 			/*
 		//避免混淆，不使用智能作用域，否则关键字更新触发器无法准确绑定或者会照常大量计算
 		if (arrKey.length && (parent = self._parentDataManager)) { //key不在对象中，查询父级
@@ -2393,7 +2411,6 @@ V.rt("#each", function(handle, index, parentHandle) {
 				dataManager.rebuildTree = $.noop//doesn't need rebuild every subset
 				$.ftE($.s(data), function(eachItemData, index) {
 					//TODO:if too mush vi will be create, maybe asyn
-					console.log(eachItemData,arrDataHandleKey + "." + index)
 					var viewInstance = arrViewInstances[index];
 					if (!viewInstance) {
 						viewInstance = arrViewInstances[index] = eachModuleConstructor(eachItemData);
@@ -2808,7 +2825,7 @@ var _AttributeHandleEvent = {
 	},
 	bool: function(key, currentNode, parserNode) {
 		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
-
+		console.log("key:", key, "attrOuter:", attrOuter)
 		if (attrOuter) { // currentNode.setAttribute(key, key);
 			currentNode[key] = key;
 		} else { // currentNode.removeAttribute(key);
@@ -2829,6 +2846,28 @@ if (_isIE) {
 		__dir.apply(this, arguments)
 		_fixPropertychange = $FALSE;
 	}
+	var __radio = _AttributeHandleEvent.radio;
+	_AttributeHandleEvent.radio = function(key, currentNode, parserNode) {
+		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
+		console.log("IE checked", attrOuter)
+		if (attrOuter === currentNode.value) {
+			currentNode.defaultChecked = attrOuter;
+		} else {
+			currentNode.defaultChecked = $FALSE;
+		}
+		(this._attributeHandle = __radio)(key, currentNode, parserNode);
+	}
+	var __bool = _AttributeHandleEvent.bool;
+	_AttributeHandleEvent.bool = function(key, currentNode, parserNode) {
+		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
+		console.log("IE selected", attrOuter)
+		if (attrOuter) {
+			currentNode.defaultChecked = attrOuter;
+		} else {
+			currentNode.defaultChecked = $FALSE;
+		}
+		(this._attributeHandle = __bool)(key, currentNode, parserNode);
+	}
 }
 var _boolAssignment = "|checked|selected|disabled|readonly|multiple|defer|declare|noresize|nowrap|noshade|compact|truespeed|async|typemustmatch|open|novalidate|ismap|default|seamless|autoplay|controls|loop|muted|reversed|scoped|autofocus|required|formnovalidate|editable|draggable|hidden|"
 /*for ie fix*/+"defaultSelected|";
@@ -2845,21 +2884,6 @@ V.ra(function(attrKey) {
 			break
 	}
 	return result;
-})
-var _ieCheck = function(key, currentNode, parserNode) {
-	var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
-
-	if (attrOuter) {
-		_asynAttributeAssignment(currentNode, "defaultChecked", key);
-		// currentNode.defaultChecked = true;
-	} else {
-		_asynAttributeAssignment(currentNode, "defaultChecked", $FALSE);
-		// currentNode.defaultChecked = false;
-	}
-	(this._attributeHandle = _AttributeHandleEvent.bool)(key, currentNode, parserNode);
-}
-V.ra("checked", function() {
-	return _isIE ? _ieCheck : _AttributeHandleEvent.com;
 })
 var _dirAssignment = "|className|value|";
 V.ra(function(attrKey){
@@ -2977,7 +3001,6 @@ var _formCache = {},
 						}
 					};
 					eventConfig.inner = _isIE ? function(e, vi, attrOuter) {
-						console.log(arguments)
 						if (!(_fixPropertychange && e.propertyName == "value")) {
 							innerForHashCode.apply(this, arguments);
 						}

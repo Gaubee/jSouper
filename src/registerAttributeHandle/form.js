@@ -81,7 +81,6 @@ var _formCache = {},
 						}
 					};
 					eventConfig.inner = _isIE ? function(e, vi, attrOuter) {
-						console.log(arguments)
 						if (!(_fixPropertychange && e.propertyName == "value")) {
 							innerForHashCode.apply(this, arguments);
 						}

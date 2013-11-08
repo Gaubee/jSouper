@@ -88,13 +88,32 @@ var DM_proto = DataManager.prototype = {
 			result = self._database;
 		if (arguments.length !== 0) {
 			var arrKey = key.split("."),
-				parent
+				// lastKey = arrKey.pop(),
+				anchor = 0;
 			if (result != $UNDEFINED && result !== $FALSE) { //null|undefined|false
-				do {//fix IE String
-					result = result[arrKey.splice(0, 1)];
-					// result = $.valueOf(result[arrKey.splice(0, 1)]);
-				} while (result !== $UNDEFINED && arrKey.length);
+				if (_isIE) {
+					do { //fix IE String
+						var perkey = arrKey[anchor++];
+						if (typeof result === "string" && ~~perkey == perkey) {
+							result = result.charAt(perkey)
+						} else {
+							result = result[perkey];
+						}
+					} while (result !== $UNDEFINED && arrKey.length - anchor);
+				} else {
+					do { //fix IE String
+						result = result[arrKey[anchor++]];
+						// result = $.valueOf(result[arrKey.splice(0, 1)]);
+					} while (result !== $UNDEFINED && arrKey.length - anchor);
+				}
 			}
+			// if (lastKey!==$UNDEFINED) {
+			// 	if (typeof result === "string" && /*parseInt(lastKey)*/ ~~lastKey === lastKey) { //avoid get NaN
+			// 		result = result.charAt(lastKey)
+			// 	} else if (result !== $UNDEFINED) {
+			// 		result = result[lastKey]
+			// 	}
+			// }
 			/*
 		//避免混淆，不使用智能作用域，否则关键字更新触发器无法准确绑定或者会照常大量计算
 		if (arrKey.length && (parent = self._parentDataManager)) { //key不在对象中，查询父级
