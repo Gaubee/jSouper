@@ -12,7 +12,8 @@
 			Data: {
 				title: "Input an RBG color!",
 				style: {
-					color: "red"
+					color: "red",
+					backgroundColor:"#22E"
 				},
 				input_change_key:"style.color",
 				Event: {
@@ -58,6 +59,10 @@
 					},
 					wheelclick:function(e,vi){
 						vi.set("status.mouse_click",e.type)
+						return false;
+					},
+					mousewheel:function(e,vi){
+						eventbind.set("style.backgroundColor","#"+Math.random().toString(16).substring(2,8));
 						return false;
 					},
 					_change:function(value){
@@ -128,17 +133,18 @@
 		{{status.over_and_out}} <br>
 		:{{status.over_times}}:{{status.out_times}}</div>
 	</div>
-	<div style="width:100px;height:100px;background-color:#22E;color:#FFF" 
+	<div attr-style="width:100px;height:100px;background-color:{{style.backgroundColor}};color:#FFF" 
 	event-mousemove="{{'Event.mousemove'}}"
 	event-contextmenu="{{'Event.contextmenu'}}"
 	event-wheelclick="{{'Event.wheelclick'}}"
-	event-leftclick="{{'Event.leftclick'}}">
+	event-leftclick="{{'Event.leftclick'}}"
+	event-mousewheel="{{'Event.mousewheel'}}">
 		mousemove <br>
 		:{{status.move_times}} <br>
 		{{#if status.mouse_click}}
 		you get {{ status.mouse_click}};
 		{{#else}}
-		try click,left or right button!
+		try click left, center or right button!
 		{{/if}}
 	</div>
 	<textarea id="xxx" type="text" 

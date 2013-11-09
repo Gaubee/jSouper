@@ -299,32 +299,9 @@ var _event_cache = {},
 		event.pageX || (event.pageX = event.clientX + ~~_box.scrollLeft - ~~_box.clientLeft);
 		event.pageY || (event.pageY = event.clientY + ~~_box.scrollTop - ~~_box.clientTop);
 	},
-	_fixMouseEnterAndLeave = function(eventFun) {
-		return function(e) {
-			var topNode = e.relatedTarget,
-				self = this;
-			/*compareDocumentPosition
-			0 self == topNode ===> 
-			1 self in deffriend Document with topNode
-			2 topNode befor self
-			4 self befor topNode
-			8 topNode contains self
-			16 self contains topNode  ==>  
-			32 Brower private*/
-			if (!topNode || (topNode !== self && !(self.compareDocumentPosition(topNode) & 16))) { //@Rubylouvre
-				var e_type = e.type[6] === "v" ? "mouseenter" : "mouseleave";
-				delete e.type;
-				e.type = e_type;
-				return eventFun.call(self, e);
-			}
-			/*else{
-				return _fixMouseEnterAndLeave;//stop run 
-			}*/
-		}
-	},
 	_registerEventBase = function(Element, eventName, eventFun, elementHash) {
 		var result = {
-			name: _eventNameMap[eventName] || eventName,
+			name: /*_eventNameMap[eventName] || */ eventName,
 			fn: eventFun
 		};
 		result.fn = (function(fixEvent) {
@@ -348,7 +325,7 @@ var _event_cache = {},
 						if (_isIE) {
 							_e = $.c(e)
 							_e.type = e._eventName
-						}else{
+						} else {
 							delete e.type;
 							e.type = e._eventName;
 						}
@@ -359,63 +336,85 @@ var _event_cache = {},
 				return result;
 			}
 		}(_isIE ? (/mouse|click|contextmenu/.test(eventName) ? _fixMouseEvent : _fixEvent) : $.noop));
-		if (_isIE) {
-			if (eventName === "input") {
-				(function() {
-					// result.name = ["keypress", /*"focus", */ "blur", "keyup", "paste", "propertychange", "cut"];
-					var _fn = result.fn;
-					var _fixPropertychangeLock,
-						_deleteOrChienseInput,
-						_oldValue = Element.value,
-						_TI;
-					// delete Element.value;
-					result.fn = function(e) { // @Gaubee github/blog/issues/44
-						var result;
-						if (e.type === "keyup") { //keyup // 3
-							if (_deleteOrChienseInput) {
-								_deleteOrChienseInput = $FALSE;
-								_oldValue = Element.value;
-								result = _fn(e);
-							}
-						} else if (e.type === "propertychange") { // 2
-							if (_fixPropertychangeLock) {
-								_fixPropertychangeLock = $FALSE;
-								result = _fn(e);
-							} else if ((e.keyCode === 8 /*backspace*/ || e.keyCode === 46 /*delete*/ ) || _oldValue !== Element.value) { //delete or chinese input
-								console.log(arguments.callee.caller)
-								_deleteOrChienseInput = $TRUE;
-							}
-						} else if (e.type === "blur") {
-							Element.fireEvent("onkeyup")
-							// clearInterval(_TI);
-						} else { //paste cut keypress  // 1
-							_fixPropertychangeLock = $TRUE;
-							_deleteOrChienseInput = $FALSE;
-						}
-					}
-					// function(b){"keydown"===b.type?8!==b.keyCode&&46!==b.keyCode||f===a.value||(f=a.value,z=G):"propertychange"===b.type?z&&(z=H,g(b)):z=G}
-				}());
-			} else if (/contextmenu|rclick|rightclick/.test(eventName)) {
-				(function() {
-					var _fn = result.fn;
-					var _result;
-					result.fn = function(e) {
-						if (e.type === "contextmenu") {
-							return _result;
-						} else {
-							if (e.button === 2) {
-								e._eventName = "contextmenu"
-								_result = _fn(e)
-							};
-						}
-					}
-				}());
-			}
-		} else if (/mouseenter|mouseleave/.test(eventName)) {
-			result.fn = _fixMouseEnterAndLeave(eventFun)
-		}
-		if (eventName === "lclick" || eventName === "leftclick") {
+
+		if (eventName === "input" && !("oninput" in doc)) {
 			(function() {
+				result.name = ["keypress", /*"focus", */ "blur", "keyup", "paste", "propertychange", "cut"]
+				var _fn = result.fn;
+				var _fixPropertychangeLock,
+					_deleteOrChienseInput,
+					_oldValue = Element.value,
+					_TI;
+				// delete Element.value;
+				result.fn = function(e) { // @Gaubee github/blog/issues/44
+					var result;
+					if (e.type === "keyup") { //keyup // 3
+						if (_deleteOrChienseInput) {
+							_deleteOrChienseInput = $FALSE;
+							_oldValue = Element.value;
+							result = _fn(e);
+						}
+					} else if (e.type === "propertychange") { // 2
+						if (_fixPropertychangeLock) {
+							_fixPropertychangeLock = $FALSE;
+							result = _fn(e);
+						} else if ((e.keyCode === 8 /*backspace*/ || e.keyCode === 46 /*delete*/ ) || _oldValue !== Element.value) { //delete or chinese input
+							console.log(arguments.callee.caller)
+							_deleteOrChienseInput = $TRUE;
+						}
+					} else if (e.type === "blur") {
+						Element.fireEvent("onkeyup")
+						// clearInterval(_TI);
+					} else { //paste cut keypress  // 1
+						_fixPropertychangeLock = $TRUE;
+						_deleteOrChienseInput = $FALSE;
+					}
+				}
+				// function(b){"keydown"===b.type?8!==b.keyCode&&46!==b.keyCode||f===a.value||(f=a.value,z=G):"propertychange"===b.type?z&&(z=H,g(b)):z=G}
+			}());
+		} else if (/contextmenu|rclick|rightclick/.test(eventName) && _isIE) {
+			(function() {
+				result.name = ["mousedown", "contextmenu"];
+				var _fn = result.fn;
+				var _result;
+				result.fn = function(e) {
+					if (e.type === "contextmenu") {
+						return _result;
+					} else {
+						if (e.button === 2) {
+							e._eventName = "contextmenu"
+							_result = _fn(e)
+						};
+					}
+				}
+			}());
+		} else if (/mouseenter|mouseleave/.test(eventName) && !_isIE) {
+			(function() {
+				var _fn = result.fn;
+				result.name = eventName[5] === "e" ? "mouseover" : "mouseout";
+				result.fn = function(e) {
+					var topNode = e.relatedTarget,
+						self = this;
+					/*compareDocumentPosition
+						0 self == topNode ===> 
+						1 self in deffriend Document with topNode
+						2 topNode befor self
+						4 self befor topNode
+						8 topNode contains self
+						16 self contains topNode  ==>  
+						32 Brower private*/
+					if (!topNode || (topNode !== self && !(self.compareDocumentPosition(topNode) & 16))) { //@Rubylouvre
+						e._eventName = eventName;
+						return _fn(e);
+					}
+					/*else{
+						return _fixMouseEnterAndLeave;//stop run 
+					}*/
+				}
+			}())
+		} else if (eventName === "lclick" || eventName === "leftclick") {
+			(function() {
+				result.name = "mousedown"
 				var _fn = result.fn;
 				result.fn = _isIE ? function(e) {
 					if (e.button === 1) {
@@ -431,6 +430,7 @@ var _event_cache = {},
 			}());
 		} else if (eventName === "wclick" || eventName === "wheelclick") {
 			(function() {
+				result.name = "mousedown"
 				var _fn = result.fn;
 				result.fn = _isIE ? function(e) {
 					if (e.button === 4) {
@@ -444,6 +444,8 @@ var _event_cache = {},
 					}
 				}
 			}());
+		}else if(eventName==="mousewheel"){
+			result.name= "onwheel" in doc||doc.documentMode>=9?"wheel":["mousewheel","DomMouseScroll","MozMousePiexlScroll"];
 		}
 		_event_cache[elementHash + $.hashCode(eventFun)] = result;
 		return result;
