@@ -39,6 +39,7 @@ var doc = document,
 
 	_event_cache = {},
 	_box,
+	_fixPropertychangeLock,
 	_fixEvent = function(event) { //@Rybylouvre
 		var target = event.target = event.srcElement;
 		event.which = event.charCode != $NULL ? event.charCode : event.keyCode;
@@ -78,7 +79,7 @@ var doc = document,
 			8 topNode contains self
 			16 self contains topNode  ==>  
 			32 Brower private*/
-			if (!topNode || (topNode !== self && !(self.compareDocumentPosition(topNode) & 16))) {//@Rubylouvre
+			if (!topNode || (topNode !== self && !(self.compareDocumentPosition(topNode) & 16))) { //@Rubylouvre
 				var e_type = e.type[6] === "v" ? "mouseenter" : "mouseleave";
 				delete e.type;
 				e.type = e_type;
@@ -109,6 +110,28 @@ var doc = document,
 				}
 			}*/
 			result.fn = (Function('n,f,_' /*element_node,eventFun,_fix[Mouse]Event*/ , 'return function(e){_(e);var r=f.call(n,e);(f===false)&&(e.preventDefault()||e.stopPropagation());return f;}')(Element, eventFun, (/mouse|click/.test(eventName)) ? _fixMouseEvent : _fixEvent))
+			if (eventName === "input") {
+				result.name = ["keypress", "keydown", "paste", "propertychange", "cut"];
+				var _fn = result.fn;
+				var __oldvalue = "";
+				result.fn = function(e) {
+					if (e.type === "keydown") {
+						console.log(__oldvalue, Element.value, __oldvalue === Element.value)
+						if ((e.keyCode === 8 /*backspace*/ || e.keyCode === 46 /*delete*/ ) && __oldvalue !== Element.value) {
+							__oldvalue = Element.value
+							_fixPropertychangeLock = $TRUE;
+						} //else _fixPropertychangeLock = $FALSE;
+					} else if (e.type === "propertychange") {
+						if (_fixPropertychangeLock) {
+							_fixPropertychangeLock = $FALSE;
+							_fn(e);
+						}
+					} else { //paste cut keypress
+						_fixPropertychangeLock = $TRUE;
+					}
+				}
+				// function(b){"keydown"===b.type?8!==b.keyCode&&46!==b.keyCode||f===a.value||(f=a.value,z=G):"propertychange"===b.type?z&&(z=H,g(b)):z=G}
+			}
 		} else if (/mouseenter|mouseleave/.test(eventName)) {
 			result.fn = _fixMouseEnterAndLeave(eventFun)
 			result.name = eventName[5] === "e" ? "mouseover" : "mouseout";
@@ -118,7 +141,13 @@ var doc = document,
 	},
 	_addEventListener = function(Element, eventName, eventFun, elementHash) {
 		var eventConfig = _registerEventBase(Element, eventName, eventFun, elementHash)
-		Element.addEventListener(eventConfig.name, eventConfig.fn, $FALSE);
+		if (typeof eventConfig.name === "string") {
+			Element.addEventListener(eventConfig.name, eventConfig.fn, $FALSE);
+		} else {
+			$.ftE(eventConfig.name, function(eventName) {
+				Element.addEventListener(eventName, eventConfig.fn, $FALSE);
+			})
+		}
 	},
 	_removeEventListener = function(Element, eventName, eventFun, elementHash) {
 		var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
@@ -126,7 +155,13 @@ var doc = document,
 	},
 	_attachEvent = function(Element, eventName, eventFun, elementHash) {
 		var eventConfig = _registerEventBase(Element, eventName, eventFun, elementHash)
-		Element.attachEvent("on" + eventConfig.name, eventConfig.fn);
+		if (typeof eventConfig.name === "string") {
+			Element.attachEvent("on" + eventConfig.name, eventConfig.fn);
+		} else {
+			$.ftE(eventConfig.name, function(eventName) {
+				Element.attachEvent("on" + eventName, eventConfig.fn);
+			})
+		}
 	},
 	_detachEvent = function(Element, eventName, eventFun, elementHash) {
 		var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
@@ -2864,8 +2899,7 @@ registerHandle("HTML",function () {
 })
 var _testDIV = $.D.cl(shadowDIV),
 	_getAttrOuter = Function("n", "return n." + (("textContent" in _testDIV) ? "textContent" : "innerText") + "||''"),
-	_booleanFalseRegExp = /false|undefined|null|NaN/,
-	_fixPropertychange; //fix ie
+	_booleanFalseRegExp = /false|undefined|null|NaN/; //fix ie
 
 var _AttributeHandleEvent = {
 	event: function(key, currentNode, parserNode) { //on开头的事件绑定，IE需要绑定Function类型，现代浏览器绑定String类型（_AttributeHandleEvent.com）
@@ -2911,11 +2945,17 @@ var _AttributeHandleEvent = {
 };
 if (_isIE) {
 	var __dir = _AttributeHandleEvent.dir;
-	_AttributeHandleEvent.dir = function() {
-		_fixPropertychange = $TRUE;
+	_AttributeHandleEvent.dir = function() {//TODO: only dir?
+		_fixPropertychangeLock = $TRUE;
 		__dir.apply(this, arguments)
-		_fixPropertychange = $FALSE;
+		_fixPropertychangeLock = $FALSE;
 	}
+	// var __com = _AttributeHandleEvent.com;
+	// _AttributeHandleEvent.com = function() {//TODO: only com?
+	// 	_fixPropertychangeLock = $TRUE;
+	// 	__com.apply(this, arguments)
+	// 	_fixPropertychangeLock = $FALSE;
+	// }
 	var __radio = _AttributeHandleEvent.radio;
 	_AttributeHandleEvent.radio = function(key, currentNode, parserNode) {
 		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
@@ -2993,7 +3033,7 @@ V.ra(function(attrKey) {
 var _formCache = {},
 	__text = {
 		attributeName: "value",
-		eventNames: _isIE ? ["propertychange" /*, "keyup"*/ ] : ["input" /*, "keyup"*/ ]
+		eventNames:  ["input"  ]
 	},
 	_formKey = {
 		"input": function(node) { //需阻止默认事件，比如Checked需要被重写，否则数据没有变动而Checked因用户点击而变动，没有达到V->M的数据同步
@@ -3062,7 +3102,7 @@ var _formCache = {},
 				formCollection = _formCache[elementHashCode] || (_formCache[elementHashCode] = {});
 
 				if (!eventConfig.inner) {
-					function innerForHashCode(e, vi, attrOuter /**/ ) {
+					eventConfig.inner=function (e, vi, attrOuter /**/ ) {
 						var obj = vi.get(attrOuter)
 						if (obj && obj[_DM_extends_object_constructor] && obj.form) {
 							vi.set(attrOuter, obj.form.apply(this, arguments))
@@ -3070,11 +3110,6 @@ var _formCache = {},
 							vi.set(attrOuter, this[eventConfig.attributeName])
 						}
 					};
-					eventConfig.inner = _isIE ? function(e, vi, attrOuter) {
-						if (!(_fixPropertychange && e.propertyName == "value")) {
-							innerForHashCode.apply(this, arguments);
-						}
-					} : innerForHashCode;
 				}
 				$.ftE(eventNames, function(eventName) {
 					eventConfig.key = attrOuter;

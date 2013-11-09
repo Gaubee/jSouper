@@ -48,6 +48,40 @@
 					},
 					mousemove:function(e,vi){
 						vi.set("stauts.move_times",~~vi.get("stauts.move_times")+1)
+					},
+					_change:function(value){
+						eventbind.set("event_log",value.split("\n").reverse().join("<br>"));
+					},
+					focus:function(e,vi){
+						//this.value+="focus\n";
+						//vi.get("Event._change")(this.value)
+					},
+					blur:function(e,vi){
+						//this.value+="blur\n";
+						//vi.get("Event._change")(this.value)
+					},
+					keydown:function(e,vi){
+						//this.value+="keydown\n";
+						//vi.get("Event._change")(this.value)
+					},
+					keyup:function(e,vi){
+						// this.value+="keyup\n";
+						// vi.get("Event._change")(this.value)
+					},
+					mousedown:function(e,vi){
+						//this.value+="mousedown\n";
+						//vi.get("Event._change")(this.value)
+					},
+					mouseup:function(e,vi){
+						//this.value+="mouseup\n";
+						//vi.get("Event._change")(this.value)
+					},
+					input:function(e,vi){
+						this.value+="input\n";
+						vi.get("Event._change")(this.value)
+					},
+					paste:function(e,vi){
+						vi.get("Event._change")("paste")
 					}
 				}
 			}
@@ -85,6 +119,16 @@
 		mousemove <br>
 		:{{stauts.move_times}}
 	</div>
+	<textarea type="text" 
+	event-focus="{{'Event.focus'}}" 
+	event-blur="{{'Event.blur'}}" 
+	event-keydown="{{'Event.keydown'}}" 
+	event-keyup="{{'Event.keyup'}}"  
+	event-mousedown="{{'Event.mousedown'}}" 
+	event-mouseup="{{'Event.mouseup'}}"  
+	event-input="{{'Event.input'}}"></textarea> 
+	<input type="text" event-paste="{{'Event.paste'}}">
+	<div style="width:100px;height:300px;overflow:auto;background-color:#EE2;text-align:center;">{{HTML event_log}}</div>
 </body>
 
 </html>

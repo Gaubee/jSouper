@@ -15,6 +15,7 @@ var doc = document,
 
 	_event_cache = {},
 	_box,
+	_fixPropertychangeLock,
 	_fixEvent = function(event) { //@Rybylouvre
 		var target = event.target = event.srcElement;
 		event.which = event.charCode != $NULL ? event.charCode : event.keyCode;
@@ -54,7 +55,7 @@ var doc = document,
 			8 topNode contains self
 			16 self contains topNode  ==>  
 			32 Brower private*/
-			if (!topNode || (topNode !== self && !(self.compareDocumentPosition(topNode) & 16))) {//@Rubylouvre
+			if (!topNode || (topNode !== self && !(self.compareDocumentPosition(topNode) & 16))) { //@Rubylouvre
 				var e_type = e.type[6] === "v" ? "mouseenter" : "mouseleave";
 				delete e.type;
 				e.type = e_type;
@@ -85,6 +86,28 @@ var doc = document,
 				}
 			}*/
 			result.fn = (Function('n,f,_' /*element_node,eventFun,_fix[Mouse]Event*/ , 'return function(e){_(e);var r=f.call(n,e);(f===false)&&(e.preventDefault()||e.stopPropagation());return f;}')(Element, eventFun, (/mouse|click/.test(eventName)) ? _fixMouseEvent : _fixEvent))
+			if (eventName === "input") {
+				result.name = ["keypress", "keydown", "paste", "propertychange", "cut"];
+				var _fn = result.fn;
+				var __oldvalue = "";
+				result.fn = function(e) {
+					if (e.type === "keydown") {
+						console.log(__oldvalue, Element.value, __oldvalue === Element.value)
+						if ((e.keyCode === 8 /*backspace*/ || e.keyCode === 46 /*delete*/ ) && __oldvalue !== Element.value) {
+							__oldvalue = Element.value
+							_fixPropertychangeLock = $TRUE;
+						} //else _fixPropertychangeLock = $FALSE;
+					} else if (e.type === "propertychange") {
+						if (_fixPropertychangeLock) {
+							_fixPropertychangeLock = $FALSE;
+							_fn(e);
+						}
+					} else { //paste cut keypress
+						_fixPropertychangeLock = $TRUE;
+					}
+				}
+				// function(b){"keydown"===b.type?8!==b.keyCode&&46!==b.keyCode||f===a.value||(f=a.value,z=G):"propertychange"===b.type?z&&(z=H,g(b)):z=G}
+			}
 		} else if (/mouseenter|mouseleave/.test(eventName)) {
 			result.fn = _fixMouseEnterAndLeave(eventFun)
 			result.name = eventName[5] === "e" ? "mouseover" : "mouseout";
@@ -94,7 +117,13 @@ var doc = document,
 	},
 	_addEventListener = function(Element, eventName, eventFun, elementHash) {
 		var eventConfig = _registerEventBase(Element, eventName, eventFun, elementHash)
-		Element.addEventListener(eventConfig.name, eventConfig.fn, $FALSE);
+		if (typeof eventConfig.name === "string") {
+			Element.addEventListener(eventConfig.name, eventConfig.fn, $FALSE);
+		} else {
+			$.ftE(eventConfig.name, function(eventName) {
+				Element.addEventListener(eventName, eventConfig.fn, $FALSE);
+			})
+		}
 	},
 	_removeEventListener = function(Element, eventName, eventFun, elementHash) {
 		var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
@@ -102,7 +131,13 @@ var doc = document,
 	},
 	_attachEvent = function(Element, eventName, eventFun, elementHash) {
 		var eventConfig = _registerEventBase(Element, eventName, eventFun, elementHash)
-		Element.attachEvent("on" + eventConfig.name, eventConfig.fn);
+		if (typeof eventConfig.name === "string") {
+			Element.attachEvent("on" + eventConfig.name, eventConfig.fn);
+		} else {
+			$.ftE(eventConfig.name, function(eventName) {
+				Element.attachEvent("on" + eventName, eventConfig.fn);
+			})
+		}
 	},
 	_detachEvent = function(Element, eventName, eventFun, elementHash) {
 		var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];

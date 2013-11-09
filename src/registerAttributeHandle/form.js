@@ -4,7 +4,7 @@
 var _formCache = {},
 	__text = {
 		attributeName: "value",
-		eventNames: _isIE ? ["propertychange" /*, "keyup"*/ ] : ["input" /*, "keyup"*/ ]
+		eventNames:  ["input"  ]
 	},
 	_formKey = {
 		"input": function(node) { //需阻止默认事件，比如Checked需要被重写，否则数据没有变动而Checked因用户点击而变动，没有达到V->M的数据同步
@@ -73,7 +73,7 @@ var _formCache = {},
 				formCollection = _formCache[elementHashCode] || (_formCache[elementHashCode] = {});
 
 				if (!eventConfig.inner) {
-					function innerForHashCode(e, vi, attrOuter /**/ ) {
+					eventConfig.inner=function (e, vi, attrOuter /**/ ) {
 						var obj = vi.get(attrOuter)
 						if (obj && obj[_DM_extends_object_constructor] && obj.form) {
 							vi.set(attrOuter, obj.form.apply(this, arguments))
@@ -81,11 +81,6 @@ var _formCache = {},
 							vi.set(attrOuter, this[eventConfig.attributeName])
 						}
 					};
-					eventConfig.inner = _isIE ? function(e, vi, attrOuter) {
-						if (!(_fixPropertychange && e.propertyName == "value")) {
-							innerForHashCode.apply(this, arguments);
-						}
-					} : innerForHashCode;
 				}
 				$.ftE(eventNames, function(eventName) {
 					eventConfig.key = attrOuter;
