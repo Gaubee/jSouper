@@ -45,18 +45,6 @@ var _AttributeHandleEvent = {
 	}
 };
 if (_isIE) {
-	var __dir = _AttributeHandleEvent.dir;
-	_AttributeHandleEvent.dir = function() {//TODO: only dir?
-		_fixPropertychangeLock = $TRUE;
-		__dir.apply(this, arguments)
-		_fixPropertychangeLock = $FALSE;
-	}
-	// var __com = _AttributeHandleEvent.com;
-	// _AttributeHandleEvent.com = function() {//TODO: only com?
-	// 	_fixPropertychangeLock = $TRUE;
-	// 	__com.apply(this, arguments)
-	// 	_fixPropertychangeLock = $FALSE;
-	// }
 	var __radio = _AttributeHandleEvent.radio;
 	_AttributeHandleEvent.radio = function(key, currentNode, parserNode) {
 		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));

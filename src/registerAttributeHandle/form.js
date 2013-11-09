@@ -99,7 +99,7 @@ var _formCache = {},
 					}else{
 						for(var i in eventConfig){
 							outerFormHandle.eventConfig[i] = eventConfig[i];
-							try{outerFormHandle.call(currentNode)}catch(e){};
+							// try{outerFormHandle.call(currentNode)}catch(e){};
 						}
 					}
 

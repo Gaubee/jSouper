@@ -47,41 +47,48 @@
 						vi.set("status.out_times",time)
 					},
 					mousemove:function(e,vi){
-						vi.set("stauts.move_times",~~vi.get("stauts.move_times")+1)
+						vi.set("status.move_times",~~vi.get("status.move_times")+1)
+					},
+					contextmenu:function(e,vi){
+						vi.set("status.mouse_click",e.type)
+						return false;
+					},
+					leftclick:function(e,vi){
+						vi.set("status.mouse_click",e.type)
+					},
+					wheelclick:function(e,vi){
+						vi.set("status.mouse_click",e.type)
+						return false;
 					},
 					_change:function(value){
-						eventbind.set("event_log",value.split("\n").reverse().join("<br>"));
+						eventbind.set("event_log",value+"<br>"+(eventbind.get("event_log")||"").split("<br>").splice(0,13).join("<br>"));
 					},
 					focus:function(e,vi){
-						//this.value+="focus\n";
-						//vi.get("Event._change")(this.value)
+						vi.get("Event._change")("focus")
 					},
 					blur:function(e,vi){
-						//this.value+="blur\n";
-						//vi.get("Event._change")(this.value)
+						vi.get("Event._change")("blur")
 					},
 					keydown:function(e,vi){
-						//this.value+="keydown\n";
-						//vi.get("Event._change")(this.value)
+						vi.get("Event._change")("keydown")
 					},
 					keyup:function(e,vi){
-						// this.value+="keyup\n";
-						// vi.get("Event._change")(this.value)
+						vi.get("Event._change")("keyup")
 					},
 					mousedown:function(e,vi){
-						//this.value+="mousedown\n";
-						//vi.get("Event._change")(this.value)
+						vi.get("Event._change")("mousedown")
 					},
 					mouseup:function(e,vi){
-						//this.value+="mouseup\n";
-						//vi.get("Event._change")(this.value)
+						vi.get("Event._change")("mouseup")
 					},
 					input:function(e,vi){
-						this.value+="input\n";
-						vi.get("Event._change")(this.value)
+						vi.get("Event._change")("input")
 					},
 					paste:function(e,vi){
 						vi.get("Event._change")("paste")
+					},
+					change:function(e,vi){
+						vi.get("Event._change")("change")
 					}
 				}
 			}
@@ -91,9 +98,13 @@
 <body id="eventbind_dom">
 	<h3 attr-style="color:{{style.color}};">{{title}}</h3>
 	<input type="text" attr-value="{{style.color}}" bind-form="{{input_change_key}}">
-	<input type="button" event-click="{{'Event.randomColor'}}" value="click to get an random RGB color">
-	<input type="button" event-dblclick="{{'Event.changeInput'}}" value="double click to change {{#if input_change_key==='style.color'}}title{{#else}}style.color{{/if}}">
-	<div style="width:100px;background-color:#2EE;" event-mouseEnter="{{'Event.mouseenter'}}" event-mouseleave="{{'Event.mouseleave'}}">
+	<input type="button" 
+	event-click="{{'Event.randomColor'}}" value="click to get an random RGB color">
+	<input type="button" 
+	event-dblclick="{{'Event.changeInput'}}" value="double click to change {{#if input_change_key==='style.color'}}title{{#else}}style.color{{/if}}">
+	<div style="width:100px;background-color:#2EE;" 
+	event-mouseEnter="{{'Event.mouseenter'}}" 
+	event-mouseleave="{{'Event.mouseleave'}}">
 		<div style="background-color:#E2E;margin:15px 0;color:#FFF;">
 		{{status.enter_and_leave}} <br> 
 		:{{status.enter_times}}:{{status.leave_times}}</div>
@@ -104,7 +115,9 @@
 		{{status.enter_and_leave}} <br> 
 		:{{status.enter_times}}:{{status.leave_times}}</div>
 	</div>
-	<div style="width:100px;background-color:#E22;" event-mouseover="{{'Event.mouseover'}}" event-mouseout="{{'Event.mouseout'}}">
+	<div style="width:100px;background-color:#E22;" 
+	event-mouseover="{{'Event.mouseover'}}" 
+	event-mouseout="{{'Event.mouseout'}}">
 		<div style="background-color:#2E2;margin:15px 0;color:#000;">
 		{{status.over_and_out}} <br>
 		:{{status.over_times}}:{{status.out_times}}</div>
@@ -115,19 +128,30 @@
 		{{status.over_and_out}} <br>
 		:{{status.over_times}}:{{status.out_times}}</div>
 	</div>
-	<div style="width:100px;height:100px;background-color:#22E;color:#FFF" event-mousemove="{{'Event.mousemove'}}">
+	<div style="width:100px;height:100px;background-color:#22E;color:#FFF" 
+	event-mousemove="{{'Event.mousemove'}}"
+	event-contextmenu="{{'Event.contextmenu'}}"
+	event-wheelclick="{{'Event.wheelclick'}}"
+	event-leftclick="{{'Event.leftclick'}}">
 		mousemove <br>
-		:{{stauts.move_times}}
+		:{{status.move_times}} <br>
+		{{#if status.mouse_click}}
+		you get {{ status.mouse_click}};
+		{{#else}}
+		try click,left or right button!
+		{{/if}}
 	</div>
-	<textarea type="text" 
+	<textarea id="xxx" type="text" 
 	event-focus="{{'Event.focus'}}" 
 	event-blur="{{'Event.blur'}}" 
-	event-keydown="{{'Event.keydown'}}" 
-	event-keyup="{{'Event.keyup'}}"  
 	event-mousedown="{{'Event.mousedown'}}" 
 	event-mouseup="{{'Event.mouseup'}}"  
-	event-input="{{'Event.input'}}"></textarea> 
-	<input type="text" event-paste="{{'Event.paste'}}">
+	event-paste="{{'Event.paste'}}"
+	event-keyup="{{'Event.keyup'}}"  
+	event-input="{{'Event.input'}}" 
+	event-keydown="{{'Event.keydown'}}"
+	event-change="{{'Event.change'}}"
+	></textarea> <!--   -->
 	<div style="width:100px;height:300px;overflow:auto;background-color:#EE2;text-align:center;">{{HTML event_log}}</div>
 </body>
 
