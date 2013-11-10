@@ -63,6 +63,9 @@
 					},
 					mousewheel:function(e,vi){
 						eventbind.set("style.backgroundColor","#"+Math.random().toString(16).substring(2,8));
+						console.log("wheelDelta:",e.wheelDelta);
+						console.log("wheelDeltaX:",e.wheelDeltaX);
+						console.log("wheelDeltaY:",e.wheelDeltaY);
 						return false;
 					},
 					_change:function(value){

@@ -299,38 +299,53 @@ var _event_cache = {},
 		event.pageX || (event.pageX = event.clientX + ~~_box.scrollLeft - ~~_box.clientLeft);
 		event.pageY || (event.pageY = event.clientY + ~~_box.scrollTop - ~~_box.clientTop);
 	},
+	__lowestDelta, __lowestDeltaXY,
+	_extendEventRouter = function(e, _extend) {
+		if (e.__proto__) {
+			var result = (_extendEventRouter = _extendEventRouter_proto)(e, _extend);
+		} else {
+			// try {// 	delete e.type; // 	e.type = e._eventName; // } catch (e) {// 	_e = $.c(e) // 	_e.type = "leftclick"// }
+			if (_isIE) {
+				result = (_extendEventRouter = _extendEventRouter_ie)(e, _extend);
+			} else {
+				result = (_extendEventRouter = _extendEventRouter_old)(e, _extend);
+			}
+		}
+		return result;
+	},
+	_extendEventRouter_proto = function(e, _extend) {
+		var _e = {};
+		$.fI(_extend, function(value, key) {
+			_e[key] = value;
+		})
+		_e.__proto__ = e;
+		return _e;
+	},
+	_extendEventRouter_ie = function(e, _extend) {
+		var _e;
+		_e = $.c(e)
+		$.fI(_extend, function(value, key) {
+			_e[key] = value;
+		})
+		return _e;
+	},
+	_extendEventRouter_old = function(e, _extend) {
+		$.fI(_extend, function(value, key) {
+			delete e[key];
+			e[key] = value;
+		})
+		return e;
+	},
 	_registerEventBase = function(Element, eventName, eventFun, elementHash) {
 		var result = {
 			name: /*_eventNameMap[eventName] || */ eventName,
 			fn: eventFun
 		};
-		result.fn = (function(fixEvent) {
+		var _fn = result.fn = (function(fixEvent) {
 			return function(e) {
 				fixEvent(e);
 				var _e = e;
-				if (e._eventName) {
-					if (e.__proto__) {
-						_e = {
-							type: e._eventName
-						}
-						_e.__proto__ = e;
-					} else {
-						// try {
-						// 	delete e.type;
-						// 	e.type = e._eventName;
-						// } catch (e) {
-						// 	_e = $.c(e)
-						// 	_e.type = "leftclick"
-						// }
-						if (_isIE) {
-							_e = $.c(e)
-							_e.type = e._eventName
-						} else {
-							delete e.type;
-							e.type = e._eventName;
-						}
-					}
-				}
+				e._extend && (_e = _extendEventRouter(e, e._extend));
 				var result = eventFun.call(Element, _e);
 				(result === $FALSE) && (e.preventDefault() || e.stopPropagation());
 				return result;
@@ -340,7 +355,6 @@ var _event_cache = {},
 		if (eventName === "input" && !("oninput" in doc)) {
 			(function() {
 				result.name = ["keypress", /*"focus", */ "blur", "keyup", "paste", "propertychange", "cut"]
-				var _fn = result.fn;
 				var _fixPropertychangeLock,
 					_deleteOrChienseInput,
 					_oldValue = Element.value,
@@ -352,11 +366,17 @@ var _event_cache = {},
 						if (_deleteOrChienseInput) {
 							_deleteOrChienseInput = $FALSE;
 							_oldValue = Element.value;
+							e._extend = {
+								type: "input"
+							}
 							result = _fn(e);
 						}
 					} else if (e.type === "propertychange") { // 2
 						if (_fixPropertychangeLock) {
 							_fixPropertychangeLock = $FALSE;
+							e._extend = {
+								type: "input"
+							}
 							result = _fn(e);
 						} else if ((e.keyCode === 8 /*backspace*/ || e.keyCode === 46 /*delete*/ ) || _oldValue !== Element.value) { //delete or chinese input
 							console.log(arguments.callee.caller)
@@ -375,14 +395,15 @@ var _event_cache = {},
 		} else if (/contextmenu|rclick|rightclick/.test(eventName) && _isIE) {
 			(function() {
 				result.name = ["mousedown", "contextmenu"];
-				var _fn = result.fn;
 				var _result;
 				result.fn = function(e) {
 					if (e.type === "contextmenu") {
 						return _result;
 					} else {
 						if (e.button === 2) {
-							e._eventName = "contextmenu"
+							e._extend = {
+								type: "contextmenu"
+							}
 							_result = _fn(e)
 						};
 					}
@@ -390,7 +411,6 @@ var _event_cache = {},
 			}());
 		} else if (/mouseenter|mouseleave/.test(eventName) && !_isIE) {
 			(function() {
-				var _fn = result.fn;
 				result.name = eventName[5] === "e" ? "mouseover" : "mouseout";
 				result.fn = function(e) {
 					var topNode = e.relatedTarget,
@@ -404,7 +424,9 @@ var _event_cache = {},
 						16 self contains topNode  ==>  
 						32 Brower private*/
 					if (!topNode || (topNode !== self && !(self.compareDocumentPosition(topNode) & 16))) { //@Rubylouvre
-						e._eventName = eventName;
+						e._extend = {
+							type: eventName
+						}
 						return _fn(e);
 					}
 					/*else{
@@ -415,37 +437,110 @@ var _event_cache = {},
 		} else if (eventName === "lclick" || eventName === "leftclick") {
 			(function() {
 				result.name = "mousedown"
-				var _fn = result.fn;
 				result.fn = _isIE ? function(e) {
 					if (e.button === 1) {
-						e._eventName = "leftclick"
+						e._extend = {
+							type: "leftclick"
+						}
 						return _fn(e);
 					}
 				} : function(e) {
 					if (e.button === 0) {
-						e._eventName = "leftclick"
-						return _fn.call(this, e);
+						e._extend = {
+							type: "leftclick"
+						}
+						return _fn(e);
 					}
 				}
 			}());
 		} else if (eventName === "wclick" || eventName === "wheelclick") {
 			(function() {
 				result.name = "mousedown"
-				var _fn = result.fn;
 				result.fn = _isIE ? function(e) {
 					if (e.button === 4) {
-						e._eventName = "wheelclick"
+						e._extend = {
+							type: "wheelclick"
+						}
 						return _fn(e);
 					}
 				} : function(e) {
 					if (e.button === 1) {
-						e._eventName = "wheelclick"
-						return _fn.call(this, e);
+						e._extend = {
+							type: "wheelclick"
+						}
+						return _fn(e);
 					}
 				}
 			}());
-		}else if(eventName==="mousewheel"){
-			result.name= "onwheel" in doc||doc.documentMode>=9?"wheel":["mousewheel","DomMouseScroll","MozMousePiexlScroll"];
+		} else if (eventName === "mousewheel") {
+			//@brandonaaron:jquery-mousewheel MIT License
+			(function() {
+				result.name = "onwheel" in doc || doc.documentMode >= 9 ? "wheel" : ["mousewheel", "DomMouseScroll", "MozMousePiexlScroll"];
+				result.fn = function(e) {
+					var delta = 0, //增量
+						deltaX = 0,
+						deltaY = 0,
+						absDelta = 0,
+						absDeltaXY = 0,
+						fn;
+
+					// Old school scrollwheel delta
+					if (e.wheelDelta /*px or undefined*/ ) {
+						delta = e.wheelDelta;
+					}
+					if (e.detail /*0 or px*/ ) {
+						delta = e.detail * -1;
+					}
+					// At a minimum, setup the deltaY to be delta
+					deltaY = delta;
+
+					// Firefox < 17 related to DOMMouseScroll event
+					if (e.axis !== $UNDEFINED && e.axis === e.HORIZONTAL_AXIS) {
+						deltaY = 0;
+						deltaX = delta * -1;
+					}
+
+					// New school wheel delta (wheel event)
+					if (e.deltaY) {
+						deltaY = e.deltaY * -1;
+						delta = deltaY;
+					}
+					if (e.deltaX) {
+						deltaX = e.deltaX;
+						delta = deltaX * -1;
+					}
+					// Webkit
+					if (e.wheelDeltaY !== $UNDEFINED) {
+						deltaY = e.wheelDeltaY;
+					}
+					if (e.wheelDeltaX !== $UNDEFINED) {
+						deltaX = e.wheelDeltaX * -1;
+					}
+
+					// Look for lowest delta to normalize the delta values
+					absDelta = Math.abs(delta);
+					if (!__lowestDelta || absDelta < __lowestDelta) {
+						__lowestDelta = absDelta;
+					}
+					absDeltaXY = Math.max(Math.abs(deltaY), Math.abs(deltaX));
+					if (!__lowestDeltaXY || absDeltaXY < __lowestDeltaXY) {
+						__lowestDeltaXY = absDeltaXY;
+					}
+
+					// Get a whole value for the deltas
+					fn = delta > 0 ? 'floor' : 'ceil';
+					delta = Math[fn](delta / __lowestDelta);
+					deltaX = Math[fn](deltaX / __lowestDeltaXY);
+					deltaY = Math[fn](deltaY / __lowestDeltaXY);
+					e._extend = {
+						type: 'mousewheel',
+						wheelDelta: delta,
+						wheelDeltaX: deltaX,
+						wheelDeltaY: deltaY
+					}
+					_fn(e)
+				}
+			}());
 		}
 		_event_cache[elementHash + $.hashCode(eventFun)] = result;
 		return result;
