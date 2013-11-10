@@ -13,7 +13,7 @@
 				title: "Input an RBG color!",
 				style: {
 					color: "red",
-					backgroundColor:"#22E"
+					backgroundColor:"#000"
 				},
 				input_change_key:"style.color",
 				Event: {
@@ -62,10 +62,11 @@
 						return false;
 					},
 					mousewheel:function(e,vi){
-						eventbind.set("style.backgroundColor","#"+Math.random().toString(16).substring(2,8));
-						console.log("wheelDelta:",e.wheelDelta);
-						console.log("wheelDeltaX:",e.wheelDeltaX);
-						console.log("wheelDeltaY:",e.wheelDeltaY);
+						var colorInt = ~~eventbind.get("style.__bgInt");
+						colorInt=(colorInt+e.wheelDelta*10+256)%256;
+						eventbind.set("style.__bgInt",colorInt);
+						colorInt = colorInt.toString(16);
+						eventbind.set("style.backgroundColor","#"+colorInt+colorInt+colorInt);
 						return false;
 					},
 					_change:function(value){
@@ -136,7 +137,7 @@
 		{{status.over_and_out}} <br>
 		:{{status.over_times}}:{{status.out_times}}</div>
 	</div>
-	<div attr-style="width:100px;height:100px;background-color:{{style.backgroundColor}};color:#FFF" 
+	<div attr-style="width:100px;height:100px;background-color:{{style.backgroundColor}};color:red" 
 	event-mousemove="{{'Event.mousemove'}}"
 	event-contextmenu="{{'Event.contextmenu'}}"
 	event-wheelclick="{{'Event.wheelclick'}}"

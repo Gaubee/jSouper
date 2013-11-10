@@ -1,24 +1,5 @@
 var _event_cache = {},
 	_box,
-	_eventNameMap = (_isIE ? {
-		input: ["keypress", /*"focus", */ "blur", "keyup", "paste", "propertychange", "cut"],
-		contextmenu: ["mousedown", "contextmenu"],
-		rightclick: ["mousedown", "contextmenu"],
-		rclick: ["mousedown", "contextmenu"],
-		lclick: "mousedown",
-		leftclick: "mousedown",
-		wclick: "mousedown",
-		wheelclick: "mousedown"
-	} : {
-		rightclick: "contextmenu",
-		rclick: "contextmenu",
-		mouseenter: "mouseover",
-		mouseleave: "mouseout",
-		lclick: "mousedown",
-		leftclick: "mousedown",
-		wclick: "mousedown",
-		wheelclick: "mousedown"
-	}),
 	_fixEvent = function(e) { //@Rybylouvre
 		// if (!e.target) {console.log(e)};
 		e.target || (e.target = e.srcElement);
@@ -42,43 +23,63 @@ var _event_cache = {},
 	__lowestDelta, __lowestDeltaXY,
 	_extendEventRouter = function(e, _extend) {
 		if (e.__proto__) {
-			var result = (_extendEventRouter = _extendEventRouter_proto)(e, _extend);
+			var result = (_extendEventRouter = function(e, _extend) {
+				var _e = {};
+				$.fI(_extend, function(value, key) {
+					_e[key] = value;
+				})
+				_e.__proto__ = e;
+				return _e;
+			})(e, _extend);
 		} else {
 			// try {// 	delete e.type; // 	e.type = e._eventName; // } catch (e) {// 	_e = $.c(e) // 	_e.type = "leftclick"// }
 			if (_isIE) {
-				result = (_extendEventRouter = _extendEventRouter_ie)(e, _extend);
+				result = (_extendEventRouter = function(e, _extend) {
+					var _e;
+					_e = $.c(e)
+					$.fI(_extend, function(value, key) {
+						_e[key] = value;
+					})
+					return _e;
+				})(e, _extend);
 			} else {
-				result = (_extendEventRouter = _extendEventRouter_old)(e, _extend);
+				result = (_extendEventRouter = function(e, _extend) {
+					$.fI(_extend, function(value, key) {
+						delete e[key];
+						e[key] = value;
+					})
+					return e;
+				})(e, _extend);
 			}
 		}
 		return result;
 	},
-	_extendEventRouter_proto = function(e, _extend) {
-		var _e = {};
-		$.fI(_extend, function(value, key) {
-			_e[key] = value;
-		})
-		_e.__proto__ = e;
-		return _e;
-	},
-	_extendEventRouter_ie = function(e, _extend) {
-		var _e;
-		_e = $.c(e)
-		$.fI(_extend, function(value, key) {
-			_e[key] = value;
-		})
-		return _e;
-	},
-	_extendEventRouter_old = function(e, _extend) {
-		$.fI(_extend, function(value, key) {
-			delete e[key];
-			e[key] = value;
-		})
-		return e;
-	},
+	// _extendEventRouter_proto = function(e, _extend) {
+	// 	var _e = {};
+	// 	$.fI(_extend, function(value, key) {
+	// 		_e[key] = value;
+	// 	})
+	// 	_e.__proto__ = e;
+	// 	return _e;
+	// },
+	// _extendEventRouter_ie = function(e, _extend) {
+	// 	var _e;
+	// 	_e = $.c(e)
+	// 	$.fI(_extend, function(value, key) {
+	// 		_e[key] = value;
+	// 	})
+	// 	return _e;
+	// },
+	// _extendEventRouter_old = function(e, _extend) {
+	// 	$.fI(_extend, function(value, key) {
+	// 		delete e[key];
+	// 		e[key] = value;
+	// 	})
+	// 	return e;
+	// },
 	_registerEventBase = function(Element, eventName, eventFun, elementHash) {
 		var result = {
-			name: /*_eventNameMap[eventName] || */ eventName,
+			name: eventName,
 			fn: eventFun
 		};
 		var _fn = result.fn = (function(fixEvent) {
