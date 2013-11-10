@@ -1640,9 +1640,9 @@ draggable
 	},
 	_templateMatchRule= /\{[\w\W]*?\{[\w\W]*?\}[\s]*\}/,
 	attributeHandle = function(attrStr, node, handle, triggerTable) {
-		var attrKey = $.trim(attrStr.substring(0, attrStr.search("="))),
-			attrValue = node.getAttribute(attrKey);
-		attrKey = attrKey.toLowerCase()
+		var s_attrKey = $.trim(attrStr.substring(0, attrStr.search("="))),
+			attrValue = node.getAttribute(s_attrKey),
+			attrKey = s_attrKey.toLowerCase();
 		attrKey = attrKey.indexOf(V.prefix) ? attrKey : attrKey.replace(V.prefix, "")
 		attrKey = (_isIE && IEfix[attrKey]) || attrKey
 		// console.log(attrValue,":",_matchRule.test(attrValue)||_templateMatchRule.test(attrValue))
@@ -1675,6 +1675,7 @@ draggable
 				$.us(triggerTable[key] || (triggerTable[key] = []), attrTrigger);
 			});
 			// console.log(attrKey,attrValue)
+			node.removeAttribute(s_attrKey);
 		}
 	};
 /*
