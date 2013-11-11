@@ -17,7 +17,7 @@ var relyStack = [], //用于搜集依赖的堆栈数据集
 
 	function Observer(obs) { //动态计算类
 		var self = this;
-		if (!(this instanceof Observer)) {
+		if (!(self instanceof Observer)) {
 			return new Observer(obs);
 		}
 		DataManager.Object(self);

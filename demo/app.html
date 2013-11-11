@@ -3,25 +3,63 @@
 <head>
 	<title>HTML-ViewParse</title>
 	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js">
-	{
-		Id:"aboutMe",
-		Data:{
-			name:"Gaubee",
-			boy:true,
-			age:20
+		{
+			Id:"aboutMe",
+			Data:{
+				name:"Gaubee",
+				boy:true,
+				age:20
+			}
 		}
-	}
 	</script>
+	<!-- -->
+	<script>
+	;(function(){
+		if(_isIE){
+			var e = "abbr,article,aside,audio,canvas,datalist,details,dialog,eventsource,figure,footer,header,hgroup,mark,menu,meter,nav,output,progress,section,time,video".split(','),
+			i=e.length;
+			while(i--){
+				document.createElement(e[i])
+			}
+		};
+	})();
+	</script>
+	<style>
+		article,aside,dialog,footer,header,section,footer,nav,figure,menu{display:block}
+		nav{
+			color: blue;
+		}
+	</style>
 </head>
 <body id="aboutMe">
 	<h2>my name is {{name}}</h2>
-	<span>I'm a 
-	{{#if boy}}boy{{#else}}girl{{/if}}
-	 and now is {{age}} years old.</span>
+	<nav>I'm a 
+		{{#if boy}}boy{{#else}}girl{{/if}}
+		and now is {{age}} years old.
+	</nav>
 </body>
 
 </html>
 
 <script type="text/javascript">
+setTimeout(function(){
+	nav = document.createElement("nav");
+	nav.innerHTML="I'm nav";
+	document.appendChild(nav);
+},500)
+setTimeout(function(){
+	var css = 'nav { color: red; }',
+		head = document.getElementsByTagName('head')[0],
+		style = document.createElement('style');
 
+	style.type = 'text/css';
+	if (style.styleSheet) {
+		style.styleSheet.cssText = css;
+	} else {
+		style.appendChild(document.createTextNode(css));
+	}
+
+	head.appendChild(style);
+	console.log("append style")
+},1000)
 </script>

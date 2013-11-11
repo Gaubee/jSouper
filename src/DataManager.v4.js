@@ -124,7 +124,7 @@ var DM_proto = DataManager.prototype = {
 			DataManager.session.filterKey = $UNDEFINED;
 		}
 		if (result && result[_DM_extends_object_constructor]) {
-			result = result.get();
+			result = result.get(self);
 		}
 		return result;
 	},
@@ -189,7 +189,8 @@ var DM_proto = DataManager.prototype = {
 							cache_n_Obj = cache_n_Obj[currentKey] || (cache_n_Obj[currentKey] = {})
 						});
 						if ((sObj = cache_n_Obj[lastKey]) && sObj[_DM_extends_object_constructor]) {
-							sObj.set(nObj) //call ExtendsClass API
+							console.log(self,key)
+							sObj.set(nObj,self,key) //call ExtendsClass API
 						} else if (cache_n_Obj instanceof Object) {
 							cache_n_Obj[lastKey] = nObj;
 						} else if (cache_cache_n_Obj) {
