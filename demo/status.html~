@@ -8,22 +8,16 @@
 			Data:{
 				name:"Gaubee",
 				boy:true,
-				age:20
+				age:20,
+				child:{
+					name:"bangeel",
+					boy:"true",
+					age:0
+				}
 			}
 		}
 	</script>
 	<!-- -->
-	<script>
-	;(function(){
-		if(_isIE){
-			var e = "abbr,article,aside,audio,canvas,datalist,details,dialog,eventsource,figure,footer,header,hgroup,mark,menu,meter,nav,output,progress,section,time,video".split(','),
-			i=e.length;
-			while(i--){
-				document.createElement(e[i])
-			}
-		};
-	})();
-	</script>
 	<style>
 		article,aside,dialog,footer,header,section,footer,nav,figure,menu{display:block}
 		nav{
@@ -37,6 +31,12 @@
 		{{#if boy}}boy{{#else}}girl{{/if}}
 		and now is {{age}} years old.
 	</nav>
+	{{#with 'child'}}
+		name:{{name}} <br>
+		status(parentName):{{status 'parentName',$PARENT.name+'.'+name}} <br>
+	{{/with}}
+	child.parentName:{{child.parentName}} <br>
+	child.age:{{child.age}}
 </body>
 
 </html>

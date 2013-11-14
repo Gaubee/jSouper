@@ -9,7 +9,7 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks('grunt-contrib-uglify');
 	// grunt.loadNpmTasks('grunt-closure-compiler');
 	grunt.loadNpmTasks('grunt-wrap');
-
+// grunt.loadNpmTasks('grunt-peon-gui');
 	//define tasks
 	grunt.registerTask('server', ['connect:server', 'watch']);
 

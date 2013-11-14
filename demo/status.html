@@ -8,22 +8,16 @@
 			Data:{
 				name:"Gaubee",
 				boy:true,
-				age:20
+				age:20,
+				child:{
+					name:"bangeel",
+					boy:"true",
+					age:0
+				}
 			}
 		}
 	</script>
 	<!-- -->
-	<script>
-	;(function(){
-		if(_isIE){
-			var e = "abbr,article,aside,audio,canvas,datalist,details,dialog,eventsource,figure,footer,header,hgroup,mark,menu,meter,nav,output,progress,section,time,video".split(','),
-			i=e.length;
-			while(i--){
-				document.createElement(e[i])
-			}
-		};
-	})();
-	</script>
 	<style>
 		article,aside,dialog,footer,header,section,footer,nav,figure,menu{display:block}
 		nav{
@@ -32,11 +26,18 @@
 	</style>
 </head>
 <body id="aboutMe">
+	<P>注释：status是一种复杂的组合对象，它所定义的是其Getter式，也就是说status值只能从其依赖对象的改动而改动，由于无法定义Setter式，所以一定程度上这个值是不能直接修改的。</p>
 	<h2>my name is {{name}}</h2>
 	<nav>I'm a 
 		{{#if boy}}boy{{#else}}girl{{/if}}
 		and now is {{age}} years old.
 	</nav>
+	{{#with 'child'}}
+		name:{{name}} <br>
+		status(parentName):{{status 'parentName',$PARENT.name+'.'+name}} <br>
+	{{/with}}
+	child.parentName:{{child.parentName}} <br>
+	child.age:{{child.age}}
 </body>
 
 </html>

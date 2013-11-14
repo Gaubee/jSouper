@@ -13,7 +13,8 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 		"/with": $TRUE,
 		"HTML": $TRUE,
 		"#>": $TRUE,
-		"#layout": $TRUE
+		"#layout": $TRUE,
+		"status":$TRUE
 	},
 	templateOperatorNum = {
 		"@": 1

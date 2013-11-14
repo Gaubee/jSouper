@@ -741,6 +741,20 @@ DataManager.session = {
 	filterKey: $NULL,
 	setStacks: []
 };
+//DataManager._finallyQuene = [];
+DataManager.finallyRun = function(fun) {
+	var finallyQuene = DataManager._finallyQuene || (DataManager._finallyQuene = []);
+	if (fun) {
+		$.p(finallyQuene, fun)
+	} else {
+		$.ftE(finallyQuene, function() {
+			fun && fun()
+			finallyQuene.length=0;
+		})
+		// finallyQuene.length=0;
+	}
+}
+var _dm_force_update //= $FALSE;  //ignore equal
 var DM_proto = DataManager.prototype = {
 	get: function(key) { //
 		var self = DataManager.session.topGetter = this,
@@ -826,17 +840,19 @@ var DM_proto = DataManager.prototype = {
 			result = result.key ? result_dm.set(result.key, nObj) : result_dm.set(nObj);
 			// result = result_dm.touchOff(result.key)
 			setStacks.pop();
+			console.log(DataManager._finallyQuene)
+			DataManager.finallyRun();
 		} else {
 			switch (argumentLen) {
 				// case 0:
 				// 	break;
 				case 1:
-					if (self._database !== nObj || nObj instanceof Object) {
+					if (self._database !== nObj || nObj instanceof Object || _dm_force_update) {
 						self._database = nObj;
 					};
 					break;
 				default: //find Object by the key-dot-path and change it
-					if (nObj !== DM_proto.get.call(self, key)) {
+					if (nObj !== DM_proto.get.call(self, key) || nObj instanceof Object || _dm_force_update) {
 						var database = self._database || (self._database = {}),
 							sObj,
 							cache_n_Obj = database,
@@ -848,8 +864,8 @@ var DM_proto = DataManager.prototype = {
 							cache_n_Obj = cache_n_Obj[currentKey] || (cache_n_Obj[currentKey] = {})
 						});
 						if ((sObj = cache_n_Obj[lastKey]) && sObj[_DM_extends_object_constructor]) {
-							console.log(self,key)
-							sObj.set(nObj,self,key) //call ExtendsClass API
+							console.log(self, key)
+							sObj.set(nObj, self, key) //call ExtendsClass API
 						} else if (cache_n_Obj instanceof Object) {
 							cache_n_Obj[lastKey] = nObj;
 						} else if (cache_cache_n_Obj) {
@@ -944,6 +960,7 @@ var DM_proto = DataManager.prototype = {
 			// debugger
 			var prefix = childDataManager._prefix,
 				childResult; // || "";
+			_dm_force_update = $TRUE;
 			if (!key) { //key === "",touchoff all
 				childResult = childDataManager.set(prefix ? self.get(prefix) : self.get())
 			} else if (!prefix) { //prefix==="" equal to $THIS
@@ -956,6 +973,7 @@ var DM_proto = DataManager.prototype = {
 				childResult = childDataManager.set(prefix, self.get(key))
 				// childDataManager.touchOff("")
 			}
+			_dm_force_update = $FALSE;
 			$.p(chidlUpdateKey, childResult);
 		});
 		//self
@@ -1568,7 +1586,8 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 		"/with": $TRUE,
 		"HTML": $TRUE,
 		"#>": $TRUE,
-		"#layout": $TRUE
+		"#layout": $TRUE,
+		"status":$TRUE
 	},
 	templateOperatorNum = {
 		"@": 1
@@ -2779,6 +2798,12 @@ $.ftE(_operator_list, function(operator) {
 	templateOperatorNum[operator] = 2;
 	V.rh(operator, _operator_handle)
 });
+V.rh("status", function(handle, index, parentHandle) {
+	if(parentHandle.type !== "handle"){
+		$.iA(parentHandle.childNodes,handle,handle.childNodes[0].childNodes[0]);
+		return $.noop
+	}
+});
 var _unary_operator_list = "! ~ -".split(" ");// ++ --
 $.ftE(_unary_operator_list, function(operator) {
 	templateOperatorNum[operator] = 1;
@@ -3135,6 +3160,43 @@ var _operator_handle_build_str = String(_operator_handle_builder),
 	};
 $.ftE(_operator_list, function(operator) {
 	V.rt(operator, _operator_handle_build_factory(operator))
+});
+V.rt("status", function(handle, index, parentHandle) {
+	var handleChilds = handle.childNodes,
+		statusKeyHandleId = handleChilds[0].id,
+		textHandle_id = handleChilds[0].childNodes[0].id,
+		valueHandleId = handleChilds[1].id,
+		trigger = {
+			bubble: $TRUE
+		};
+	// console.log(handle.childNodes[0].parentNode, handle.parentNode)
+
+	if (parentHandle.type !== "handle") { //as textHandle
+		trigger.event = function(NodeList_of_ViewInstance, dataManager /*, triggerBy, isAttr, vi*/ ) { //call by ViewInstance's Node
+			var key = NodeList_of_ViewInstance[statusKeyHandleId]._data,
+				result = NodeList_of_ViewInstance[valueHandleId]._data,
+				currentNode = NodeList_of_ViewInstance[textHandle_id].currentNode;
+			
+			DataManager.finallyRun(function(){
+				console.log(key,result)
+				//key!==$UNDEFINED&&dataManager.set(key,result)
+			},0)
+			currentNode.data = result;
+		}
+	} else {
+		trigger.event = function(NodeList_of_ViewInstance, dataManager /*, triggerBy, isAttr, vi*/ ) { //call by ViewInstance's Node
+			var key = NodeList_of_ViewInstance[statusKeyHandleId]._data,
+				result = NodeList_of_ViewInstance[valueHandleId]._data;
+			
+			DataManager.finallyRun(function(){
+				console.log(key,result)
+				//key!==$UNDEFINED&&dataManager.set(key,result)
+			},0)
+			NodeList_of_ViewInstance[this.handleId]._data = result;
+		}
+	}
+
+	return trigger;
 });
 var _unary_operator_handle_builder = function(handle, index, parentHandle){
 	var firstParameter_id = handle.childNodes[0].id,
