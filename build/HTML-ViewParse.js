@@ -720,16 +720,14 @@ DataManager.session = {
 	setStacks: []
 };
 //DataManager._finallyQuene = [];
+// DataManager._finallyHash = {};
 DataManager.finallyRun = function(fun) {
 	var finallyQuene = DataManager._finallyQuene || (DataManager._finallyQuene = []);
 	if (fun) {
 		$.p(finallyQuene, fun)
 	} else {
-		$.ftE(finallyQuene, function() {
-			fun && fun()
-			finallyQuene.length=0;
-		})
-		// finallyQuene.length=0;
+		fun = finallyQuene.splice(0,1)[0]
+		fun && fun()
 	}
 }
 var _dm_force_update //= $FALSE;  //ignore equal
@@ -818,8 +816,7 @@ var DM_proto = DataManager.prototype = {
 			result = result.key ? result_dm.set(result.key, nObj) : result_dm.set(nObj);
 			// result = result_dm.touchOff(result.key)
 			setStacks.pop();
-			console.log(DataManager._finallyQuene)
-			DataManager.finallyRun();
+			!setStacks.length && DataManager.finallyRun();
 		} else {
 			switch (argumentLen) {
 				// case 0:
@@ -830,7 +827,7 @@ var DM_proto = DataManager.prototype = {
 					};
 					break;
 				default: //find Object by the key-dot-path and change it
-					if (nObj !== DM_proto.get.call(self, key) || nObj instanceof Object || _dm_force_update) {
+					if (nObj !== DM_proto.get.call(self, key)  || _dm_force_update) {
 						var database = self._database || (self._database = {}),
 							sObj,
 							cache_n_Obj = database,
@@ -851,7 +848,7 @@ var DM_proto = DataManager.prototype = {
 						} else { //arrKey.length === 0,and database instanceof no-Object
 							(self._database = {})[lastKey] = nObj
 						}
-					} else if (!(nObj instanceof Object)) { //no any change
+					} else if (!(nObj instanceof Object)) { //no any change, if instanceof Object and ==,just run touchOff
 						return;
 					}
 			}
@@ -981,7 +978,8 @@ var DM_proto = DataManager.prototype = {
 			$.p(dataManager._siblingDataManagers, self);
 			self.rebuildTree()
 			dataManager._database = self._database;
-			dataManager.touchOff("")
+			// dataManager.touchOff("")
+			dataManager.set(dataManager._database)
 		}
 		return self;
 	},
@@ -992,7 +990,8 @@ var DM_proto = DataManager.prototype = {
 		dataManager._parentDataManager = self;
 		$.p(self._subsetDataManagers, dataManager);
 		dataManager._database = self.get(prefixKey);
-		dataManager.touchOff("");
+		// dataManager.touchOff("");
+		dataManager.set(dataManager._database)
 		return self;
 	},
 	remove: function(dataManager) {
@@ -1565,7 +1564,7 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 		"HTML": $TRUE,
 		"#>": $TRUE,
 		"#layout": $TRUE,
-		"status":$TRUE
+		"define":$TRUE
 	},
 	templateOperatorNum = {
 		"@": 1
@@ -2638,6 +2637,12 @@ var _commentPlaceholder = function(handle, parentHandle, commentText) {
 var placeholderHandle = function(handle, index, parentHandle) {
 	var commentHandle = _commentPlaceholder(handle, parentHandle);
 };
+V.rh("define", function(handle, index, parentHandle) {
+	if(parentHandle.type !== "handle"){
+		$.iA(parentHandle.childNodes,handle,handle.childNodes[0].childNodes[0]);
+		return $.noop
+	}
+});
 var _each_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManager, triggerBy, viewInstance_ID) {
 	var handle = this,
 		parentHandle = handle.parentNode,
@@ -2776,12 +2781,6 @@ $.ftE(_operator_list, function(operator) {
 	templateOperatorNum[operator] = 2;
 	V.rh(operator, _operator_handle)
 });
-V.rh("status", function(handle, index, parentHandle) {
-	if(parentHandle.type !== "handle"){
-		$.iA(parentHandle.childNodes,handle,handle.childNodes[0].childNodes[0]);
-		return $.noop
-	}
-});
 var _unary_operator_list = "! ~ -".split(" ");// ++ --
 $.ftE(_unary_operator_list, function(operator) {
 	templateOperatorNum[operator] = 1;
@@ -2840,6 +2839,53 @@ V.rh("#with", function(handle, index, parentHandle) {
 	_commentPlaceholder(handle, parentHandle);
 });
 V.rh("/with", placeholderHandle);
+V.rt("define", function(handle, index, parentHandle) {
+	var handleChilds = handle.childNodes,
+		statusKeyHandleId = handleChilds[0].id,
+		textHandle_id = handleChilds[0].childNodes[0].id,
+		valueHandleId = handleChilds[1].id,
+		trigger = {
+			bubble: $TRUE
+		};
+	// console.log(handle.childNodes[0].parentNode, handle.parentNode)
+
+	if (parentHandle.type !== "handle") { //as textHandle
+		trigger.event = function(NodeList_of_ViewInstance, dataManager /*, triggerBy*/ , isAttr, viewInstance_ID) { //call by ViewInstance's Node
+			var key = NodeList_of_ViewInstance[statusKeyHandleId]._data,
+				result = NodeList_of_ViewInstance[valueHandleId]._data,
+				currentNode = NodeList_of_ViewInstance[textHandle_id].currentNode,
+				uid_hash = viewInstance_ID + key,
+				finallyRun;
+			// console.log(key,":",result," in ",uid_hash)
+			if (key !== $UNDEFINED) {
+				if (!(finallyRun =DataManager.finallyRun[uid_hash])) {
+					DataManager.finallyRun(finallyRun = function() {
+						finallyRun.dataManager.set(finallyRun.key, finallyRun.result)
+						DataManager.finallyRun[uid_hash] = $FALSE; //can push into finally quene
+					})
+					DataManager.finallyRun[uid_hash]=finallyRun;
+				}
+				finallyRun.dataManager = dataManager
+				finallyRun.key = key
+				finallyRun.result = result
+			}
+			currentNode.data = result;
+		}
+	} else {
+		trigger.event = function(NodeList_of_ViewInstance, dataManager /*, triggerBy*/ , isAttr, viewInstance_ID) { //call by ViewInstance's Node
+			var key = NodeList_of_ViewInstance[statusKeyHandleId]._data,
+				result = NodeList_of_ViewInstance[valueHandleId]._data;
+
+			DataManager.finallyRun(function() {
+				console.log(key, result)
+				//key!==$UNDEFINED&&dataManager.set(key,result)
+			}, 0)
+			NodeList_of_ViewInstance[this.handleId]._data = result;
+		}
+	}
+
+	return trigger;
+});
 var eachConfig = {
 	$I: "$INDEX"
 }
@@ -2872,6 +2918,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 
 				_rebuildTree = dataManager.rebuildTree;
 				dataManager.rebuildTree = $.noop//doesn't need rebuild every subset
+				// console.log(data)
 				$.ftE($.s(data), function(eachItemData, index) {
 					//TODO:if too mush vi will be create, maybe asyn
 					var viewInstance = arrViewInstances[index];
@@ -3138,43 +3185,6 @@ var _operator_handle_build_str = String(_operator_handle_builder),
 	};
 $.ftE(_operator_list, function(operator) {
 	V.rt(operator, _operator_handle_build_factory(operator))
-});
-V.rt("status", function(handle, index, parentHandle) {
-	var handleChilds = handle.childNodes,
-		statusKeyHandleId = handleChilds[0].id,
-		textHandle_id = handleChilds[0].childNodes[0].id,
-		valueHandleId = handleChilds[1].id,
-		trigger = {
-			bubble: $TRUE
-		};
-	// console.log(handle.childNodes[0].parentNode, handle.parentNode)
-
-	if (parentHandle.type !== "handle") { //as textHandle
-		trigger.event = function(NodeList_of_ViewInstance, dataManager /*, triggerBy, isAttr, vi*/ ) { //call by ViewInstance's Node
-			var key = NodeList_of_ViewInstance[statusKeyHandleId]._data,
-				result = NodeList_of_ViewInstance[valueHandleId]._data,
-				currentNode = NodeList_of_ViewInstance[textHandle_id].currentNode;
-			
-			DataManager.finallyRun(function(){
-				console.log(key,result)
-				//key!==$UNDEFINED&&dataManager.set(key,result)
-			},0)
-			currentNode.data = result;
-		}
-	} else {
-		trigger.event = function(NodeList_of_ViewInstance, dataManager /*, triggerBy, isAttr, vi*/ ) { //call by ViewInstance's Node
-			var key = NodeList_of_ViewInstance[statusKeyHandleId]._data,
-				result = NodeList_of_ViewInstance[valueHandleId]._data;
-			
-			DataManager.finallyRun(function(){
-				console.log(key,result)
-				//key!==$UNDEFINED&&dataManager.set(key,result)
-			},0)
-			NodeList_of_ViewInstance[this.handleId]._data = result;
-		}
-	}
-
-	return trigger;
 });
 var _unary_operator_handle_builder = function(handle, index, parentHandle){
 	var firstParameter_id = handle.childNodes[0].id,

@@ -4,39 +4,48 @@
 	<title>HTML-ViewParse</title>
 	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js">
 		{
-			Id:"aboutMe",
-			Data:{
-				name:"Gaubee",
-				boy:true,
-				age:20,
-				child:{
-					name:"bangeel",
-					boy:"true",
-					age:0
-				}
+			Id: "define",
+			Data: {
+				arr: [
+					["1",
+						"2",
+						"3",
+						"4",
+						"5",
+						"6"
+					],
+					["11",
+						"22",
+						"33",
+						"44",
+						"55",
+						"66"
+					]
+				]
 			}
 		}
 	</script>
-	<!-- -->
-	<style>
-		article,aside,dialog,footer,header,section,footer,nav,figure,menu{display:block}
-		nav{
-			color: blue;
-		}
-	</style>
 </head>
-<body id="aboutMe">
-	<h2>my name is {{name}}</h2>
-	<nav>I'm a 
-		{{#if boy}}boy{{#else}}girl{{/if}}
-		and now is {{age}} years old.
-	</nav>
-	{{#with 'child'}}
-		name:{{name}} <br>
-		status(parentName):{{status 'parentName',$PARENT.name+'.'+name}} <br>
-	{{/with}}
-	child.parentName:{{child.parentName}} <br>
-	child.age:{{child.age}}
+<body>
+	<div id="define">
+		<ol>
+		{{#each @arr}}
+			<li>
+				<p>{{$THIS}}
+				</p>
+				<ul>
+				{{#each @$THIS}}
+					<li>
+						<p>
+							{{$THIS}}
+						</p>
+					</li>
+				{{/each}}
+				</ul>
+			</li>
+		{{/each}}
+		</ol>
+	</div>
 </body>
 
 </html>

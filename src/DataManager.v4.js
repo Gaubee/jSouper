@@ -83,16 +83,14 @@ DataManager.session = {
 	setStacks: []
 };
 //DataManager._finallyQuene = [];
+// DataManager._finallyHash = {};
 DataManager.finallyRun = function(fun) {
 	var finallyQuene = DataManager._finallyQuene || (DataManager._finallyQuene = []);
 	if (fun) {
 		$.p(finallyQuene, fun)
 	} else {
-		$.ftE(finallyQuene, function() {
-			fun && fun()
-			finallyQuene.length=0;
-		})
-		// finallyQuene.length=0;
+		fun = finallyQuene.splice(0,1)[0]
+		fun && fun()
 	}
 }
 var _dm_force_update //= $FALSE;  //ignore equal
@@ -181,8 +179,7 @@ var DM_proto = DataManager.prototype = {
 			result = result.key ? result_dm.set(result.key, nObj) : result_dm.set(nObj);
 			// result = result_dm.touchOff(result.key)
 			setStacks.pop();
-			console.log(DataManager._finallyQuene)
-			DataManager.finallyRun();
+			!setStacks.length && DataManager.finallyRun();
 		} else {
 			switch (argumentLen) {
 				// case 0:
@@ -193,7 +190,7 @@ var DM_proto = DataManager.prototype = {
 					};
 					break;
 				default: //find Object by the key-dot-path and change it
-					if (nObj !== DM_proto.get.call(self, key) || nObj instanceof Object || _dm_force_update) {
+					if (nObj !== DM_proto.get.call(self, key)  || _dm_force_update) {
 						var database = self._database || (self._database = {}),
 							sObj,
 							cache_n_Obj = database,
@@ -214,7 +211,7 @@ var DM_proto = DataManager.prototype = {
 						} else { //arrKey.length === 0,and database instanceof no-Object
 							(self._database = {})[lastKey] = nObj
 						}
-					} else if (!(nObj instanceof Object)) { //no any change
+					} else if (!(nObj instanceof Object)) { //no any change, if instanceof Object and ==,just run touchOff
 						return;
 					}
 			}
@@ -344,7 +341,8 @@ var DM_proto = DataManager.prototype = {
 			$.p(dataManager._siblingDataManagers, self);
 			self.rebuildTree()
 			dataManager._database = self._database;
-			dataManager.touchOff("")
+			// dataManager.touchOff("")
+			dataManager.set(dataManager._database)
 		}
 		return self;
 	},
@@ -355,7 +353,8 @@ var DM_proto = DataManager.prototype = {
 		dataManager._parentDataManager = self;
 		$.p(self._subsetDataManagers, dataManager);
 		dataManager._database = self.get(prefixKey);
-		dataManager.touchOff("");
+		// dataManager.touchOff("");
+		dataManager.set(dataManager._database)
 		return self;
 	},
 	remove: function(dataManager) {
