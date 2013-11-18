@@ -42,8 +42,7 @@
 	}
 	var _collect = DM_proto.collect;
 	DM_proto.collect = function(viewInstance) {
-		var self = this,
-			smartTriggers = viewInstance._smartTriggers;
+		var self = this;
 		if (viewInstance instanceof DataManager) {
 			_collect.call(self, viewInstance);
 			//TODO:release memory.
@@ -53,25 +52,10 @@
 				_collect.call(self, vi_DM)
 			} else {
 				viewInstance.dataManager = self;
-				var viewInstanceTriggers = viewInstance._triggers;
+				var viewInstanceTriggers = viewInstance._triggers
+				// , smartTriggers = viewInstance._smartTriggers;
 				$.ftE(viewInstanceTriggers, function(sKey) {
-					self.get(sKey);
-					var baseKey = DataManager.session.filterKey,
-						topGetterTriggerKeys = DataManager.session.topGetter && DataManager.session.topGetter._triggerKeys,
-						smartTrigger = new SmartTriggerHandle(
-							baseKey || "", //match key
-
-							function(smartTriggerSet) { //event
-								viewInstance.touchOff(sKey);
-							}, { //TEMP data
-								viewInstance: viewInstance,
-								dm_id: self.id,
-								// triggerSet: topGetterTriggerKeys,
-								sourceKey: sKey
-							}
-						);
-					$.p(smartTriggers, smartTrigger);
-					topGetterTriggerKeys && smartTrigger.bind(topGetterTriggerKeys); // topGetterTriggerKeys.push(baseKey, smartTrigger);
+					viewInstance._buildSmart(sKey);
 				});
 			}
 			$.p(viewInstance.dataManager._viewInstances, viewInstance);
@@ -310,6 +294,36 @@ var VI_proto = ViewInstance.prototype = {
 				trigger.event(NodeList, dataManager, /*trigger,*/ self._isAttr, self._id)
 			})
 		})
+	},
+	_buildSmart:function(sKey) {
+		var self = this,
+			dataManager = self.dataManager,
+			smartTriggers = self._smartTriggers;
+		dataManager.get(sKey);
+		var baseKey = DataManager.session.filterKey,
+			topGetterTriggerKeys = DataManager.session.topGetter && DataManager.session.topGetter._triggerKeys,
+			smartTrigger = new SmartTriggerHandle(
+				baseKey || (baseKey = ""), //match key
+
+				function(smartTriggerSet) { //event
+					self.get(sKey);
+					if (DataManager.session.filterKey !== baseKey) {
+						console.log(sKey, " : ", baseKey, DataManager.session.filterKey)
+						baseKey = DataManager.session.filterKey;
+						smartTrigger.unbind(smartTriggerSet)
+						smartTrigger.bind(smartTriggerSet, baseKey)
+						dataManager.rebuildTree();
+					}
+					self.touchOff(sKey);
+				}, { //TEMP data
+					viewInstance: self,
+					dm_id: dataManager.id,
+					// triggerSet: topGetterTriggerKeys,
+					sourceKey: sKey
+				}
+			);
+		$.p(smartTriggers, smartTrigger);
+		topGetterTriggerKeys && smartTrigger.bind(topGetterTriggerKeys); // topGetterTriggerKeys.push(baseKey, smartTrigger);
 	},
 	on: function(eventName, fun) {
 

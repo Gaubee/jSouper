@@ -7,19 +7,19 @@
 			Id: "define",
 			Data: {
 				arr: [
-					[new String("1"),
+					[1,
 						new String("2"),
 						new String("3"),
 						new String("4"),
 						new String("5"),
 						new String("6")
-					],
+					]/*,
 					[new String("11"),
 						new String("12"),
 						new String("13"),
 						new String("14"),
 						new String("15")
-					]
+					]*/
 				]
 			}
 		}
@@ -35,12 +35,13 @@
 <body>
 	<div id="define">
 		<P>注释：define是一种复杂的组合对象，它所定义的是其Getter式，也就是说define值只能从其依赖对象的改动而改动，由于无法定义Setter式，所以一定程度上这个值是不能直接修改的，只能通过其所依赖的对象进行更改其值。</p>
-		<p>值得注意的是，define时，如果当前$THIS对象非Object，也就是说没法添加hash键，这个对象会被一个带着所define的Object所替代。这是set对弱对象本身存在的的机制。</p>
+		<p>值得注意的是，define时，如果当前$THIS对象非Object，也就是说没法添加hash键，这个对象会被一个带着所define的Object所替代。这是set对弱类型对象本身存在的的机制。</p>
 		<ol>
 		{{#each @arr}}
 			<li>
 				<p>{{$THIS}}
 					<small>({{define 'crumb',$TOP.arr.length+" ==> "+$THIS.length}})</small> 
+					{{define 'test','???'}}
 				</p>
 				<ul>
 				{{#each @$THIS}}
@@ -61,24 +62,14 @@
 </html>
 
 <script type="text/javascript">
-// setTimeout(function(){
-// 	nav = document.createElement("nav");
-// 	nav.innerHTML="I'm nav";
-// 	document.appendChild(nav);
-// },500)
-// setTimeout(function(){
-// 	var css = 'nav { color: red; }',
-// 		head = document.getElementsByTagName('head')[0],
-// 		style = document.createElement('style');
 
-// 	style.type = 'text/css';
-// 	if (style.styleSheet) {
-// 		style.styleSheet.cssText = css;
-// 	} else {
-// 		style.appendChild(document.createTextNode(css));
-// 	}
+ViewParser.ready(function(){
+	setTimeout(function(){
+		// console.clear()
+		// App.set("arr.0.test","no?")
+		// console.log(App.get("arr.0.test"))
+	},500)
+	arr1 = App._AVI[17][0];
+})
 
-// 	head.appendChild(style);
-// 	console.log("append style")
-// },1000)
 </script>

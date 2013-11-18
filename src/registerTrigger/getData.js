@@ -26,6 +26,7 @@ V.rt("", function(handle, index, parentHandle) {
 							data = String(data).replace(/"/g, '\\"').replace(/'/g, "\\'");
 						}
 					}
+					data = String(data);
 					if (nodeHandle._data !== data) {
 						currentNode.data = nodeHandle._data = data;
 					}

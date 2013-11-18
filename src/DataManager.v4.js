@@ -190,7 +190,8 @@ var DM_proto = DataManager.prototype = {
 					};
 					break;
 				default: //find Object by the key-dot-path and change it
-					if (nObj !== DM_proto.get.call(self, key)  || _dm_force_update) {
+					if (_dm_force_update||nObj !== DM_proto.get.call(self, key) ) {
+						//[@Gaubee/blog/issues/45](https://github.com/Gaubee/blog/issues/45)
 						var database = self._database || (self._database = {}),
 							sObj,
 							cache_n_Obj = database,
@@ -202,7 +203,6 @@ var DM_proto = DataManager.prototype = {
 							cache_n_Obj = cache_n_Obj[currentKey] || (cache_n_Obj[currentKey] = {})
 						});
 						if ((sObj = cache_n_Obj[lastKey]) && sObj[_DM_extends_object_constructor]) {
-							console.log(self, key)
 							sObj.set(nObj, self, key) //call ExtendsClass API
 						} else if (cache_n_Obj instanceof Object) {
 							cache_n_Obj[lastKey] = nObj;
@@ -223,6 +223,7 @@ var DM_proto = DataManager.prototype = {
 			arrKey && $.ftE(arrKey, function(maybeArrayKey) {
 				linkKey = linkKey ? linkKey + "." + maybeArrayKey : maybeArrayKey;
 				if ((__arrayData = DM_proto.get.call(self, linkKey)) instanceof Array && __arrayLen[linkKey] !== __arrayData.length) {
+					// console.log(linkKey,__arrayData.length, __arrayLen[linkKey])
 					__arrayLen[linkKey] = __arrayData.length
 					result = self.touchOff(linkKey)
 				}
@@ -281,7 +282,7 @@ var DM_proto = DataManager.prototype = {
 		var self = this,
 			database = self._database;
 		$.ftE($.s(_getAllSiblingDataManagers(self)), function(dm) {
-			dm._database = database;
+			dm._database = database;//maybe on-obj
 			dm._touchOff(key)
 		})
 	},
@@ -312,13 +313,15 @@ var DM_proto = DataManager.prototype = {
 				// childDataManager.touchOff("")
 			}
 			_dm_force_update = $FALSE;
+			//如果不进行锁定，当数组因为其子对象被修改，
+			//改动信息就需要冒泡到顶层，等同于强制触发数组的所有关键字，通知所有子对象检查自身是否发生变化。
+			//所以锁定是效率所需。
 			$.p(chidlUpdateKey, childResult);
 		});
 		//self
 		triggerKeys.forIn(function(triggerCollection, triggerKey) {
-			// console.log("All triggerKey:",triggerKey)
-
-			if ( /*triggerKey.indexOf(key ) === 0 || key.indexOf(triggerKey ) === 0*/ !key || !triggerKey || key === triggerKey || triggerKey.indexOf(key + ".") === 0 || key.indexOf(triggerKey + ".") === 0) {
+			//!triggerKey==true;
+			if (!key || !triggerKey || key === triggerKey || triggerKey.indexOf(key + ".") === 0 || key.indexOf(triggerKey + ".") === 0) {
 				// console.log("filter triggerKey:",triggerKey)
 				$.p(updateKey, triggerKey)
 				$.ftE(triggerCollection, function(smartTriggerHandle) {

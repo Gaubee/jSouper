@@ -4,7 +4,8 @@ V.rt("define", function(handle, index, parentHandle) {
 		textHandle_id = handleChilds[0].childNodes[0].id,
 		valueHandleId = handleChilds[1].id,
 		trigger = {
-			bubble: $TRUE
+			bubble: $TRUE,
+			name:"define"
 		};
 	// console.log(handle.childNodes[0].parentNode, handle.parentNode)
 
@@ -15,7 +16,7 @@ V.rt("define", function(handle, index, parentHandle) {
 				currentNode = NodeList_of_ViewInstance[textHandle_id].currentNode,
 				uid_hash = viewInstance_ID + key,
 				finallyRun;
-			// console.log(key,":",result," in ",uid_hash)
+			console.log(key,":",result);
 			if (key !== $UNDEFINED) {
 				if (!(finallyRun =DataManager.finallyRun[uid_hash])) {
 					DataManager.finallyRun(finallyRun = function() {
@@ -28,7 +29,10 @@ V.rt("define", function(handle, index, parentHandle) {
 				finallyRun.key = key
 				finallyRun.result = result
 			}
-			currentNode.data = result;
+			result = String(result);
+			if(currentNode.data!==result){
+				currentNode.data = result;
+			}
 		}
 	} else {
 		trigger.event = function(NodeList_of_ViewInstance, dataManager /*, triggerBy*/ , isAttr, viewInstance_ID) { //call by ViewInstance's Node
