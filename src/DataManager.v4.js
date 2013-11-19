@@ -8,7 +8,7 @@ function DataManager(baseData) {
 	if (!(self instanceof DataManager)) {
 		return new DataManager(baseData);
 	}
-	baseData = baseData || {};
+	// baseData = baseData || {};
 	self.id = $.uid();
 
 	self._database = baseData;
@@ -213,7 +213,6 @@ var DM_proto = DataManager.prototype = {
 						return;
 					}
 			}
-			// $.p(setStacks,self.id);
 			result = $UNDEFINED; //var result
 			var linkKey = "",
 				__arrayLen = self.__arrayLen,
@@ -232,7 +231,6 @@ var DM_proto = DataManager.prototype = {
 			}
 			// console.log(key)
 			result = result || self.touchOff(key);
-			// setStacks.pop();
 		}
 		return result;
 	},

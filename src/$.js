@@ -8,6 +8,7 @@ var doc = document,
 	_placeholder = function(prefix) {
 		return prefix || "@" + Math.random().toString(36).substring(2)
 	},
+	_booleanFalseRegExp = /false|undefined|null|NaN/,
 	$NULL = null,
 	$UNDEFINED,
 	$TRUE = !$UNDEFINED,

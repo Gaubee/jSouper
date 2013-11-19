@@ -24,7 +24,7 @@
 						currentTopGetter = topGetter
 					}
 				}
-				smartTrigger.event(currentTopGetter._triggerKeys);
+				//smartTrigger.event(currentTopGetter._triggerKeys);//filter as dm.getTop().touchOff("")
 			})
 		})
 		$.ftE(self._subsetDataManagers, function(childDataManager) {

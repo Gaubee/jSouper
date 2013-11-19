@@ -147,7 +147,7 @@
 			data = self.get(prefixKey),
 			result,
 			topGetter = DataManager.session.topGetter,
-			filterKey = DataManager.session.filterKey;
+			filterKey = DataManager.session.filterKey||"";
 		if (filterKey !== prefixKey) { //is smart key
 
 			if (prefixKey.indexOf(prefix.This) === 0) {

@@ -10,6 +10,7 @@ var doc = document,
 	_placeholder = function(prefix) {
 		return prefix || "@" + Math.random().toString(36).substring(2)
 	},
+	_booleanFalseRegExp = /false|undefined|null|NaN/,
 	$NULL = null,
 	$UNDEFINED,
 	$TRUE = !$UNDEFINED,
@@ -649,7 +650,7 @@ function DataManager(baseData) {
 	if (!(self instanceof DataManager)) {
 		return new DataManager(baseData);
 	}
-	baseData = baseData || {};
+	// baseData = baseData || {};
 	self.id = $.uid();
 
 	self._database = baseData;
@@ -854,7 +855,6 @@ var DM_proto = DataManager.prototype = {
 						return;
 					}
 			}
-			// $.p(setStacks,self.id);
 			result = $UNDEFINED; //var result
 			var linkKey = "",
 				__arrayLen = self.__arrayLen,
@@ -873,7 +873,6 @@ var DM_proto = DataManager.prototype = {
 			}
 			// console.log(key)
 			result = result || self.touchOff(key);
-			// setStacks.pop();
 		}
 		return result;
 	},
@@ -1222,7 +1221,7 @@ var DM_proto = DataManager.prototype = {
 			data = self.get(prefixKey),
 			result,
 			topGetter = DataManager.session.topGetter,
-			filterKey = DataManager.session.filterKey;
+			filterKey = DataManager.session.filterKey||"";
 		if (filterKey !== prefixKey) { //is smart key
 
 			if (prefixKey.indexOf(prefix.This) === 0) {
@@ -1668,7 +1667,7 @@ function _create(data) { //data maybe basedata or dataManager
 						currentTopGetter = topGetter
 					}
 				}
-				smartTrigger.event(currentTopGetter._triggerKeys);
+				//smartTrigger.event(currentTopGetter._triggerKeys);//filter as dm.getTop().touchOff("")
 			})
 		})
 		$.ftE(self._subsetDataManagers, function(childDataManager) {
@@ -2808,24 +2807,42 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
 		childNodes = handle.childNodes,
 		templateHandle_id = childNodes[0].id,
 		dataHandle_id = childNodes[1].id,
+		ifHandle = childNodes[2],
+		ifHandle_id = ifHandle.type==="handle" && ifHandle.id,
 		comment_layout_id = parentHandle.childNodes[index + 1].id, //eachHandle --> eachComment --> endeachHandle --> endeachComment
 		trigger;
 
 	trigger = {
 		event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
-			var key = NodeList_of_ViewInstance[dataHandle_id]._data,
+			var AllLayoutViewInstance = V._instances[viewInstance_ID]._ALVI;
+			if (!AllLayoutViewInstance[id]) {
+				var key = NodeList_of_ViewInstance[dataHandle_id]._data,
+					layoutViewInstance = AllLayoutViewInstance[id] = V.modules[NodeList_of_ViewInstance[templateHandle_id]._data]().insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
+				dataManager.subset(layoutViewInstance, key);
+			}
+		}
+	}
+	if (ifHandle_id) {
+		trigger.event = function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID){
+			var isShow = $.trim(String(NodeList_of_ViewInstance[ifHandle_id]._data)).replace(_booleanFalseRegExp,""),
 				AllLayoutViewInstance = V._instances[viewInstance_ID]._ALVI,
-				layoutViewInstance = AllLayoutViewInstance[id],
-				inserNew;
-			if (!layoutViewInstance) {
-				layoutViewInstance = AllLayoutViewInstance[id] = V.modules[NodeList_of_ViewInstance[templateHandle_id]._data]().insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
-				dataManager.subset(layoutViewInstance,key);
+				layoutViewInstance = AllLayoutViewInstance[id];
+			// console.log(isShow,":",NodeList_of_ViewInstance[ifHandle_id]._data)
+			if(isShow){
+				if (!layoutViewInstance) {
+					var key = NodeList_of_ViewInstance[dataHandle_id]._data;
+					layoutViewInstance = AllLayoutViewInstance[id] = V.modules[NodeList_of_ViewInstance[templateHandle_id]._data]().insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
+					dataManager.subset(layoutViewInstance, key);
+				}
+			}else{
+				if(layoutViewInstance){
+					layoutViewInstance.remove();
+				}
 			}
 		}
 	}
 	return trigger;
 }));
-
 V.rt("!", V.rt("nega", function(handle, index, parentHandle) { //Negate
 	var nageteHandlesId = handle.childNodes[0].id,
 		trigger;
@@ -2989,8 +3006,7 @@ registerHandle("HTML",function () {
 	return Array.prototype.join.call(arguments,"");
 })
 var _testDIV = $.D.cl(shadowDIV),
-	_getAttrOuter = Function("n", "return n." + (("textContent" in _testDIV) ? "textContent" : "innerText") + "||''"),
-	_booleanFalseRegExp = /false|undefined|null|NaN/; //fix ie
+	_getAttrOuter = Function("n", "return n." + (("textContent" in _testDIV) ? "textContent" : "innerText") + "||''");
 
 var _AttributeHandleEvent = {
 	event: function(key, currentNode, parserNode) { //on开头的事件绑定，IE需要绑定Function类型，现代浏览器绑定String类型（_AttributeHandleEvent.com）
