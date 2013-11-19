@@ -14,6 +14,7 @@ function SmartTriggerSet(data) {
 		store = self.store,
 		currentCollection;
 	key = String(key);
+	self.id=$.uid();
 	if (!(key in store)) {
 		$.p(keys, key);
 	}
@@ -41,8 +42,11 @@ SmartTriggerSet.prototype.remove = function(smartTriggerHandle) {
 	var self = this,
 		key = smartTriggerHandle.matchKey,
 		store = self.store,
-		currentCollection = store[key],
-		index = $.iO(currentCollection, smartTriggerHandle);
+		currentCollection = store[key];
+	if (currentCollection) {
+		var index = $.iO(currentCollection, smartTriggerHandle);
+		$.sp.call(currentCollection,index,1);
+	}
 	return self;
 }
 /*
@@ -56,7 +60,7 @@ function SmartTriggerHandle(key, triggerEvent, data) {
 	self.TEMP = data;
 	self.event = triggerEvent instanceof Function ? triggerEvent : $.noop;
 	self.moveAble = SmartTriggerHandle.moveAble(self);
-	self.smartTriggerSetCollection = [];
+	self.STS_Collection = [];
 };
 SmartTriggerHandle.moveAble = function(smartTriggerHandle) {
 	return $TRUE;
@@ -64,17 +68,17 @@ SmartTriggerHandle.moveAble = function(smartTriggerHandle) {
 SmartTriggerHandle.prototype = {
 	bind: function(smartTriggerSet, key) {
 		var self = this;
-		$.p(self.smartTriggerSetCollection, smartTriggerSet);
+		$.p(self.STS_Collection, smartTriggerSet);
 		smartTriggerSet.push(key === $UNDEFINED ? self.matchKey : key, self);
 		return self;
 	},
 	unbind: function(smartTriggerSet) {
 		var self = this,
-			smartTriggerSetCollection = self.smartTriggerSetCollection,
-			index = $.iO(smartTriggerSetCollection, smartTriggerSet);
+			STS_Collection = self.STS_Collection,
+			index = $.iO(STS_Collection, smartTriggerSet);
 		if (index !== -1) {
 			smartTriggerSet.remove(self);
-			smartTriggerSetCollection.splice(index, 1);
+			STS_Collection.splice(index, 1);
 		}
 		return self;
 	}

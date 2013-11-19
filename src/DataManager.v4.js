@@ -89,8 +89,10 @@ DataManager.finallyRun = function(fun) {
 	if (fun) {
 		$.p(finallyQuene, fun)
 	} else {
-		fun = finallyQuene.splice(0,1)[0]
-		fun && fun()
+		while(finallyQuene.length){
+			fun = finallyQuene.splice(0,1)[0]
+			fun && fun()
+		}
 	}
 }
 var _dm_force_update //= $FALSE;  //ignore equal
@@ -185,8 +187,10 @@ var DM_proto = DataManager.prototype = {
 				// case 0:
 				// 	break;
 				case 1:
-					if (self._database !== nObj || nObj instanceof Object || _dm_force_update) {
+					if (self._database !== nObj  || _dm_force_update) {
 						self._database = nObj;
+					}else if(!(nObj instanceof Object)){
+						return;
 					};
 					break;
 				default: //find Object by the key-dot-path and change it
@@ -337,15 +341,32 @@ var DM_proto = DataManager.prototype = {
 		}
 	},
 	rebuildTree: $.noop,
+	getTop:function(){//get DM tree top
+		var self = this,
+			next;
+		while (next = self._parentDataManager) {
+			self = next;
+		}
+		return self;
+	},
 	collect: function(dataManager) {
 		var self = this
-		if ($.iO(self._siblingDataManagers, dataManager) === -1) {
-			$.p(self._siblingDataManagers, dataManager);
-			$.p(dataManager._siblingDataManagers, self);
-			self.rebuildTree()
-			dataManager._database = self._database;
-			// dataManager.touchOff("")
-			dataManager.set(dataManager._database)
+		if (self!==dataManager) {
+			if ($.iO(self._siblingDataManagers, dataManager) === -1) {
+				$.p(self._siblingDataManagers, dataManager);
+				$.p(dataManager._siblingDataManagers, self);
+				self.rebuildTree()
+				dataManager._database = self._database;
+				// dataManager.set(dataManager._database)
+				console.log("collect dataManager",dataManager.getTop().id)
+				dataManager.getTop().touchOff("");
+				DataManager.finallyRun();
+			}
+		}else{
+			// self.set(self._database)
+			console.log("collect self",self.getTop().id)
+			self.getTop().touchOff("");
+			DataManager.finallyRun();
 		}
 		return self;
 	},
@@ -355,9 +376,13 @@ var DM_proto = DataManager.prototype = {
 		dataManager._prefix = prefixKey;
 		dataManager._parentDataManager = self;
 		$.p(self._subsetDataManagers, dataManager);
+		dataManager.rebuildTree()
 		dataManager._database = self.get(prefixKey);
-		// dataManager.touchOff("");
-		dataManager.set(dataManager._database)
+		// dataManager.set(dataManager._database)
+		console.log("subset",self.getTop().id)
+		if (self.getTop().id===80) {debugger};
+		self.getTop().touchOff("");
+		DataManager.finallyRun();
 		return self;
 	},
 	remove: function(dataManager) {

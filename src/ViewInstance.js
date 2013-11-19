@@ -10,32 +10,48 @@
 		$.ftE(self._viewInstances, function(childViewInstance) {
 			$.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
 				var TEMP = smartTrigger.TEMP;
-				DataManager.get(TEMP.dm_id).get(TEMP.sourceKey);
-				var topGetter = DataManager.session.topGetter;
+				// DataManager.get(TEMP.dm_id).get(TEMP.sourceKey);
+				// var topGetter = DataManager.session.topGetter;
+				// if (topGetter) {
+				// 	if (topGetter !== DataManager.get(TEMP.dm_id)) {
+				// 		smartTrigger.bind(topGetter._triggerKeys);
+				// 		TEMP.dm_id = topGetter.id;
+				// 	}
+				// 	smartTrigger.event(topGetter._triggerKeys);
+				// }
+				//-----
+				TEMP.viewInstance.get(TEMP.sourceKey);
+				var topGetter = DataManager.session.topGetter,
+					currentTopGetter = DataManager.get(TEMP.dm_id),
+					matchKey = DataManager.session.filterKey||"";
 				if (topGetter) {
-					if (topGetter !== DataManager.get(TEMP.dm_id)) {
-						smartTrigger.bind(topGetter._triggerKeys);
+					// console.log(currentTopGetter&&currentTopGetter.id,topGetter.id)
+					if (topGetter!==currentTopGetter||matchKey!==smartTrigger.matchKey) {
 						TEMP.dm_id = topGetter.id;
+						currentTopGetter&&smartTrigger.unbind(currentTopGetter._triggerKeys)
+						smartTrigger.matchKey = matchKey;
+						smartTrigger.bind(topGetter._triggerKeys);
+						currentTopGetter = topGetter
 					}
-					smartTrigger.event(topGetter._triggerKeys);
 				}
+				smartTrigger.event(currentTopGetter._triggerKeys);
 			})
 		})
 		$.ftE(self._subsetDataManagers, function(childDataManager) {
-			$.ftE(childDataManager._viewInstances, function(childViewInstance) {
-				$.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
-					if (smartTrigger.moveAble) {
-						var TEMP = smartTrigger.TEMP;
-						DataManager.get(TEMP.dm_id).get(TEMP.sourceKey);
-						var topGetter = DataManager.session.topGetter;
-						if (topGetter && topGetter !== DataManager.get(TEMP.dm_id)) {
-							smartTrigger.unbind(DataManager.get(TEMP.dm_id)._triggerKeys).bind(topGetter._triggerKeys);
-							TEMP.dm_id = topGetter.id;
-							smartTrigger.event(topGetter._triggerKeys);
-						}
-					}
-				})
-			})
+			// $.ftE(childDataManager._viewInstances, function(childViewInstance) {
+			// 	$.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
+			// 		if (smartTrigger.moveAble) {
+			// 			var TEMP = smartTrigger.TEMP;
+			// 			DataManager.get(TEMP.dm_id).get(TEMP.sourceKey);
+			// 			var topGetter = DataManager.session.topGetter;
+			// 			if (topGetter && topGetter !== DataManager.get(TEMP.dm_id)) {
+			// 				smartTrigger.unbind(DataManager.get(TEMP.dm_id)._triggerKeys).bind(topGetter._triggerKeys);
+			// 				TEMP.dm_id = topGetter.id;
+			// 				smartTrigger.event(topGetter._triggerKeys);
+			// 			}
+			// 		}
+			// 	})
+			// })
 			childDataManager.rebuildTree()
 		})
 		return _rebuildTree.call(self);
@@ -48,18 +64,15 @@
 			//TODO:release memory.
 		} else if (viewInstance instanceof ViewInstance) {
 			var vi_DM = viewInstance.dataManager;
-			if (vi_DM) { // for VI init in constructor
-				_collect.call(self, vi_DM)
-			} else {
-				viewInstance.dataManager = self;
+			if (!vi_DM) { // for VI init in constructor
+				vi_DM = viewInstance.dataManager = self;
 				var viewInstanceTriggers = viewInstance._triggers
-				// , smartTriggers = viewInstance._smartTriggers;
 				$.ftE(viewInstanceTriggers, function(sKey) {
 					viewInstance._buildSmart(sKey);
 				});
 			}
 			$.p(viewInstance.dataManager._viewInstances, viewInstance);
-			self.rebuildTree();
+			_collect.call(self, vi_DM)//self collect self will Forced triggered updates
 		}
 		return self;
 	};
@@ -124,7 +137,7 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, dataManager)
 	//self.dataManager = dataManager
 	dataManager.collect(self); //touchOff All triggers
 
-	delete self._triggers._["."] //remove "."(const) key,just touch one time;
+	//delete self._triggers._["."] //remove "."(const) key,just touch one time;
 },
 	VI_session = ViewInstance.session = {
 		touchHandleIdSet: $NULL,
@@ -306,14 +319,17 @@ var VI_proto = ViewInstance.prototype = {
 				baseKey || (baseKey = ""), //match key
 
 				function(smartTriggerSet) { //event
-					self.get(sKey);
-					if (DataManager.session.filterKey !== baseKey) {
-						console.log(sKey, " : ", baseKey, DataManager.session.filterKey)
-						baseKey = DataManager.session.filterKey;
-						smartTrigger.unbind(smartTriggerSet)
-						smartTrigger.bind(smartTriggerSet, baseKey)
-						dataManager.rebuildTree();
-					}
+					// self.get(sKey);
+					// var topGetterDataManager = DataManager.session.topGetter;
+					// if (baseKey !== (baseKey=DataManager.session.filterKey||"")||topGetterDataManager.id!==self.dataManager.id) {
+					// 	// console.log(sKey, " : ", baseKey, DataManager.session.filterKey)
+					// 	// debugger;
+					// 	smartTrigger.unbind(smartTriggerSet)
+					// 	smartTrigger.unbind(topGetterDataManager._triggerKeys)
+					// 	smartTrigger.matchKey = baseKey
+					// 	smartTrigger.bind(topGetterDataManager._triggerKeys)
+					// 	dataManager.rebuildTree();
+					// }
 					self.touchOff(sKey);
 				}, { //TEMP data
 					viewInstance: self,

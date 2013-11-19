@@ -13,7 +13,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 		event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
 			var arrDataHandleKey = NodeList_of_ViewInstance[arrDataHandle_id]._data,
 				data = dataManager.get(arrDataHandleKey),
-				arrTriggerKey = arrDataHandleKey + ".length",
+				// arrTriggerKey = arrDataHandleKey + ".length",
 				viewInstance = V._instances[viewInstance_ID],
 				allArrViewInstances = viewInstance._AVI,
 				arrViewInstances = allArrViewInstances[id] || (allArrViewInstances[id] = []),
@@ -30,8 +30,8 @@ V.rt("#each", function(handle, index, parentHandle) {
 
 				_rebuildTree = dataManager.rebuildTree;
 				dataManager.rebuildTree = $.noop//doesn't need rebuild every subset
-				// console.log(data)
-				$.ftE($.s(data), function(eachItemData, index) {
+
+				data&&$.ftE($.s(data), function(eachItemData, index) {
 					//TODO:if too mush vi will be create, maybe asyn
 					var viewInstance = arrViewInstances[index];
 					if (!viewInstance) {
@@ -51,13 +51,14 @@ V.rt("#each", function(handle, index, parentHandle) {
 						viewInstance.insert(comment_endeach_node)
 					}
 				}, showed_vi_len); //showed_vi_len||0
+				
 				if (showed_vi_len > new_data_len) {
 					$.fE(arrViewInstances, function(eachItemHandle) {
 						eachItemHandle.remove();
 					}, new_data_len);
 				}
 				dataManager.rebuildTree = _rebuildTree
-				// dataManager.rebuildTree();
+					// dataManager.rebuildTree();
 			}
 		}
 	}

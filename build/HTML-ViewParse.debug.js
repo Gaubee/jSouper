@@ -592,6 +592,7 @@ function SmartTriggerSet(data) {
 		store = self.store,
 		currentCollection;
 	key = String(key);
+	self.id=$.uid();
 	if (!(key in store)) {
 		$.p(keys, key);
 	}
@@ -619,8 +620,11 @@ SmartTriggerSet.prototype.remove = function(smartTriggerHandle) {
 	var self = this,
 		key = smartTriggerHandle.matchKey,
 		store = self.store,
-		currentCollection = store[key],
-		index = $.iO(currentCollection, smartTriggerHandle);
+		currentCollection = store[key];
+	if (currentCollection) {
+		var index = $.iO(currentCollection, smartTriggerHandle);
+		$.sp.call(currentCollection,index,1);
+	}
 	return self;
 }
 /*
@@ -634,7 +638,7 @@ function SmartTriggerHandle(key, triggerEvent, data) {
 	self.TEMP = data;
 	self.event = triggerEvent instanceof Function ? triggerEvent : $.noop;
 	self.moveAble = SmartTriggerHandle.moveAble(self);
-	self.smartTriggerSetCollection = [];
+	self.STS_Collection = [];
 };
 SmartTriggerHandle.moveAble = function(smartTriggerHandle) {
 	return $TRUE;
@@ -642,17 +646,17 @@ SmartTriggerHandle.moveAble = function(smartTriggerHandle) {
 SmartTriggerHandle.prototype = {
 	bind: function(smartTriggerSet, key) {
 		var self = this;
-		$.p(self.smartTriggerSetCollection, smartTriggerSet);
+		$.p(self.STS_Collection, smartTriggerSet);
 		smartTriggerSet.push(key === $UNDEFINED ? self.matchKey : key, self);
 		return self;
 	},
 	unbind: function(smartTriggerSet) {
 		var self = this,
-			smartTriggerSetCollection = self.smartTriggerSetCollection,
-			index = $.iO(smartTriggerSetCollection, smartTriggerSet);
+			STS_Collection = self.STS_Collection,
+			index = $.iO(STS_Collection, smartTriggerSet);
 		if (index !== -1) {
 			smartTriggerSet.remove(self);
-			smartTriggerSetCollection.splice(index, 1);
+			STS_Collection.splice(index, 1);
 		}
 		return self;
 	}
@@ -748,8 +752,10 @@ DataManager.finallyRun = function(fun) {
 	if (fun) {
 		$.p(finallyQuene, fun)
 	} else {
-		fun = finallyQuene.splice(0,1)[0]
-		fun && fun()
+		while(finallyQuene.length){
+			fun = finallyQuene.splice(0,1)[0]
+			fun && fun()
+		}
 	}
 }
 var _dm_force_update //= $FALSE;  //ignore equal
@@ -844,8 +850,10 @@ var DM_proto = DataManager.prototype = {
 				// case 0:
 				// 	break;
 				case 1:
-					if (self._database !== nObj || nObj instanceof Object || _dm_force_update) {
+					if (self._database !== nObj  || _dm_force_update) {
 						self._database = nObj;
+					}else if(!(nObj instanceof Object)){
+						return;
 					};
 					break;
 				default: //find Object by the key-dot-path and change it
@@ -996,15 +1004,32 @@ var DM_proto = DataManager.prototype = {
 		}
 	},
 	rebuildTree: $.noop,
+	getTop:function(){//get DM tree top
+		var self = this,
+			next;
+		while (next = self._parentDataManager) {
+			self = next;
+		}
+		return self;
+	},
 	collect: function(dataManager) {
 		var self = this
-		if ($.iO(self._siblingDataManagers, dataManager) === -1) {
-			$.p(self._siblingDataManagers, dataManager);
-			$.p(dataManager._siblingDataManagers, self);
-			self.rebuildTree()
-			dataManager._database = self._database;
-			// dataManager.touchOff("")
-			dataManager.set(dataManager._database)
+		if (self!==dataManager) {
+			if ($.iO(self._siblingDataManagers, dataManager) === -1) {
+				$.p(self._siblingDataManagers, dataManager);
+				$.p(dataManager._siblingDataManagers, self);
+				self.rebuildTree()
+				dataManager._database = self._database;
+				// dataManager.set(dataManager._database)
+				console.log("collect dataManager",dataManager.getTop().id)
+				dataManager.getTop().touchOff("");
+				DataManager.finallyRun();
+			}
+		}else{
+			// self.set(self._database)
+			console.log("collect self",self.getTop().id)
+			self.getTop().touchOff("");
+			DataManager.finallyRun();
 		}
 		return self;
 	},
@@ -1014,9 +1039,13 @@ var DM_proto = DataManager.prototype = {
 		dataManager._prefix = prefixKey;
 		dataManager._parentDataManager = self;
 		$.p(self._subsetDataManagers, dataManager);
+		dataManager.rebuildTree()
 		dataManager._database = self.get(prefixKey);
-		// dataManager.touchOff("");
-		dataManager.set(dataManager._database)
+		// dataManager.set(dataManager._database)
+		console.log("subset",self.getTop().id)
+		if (self.getTop().id===80) {debugger};
+		self.getTop().touchOff("");
+		DataManager.finallyRun();
 		return self;
 	},
 	remove: function(dataManager) {
@@ -1975,32 +2004,48 @@ function _create(data) { //data maybe basedata or dataManager
 		$.ftE(self._viewInstances, function(childViewInstance) {
 			$.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
 				var TEMP = smartTrigger.TEMP;
-				DataManager.get(TEMP.dm_id).get(TEMP.sourceKey);
-				var topGetter = DataManager.session.topGetter;
+				// DataManager.get(TEMP.dm_id).get(TEMP.sourceKey);
+				// var topGetter = DataManager.session.topGetter;
+				// if (topGetter) {
+				// 	if (topGetter !== DataManager.get(TEMP.dm_id)) {
+				// 		smartTrigger.bind(topGetter._triggerKeys);
+				// 		TEMP.dm_id = topGetter.id;
+				// 	}
+				// 	smartTrigger.event(topGetter._triggerKeys);
+				// }
+				//-----
+				TEMP.viewInstance.get(TEMP.sourceKey);
+				var topGetter = DataManager.session.topGetter,
+					currentTopGetter = DataManager.get(TEMP.dm_id),
+					matchKey = DataManager.session.filterKey||"";
 				if (topGetter) {
-					if (topGetter !== DataManager.get(TEMP.dm_id)) {
-						smartTrigger.bind(topGetter._triggerKeys);
+					// console.log(currentTopGetter&&currentTopGetter.id,topGetter.id)
+					if (topGetter!==currentTopGetter||matchKey!==smartTrigger.matchKey) {
 						TEMP.dm_id = topGetter.id;
+						currentTopGetter&&smartTrigger.unbind(currentTopGetter._triggerKeys)
+						smartTrigger.matchKey = matchKey;
+						smartTrigger.bind(topGetter._triggerKeys);
+						currentTopGetter = topGetter
 					}
-					smartTrigger.event(topGetter._triggerKeys);
 				}
+				smartTrigger.event(currentTopGetter._triggerKeys);
 			})
 		})
 		$.ftE(self._subsetDataManagers, function(childDataManager) {
-			$.ftE(childDataManager._viewInstances, function(childViewInstance) {
-				$.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
-					if (smartTrigger.moveAble) {
-						var TEMP = smartTrigger.TEMP;
-						DataManager.get(TEMP.dm_id).get(TEMP.sourceKey);
-						var topGetter = DataManager.session.topGetter;
-						if (topGetter && topGetter !== DataManager.get(TEMP.dm_id)) {
-							smartTrigger.unbind(DataManager.get(TEMP.dm_id)._triggerKeys).bind(topGetter._triggerKeys);
-							TEMP.dm_id = topGetter.id;
-							smartTrigger.event(topGetter._triggerKeys);
-						}
-					}
-				})
-			})
+			// $.ftE(childDataManager._viewInstances, function(childViewInstance) {
+			// 	$.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
+			// 		if (smartTrigger.moveAble) {
+			// 			var TEMP = smartTrigger.TEMP;
+			// 			DataManager.get(TEMP.dm_id).get(TEMP.sourceKey);
+			// 			var topGetter = DataManager.session.topGetter;
+			// 			if (topGetter && topGetter !== DataManager.get(TEMP.dm_id)) {
+			// 				smartTrigger.unbind(DataManager.get(TEMP.dm_id)._triggerKeys).bind(topGetter._triggerKeys);
+			// 				TEMP.dm_id = topGetter.id;
+			// 				smartTrigger.event(topGetter._triggerKeys);
+			// 			}
+			// 		}
+			// 	})
+			// })
 			childDataManager.rebuildTree()
 		})
 		return _rebuildTree.call(self);
@@ -2013,18 +2058,15 @@ function _create(data) { //data maybe basedata or dataManager
 			//TODO:release memory.
 		} else if (viewInstance instanceof ViewInstance) {
 			var vi_DM = viewInstance.dataManager;
-			if (vi_DM) { // for VI init in constructor
-				_collect.call(self, vi_DM)
-			} else {
-				viewInstance.dataManager = self;
+			if (!vi_DM) { // for VI init in constructor
+				vi_DM = viewInstance.dataManager = self;
 				var viewInstanceTriggers = viewInstance._triggers
-				// , smartTriggers = viewInstance._smartTriggers;
 				$.ftE(viewInstanceTriggers, function(sKey) {
 					viewInstance._buildSmart(sKey);
 				});
 			}
 			$.p(viewInstance.dataManager._viewInstances, viewInstance);
-			self.rebuildTree();
+			_collect.call(self, vi_DM)//self collect self will Forced triggered updates
 		}
 		return self;
 	};
@@ -2089,7 +2131,7 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, dataManager)
 	//self.dataManager = dataManager
 	dataManager.collect(self); //touchOff All triggers
 
-	delete self._triggers._["."] //remove "."(const) key,just touch one time;
+	//delete self._triggers._["."] //remove "."(const) key,just touch one time;
 },
 	VI_session = ViewInstance.session = {
 		touchHandleIdSet: $NULL,
@@ -2271,14 +2313,17 @@ var VI_proto = ViewInstance.prototype = {
 				baseKey || (baseKey = ""), //match key
 
 				function(smartTriggerSet) { //event
-					self.get(sKey);
-					if (DataManager.session.filterKey !== baseKey) {
-						console.log(sKey, " : ", baseKey, DataManager.session.filterKey)
-						baseKey = DataManager.session.filterKey;
-						smartTrigger.unbind(smartTriggerSet)
-						smartTrigger.bind(smartTriggerSet, baseKey)
-						dataManager.rebuildTree();
-					}
+					// self.get(sKey);
+					// var topGetterDataManager = DataManager.session.topGetter;
+					// if (baseKey !== (baseKey=DataManager.session.filterKey||"")||topGetterDataManager.id!==self.dataManager.id) {
+					// 	// console.log(sKey, " : ", baseKey, DataManager.session.filterKey)
+					// 	// debugger;
+					// 	smartTrigger.unbind(smartTriggerSet)
+					// 	smartTrigger.unbind(topGetterDataManager._triggerKeys)
+					// 	smartTrigger.matchKey = baseKey
+					// 	smartTrigger.bind(topGetterDataManager._triggerKeys)
+					// 	dataManager.rebuildTree();
+					// }
 					self.touchOff(sKey);
 				}, { //TEMP data
 					viewInstance: self,
@@ -2885,7 +2930,7 @@ V.rt("define", function(handle, index, parentHandle) {
 		valueHandleId = handleChilds[1].id,
 		trigger = {
 			bubble: $TRUE,
-			name:"define"
+			name: "define"
 		};
 	// console.log(handle.childNodes[0].parentNode, handle.parentNode)
 
@@ -2895,22 +2940,29 @@ V.rt("define", function(handle, index, parentHandle) {
 				result = NodeList_of_ViewInstance[valueHandleId]._data,
 				currentNode = NodeList_of_ViewInstance[textHandle_id].currentNode,
 				uid_hash = viewInstance_ID + key,
+				viewInstance = V._instances[viewInstance_ID],
 				finallyRun;
-			console.log(key,":",result);
+			// console.log(key,":",result,viewInstance.id);
 			if (key !== $UNDEFINED) {
-				if (!(finallyRun =DataManager.finallyRun[uid_hash])) {
+				if (!(finallyRun = DataManager.finallyRun[uid_hash])) {
 					DataManager.finallyRun(finallyRun = function() {
-						finallyRun.dataManager.set(finallyRun.key, finallyRun.result)
+						viewInstance = finallyRun.viewInstance
+						// if (finallyRun.key==="dd") {debugger};
+						//已经被remove的VI，就不应该触发define
+						if (viewInstance._canRemoveAble) {
+							viewInstance.set(finallyRun.key, finallyRun.result)
+						}
 						DataManager.finallyRun[uid_hash] = $FALSE; //can push into finally quene
 					})
-					DataManager.finallyRun[uid_hash]=finallyRun;
+					DataManager.finallyRun[uid_hash] = finallyRun;
 				}
-				finallyRun.dataManager = dataManager
+				finallyRun.viewInstance = viewInstance
 				finallyRun.key = key
 				finallyRun.result = result
 			}
 			result = String(result);
-			if(currentNode.data!==result){
+			// if (result==="1 ==> 6undefined1") {debugger};
+			if (currentNode.data !== result) {
 				currentNode.data = result;
 			}
 		}
@@ -2944,7 +2996,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 		event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
 			var arrDataHandleKey = NodeList_of_ViewInstance[arrDataHandle_id]._data,
 				data = dataManager.get(arrDataHandleKey),
-				arrTriggerKey = arrDataHandleKey + ".length",
+				// arrTriggerKey = arrDataHandleKey + ".length",
 				viewInstance = V._instances[viewInstance_ID],
 				allArrViewInstances = viewInstance._AVI,
 				arrViewInstances = allArrViewInstances[id] || (allArrViewInstances[id] = []),
@@ -2961,8 +3013,8 @@ V.rt("#each", function(handle, index, parentHandle) {
 
 				_rebuildTree = dataManager.rebuildTree;
 				dataManager.rebuildTree = $.noop//doesn't need rebuild every subset
-				// console.log(data)
-				$.ftE($.s(data), function(eachItemData, index) {
+
+				data&&$.ftE($.s(data), function(eachItemData, index) {
 					//TODO:if too mush vi will be create, maybe asyn
 					var viewInstance = arrViewInstances[index];
 					if (!viewInstance) {
@@ -2982,13 +3034,14 @@ V.rt("#each", function(handle, index, parentHandle) {
 						viewInstance.insert(comment_endeach_node)
 					}
 				}, showed_vi_len); //showed_vi_len||0
+				
 				if (showed_vi_len > new_data_len) {
 					$.fE(arrViewInstances, function(eachItemHandle) {
 						eachItemHandle.remove();
 					}, new_data_len);
 				}
 				dataManager.rebuildTree = _rebuildTree
-				// dataManager.rebuildTree();
+					// dataManager.rebuildTree();
 			}
 		}
 	}

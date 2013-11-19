@@ -10,6 +10,7 @@ module.exports = function(grunt) {
 	// grunt.loadNpmTasks('grunt-closure-compiler');
 	grunt.loadNpmTasks('grunt-wrap');
 	// grunt.loadNpmTasks('grunt-peon-gui');
+	grunt.loadNpmTasks('grunt-notify');
 	//define tasks
 	grunt.registerTask('server', ['connect:server', 'watch']);
 

@@ -11,11 +11,13 @@
     "grunt-contrib-watch": "*",
     "connect-livereload": "*",
     "grunt-contrib-connect": "*",
-    "grunt-wrap": "*"
+    "grunt-wrap": "*",
+    "grunt-notify": "*"
   },
   "devDependencies": {
     "grunt": "~0.4.1",
-    "grunt-peon-gui": "~1.0.0"
+    "grunt-peon-gui": "~1.0.0",
+    "grunt-notify": "~0.2.16"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

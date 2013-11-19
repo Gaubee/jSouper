@@ -5,7 +5,7 @@ V.rt("define", function(handle, index, parentHandle) {
 		valueHandleId = handleChilds[1].id,
 		trigger = {
 			bubble: $TRUE,
-			name:"define"
+			name: "define"
 		};
 	// console.log(handle.childNodes[0].parentNode, handle.parentNode)
 
@@ -15,22 +15,29 @@ V.rt("define", function(handle, index, parentHandle) {
 				result = NodeList_of_ViewInstance[valueHandleId]._data,
 				currentNode = NodeList_of_ViewInstance[textHandle_id].currentNode,
 				uid_hash = viewInstance_ID + key,
+				viewInstance = V._instances[viewInstance_ID],
 				finallyRun;
-			console.log(key,":",result);
+			// console.log(key,":",result,viewInstance.id);
 			if (key !== $UNDEFINED) {
-				if (!(finallyRun =DataManager.finallyRun[uid_hash])) {
+				if (!(finallyRun = DataManager.finallyRun[uid_hash])) {
 					DataManager.finallyRun(finallyRun = function() {
-						finallyRun.dataManager.set(finallyRun.key, finallyRun.result)
+						viewInstance = finallyRun.viewInstance
+						// if (finallyRun.key==="dd") {debugger};
+						//已经被remove的VI，就不应该触发define
+						if (viewInstance._canRemoveAble) {
+							viewInstance.set(finallyRun.key, finallyRun.result)
+						}
 						DataManager.finallyRun[uid_hash] = $FALSE; //can push into finally quene
 					})
-					DataManager.finallyRun[uid_hash]=finallyRun;
+					DataManager.finallyRun[uid_hash] = finallyRun;
 				}
-				finallyRun.dataManager = dataManager
+				finallyRun.viewInstance = viewInstance
 				finallyRun.key = key
 				finallyRun.result = result
 			}
 			result = String(result);
-			if(currentNode.data!==result){
+			// if (result==="1 ==> 6undefined1") {debugger};
+			if (currentNode.data !== result) {
 				currentNode.data = result;
 			}
 		}
