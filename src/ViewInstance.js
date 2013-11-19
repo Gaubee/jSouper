@@ -10,22 +10,12 @@
 		$.ftE(self._viewInstances, function(childViewInstance) {
 			$.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
 				var TEMP = smartTrigger.TEMP;
-				// DataManager.get(TEMP.dm_id).get(TEMP.sourceKey);
-				// var topGetter = DataManager.session.topGetter;
-				// if (topGetter) {
-				// 	if (topGetter !== DataManager.get(TEMP.dm_id)) {
-				// 		smartTrigger.bind(topGetter._triggerKeys);
-				// 		TEMP.dm_id = topGetter.id;
-				// 	}
-				// 	smartTrigger.event(topGetter._triggerKeys);
-				// }
-				//-----
+
 				TEMP.viewInstance.get(TEMP.sourceKey);
 				var topGetter = DataManager.session.topGetter,
 					currentTopGetter = DataManager.get(TEMP.dm_id),
 					matchKey = DataManager.session.filterKey||"";
 				if (topGetter) {
-					// console.log(currentTopGetter&&currentTopGetter.id,topGetter.id)
 					if (topGetter!==currentTopGetter||matchKey!==smartTrigger.matchKey) {
 						TEMP.dm_id = topGetter.id;
 						currentTopGetter&&smartTrigger.unbind(currentTopGetter._triggerKeys)
@@ -38,20 +28,6 @@
 			})
 		})
 		$.ftE(self._subsetDataManagers, function(childDataManager) {
-			// $.ftE(childDataManager._viewInstances, function(childViewInstance) {
-			// 	$.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
-			// 		if (smartTrigger.moveAble) {
-			// 			var TEMP = smartTrigger.TEMP;
-			// 			DataManager.get(TEMP.dm_id).get(TEMP.sourceKey);
-			// 			var topGetter = DataManager.session.topGetter;
-			// 			if (topGetter && topGetter !== DataManager.get(TEMP.dm_id)) {
-			// 				smartTrigger.unbind(DataManager.get(TEMP.dm_id)._triggerKeys).bind(topGetter._triggerKeys);
-			// 				TEMP.dm_id = topGetter.id;
-			// 				smartTrigger.event(topGetter._triggerKeys);
-			// 			}
-			// 		}
-			// 	})
-			// })
 			childDataManager.rebuildTree()
 		})
 		return _rebuildTree.call(self);
@@ -318,18 +294,7 @@ var VI_proto = ViewInstance.prototype = {
 			smartTrigger = new SmartTriggerHandle(
 				baseKey || (baseKey = ""), //match key
 
-				function(smartTriggerSet) { //event
-					// self.get(sKey);
-					// var topGetterDataManager = DataManager.session.topGetter;
-					// if (baseKey !== (baseKey=DataManager.session.filterKey||"")||topGetterDataManager.id!==self.dataManager.id) {
-					// 	// console.log(sKey, " : ", baseKey, DataManager.session.filterKey)
-					// 	// debugger;
-					// 	smartTrigger.unbind(smartTriggerSet)
-					// 	smartTrigger.unbind(topGetterDataManager._triggerKeys)
-					// 	smartTrigger.matchKey = baseKey
-					// 	smartTrigger.bind(topGetterDataManager._triggerKeys)
-					// 	dataManager.rebuildTree();
-					// }
+				function(smartTriggerSet) { 
 					self.touchOff(sKey);
 				}, { //TEMP data
 					viewInstance: self,
@@ -340,37 +305,15 @@ var VI_proto = ViewInstance.prototype = {
 			);
 		$.p(smartTriggers, smartTrigger);
 		topGetterTriggerKeys && smartTrigger.bind(topGetterTriggerKeys); // topGetterTriggerKeys.push(baseKey, smartTrigger);
-	},
+	}/*,
 	on: function(eventName, fun) {
 
 	},
 	trigger: function(eventName) {
 
-	}
-	/*,
-	_collectTrigger:function(trigger,sKey){
-		var self = this,
-			smartTriggers = self._smartTriggers;
-		self.get(sKey);
-		var baseKey = DataManager.session.filterKey,
-			topGetterTriggerKeys = DataManager.session.topGetter._triggerKeys,
-			smartTrigger = new SmartTriggerHandle(
-				baseKey, //match key
-
-				function(smartTriggerSet) { //event
-					self.touchOff(sKey);
-				}, { //TEMP data
-					viewInstance: self,
-					dataManager: self.dataManager,
-					// triggerSet: topGetterTriggerKeys,
-					sourceKey: sKey
-				}
-			);
-		$.p(smartTriggers, smartTrigger);
-		smartTrigger.bind(topGetterTriggerKeys);
 	}*/
 };
-var _allEventNames = ("blur focus focusin focusout load resize" +
+/*var _allEventNames = ("blur focus focusin focusout load resize" +
 	"scroll unload click dblclick mousedown mouseup mousemove" +
 	"mouseover mouseout mouseenter mouseleave change select" +
 	"submit keydown keypress keyup error contextmenu").split(" ");
@@ -378,4 +321,4 @@ $.ftE(_allEventNames, function(eventName) {
 	VI_proto[eventName] = function(fun) {
 		return fun ? this.on(eventName, fun) : this.trigger(eventName);
 	}
-})
+})*/

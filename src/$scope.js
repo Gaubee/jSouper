@@ -19,7 +19,7 @@
 						result = set.apply(self, args);
 					} else {
 						DataManager.session.filterKey = $UNDEFINED;
-						DataManager.session.topGetter = $UNDEFINED;
+						DataManager.session.topSetter = $UNDEFINED;
 						key = ""
 					}
 				} else if (key.indexOf(prefix.This) === 0) { //$this

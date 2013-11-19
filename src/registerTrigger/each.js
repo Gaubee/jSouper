@@ -24,14 +24,12 @@ V.rt("#each", function(handle, index, parentHandle) {
 				comment_endeach_node = NodeList_of_ViewInstance[comment_endeach_id].currentNode,
 				_rebuildTree;
 
-			// console.log("showed_vi_len:",showed_vi_len," new_data_len:",new_data_len," result:",showed_vi_len !== new_data_len)
 			if (showed_vi_len !== new_data_len) {
 				arrViewInstances.len = new_data_len; //change immediately,to avoid the `subset` trigger the `rebuildTree`,and than trigger each-trigger again.
 
 				_rebuildTree = dataManager.rebuildTree;
 				dataManager.rebuildTree = $.noop//doesn't need rebuild every subset
-				console.log(data,$.s(data))
-				data&&$.ftE($.s(data), function(eachItemData, index) {
+				data!=$UNDEFINED&&$.ftE($.s(data), function(eachItemData, index) {
 					//TODO:if too mush vi will be create, maybe asyn
 					var viewInstance = arrViewInstances[index];
 					if (!viewInstance) {

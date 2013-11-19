@@ -121,14 +121,8 @@ var DM_proto = DataManager.prototype = {
 					} while (result !== $UNDEFINED && arrKey.length - anchor);
 				}
 			}
-			// if (lastKey!==$UNDEFINED) {
-			// 	if (typeof result === "string" && /*parseInt(lastKey)*/ ~~lastKey === lastKey) { //avoid get NaN
-			// 		result = result.charAt(lastKey)
-			// 	} else if (result !== $UNDEFINED) {
-			// 		result = result[lastKey]
-			// 	}
-			// }
-			/*
+			
+		/*
 		//避免混淆，不使用智能作用域，否则关键字更新触发器无法准确绑定或者会照常大量计算
 		if (arrKey.length && (parent = self._parentDataManager)) { //key不在对象中，查询父级
 			result = parent.get(key);
@@ -358,13 +352,11 @@ var DM_proto = DataManager.prototype = {
 				self.rebuildTree()
 				dataManager._database = self._database;
 				// dataManager.set(dataManager._database)
-				// console.log("collect dataManager",dataManager.getTop().id)
 				dataManager.getTop().touchOff("");
 				DataManager.finallyRun();
 			}
 		}else{
 			// self.set(self._database)
-			// console.log("collect self",self.getTop().id)
 			self.getTop().touchOff("");
 			DataManager.finallyRun();
 		}
@@ -379,8 +371,6 @@ var DM_proto = DataManager.prototype = {
 		dataManager.rebuildTree()
 		dataManager._database = self.get(prefixKey);
 		// dataManager.set(dataManager._database)
-		// console.log("subset",self.getTop().id)
-		// if (self.getTop().id===80) {debugger};
 		self.getTop().touchOff("");
 		DataManager.finallyRun();
 		return self;
@@ -437,7 +427,7 @@ var DM_proto = DataManager.prototype = {
 		for (var i in this) {
 			delete this[i]
 		}
-	},
+	}/*,
 	buildGetter: function(key) {},
-	buildSetter: function(key) {}
+	buildSetter: function(key) {}*/
 };

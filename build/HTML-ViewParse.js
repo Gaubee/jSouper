@@ -762,14 +762,8 @@ var DM_proto = DataManager.prototype = {
 					} while (result !== $UNDEFINED && arrKey.length - anchor);
 				}
 			}
-			// if (lastKey!==$UNDEFINED) {
-			// 	if (typeof result === "string" && /*parseInt(lastKey)*/ ~~lastKey === lastKey) { //avoid get NaN
-			// 		result = result.charAt(lastKey)
-			// 	} else if (result !== $UNDEFINED) {
-			// 		result = result[lastKey]
-			// 	}
-			// }
-			/*
+			
+		/*
 		//避免混淆，不使用智能作用域，否则关键字更新触发器无法准确绑定或者会照常大量计算
 		if (arrKey.length && (parent = self._parentDataManager)) { //key不在对象中，查询父级
 			result = parent.get(key);
@@ -999,13 +993,11 @@ var DM_proto = DataManager.prototype = {
 				self.rebuildTree()
 				dataManager._database = self._database;
 				// dataManager.set(dataManager._database)
-				// console.log("collect dataManager",dataManager.getTop().id)
 				dataManager.getTop().touchOff("");
 				DataManager.finallyRun();
 			}
 		}else{
 			// self.set(self._database)
-			// console.log("collect self",self.getTop().id)
 			self.getTop().touchOff("");
 			DataManager.finallyRun();
 		}
@@ -1020,8 +1012,6 @@ var DM_proto = DataManager.prototype = {
 		dataManager.rebuildTree()
 		dataManager._database = self.get(prefixKey);
 		// dataManager.set(dataManager._database)
-		// console.log("subset",self.getTop().id)
-		// if (self.getTop().id===80) {debugger};
 		self.getTop().touchOff("");
 		DataManager.finallyRun();
 		return self;
@@ -1078,9 +1068,9 @@ var DM_proto = DataManager.prototype = {
 		for (var i in this) {
 			delete this[i]
 		}
-	},
+	}/*,
 	buildGetter: function(key) {},
-	buildSetter: function(key) {}
+	buildSetter: function(key) {}*/
 };
 ;
 (function() {
@@ -1103,7 +1093,7 @@ var DM_proto = DataManager.prototype = {
 						result = set.apply(self, args);
 					} else {
 						DataManager.session.filterKey = $UNDEFINED;
-						DataManager.session.topGetter = $UNDEFINED;
+						DataManager.session.topSetter = $UNDEFINED;
 						key = ""
 					}
 				} else if (key.indexOf(prefix.This) === 0) { //$this
@@ -1261,325 +1251,6 @@ var DM_proto = DataManager.prototype = {
 		return result;
 	}
 }());
-var _parse_animate_keys, // = [],
-	_parse_static_keys, // = [],
-	_parse_map, //= {},
-	_parse_jsObj_to_style = function(jsObj) {
-
-	}, _parse_int_value_to_function = function() {
-
-	}, _parse_iteration = function(obj, prefix, isStart) {
-		prefix = prefix ? prefix + "-" : "";
-		$.fI(obj, function(value, key) {
-			var _mixKey = prefix + key,
-				_num_value;
-			if (typeof value === "object") {
-				_parse_iteration(value, _mixKey,isStart);
-			} else {
-				value = String(value);
-				if ((_num_value = parseFloat(value)).toString() !== "NaN") {
-					//animate Keys
-					if (!(_mixKey in _parse_map)) {
-						$.p(_parse_animate_keys, _mixKey)
-						var _parse_obj = _parse_map[_mixKey] = {
-							unit: value.replace(_num_value, "")
-						};
-					} else {
-						_parse_obj = _parse_map[_mixKey];
-						if (_parse_obj.unit) {
-							_parse_obj.unit = value.replace(_num_value, "")
-						}
-					}
-					if (isStart) {
-						_parse_obj.startValue = _num_value;
-						_parse_obj.endValue === $UNDEFINED&&(_parse_obj.endValue = 0);
-					} else {
-						_parse_obj.startValue=== $UNDEFINED&&(_parse_obj.startValue = 0);
-						_parse_obj.endValue = _num_value;
-					}
-				} else {
-					//static style String
-					_parse_static_keys += _mixKey + ":" + value + ";";
-				}
-			}
-		})
-	};
-
-
-function Animate(startValue, endValue, time) {
-	var self = this;
-	if (!(self instanceof Animate)) {
-		return new Animate(startValue, endValue, time)
-	}
-	DataManager.Object(self);
-	self.time = (time || (time = 200)) > 0 ? time : -time;
-	self.startValue = startValue;
-	self.endValue = endValue;
-	self.animate = {
-		status: "unstart",
-		ti: $UNDEFINED,
-		frames: [],
-		animateKeys: [],
-		staticStr: "",
-		valueMap: {},
-		pir: 0//Pointer
-	}
-	self.build();
-}
-Animate.config = {
-	fps: 60 //requestAnimationFrame--setTimeout
-}
-Animate.prototype = {
-	set: function(animate, dataManager, touchOffKey) {
-		var self = this;
-		if (animate === "stop") {
-			self.stop();
-		}
-		if (animate === "run") {
-			self.run(dataManager, touchOffKey);
-		} else {
-			if (animate instanceof Animate) {
-				self.value = animate.value;
-				self.time = animate.value;
-				self.json = animate.json;
-			} else {
-				self.value = animate // = _mix(self.value, animate);
-				self.json = typeof animate === "object" ? JSON.stringify(animate) : animate;
-			}
-			self.build();
-			console.log(arguments)
-			self.run(dataManager, touchOffKey);
-		}
-	},
-	get: function( /*dataManager*/ ) {
-		var self = this,
-			animate = self.animate
-			frames = animate.frames,
-			pir = animate.pir;
-		if (!frames[pir]) {
-			frames[pir] = self._frames(pir);
-		}
-		return frames[pir] || "";
-	},
-	stop: function() {
-
-		clearTimeout(this.animate.ti);
-	},
-	run: function(dataManager, touchOffKey) {
-		var self = this,
-			animate = self.animate,
-			frames = animate.frames;
-		animate.status = "run";
-		var pir = animate.pir;
-		if (!frames[pir]) {
-			frames[pir] = self._frames(pir);
-		}
-		dataManager&&dataManager.touchOff(touchOffKey)
-		console.log(frames[pir],touchOffKey)
-		var next_pir = pir + 1;
-		var allPir = self.time / Animate.config.fps
-		if (next_pir > allPir) {
-			if (next_pir < allPir + 1) {
-				next_pir = allPir
-			} else {
-				animate.status = "end";
-				return;
-			}
-		}
-		animate.pir = next_pir;
-		animate.ti = setTimeout(function() {
-			self.run(dataManager, touchOffKey)
-		}, (1000 / Animate.config.fps)*(next_pir-pir))
-	},
-	_frames: function(pir) {
-		var self = this,
-			framesNum = self.time / Animate.config.fps,
-			animate = self.animate,
-			animateKeys = animate.animateKeys,
-			valueMap = animate.valueMap,
-			result = animate.staticStr;
-		pir === $UNDEFINED && (pir = animate.pir);
-		$.ftE(animateKeys, function(key) {
-			var valueConfig = valueMap[key],
-				startValue = valueConfig.startValue,
-				endValue = valueConfig.endValue,
-				valueResult = (endValue - startValue) * pir / framesNum + startValue + valueConfig.unit;
-			result += ";" + key + ":" + valueResult;
-		})
-		return result;
-	},
-	build: function() {
-		var self = this,
-			framesNum = self.time / Animate.config.fps,
-			animate = self.animate,
-			_frames = 0,
-			value,
-			isObj;
-		animate.frames.length = 0;
-		(_parse_animate_keys = animate.animateKeys).length = 0;
-		_parse_static_keys = "";
-		_parse_map = animate.valueMap; // = {};
-		if (typeof(value = self.endValue) === "object") {
-			_parse_iteration(value)
-			isObj = $TRUE
-		}
-		if (typeof(value = self.startValue) === "object") {
-			_parse_iteration(value, "", $TRUE);
-			isObj = $TRUE
-		}
-		animate.staticStr = _parse_static_keys;
-	}
-}
-var relyStack = [], //用于搜集依赖的堆栈数据集
-	allRelyContainer = {}, //存储处理过的依赖关系集，在set运作后链式触发 TODO：注意处理循环依赖
-	chain_update_rely = function(id, updataKeys) {
-		var relyContainer = allRelyContainer[id]; // || (allRelyContainer[this.id] = {});
-
-		relyContainer && $.ftE(updataKeys, function(updataKey) { //触发依赖
-			var leaderArr;
-			if (leaderArr = relyContainer[updataKey]) {
-				$.ftE(leaderArr, function(leaderObj) {
-					var leader = leaderObj.dm,
-						key = leaderObj.key;
-					chain_update_rely(leader.id, leader.set(key, leader._getSource(key).get())) //递归:链式更新
-				})
-			}
-		})
-	}
-
-	function Observer(obs) { //动态计算类
-		var self = this;
-		if (!(self instanceof Observer)) {
-			return new Observer(obs);
-		}
-		DataManager.Object(self);
-		if (obs instanceof Function) {
-			self._get = obs;//完全暴露错误给用户，方便调试Try(obs, self);
-			self.set = $.noop;//与defineGetter|defineSetter一样的机制
-			// self._form = $NULL;
-		} else {
-			self._get = obs.get || function() {
-				return self._value
-			};
-			self.set = obs.set?function(){
-				self._value = obs.set.apply(this.arguments)
-			}:$.noop;//Try(obs.set, self) || $.noop;
-			self._form = obs.form//Try(obs.form, self) || $NULL;
-		}
-		self._value;
-		self._valueOf = Observer._initGetData;
-		self._toString = Observer._getData;
-	};
-Observer._initGetData = function() {
-	var self = this;
-	self.valueOf = self.toString = Observer._getData;
-	return self._value = self.get();
-};
-Observer._getData = function() {
-	return this._value
-};
-Observer.collect = function(leader_id, follower_id) {
-	//allRelyContainer;
-};
-Observer.pickUp = function(leader, leader_key, relySet) {
-	var leader_id = leader.id;
-	$.ftE(relySet, function(relyNode) { //处理依赖结果
-		var relyId = relyNode.id,
-			relyKey = relyNode.key,
-			relyContainer = allRelyContainer[relyId] || (allRelyContainer[relyId] = {});
-
-		if (!(leader_id === relyId && leader_key === relyKey)) { //避免直接的循环依赖
-			cache = relyContainer[relyKey];
-			if (!cache) {
-				cache = relyContainer[relyKey] = [];
-				cache._ = {};
-			}
-			var cache_key = cache._[leader_key] || (cache._[leader_key] = "|");
-
-			if (cache_key.indexOf("|" + leader_id + "|") === -1) {
-				$.p(cache, {
-					dm: leader,
-					key: leader_key
-				});
-				cache._[leader_key] += leader_id + "|";
-			}
-		}
-	});
-};
-Observer.prototype = {
-	get: function() {
-
-		var self = this,
-			dm = DataManager.session.topGetter,
-			key = DataManager.session.filterKey,
-			result;
-		$.p(relyStack, []); //开始收集
-
-		result = self._value = self._get();
-
-		var relySet = relyStack.pop(); //获取收集结果
-		// console.log(relySet); //debugger;
-		relySet.length && Observer.pickUp(dm, key, relySet);
-
-		return result;
-	},
-	toString: Observer._initGetData,
-	valueOf: Observer._initGetData
-};
-
-(function() {
-	var _get = DM_proto.get,
-		_set = DM_proto.set,
-		_collect = DM_proto.collect;
-	DM_proto.get = function() {
-		var result = _get.apply(this, arguments/*$.s(arguments)*/);
-		// console.log(result)
-		// if (result instanceof Observer) {
-		// 	result = result.get()
-		// }
-		if (relyStack.length) {
-			$.p($.lI(relyStack), {
-				id: DataManager.session.topGetter.id,
-				// dataManager: DataManager.session.topGetter,
-				key: DataManager.session.filterKey
-			})
-		}
-		return result;
-	};
-	DM_proto.set = function() {
-		var self= this,
-			result = _set.apply(self, arguments/*$.s(arguments)*/),
-			relyContainer = allRelyContainer[self.id];
-		if (relyContainer) {
-			// console.log(result,relyContainer)
-			$.ftE(result.updateKey,function(updateKey){
-				var relyObjects = relyContainer[updateKey];
-				relyObjects&&$.ftE(relyObjects,function(relyObject){
-					relyObject.dm.touchOff(relyObject.key)
-				});
-			});
-		}
-		return result;
-	};
-	DM_proto.collect = function(dataManager) {
-		var result = _collect.apply(this, arguments/*$.s(arguments)*/);
-		if (dataManager instanceof DataManager) {
-			Observer.collect(this.id, dataManager.id);
-		}
-		return result;
-	}
-}());
-var _cacheGet = Observer.get;
-function StaticObserver(obs) { //静态计算类（只收集一次的依赖，适合于简单的计算属性，没有逻辑嵌套）
-	var observerInstance = new Observer(obs);
-	observerInstance.get = StaticObserver.staticGet;
-}
-StaticObserver.staticGet = function() { //转化成静态计算类
-	var self = this,
-		result = _cacheGet.apply(self, arguments/*$.s(arguments)*/);
-	self.get = self._get; //剥离依赖收集器
-	return result;
-};
 var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 	// DoubleQuotedString = /"(?:\.|(\\\")|[^\""\n])*"/g, //双引号字符串
 	// SingleQuotedString = /'(?:\.|(\\\')|[^\''\n])*'/g, //单引号字符串
@@ -1982,22 +1653,12 @@ function _create(data) { //data maybe basedata or dataManager
 		$.ftE(self._viewInstances, function(childViewInstance) {
 			$.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
 				var TEMP = smartTrigger.TEMP;
-				// DataManager.get(TEMP.dm_id).get(TEMP.sourceKey);
-				// var topGetter = DataManager.session.topGetter;
-				// if (topGetter) {
-				// 	if (topGetter !== DataManager.get(TEMP.dm_id)) {
-				// 		smartTrigger.bind(topGetter._triggerKeys);
-				// 		TEMP.dm_id = topGetter.id;
-				// 	}
-				// 	smartTrigger.event(topGetter._triggerKeys);
-				// }
-				//-----
+
 				TEMP.viewInstance.get(TEMP.sourceKey);
 				var topGetter = DataManager.session.topGetter,
 					currentTopGetter = DataManager.get(TEMP.dm_id),
 					matchKey = DataManager.session.filterKey||"";
 				if (topGetter) {
-					// console.log(currentTopGetter&&currentTopGetter.id,topGetter.id)
 					if (topGetter!==currentTopGetter||matchKey!==smartTrigger.matchKey) {
 						TEMP.dm_id = topGetter.id;
 						currentTopGetter&&smartTrigger.unbind(currentTopGetter._triggerKeys)
@@ -2010,20 +1671,6 @@ function _create(data) { //data maybe basedata or dataManager
 			})
 		})
 		$.ftE(self._subsetDataManagers, function(childDataManager) {
-			// $.ftE(childDataManager._viewInstances, function(childViewInstance) {
-			// 	$.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
-			// 		if (smartTrigger.moveAble) {
-			// 			var TEMP = smartTrigger.TEMP;
-			// 			DataManager.get(TEMP.dm_id).get(TEMP.sourceKey);
-			// 			var topGetter = DataManager.session.topGetter;
-			// 			if (topGetter && topGetter !== DataManager.get(TEMP.dm_id)) {
-			// 				smartTrigger.unbind(DataManager.get(TEMP.dm_id)._triggerKeys).bind(topGetter._triggerKeys);
-			// 				TEMP.dm_id = topGetter.id;
-			// 				smartTrigger.event(topGetter._triggerKeys);
-			// 			}
-			// 		}
-			// 	})
-			// })
 			childDataManager.rebuildTree()
 		})
 		return _rebuildTree.call(self);
@@ -2290,18 +1937,7 @@ var VI_proto = ViewInstance.prototype = {
 			smartTrigger = new SmartTriggerHandle(
 				baseKey || (baseKey = ""), //match key
 
-				function(smartTriggerSet) { //event
-					// self.get(sKey);
-					// var topGetterDataManager = DataManager.session.topGetter;
-					// if (baseKey !== (baseKey=DataManager.session.filterKey||"")||topGetterDataManager.id!==self.dataManager.id) {
-					// 	// console.log(sKey, " : ", baseKey, DataManager.session.filterKey)
-					// 	// debugger;
-					// 	smartTrigger.unbind(smartTriggerSet)
-					// 	smartTrigger.unbind(topGetterDataManager._triggerKeys)
-					// 	smartTrigger.matchKey = baseKey
-					// 	smartTrigger.bind(topGetterDataManager._triggerKeys)
-					// 	dataManager.rebuildTree();
-					// }
+				function(smartTriggerSet) { 
 					self.touchOff(sKey);
 				}, { //TEMP data
 					viewInstance: self,
@@ -2312,37 +1948,15 @@ var VI_proto = ViewInstance.prototype = {
 			);
 		$.p(smartTriggers, smartTrigger);
 		topGetterTriggerKeys && smartTrigger.bind(topGetterTriggerKeys); // topGetterTriggerKeys.push(baseKey, smartTrigger);
-	},
+	}/*,
 	on: function(eventName, fun) {
 
 	},
 	trigger: function(eventName) {
 
-	}
-	/*,
-	_collectTrigger:function(trigger,sKey){
-		var self = this,
-			smartTriggers = self._smartTriggers;
-		self.get(sKey);
-		var baseKey = DataManager.session.filterKey,
-			topGetterTriggerKeys = DataManager.session.topGetter._triggerKeys,
-			smartTrigger = new SmartTriggerHandle(
-				baseKey, //match key
-
-				function(smartTriggerSet) { //event
-					self.touchOff(sKey);
-				}, { //TEMP data
-					viewInstance: self,
-					dataManager: self.dataManager,
-					// triggerSet: topGetterTriggerKeys,
-					sourceKey: sKey
-				}
-			);
-		$.p(smartTriggers, smartTrigger);
-		smartTrigger.bind(topGetterTriggerKeys);
 	}*/
 };
-var _allEventNames = ("blur focus focusin focusout load resize" +
+/*var _allEventNames = ("blur focus focusin focusout load resize" +
 	"scroll unload click dblclick mousedown mouseup mousemove" +
 	"mouseover mouseout mouseenter mouseleave change select" +
 	"submit keydown keypress keyup error contextmenu").split(" ");
@@ -2350,7 +1964,7 @@ $.ftE(_allEventNames, function(eventName) {
 	VI_proto[eventName] = function(fun) {
 		return fun ? this.on(eventName, fun) : this.trigger(eventName);
 	}
-})
+})*/
 /*
  * parse function
  */
@@ -2985,14 +2599,12 @@ V.rt("#each", function(handle, index, parentHandle) {
 				comment_endeach_node = NodeList_of_ViewInstance[comment_endeach_id].currentNode,
 				_rebuildTree;
 
-			// console.log("showed_vi_len:",showed_vi_len," new_data_len:",new_data_len," result:",showed_vi_len !== new_data_len)
 			if (showed_vi_len !== new_data_len) {
 				arrViewInstances.len = new_data_len; //change immediately,to avoid the `subset` trigger the `rebuildTree`,and than trigger each-trigger again.
 
 				_rebuildTree = dataManager.rebuildTree;
 				dataManager.rebuildTree = $.noop//doesn't need rebuild every subset
-				console.log(data,$.s(data))
-				data&&$.ftE($.s(data), function(eachItemData, index) {
+				data!=$UNDEFINED&&$.ftE($.s(data), function(eachItemData, index) {
 					//TODO:if too mush vi will be create, maybe asyn
 					var viewInstance = arrViewInstances[index];
 					if (!viewInstance) {
@@ -3638,26 +3250,6 @@ _AttributeHandleEvent.select = function(key, currentNode, parserNode, vi) { //se
 		})
 	}
 }
-// var _triggersEach = V.triggers["#each"],
-// 	_touchOffLock; //不好的字段设计可能会造成死循环，使用锁避免重复注册触发事件。
-// V.rt("#each", function(handle, index, parentHandle) {
-// 	var trigger = _triggersEach(handle, index, parentHandle);
-// 	if (parentHandle.type === "element" && parentHandle.node.tagName.toLowerCase() === "select") {
-// 		var _triggerEvent = trigger.event;
-// 		trigger.event = function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
-// 			var result = _triggerEvent.apply(this, arguments);
-// 			if (!_touchOffLock) {
-// 				var currentNode = NodeList_of_ViewInstance[parentHandle.id].currentNode,
-// 					touchKey = currentNode[$.hashCode(currentNode, "selected")];
-// 				_touchOffLock = $TRUE;
-// 				touchKey && dataManager.touchOff(touchKey)
-// 				_touchOffLock = $FALSE;
-// 			}
-// 			return result;
-// 		}
-// 	}
-// 	return trigger;
-// })
 V.ra("style",function () {
 	return _isIE&&_AttributeHandleEvent.style;
 })
