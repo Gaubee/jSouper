@@ -21,14 +21,16 @@ V.rt("#each", function(handle, index, parentHandle) {
 				new_data_len = data ? data.length : 0,
 				eachModuleConstructor = V.eachModules[id],
 				inserNew,
-				comment_endeach_node = NodeList_of_ViewInstance[comment_endeach_id].currentNode,
-				_rebuildTree;
+				comment_endeach_node = NodeList_of_ViewInstance[comment_endeach_id].currentNode;
 
 			if (showed_vi_len !== new_data_len) {
 				arrViewInstances.len = new_data_len; //change immediately,to avoid the `subset` trigger the `rebuildTree`,and than trigger each-trigger again.
 
-				_rebuildTree = dataManager.rebuildTree;
+				var _rebuildTree = dataManager.rebuildTree,
+					_touchOff = DM_proto.touchOff;
 				dataManager.rebuildTree = $.noop//doesn't need rebuild every subset
+				DM_proto.touchOff = $.noop;//touchOff会遍历整个子链，会造成爆炸性增长。
+
 				data!=$UNDEFINED&&$.ftE($.s(data), function(eachItemData, index) {
 					//TODO:if too mush vi will be create, maybe asyn
 					var viewInstance = arrViewInstances[index];
@@ -39,24 +41,21 @@ V.rt("#each", function(handle, index, parentHandle) {
 							brotherVI: arrViewInstances
 						}
 						dataManager.subset(viewInstance, arrDataHandleKey + "." + index); //+"."+index //reset arrViewInstance's dataManager
-						inserNew = $TRUE;
 					}
-					if (!viewInstance._canRemoveAble) { //had being recovered into the packingBag
-						inserNew = $TRUE;
-					}
-
-					if (inserNew && !arrViewInstances.hidden) {
-						viewInstance.insert(comment_endeach_node)
-					}
+					viewInstance.insert(comment_endeach_node)
+					viewInstance.dataManager._eachIgonre= $FALSE;
 				}, showed_vi_len); //showed_vi_len||0
 				
 				if (showed_vi_len > new_data_len) {
 					$.fE(arrViewInstances, function(eachItemHandle) {
+						eachItemHandle.dataManager._eachIgonre = $TRUE;
 						eachItemHandle.remove();
 					}, new_data_len);
 				}
-				dataManager.rebuildTree = _rebuildTree
-					// dataManager.rebuildTree();
+				// dataManager.rebuildTree = _rebuildTree
+				// dataManager.rebuildTree();
+				(dataManager.rebuildTree = _rebuildTree).call(dataManager);
+				DM_proto.touchOff = _touchOff;
 			}
 		}
 	}

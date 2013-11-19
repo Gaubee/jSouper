@@ -66,7 +66,6 @@
 				vi_DM.collect(viewInstance);
 			}
 			_subset.call(self, vi_DM, prefix);
-			self.rebuildTree();
 		}
 	};
 }());

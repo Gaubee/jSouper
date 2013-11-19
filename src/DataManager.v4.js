@@ -306,6 +306,7 @@ var DM_proto = DataManager.prototype = {
 		//child
 		$.ftE(self._subsetDataManagers, function(childDataManager) {
 			// debugger
+			if (childDataManager._eachIgonre) {return};
 			var prefix = childDataManager._prefix,
 				childResult; // || "";
 			_dm_force_update = $TRUE;
