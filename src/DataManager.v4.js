@@ -298,6 +298,17 @@ var DM_proto = DataManager.prototype = {
 			chidlUpdateKey = [],
 			allUpdateKey,
 			triggerCollection;
+		//self
+		triggerKeys.forIn(function(triggerCollection, triggerKey) {
+			//!triggerKey==true;
+			if (!key || !triggerKey || key === triggerKey || triggerKey.indexOf(key + ".") === 0 || key.indexOf(triggerKey + ".") === 0) {
+				// console.log("filter triggerKey:",triggerKey)
+				$.p(updateKey, triggerKey)
+				$.ftE(triggerCollection, function(smartTriggerHandle) {
+					smartTriggerHandle.event(triggerKeys);
+				})
+			}
+		});
 		//child
 		$.ftE(self._subsetDataManagers, function(childDataManager) {
 			// debugger
@@ -321,17 +332,6 @@ var DM_proto = DataManager.prototype = {
 			//改动信息就需要冒泡到顶层，等同于强制触发数组的所有关键字，通知所有子对象检查自身是否发生变化。
 			//所以锁定是效率所需。
 			$.p(chidlUpdateKey, childResult);
-		});
-		//self
-		triggerKeys.forIn(function(triggerCollection, triggerKey) {
-			//!triggerKey==true;
-			if (!key || !triggerKey || key === triggerKey || triggerKey.indexOf(key + ".") === 0 || key.indexOf(triggerKey + ".") === 0) {
-				// console.log("filter triggerKey:",triggerKey)
-				$.p(updateKey, triggerKey)
-				$.ftE(triggerCollection, function(smartTriggerHandle) {
-					smartTriggerHandle.event(triggerKeys);
-				})
-			}
 		});
 		return {
 			key: key,
@@ -358,13 +358,13 @@ var DM_proto = DataManager.prototype = {
 				self.rebuildTree()
 				dataManager._database = self._database;
 				// dataManager.set(dataManager._database)
-				console.log("collect dataManager",dataManager.getTop().id)
+				// console.log("collect dataManager",dataManager.getTop().id)
 				dataManager.getTop().touchOff("");
 				DataManager.finallyRun();
 			}
 		}else{
 			// self.set(self._database)
-			console.log("collect self",self.getTop().id)
+			// console.log("collect self",self.getTop().id)
 			self.getTop().touchOff("");
 			DataManager.finallyRun();
 		}
@@ -379,8 +379,8 @@ var DM_proto = DataManager.prototype = {
 		dataManager.rebuildTree()
 		dataManager._database = self.get(prefixKey);
 		// dataManager.set(dataManager._database)
-		console.log("subset",self.getTop().id)
-		if (self.getTop().id===80) {debugger};
+		// console.log("subset",self.getTop().id)
+		// if (self.getTop().id===80) {debugger};
 		self.getTop().touchOff("");
 		DataManager.finallyRun();
 		return self;

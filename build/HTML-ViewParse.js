@@ -939,6 +939,17 @@ var DM_proto = DataManager.prototype = {
 			chidlUpdateKey = [],
 			allUpdateKey,
 			triggerCollection;
+		//self
+		triggerKeys.forIn(function(triggerCollection, triggerKey) {
+			//!triggerKey==true;
+			if (!key || !triggerKey || key === triggerKey || triggerKey.indexOf(key + ".") === 0 || key.indexOf(triggerKey + ".") === 0) {
+				// console.log("filter triggerKey:",triggerKey)
+				$.p(updateKey, triggerKey)
+				$.ftE(triggerCollection, function(smartTriggerHandle) {
+					smartTriggerHandle.event(triggerKeys);
+				})
+			}
+		});
 		//child
 		$.ftE(self._subsetDataManagers, function(childDataManager) {
 			// debugger
@@ -962,17 +973,6 @@ var DM_proto = DataManager.prototype = {
 			//改动信息就需要冒泡到顶层，等同于强制触发数组的所有关键字，通知所有子对象检查自身是否发生变化。
 			//所以锁定是效率所需。
 			$.p(chidlUpdateKey, childResult);
-		});
-		//self
-		triggerKeys.forIn(function(triggerCollection, triggerKey) {
-			//!triggerKey==true;
-			if (!key || !triggerKey || key === triggerKey || triggerKey.indexOf(key + ".") === 0 || key.indexOf(triggerKey + ".") === 0) {
-				// console.log("filter triggerKey:",triggerKey)
-				$.p(updateKey, triggerKey)
-				$.ftE(triggerCollection, function(smartTriggerHandle) {
-					smartTriggerHandle.event(triggerKeys);
-				})
-			}
 		});
 		return {
 			key: key,
@@ -999,13 +999,13 @@ var DM_proto = DataManager.prototype = {
 				self.rebuildTree()
 				dataManager._database = self._database;
 				// dataManager.set(dataManager._database)
-				console.log("collect dataManager",dataManager.getTop().id)
+				// console.log("collect dataManager",dataManager.getTop().id)
 				dataManager.getTop().touchOff("");
 				DataManager.finallyRun();
 			}
 		}else{
 			// self.set(self._database)
-			console.log("collect self",self.getTop().id)
+			// console.log("collect self",self.getTop().id)
 			self.getTop().touchOff("");
 			DataManager.finallyRun();
 		}
@@ -1020,8 +1020,8 @@ var DM_proto = DataManager.prototype = {
 		dataManager.rebuildTree()
 		dataManager._database = self.get(prefixKey);
 		// dataManager.set(dataManager._database)
-		console.log("subset",self.getTop().id)
-		if (self.getTop().id===80) {debugger};
+		// console.log("subset",self.getTop().id)
+		// if (self.getTop().id===80) {debugger};
 		self.getTop().touchOff("");
 		DataManager.finallyRun();
 		return self;
@@ -2991,7 +2991,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 
 				_rebuildTree = dataManager.rebuildTree;
 				dataManager.rebuildTree = $.noop//doesn't need rebuild every subset
-
+				console.log(data,$.s(data))
 				data&&$.ftE($.s(data), function(eachItemData, index) {
 					//TODO:if too mush vi will be create, maybe asyn
 					var viewInstance = arrViewInstances[index];
@@ -3409,7 +3409,7 @@ var _AttributeHandleEvent = {
 	},
 	bool: function(key, currentNode, parserNode) {
 		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
-		console.log("key:", key, "attrOuter:", attrOuter)
+		// console.log("key:", key, "attrOuter:", attrOuter)
 		if (attrOuter) { // currentNode.setAttribute(key, key);
 			currentNode[key] = key;
 		} else { // currentNode.removeAttribute(key);
@@ -3638,26 +3638,26 @@ _AttributeHandleEvent.select = function(key, currentNode, parserNode, vi) { //se
 		})
 	}
 }
-var _triggersEach = V.triggers["#each"],
-	_touchOffLock; //不好的字段设计可能会造成死循环，使用锁避免重复注册触发事件。
-V.rt("#each", function(handle, index, parentHandle) {
-	var trigger = _triggersEach(handle, index, parentHandle);
-	if (parentHandle.type === "element" && parentHandle.node.tagName.toLowerCase() === "select") {
-		var _triggerEvent = trigger.event;
-		trigger.event = function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
-			var result = _triggerEvent.apply(this, arguments);
-			if (!_touchOffLock) {
-				var currentNode = NodeList_of_ViewInstance[parentHandle.id].currentNode,
-					touchKey = currentNode[$.hashCode(currentNode, "selected")];
-				_touchOffLock = $TRUE;
-				touchKey && dataManager.touchOff(touchKey)
-				_touchOffLock = $FALSE;
-			}
-			return result;
-		}
-	}
-	return trigger;
-})
+// var _triggersEach = V.triggers["#each"],
+// 	_touchOffLock; //不好的字段设计可能会造成死循环，使用锁避免重复注册触发事件。
+// V.rt("#each", function(handle, index, parentHandle) {
+// 	var trigger = _triggersEach(handle, index, parentHandle);
+// 	if (parentHandle.type === "element" && parentHandle.node.tagName.toLowerCase() === "select") {
+// 		var _triggerEvent = trigger.event;
+// 		trigger.event = function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
+// 			var result = _triggerEvent.apply(this, arguments);
+// 			if (!_touchOffLock) {
+// 				var currentNode = NodeList_of_ViewInstance[parentHandle.id].currentNode,
+// 					touchKey = currentNode[$.hashCode(currentNode, "selected")];
+// 				_touchOffLock = $TRUE;
+// 				touchKey && dataManager.touchOff(touchKey)
+// 				_touchOffLock = $FALSE;
+// 			}
+// 			return result;
+// 		}
+// 	}
+// 	return trigger;
+// })
 V.ra("style",function () {
 	return _isIE&&_AttributeHandleEvent.style;
 })
