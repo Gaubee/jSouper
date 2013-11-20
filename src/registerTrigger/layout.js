@@ -28,11 +28,20 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
 			if(isShow){
 				if (!layoutViewInstance) {
 					var key = NodeList_of_ViewInstance[dataHandle_id]._data;
-					layoutViewInstance = AllLayoutViewInstance[id] = V.modules[NodeList_of_ViewInstance[templateHandle_id]._data]().insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
-					dataManager.subset(layoutViewInstance, key);
+					if(dataManager.get(key)){
+						// console.log(key,":",dataManager.get(key))
+						layoutViewInstance = AllLayoutViewInstance[id] = V.modules[NodeList_of_ViewInstance[templateHandle_id]._data]();
+						dataManager.subset(layoutViewInstance, key);
+					}
 				}
+				if(layoutViewInstance&&!layoutViewInstance._canRemoveAble){
+					console.log("show",layoutViewInstance._id)
+					layoutViewInstance.insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
+				}
+				// console.log(isShow,layoutViewInstance.get())
 			}else{
-				if(layoutViewInstance){
+				if(layoutViewInstance&&layoutViewInstance._canRemoveAble){
+					console.log("hidden",layoutViewInstance._id)
 					layoutViewInstance.remove();
 				}
 			}

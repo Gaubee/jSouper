@@ -26,8 +26,9 @@ V.rt("", function(handle, index, parentHandle) {
 							data = String(data).replace(/"/g, '\\"').replace(/'/g, "\\'");
 						}
 					}
-					data = String(data);
+					// data = String(data);
 					if (nodeHandle._data !== data) {
+						// console.log(currentNode.data,nodeHandle._data,data,currentNode.parentNode.outerHTML)
 						currentNode.data = nodeHandle._data = data;
 					}
 				}

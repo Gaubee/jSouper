@@ -20,7 +20,7 @@ V.rt("define", function(handle, index, parentHandle) {
 			// console.log(key,":",result,viewInstance.id);
 			if (key !== $UNDEFINED) {
 				if (!(finallyRun = DataManager.finallyRun[uid_hash])) {
-					DataManager.finallyRun(finallyRun = function() {
+					DataManager.finallyRun(DataManager.finallyRun[uid_hash] = finallyRun = function() {
 						viewInstance = finallyRun.viewInstance
 						// if (finallyRun.key==="dd") {debugger};
 						//已经被remove的VI，就不应该触发define
@@ -29,7 +29,6 @@ V.rt("define", function(handle, index, parentHandle) {
 						}
 						DataManager.finallyRun[uid_hash] = $FALSE; //can push into finally quene
 					})
-					DataManager.finallyRun[uid_hash] = finallyRun;
 				}
 				finallyRun.viewInstance = viewInstance
 				finallyRun.key = key

@@ -80,7 +80,8 @@ DataManager.session = {
 	topGetter: $NULL,
 	topSetter: $NULL,
 	filterKey: $NULL,
-	setStacks: []
+	setStacks: [],
+	finallyRunStacks: []
 };
 //DataManager._finallyQuene = [];
 // DataManager._finallyHash = {};
@@ -89,8 +90,8 @@ DataManager.finallyRun = function(fun) {
 	if (fun) {
 		$.p(finallyQuene, fun)
 	} else {
-		while(finallyQuene.length){
-			fun = finallyQuene.splice(0,1)[0]
+		while (finallyQuene.length) {
+			fun = finallyQuene.splice(0, 1)[0]
 			fun && fun()
 		}
 	}
@@ -121,8 +122,8 @@ var DM_proto = DataManager.prototype = {
 					} while (result !== $UNDEFINED && arrKey.length - anchor);
 				}
 			}
-			
-		/*
+
+			/*
 		//避免混淆，不使用智能作用域，否则关键字更新触发器无法准确绑定或者会照常大量计算
 		if (arrKey.length && (parent = self._parentDataManager)) { //key不在对象中，查询父级
 			result = parent.get(key);
@@ -181,14 +182,14 @@ var DM_proto = DataManager.prototype = {
 				// case 0:
 				// 	break;
 				case 1:
-					if (self._database !== nObj  || _dm_force_update) {
+					if (self._database !== nObj || _dm_force_update) {
 						self._database = nObj;
-					}else if(!(nObj instanceof Object)){
+					} else if (!(nObj instanceof Object)) {
 						return;
 					};
 					break;
 				default: //find Object by the key-dot-path and change it
-					if (_dm_force_update||nObj !== DM_proto.get.call(self, key) ) {
+					if (_dm_force_update || nObj !== DM_proto.get.call(self, key)) {
 						//[@Gaubee/blog/issues/45](https://github.com/Gaubee/blog/issues/45)
 						var database = self._database || (self._database = {}),
 							sObj,
@@ -278,7 +279,7 @@ var DM_proto = DataManager.prototype = {
 		var self = this,
 			database = self._database;
 		$.ftE($.s(_getAllSiblingDataManagers(self)), function(dm) {
-			dm._database = database;//maybe on-obj
+			dm._database = database; //maybe on-obj
 			dm._touchOff(key)
 		})
 	},
@@ -304,7 +305,9 @@ var DM_proto = DataManager.prototype = {
 		//child
 		$.ftE(self._subsetDataManagers, function(childDataManager) {
 			// debugger
-			if (childDataManager._eachIgonre) {return};
+			if (childDataManager._eachIgonre) {
+				return
+			};
 			var prefix = childDataManager._prefix,
 				childResult; // || "";
 			_dm_force_update = $TRUE;
@@ -334,7 +337,7 @@ var DM_proto = DataManager.prototype = {
 		}
 	},
 	rebuildTree: $.noop,
-	getTop:function(){//get DM tree top
+	getTop: function() { //get DM tree top
 		var self = this,
 			next;
 		while (next = self._parentDataManager) {
@@ -343,26 +346,32 @@ var DM_proto = DataManager.prototype = {
 		return self;
 	},
 	collect: function(dataManager) {
-		var self = this
-		if (self!==dataManager) {
+		var self = this,
+			finallyRunStacks = DataManager.session.finallyRunStacks;
+		if (self !== dataManager) {
 			if ($.iO(self._siblingDataManagers, dataManager) === -1) {
 				$.p(self._siblingDataManagers, dataManager);
 				$.p(dataManager._siblingDataManagers, self);
 				self.rebuildTree()
 				dataManager._database = self._database;
 				// dataManager.set(dataManager._database)
+				finallyRunStacks.push(self.id)
 				dataManager.getTop().touchOff("");
-				DataManager.finallyRun();
+				finallyRunStacks.pop();
+				!finallyRunStacks.length && DataManager.finallyRun();
 			}
-		}else{
+		} else {
 			// self.set(self._database)
+			finallyRunStacks.push(self.id)
 			self.getTop().touchOff("");
-			DataManager.finallyRun();
+			finallyRunStacks.pop();
+			!finallyRunStacks.length && DataManager.finallyRun();
 		}
 		return self;
 	},
 	subset: function(dataManager, prefixKey) {
-		var self = this;
+		var self = this,
+			finallyRunStacks = DataManager.session.finallyRunStacks;
 		dataManager.remove();
 		dataManager._prefix = prefixKey;
 		dataManager._parentDataManager = self;
@@ -370,8 +379,10 @@ var DM_proto = DataManager.prototype = {
 		dataManager.rebuildTree()
 		dataManager._database = self.get(prefixKey);
 		// dataManager.set(dataManager._database)
+		finallyRunStacks.push(self.id)
 		self.getTop().touchOff("");
-		DataManager.finallyRun();
+		finallyRunStacks.pop();
+		!finallyRunStacks.length && DataManager.finallyRun();
 		return self;
 	},
 	remove: function(dataManager) {
@@ -426,7 +437,8 @@ var DM_proto = DataManager.prototype = {
 		for (var i in this) {
 			delete this[i]
 		}
-	}/*,
+	}
+	/*,
 	buildGetter: function(key) {},
 	buildSetter: function(key) {}*/
 };

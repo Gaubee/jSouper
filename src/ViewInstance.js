@@ -147,7 +147,6 @@ function _moveChild(self, el) {
 	var AllEachViewInstance = self._AVI,
 		AllLayoutViewInstance = self._ALVI,
 		AllWithViewInstance = self._WVI;
-
 	$.ftE(self.NodeList[self.handleNodeTree.id].childNodes, function(child_node) {
 		var viewInstance,
 			arrayViewInstances,

@@ -4,7 +4,7 @@
 var _formCache = {},
 	__text = {
 		attributeName: "value",
-		eventNames:  ["input"  ]
+		eventNames: ["input"]
 	},
 	_formKey = {
 		"input": function(node) { //需阻止默认事件，比如Checked需要被重写，否则数据没有变动而Checked因用户点击而变动，没有达到V->M的数据同步
@@ -31,13 +31,47 @@ var _formCache = {},
 		},
 		"select": {
 			eventNames: ["change"],
+			init: function(currentNode, vi, attrOuter) {
+				//---init value
+				var _init_hashCode = $.hashCode(currentNode, "init"),
+					DM_finallyRun = DataManager.finallyRun;
+				if (!DM_finallyRun[_init_hashCode]) {
+					var _init_finallyRun = DM_finallyRun[_init_hashCode] = function() {
+						var options = currentNode.options
+						if (options.length) {
+							//待存在options后，则进行初始化bind-form的值
+							//并确保只运行一次。
+							DM_finallyRun[_init_hashCode] = $FALSE;
+							var value = [];
+							$.ftE(options,function(optionNode){
+								if(optionNode.selected&&optionNode.value){
+									$.p(value,optionNode.value)
+								}
+							})
+							if (value.length) {
+								console.log(value)
+								if (!currentNode.multiple) {
+									value = value[0]
+								}
+								console.log(attrOuter,value)
+								vi.set(attrOuter,value)
+							}
+						}else{
+							//当each运作后是继续允许进入finallyRun队列
+							_init_finallyRun._inQuene = $FALSE
+						}
+					}
+				}
+			},
 			inner: function(e, vi, attrOuter, value /*for arguments*/ ) {
+				// console.log(e.target.tagName==="OPTION")
 				var ele = this;
 				var obj = vi.get(attrOuter)
+
 				if (ele.multiple) {
 					value = [];
 					$.ftE(ele.options, function(option) {
-						if (option.selected) {
+						if (option.selected && option.value) {
 							$.p(value, option.value);
 						}
 					})
@@ -49,6 +83,7 @@ var _formCache = {},
 					vi.set(attrOuter, obj.form.apply(ele, arguments))
 				} else {
 					vi.set(attrOuter, value)
+					// console.log(ele.options)
 				}
 			}
 		},
@@ -69,11 +104,13 @@ var _formCache = {},
 			if (eventConfig) {
 				typeof eventConfig === "function" && (eventConfig = eventConfig(currentNode));
 				eventNames = eventConfig.eventNames;
-				eventConfig = $.c(eventConfig);//wrap eventConfig to set inner in diffrent eventConfig
+				eventConfig = $.c(eventConfig); //wrap eventConfig to set inner in diffrent eventConfig
 				formCollection = _formCache[elementHashCode] || (_formCache[elementHashCode] = {});
-
+				if (eventConfig.init) {
+					eventConfig.init(currentNode, vi, attrOuter)
+				}
 				if (!eventConfig.inner) {
-					eventConfig.inner=function (e, vi, attrOuter /**/ ) {
+					eventConfig.inner = function(e, vi, attrOuter /**/ ) {
 						var obj = vi.get(attrOuter)
 						if (obj && obj[_DM_extends_object_constructor] && obj.form) {
 							vi.set(attrOuter, obj.form.apply(this, arguments))
@@ -96,8 +133,8 @@ var _formCache = {},
 						outerFormHandle.eventConfig = eventConfig
 						_registerEvent(currentNode, eventName, outerFormHandle, elementHashCode);
 						formCollection[eventName] = outerFormHandle;
-					}else{
-						for(var i in eventConfig){
+					} else {
+						for (var i in eventConfig) {
 							outerFormHandle.eventConfig[i] = eventConfig[i];
 							// try{outerFormHandle.call(currentNode)}catch(e){};
 						}

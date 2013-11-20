@@ -744,7 +744,8 @@ DataManager.session = {
 	topGetter: $NULL,
 	topSetter: $NULL,
 	filterKey: $NULL,
-	setStacks: []
+	setStacks: [],
+	finallyRunStacks: []
 };
 //DataManager._finallyQuene = [];
 // DataManager._finallyHash = {};
@@ -753,8 +754,8 @@ DataManager.finallyRun = function(fun) {
 	if (fun) {
 		$.p(finallyQuene, fun)
 	} else {
-		while(finallyQuene.length){
-			fun = finallyQuene.splice(0,1)[0]
+		while (finallyQuene.length) {
+			fun = finallyQuene.splice(0, 1)[0]
 			fun && fun()
 		}
 	}
@@ -785,8 +786,8 @@ var DM_proto = DataManager.prototype = {
 					} while (result !== $UNDEFINED && arrKey.length - anchor);
 				}
 			}
-			
-		/*
+
+			/*
 		//避免混淆，不使用智能作用域，否则关键字更新触发器无法准确绑定或者会照常大量计算
 		if (arrKey.length && (parent = self._parentDataManager)) { //key不在对象中，查询父级
 			result = parent.get(key);
@@ -845,14 +846,14 @@ var DM_proto = DataManager.prototype = {
 				// case 0:
 				// 	break;
 				case 1:
-					if (self._database !== nObj  || _dm_force_update) {
+					if (self._database !== nObj || _dm_force_update) {
 						self._database = nObj;
-					}else if(!(nObj instanceof Object)){
+					} else if (!(nObj instanceof Object)) {
 						return;
 					};
 					break;
 				default: //find Object by the key-dot-path and change it
-					if (_dm_force_update||nObj !== DM_proto.get.call(self, key) ) {
+					if (_dm_force_update || nObj !== DM_proto.get.call(self, key)) {
 						//[@Gaubee/blog/issues/45](https://github.com/Gaubee/blog/issues/45)
 						var database = self._database || (self._database = {}),
 							sObj,
@@ -942,7 +943,7 @@ var DM_proto = DataManager.prototype = {
 		var self = this,
 			database = self._database;
 		$.ftE($.s(_getAllSiblingDataManagers(self)), function(dm) {
-			dm._database = database;//maybe on-obj
+			dm._database = database; //maybe on-obj
 			dm._touchOff(key)
 		})
 	},
@@ -968,7 +969,9 @@ var DM_proto = DataManager.prototype = {
 		//child
 		$.ftE(self._subsetDataManagers, function(childDataManager) {
 			// debugger
-			if (childDataManager._eachIgonre) {return};
+			if (childDataManager._eachIgonre) {
+				return
+			};
 			var prefix = childDataManager._prefix,
 				childResult; // || "";
 			_dm_force_update = $TRUE;
@@ -998,7 +1001,7 @@ var DM_proto = DataManager.prototype = {
 		}
 	},
 	rebuildTree: $.noop,
-	getTop:function(){//get DM tree top
+	getTop: function() { //get DM tree top
 		var self = this,
 			next;
 		while (next = self._parentDataManager) {
@@ -1007,26 +1010,32 @@ var DM_proto = DataManager.prototype = {
 		return self;
 	},
 	collect: function(dataManager) {
-		var self = this
-		if (self!==dataManager) {
+		var self = this,
+			finallyRunStacks = DataManager.session.finallyRunStacks;
+		if (self !== dataManager) {
 			if ($.iO(self._siblingDataManagers, dataManager) === -1) {
 				$.p(self._siblingDataManagers, dataManager);
 				$.p(dataManager._siblingDataManagers, self);
 				self.rebuildTree()
 				dataManager._database = self._database;
 				// dataManager.set(dataManager._database)
+				finallyRunStacks.push(self.id)
 				dataManager.getTop().touchOff("");
-				DataManager.finallyRun();
+				finallyRunStacks.pop();
+				!finallyRunStacks.length && DataManager.finallyRun();
 			}
-		}else{
+		} else {
 			// self.set(self._database)
+			finallyRunStacks.push(self.id)
 			self.getTop().touchOff("");
-			DataManager.finallyRun();
+			finallyRunStacks.pop();
+			!finallyRunStacks.length && DataManager.finallyRun();
 		}
 		return self;
 	},
 	subset: function(dataManager, prefixKey) {
-		var self = this;
+		var self = this,
+			finallyRunStacks = DataManager.session.finallyRunStacks;
 		dataManager.remove();
 		dataManager._prefix = prefixKey;
 		dataManager._parentDataManager = self;
@@ -1034,8 +1043,10 @@ var DM_proto = DataManager.prototype = {
 		dataManager.rebuildTree()
 		dataManager._database = self.get(prefixKey);
 		// dataManager.set(dataManager._database)
+		finallyRunStacks.push(self.id)
 		self.getTop().touchOff("");
-		DataManager.finallyRun();
+		finallyRunStacks.pop();
+		!finallyRunStacks.length && DataManager.finallyRun();
 		return self;
 	},
 	remove: function(dataManager) {
@@ -1090,7 +1101,8 @@ var DM_proto = DataManager.prototype = {
 		for (var i in this) {
 			delete this[i]
 		}
-	}/*,
+	}
+	/*,
 	buildGetter: function(key) {},
 	buildSetter: function(key) {}*/
 };
@@ -1812,7 +1824,6 @@ function _moveChild(self, el) {
 	var AllEachViewInstance = self._AVI,
 		AllLayoutViewInstance = self._ALVI,
 		AllWithViewInstance = self._WVI;
-
 	$.ftE(self.NodeList[self.handleNodeTree.id].childNodes, function(child_node) {
 		var viewInstance,
 			arrayViewInstances,
@@ -2558,7 +2569,7 @@ V.rt("define", function(handle, index, parentHandle) {
 			// console.log(key,":",result,viewInstance.id);
 			if (key !== $UNDEFINED) {
 				if (!(finallyRun = DataManager.finallyRun[uid_hash])) {
-					DataManager.finallyRun(finallyRun = function() {
+					DataManager.finallyRun(DataManager.finallyRun[uid_hash] = finallyRun = function() {
 						viewInstance = finallyRun.viewInstance
 						// if (finallyRun.key==="dd") {debugger};
 						//已经被remove的VI，就不应该触发define
@@ -2567,7 +2578,6 @@ V.rt("define", function(handle, index, parentHandle) {
 						}
 						DataManager.finallyRun[uid_hash] = $FALSE; //can push into finally quene
 					})
-					DataManager.finallyRun[uid_hash] = finallyRun;
 				}
 				finallyRun.viewInstance = viewInstance
 				finallyRun.key = key
@@ -2685,8 +2695,9 @@ V.rt("", function(handle, index, parentHandle) {
 							data = String(data).replace(/"/g, '\\"').replace(/'/g, "\\'");
 						}
 					}
-					data = String(data);
+					// data = String(data);
 					if (nodeHandle._data !== data) {
+						// console.log(currentNode.data,nodeHandle._data,data,currentNode.parentNode.outerHTML)
 						currentNode.data = nodeHandle._data = data;
 					}
 				}
@@ -2853,11 +2864,20 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
 			if(isShow){
 				if (!layoutViewInstance) {
 					var key = NodeList_of_ViewInstance[dataHandle_id]._data;
-					layoutViewInstance = AllLayoutViewInstance[id] = V.modules[NodeList_of_ViewInstance[templateHandle_id]._data]().insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
-					dataManager.subset(layoutViewInstance, key);
+					if(dataManager.get(key)){
+						// console.log(key,":",dataManager.get(key))
+						layoutViewInstance = AllLayoutViewInstance[id] = V.modules[NodeList_of_ViewInstance[templateHandle_id]._data]();
+						dataManager.subset(layoutViewInstance, key);
+					}
 				}
+				if(layoutViewInstance&&!layoutViewInstance._canRemoveAble){
+					console.log("show",layoutViewInstance._id)
+					layoutViewInstance.insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
+				}
+				// console.log(isShow,layoutViewInstance.get())
 			}else{
-				if(layoutViewInstance){
+				if(layoutViewInstance&&layoutViewInstance._canRemoveAble){
+					console.log("hidden",layoutViewInstance._id)
 					layoutViewInstance.remove();
 				}
 			}
@@ -3150,7 +3170,7 @@ V.ra(function(attrKey) {
 var _formCache = {},
 	__text = {
 		attributeName: "value",
-		eventNames:  ["input"  ]
+		eventNames: ["input"]
 	},
 	_formKey = {
 		"input": function(node) { //需阻止默认事件，比如Checked需要被重写，否则数据没有变动而Checked因用户点击而变动，没有达到V->M的数据同步
@@ -3177,13 +3197,47 @@ var _formCache = {},
 		},
 		"select": {
 			eventNames: ["change"],
+			init: function(currentNode, vi, attrOuter) {
+				//---init value
+				var _init_hashCode = $.hashCode(currentNode, "init"),
+					DM_finallyRun = DataManager.finallyRun;
+				if (!DM_finallyRun[_init_hashCode]) {
+					var _init_finallyRun = DM_finallyRun[_init_hashCode] = function() {
+						var options = currentNode.options
+						if (options.length) {
+							//待存在options后，则进行初始化bind-form的值
+							//并确保只运行一次。
+							DM_finallyRun[_init_hashCode] = $FALSE;
+							var value = [];
+							$.ftE(options,function(optionNode){
+								if(optionNode.selected&&optionNode.value){
+									$.p(value,optionNode.value)
+								}
+							})
+							if (value.length) {
+								console.log(value)
+								if (!currentNode.multiple) {
+									value = value[0]
+								}
+								console.log(attrOuter,value)
+								vi.set(attrOuter,value)
+							}
+						}else{
+							//当each运作后是继续允许进入finallyRun队列
+							_init_finallyRun._inQuene = $FALSE
+						}
+					}
+				}
+			},
 			inner: function(e, vi, attrOuter, value /*for arguments*/ ) {
+				// console.log(e.target.tagName==="OPTION")
 				var ele = this;
 				var obj = vi.get(attrOuter)
+
 				if (ele.multiple) {
 					value = [];
 					$.ftE(ele.options, function(option) {
-						if (option.selected) {
+						if (option.selected && option.value) {
 							$.p(value, option.value);
 						}
 					})
@@ -3195,6 +3249,7 @@ var _formCache = {},
 					vi.set(attrOuter, obj.form.apply(ele, arguments))
 				} else {
 					vi.set(attrOuter, value)
+					// console.log(ele.options)
 				}
 			}
 		},
@@ -3215,11 +3270,13 @@ var _formCache = {},
 			if (eventConfig) {
 				typeof eventConfig === "function" && (eventConfig = eventConfig(currentNode));
 				eventNames = eventConfig.eventNames;
-				eventConfig = $.c(eventConfig);//wrap eventConfig to set inner in diffrent eventConfig
+				eventConfig = $.c(eventConfig); //wrap eventConfig to set inner in diffrent eventConfig
 				formCollection = _formCache[elementHashCode] || (_formCache[elementHashCode] = {});
-
+				if (eventConfig.init) {
+					eventConfig.init(currentNode, vi, attrOuter)
+				}
 				if (!eventConfig.inner) {
-					eventConfig.inner=function (e, vi, attrOuter /**/ ) {
+					eventConfig.inner = function(e, vi, attrOuter /**/ ) {
 						var obj = vi.get(attrOuter)
 						if (obj && obj[_DM_extends_object_constructor] && obj.form) {
 							vi.set(attrOuter, obj.form.apply(this, arguments))
@@ -3242,8 +3299,8 @@ var _formCache = {},
 						outerFormHandle.eventConfig = eventConfig
 						_registerEvent(currentNode, eventName, outerFormHandle, elementHashCode);
 						formCollection[eventName] = outerFormHandle;
-					}else{
-						for(var i in eventConfig){
+					} else {
+						for (var i in eventConfig) {
 							outerFormHandle.eventConfig[i] = eventConfig[i];
 							// try{outerFormHandle.call(currentNode)}catch(e){};
 						}
@@ -3274,19 +3331,77 @@ V.ra(function(attrKey){
 _AttributeHandleEvent.select = function(key, currentNode, parserNode, vi) { //select selected
 	var attrOuter = _getAttrOuter(parserNode),
 		data = vi.get(attrOuter),
-		selectHashCode = $.hashCode(currentNode, "selected");
+		selectHashCode = $.hashCode(currentNode, "selected"),
+		options = currentNode.options;
 	currentNode[selectHashCode] = attrOuter;
 	// console.log(attrOuter,typeof data, currentNode, selectHashCode)
 	if (data instanceof Array) {
-		$.ftE(currentNode.options, function(option) {
-			option.selected = ($.iO(data, option.value) !== -1)
-		})
+		if (currentNode.multiple) {
+			$.ftE(options, function(optionNode) {
+				optionNode.selected = ($.iO(data, optionNode.value) !== -1)
+			})
+		}else{
+			$.fE(options, function(optionNode) {
+				if(optionNode.selected = ($.iO(data, optionNode.value) !== -1)){
+					return $FALSE
+				}
+			})
+		}
 	} else {
-		$.ftE(currentNode.options, function(option) {
-			option.selected = data === option.value
+		$.ftE(options, function(optionNode) {
+			optionNode.selected = data === optionNode.value
 		})
 	}
 }
+var _triggersEach = V.triggers["#each"];
+V.rt("#each", function(handle, index, parentHandle) {
+	var trigger = _triggersEach(handle, index, parentHandle);
+	if (parentHandle.type === "element" && parentHandle.node.tagName === "SELECT") {
+		if (_isIE) {
+			//IE需要强制触发相关于option的属性来强制使其渲染更新DOM
+			//使用clone的节点问题？是否和clone出来的HTML5节点的问题一样？
+			var _ieFix_triggerEvent = trigger.event;
+			trigger.event = function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
+				var result = _ieFix_triggerEvent.apply(this, arguments);
+				var currentNode_options = NodeList_of_ViewInstance[parentHandle.id].currentNode.options;
+				currentNode_options.length += 1;
+				currentNode_options.length -= 1;
+				return result;
+			}
+		}
+		//数组的赋值与绑定相关联，实时更新绑定值。
+		var _triggerEvent = trigger.event;
+		trigger.event = function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
+			var result = _triggerEvent.apply(this, arguments);
+			var currentNode = NodeList_of_ViewInstance[parentHandle.id].currentNode,
+				selectHashCode = $.hashCode(currentNode, "selected"),
+				touchKey = currentNode[selectHashCode],
+				DM_finallyRun = DataManager.finallyRun;
+			// console.log(touchKey,currentNode);
+			if (touchKey) { //value-map
+				var finallyRun;
+				if (!(finallyRun = DM_finallyRun[selectHashCode])) {
+					DM_finallyRun(DM_finallyRun[selectHashCode] = finallyRun = function() {
+						finallyRun.dataManager.touchOff(finallyRun.touchKey)
+						DM_finallyRun[selectHashCode] = $FALSE;
+					})
+				}
+				finallyRun.dataManager = dataManager;
+				finallyRun.touchKey = touchKey;
+			}else{
+				//如果没有指定绑定的selected值，那么为bind-from配置默认选中值
+				var _init_hashCode = $.hashCode(currentNode, "init"),
+					_init_finallyRun = DM_finallyRun[_init_hashCode];
+				if(_init_finallyRun&&!_init_finallyRun._inQuene){
+					DM_finallyRun(_init_finallyRun)
+					_init_finallyRun._inQuene = $TRUE;
+				}
+			}
+			return result;
+		}
+	}
+	return trigger;
+})
 V.ra("style",function () {
 	return _isIE&&_AttributeHandleEvent.style;
 })
