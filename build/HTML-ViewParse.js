@@ -1802,15 +1802,16 @@ function _moveChild(self, el) {
 	var AllEachViewInstance = self._AVI,
 		AllLayoutViewInstance = self._ALVI,
 		AllWithViewInstance = self._WVI;
+	_replaceTopHandleCurrent(self, el);
 	$.ftE(self.NodeList[self.handleNodeTree.id].childNodes, function(child_node) {
 		var viewInstance,
 			arrayViewInstances,
 			id = child_node.id;
 		if (viewInstance = AllLayoutViewInstance[child_node.id] || AllWithViewInstance[child_node.id]) {
-			_replaceTopHandleCurrent(viewInstance, el)
+			_moveChild(viewInstance, el)
 		} else if (arrayViewInstances = AllEachViewInstance[id]) {
 			$.ftE(arrayViewInstances, function(viewInstance) {
-				_replaceTopHandleCurrent(viewInstance, el);
+				_moveChild(viewInstance, el);
 			})
 		}
 	});
@@ -1821,15 +1822,15 @@ function _replaceTopHandleCurrent(self, el) {
 	self.topNode(el);
 };
 var VI_proto = ViewInstance.prototype = {
-	reDraw: function() {
-		var self = this,
-			dataManager = self.dataManager;
+	// reDraw: function() {
+	// 	var self = this,
+	// 		dataManager = self.dataManager;
 
-		$.fE(self._triggers, function(key) {
-			dataManager._touchOffSubset(key)
-		});
-		return self;
-	},
+	// 	$.fE(self._triggers, function(key) {
+	// 		dataManager._touchOffSubset(key)
+	// 	});
+	// 	return self;
+	// },
 	append: function(el) {
 		var self = this,
 			handleNodeTree = self.handleNodeTree,
@@ -1839,7 +1840,7 @@ var VI_proto = ViewInstance.prototype = {
 		$.fE(currentTopNode.childNodes, function(child_node) {
 			$.D.ap(el, child_node);
 		});
-		_replaceTopHandleCurrent(self, el);
+		// _replaceTopHandleCurrent(self, el);
 
 		_moveChild(self, el);
 
@@ -1855,7 +1856,7 @@ var VI_proto = ViewInstance.prototype = {
 		$.fE(currentTopNode.childNodes, function(child_node) {
 			$.D.iB(elParentNode, child_node, el);
 		});
-		_replaceTopHandleCurrent(self, elParentNode);
+		// _replaceTopHandleCurrent(self, elParentNode);
 
 		_moveChild(self, elParentNode);
 
@@ -1974,7 +1975,7 @@ $.ftE(_allEventNames, function(eventName) {
 	VI_proto[eventName] = function(fun) {
 		return fun ? this.on(eventName, fun) : this.trigger(eventName);
 	}
-})*/
+})
 /*
  * parse function
  */
@@ -2849,13 +2850,13 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
 					}
 				}
 				if(layoutViewInstance&&!layoutViewInstance._canRemoveAble){
-					console.log("show",layoutViewInstance._id)
+					// console.log("show",layoutViewInstance._id)
 					layoutViewInstance.insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
 				}
 				// console.log(isShow,layoutViewInstance.get())
 			}else{
 				if(layoutViewInstance&&layoutViewInstance._canRemoveAble){
-					console.log("hidden",layoutViewInstance._id)
+					// console.log("hidden",layoutViewInstance._id)
 					layoutViewInstance.remove();
 				}
 			}
@@ -3193,11 +3194,11 @@ var _formCache = {},
 								}
 							})
 							if (value.length) {
-								console.log(value)
+								// console.log(value)
 								if (!currentNode.multiple) {
 									value = value[0]
 								}
-								console.log(attrOuter,value)
+								// console.log(attrOuter,value)
 								vi.set(attrOuter,value)
 							}
 						}else{

@@ -49,11 +49,11 @@ var _formCache = {},
 								}
 							})
 							if (value.length) {
-								console.log(value)
+								// console.log(value)
 								if (!currentNode.multiple) {
 									value = value[0]
 								}
-								console.log(attrOuter,value)
+								// console.log(attrOuter,value)
 								vi.set(attrOuter,value)
 							}
 						}else{

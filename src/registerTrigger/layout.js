@@ -35,13 +35,13 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
 					}
 				}
 				if(layoutViewInstance&&!layoutViewInstance._canRemoveAble){
-					console.log("show",layoutViewInstance._id)
+					// console.log("show",layoutViewInstance._id)
 					layoutViewInstance.insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
 				}
 				// console.log(isShow,layoutViewInstance.get())
 			}else{
 				if(layoutViewInstance&&layoutViewInstance._canRemoveAble){
-					console.log("hidden",layoutViewInstance._id)
+					// console.log("hidden",layoutViewInstance._id)
 					layoutViewInstance.remove();
 				}
 			}
