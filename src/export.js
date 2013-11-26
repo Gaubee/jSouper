@@ -139,6 +139,24 @@ var ViewParser = global.ViewParser = {
 		Data: {}
 	},
 	registerHandle:registerHandle,
+	app:function(HVP_config) {
+		ViewParser.scans();
+		// var HVP_config = ViewParser.config,
+		var App = document.getElementById(HVP_config.Id); //configable
+		if (App) {
+			var appName = HVP_config.Var;
+			if (/*!appName || */appName == HVP_config.Id) {
+				//IE does not support the use and the DOM ID of the same variable names, so automatically add '_App' after the most.
+				appName = HVP_config.Id + "_App";
+				console.error("App's name shouldn't the same of the DOM'ID");
+				console.warn("App's name will be set as "+appName);
+			}
+			var template = global[appName] = ViewParser.parseNode(App)( HVP_config.Data ); //App.getAttribute("template-data")//json or url or configable
+			// template.set(HVP_config.Data);
+			App.innerHTML = "";
+			template.append(App);
+		}
+	},
 	ready: (function() {
 		var ready = "DOMContentLoaded", //_isIE ? "DOMContentLoaded" : "readystatechange",
 			ready_status = $FALSE,
@@ -178,20 +196,6 @@ var ViewParser = global.ViewParser = {
 	}));
 	ViewParser.ready(function() {
 		ViewParser.scans();
-		var HVP_config = ViewParser.config,
-			App = document.getElementById(HVP_config.Id); //configable
-		if (App) {
-			var appName = HVP_config.Var;
-			if (/*!appName || */appName == HVP_config.Id) {
-				//IE does not support the use and the DOM ID of the same variable names, so automatically add '_App' after the most.
-				appName = HVP_config.Id + "_App";
-				console.error("App's name shouldn't the same of the DOM'ID");
-				console.warn("App's name will be set as "+appName);
-			}
-			var template = global[appName] = ViewParser.parseNode(App)( HVP_config.Data ); //App.getAttribute("template-data")//json or url or configable
-			// template.set(HVP_config.Data);
-			App.innerHTML = "";
-			template.append(App);
-		}
+		ViewParser.app(ViewParser.config)
 	})
 }());

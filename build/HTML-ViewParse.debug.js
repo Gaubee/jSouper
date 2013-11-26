@@ -710,7 +710,7 @@ function _mix(sObj, nObj) {
 		for (var i in nObj) {
 			obj_n = nObj[i];
 			obj_s = sObj[i]; //||(sObj[i]={});
-			if (obj_s && obj_s._DM_extends_object_constructor) { //拓展的DM_Object对象，通过接口实现操作
+			if (obj_s && obj_s[_DM_extends_object_constructor]) { //拓展的DM_Object对象，通过接口实现操作
 				obj_s.set(obj_n);
 			} else if (obj_s !== obj_n) { //避免循环 Avoid Circular
 				sObj[i] = _mix(obj_s, obj_n);
@@ -1288,7 +1288,7 @@ var DM_proto = DataManager.prototype = {
 var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 	// DoubleQuotedString = /"(?:\.|(\\\")|[^\""\n])*"/g, //双引号字符串
 	// SingleQuotedString = /'(?:\.|(\\\')|[^\''\n])*'/g, //单引号字符串
-	QuotedString = /"(?:\.|(\\\")|[^\""\n])*"|'(?:\.|(\\\')|[^\''\n])*'/g, //单引号字符串
+	QuotedString = /"(?:\.|(\\\")|[^\""\n])*"|'(?:\.|(\\\')|[^\''\n])*'/g, //引号字符串
 	templateHandles = {
 		"#if": $TRUE,
 		"#else": $FALSE, //no arguments
@@ -2275,6 +2275,24 @@ var ViewParser = global.ViewParser = {
 		Data: {}
 	},
 	registerHandle:registerHandle,
+	app:function(HVP_config) {
+		ViewParser.scans();
+		// var HVP_config = ViewParser.config,
+		var App = document.getElementById(HVP_config.Id); //configable
+		if (App) {
+			var appName = HVP_config.Var;
+			if (/*!appName || */appName == HVP_config.Id) {
+				//IE does not support the use and the DOM ID of the same variable names, so automatically add '_App' after the most.
+				appName = HVP_config.Id + "_App";
+				console.error("App's name shouldn't the same of the DOM'ID");
+				console.warn("App's name will be set as "+appName);
+			}
+			var template = global[appName] = ViewParser.parseNode(App)( HVP_config.Data ); //App.getAttribute("template-data")//json or url or configable
+			// template.set(HVP_config.Data);
+			App.innerHTML = "";
+			template.append(App);
+		}
+	},
 	ready: (function() {
 		var ready = "DOMContentLoaded", //_isIE ? "DOMContentLoaded" : "readystatechange",
 			ready_status = $FALSE,
@@ -2314,21 +2332,7 @@ var ViewParser = global.ViewParser = {
 	}));
 	ViewParser.ready(function() {
 		ViewParser.scans();
-		var HVP_config = ViewParser.config,
-			App = document.getElementById(HVP_config.Id); //configable
-		if (App) {
-			var appName = HVP_config.Var;
-			if (/*!appName || */appName == HVP_config.Id) {
-				//IE does not support the use and the DOM ID of the same variable names, so automatically add '_App' after the most.
-				appName = HVP_config.Id + "_App";
-				console.error("App's name shouldn't the same of the DOM'ID");
-				console.warn("App's name will be set as "+appName);
-			}
-			var template = global[appName] = ViewParser.parseNode(App)( HVP_config.Data ); //App.getAttribute("template-data")//json or url or configable
-			// template.set(HVP_config.Data);
-			App.innerHTML = "";
-			template.append(App);
-		}
+		ViewParser.app(ViewParser.config)
 	})
 }());
 var _commentPlaceholder = function(handle, parentHandle, commentText) {

@@ -46,7 +46,7 @@ function _mix(sObj, nObj) {
 		for (var i in nObj) {
 			obj_n = nObj[i];
 			obj_s = sObj[i]; //||(sObj[i]={});
-			if (obj_s && obj_s._DM_extends_object_constructor) { //拓展的DM_Object对象，通过接口实现操作
+			if (obj_s && obj_s[_DM_extends_object_constructor]) { //拓展的DM_Object对象，通过接口实现操作
 				obj_s.set(obj_n);
 			} else if (obj_s !== obj_n) { //避免循环 Avoid Circular
 				sObj[i] = _mix(obj_s, obj_n);
