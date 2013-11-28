@@ -1542,14 +1542,11 @@ draggable
 		return result || _AttributeHandleEvent.com;
 	},
 	_templateMatchRule= /\{[\w\W]*?\{[\w\W]*?\}[\s]*\}/,
-	attributeHandle = function(attrStr, node, handle, triggerTable) {
-		var s_attrKey = $.trim(attrStr.substring(0, attrStr.search("="))),
-			attrValue = node.getAttribute(s_attrKey),
-			attrKey = s_attrKey.toLowerCase();
+	attributeHandle = function(attrKey , attrValue, node, handle, triggerTable) {
 		attrKey = attrKey.indexOf(V.prefix) ? attrKey : attrKey.replace(V.prefix, "")
 		attrKey = (_isIE && IEfix[attrKey]) || attrKey
 		// console.log(attrValue,":",_matchRule.test(attrValue)||_templateMatchRule.test(attrValue))
-		if (_matchRule.test(attrValue)||_templateMatchRule.test(attrValue)) {
+		//if (/*_matchRule.test(attrValue)||*/_templateMatchRule.test(attrValue)) {
 			var attrViewInstance = (V.attrModules[handle.id + attrKey] = ViewParser.parse(attrValue))(),
 				_shadowDIV = $.D.cl(shadowDIV), //parserNode
 				_attributeHandle = _AttributeHandle(attrKey,node);
@@ -1578,8 +1575,8 @@ draggable
 				$.us(triggerTable[key] || (triggerTable[key] = []), attrTrigger);
 			});
 			// console.log(attrKey,attrValue)
-			node.removeAttribute(s_attrKey);
-		}
+			node.removeAttribute(attrKey);
+		//}
 	};
 /*
  * View constructor
@@ -1621,7 +1618,7 @@ var _attrRegExp = /(\S+)=["']?((?:.(?!["']?\s+(?:\S+)=|[>"']))+.)["']?/g;
 function _buildTrigger(handleNodeTree, dataManager) {
 	var self = this, //View Instance
 		triggerTable = self._triggerTable;
-	handleNodeTree = handleNodeTree || self.handleNodeTree;
+	handleNodeTree = handleNodeTree || self.handleNodeTree,
 	_traversal(handleNodeTree, function(handle, index, parentHandle) {
 		if (handle.type === "handle") {
 			var triggerFactory = V.triggers[handle.handleName];
@@ -1639,10 +1636,12 @@ function _buildTrigger(handleNodeTree, dataManager) {
 			var node = handle.node,
 				nodeHTMLStr = node.outerHTML.replace(node.innerHTML, ""),
 				attrs = nodeHTMLStr.match(_attrRegExp);
-
-			$.fE(attrs, function(attrStr) {
-				attributeHandle(attrStr, node, handle, triggerTable);
-			});
+			$.fE(node.attributes,function(attr,i){
+				var value = attr.value;
+				if (_templateMatchRule.test(value)) {
+					attributeHandle(attr.name, value, node, handle, triggerTable);
+				}
+			})
 		}
 	});
 };

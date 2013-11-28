@@ -38,7 +38,7 @@ var _attrRegExp = /(\S+)=["']?((?:.(?!["']?\s+(?:\S+)=|[>"']))+.)["']?/g;
 function _buildTrigger(handleNodeTree, dataManager) {
 	var self = this, //View Instance
 		triggerTable = self._triggerTable;
-	handleNodeTree = handleNodeTree || self.handleNodeTree;
+	handleNodeTree = handleNodeTree || self.handleNodeTree,
 	_traversal(handleNodeTree, function(handle, index, parentHandle) {
 		if (handle.type === "handle") {
 			var triggerFactory = V.triggers[handle.handleName];
@@ -56,10 +56,12 @@ function _buildTrigger(handleNodeTree, dataManager) {
 			var node = handle.node,
 				nodeHTMLStr = node.outerHTML.replace(node.innerHTML, ""),
 				attrs = nodeHTMLStr.match(_attrRegExp);
-
-			$.fE(attrs, function(attrStr) {
-				attributeHandle(attrStr, node, handle, triggerTable);
-			});
+			$.fE(node.attributes,function(attr,i){
+				var value = attr.value;
+				if (_templateMatchRule.test(value)) {
+					attributeHandle(attr.name, value, node, handle, triggerTable);
+				}
+			})
 		}
 	});
 };

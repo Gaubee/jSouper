@@ -6,7 +6,32 @@
 		(function (ie){if(!ie)return;var b=document.createElement("script");b.setAttribute("type","text/javascript");b.setAttribute("src","http://"+location.hostname+"/firebug-lite/build/firebug-lite.js");document.getElementsByTagName("head")[0].appendChild(b)}(!+"\v1")); 
 	</script> 
 	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js">
-		{
+		
+	</script>
+</head>
+<body>
+	<div id="linkage">
+	{{#layout 'linkage','$THIS'}}
+	<script name="linkage" type="text/template">
+		{{#if length}}
+		{{select_value}}
+		<select bind-form="{{'select_value'}}"><!--  attr-selected="{{@select_value}}" -->
+			{{#each @$THIS}}
+			<option attr-value="{{name}}" attr-title="{{name}}">*{{name}}*</option>
+			{{/each}}
+		</select>
+		{{/if}}
+		{{#each @$THIS}}
+			{{#layout 'linkage','childs',name===$PARENT.select_value}}<!--  -->
+			<!-- {{#layout 'linkage','childs',childs}} -->
+		{{/each}}
+	</script>
+	</div>
+</body>
+
+</html>
+<script>
+	ViewParser.app({
 			Id:"linkage",
 			Data:[{
 				name: "中国",
@@ -46,27 +71,5 @@
 				}]
 			}]
 
-		}
-	</script>
-</head>
-<body>
-	<div id="linkage">
-	{{#layout 'linkage','$THIS'}}
-	<script name="linkage" type="text/template">
-		{{#if length}}
-		{{select_value}}
-		<select bind-form="{{'select_value'}}"><!--  attr-selected="{{@select_value}}" -->
-			{{#each @$THIS}}
-			<option attr-value="{{name}}" attr-title="{{name}}">*{{name}}*</option>
-			{{/each}}
-		</select>
-		{{/if}}
-		{{#each @$THIS}}
-			{{#layout 'linkage','childs',name===$PARENT.select_value}}<!--  -->
-			<!-- {{#layout 'linkage','childs',childs}} -->
-		{{/each}}
-	</script>
-	</div>
-</body>
-
-</html>
+		})
+</script>
