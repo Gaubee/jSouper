@@ -48,7 +48,7 @@ var placeholder = {
 
 	V = {
 		prefix: "attr-",
-		_nodeTree:function (htmlStr) {
+		_nodeTree: function(htmlStr) {
 			var _shadowBody = $.D.cl(shadowBody);
 			_shadowBody.innerHTML = htmlStr;
 			var insertBefore = [];
@@ -61,11 +61,11 @@ var placeholder = {
 					});
 				}
 			});
-			$.fE(insertBefore, function(item,i) {
+			$.fE(insertBefore, function(item, i) {
 				var node = item.baseNode,
 					parentNode = item.parentNode,
 					insertNodesHTML = item.insertNodesHTML;
-				shadowDIV.innerHTML = $.trim(insertNodesHTML);//optimization
+				shadowDIV.innerHTML = $.trim(insertNodesHTML); //optimization
 				//Using innerHTML rendering is complete immediate operation DOM, 
 				//innerHTML otherwise covered again, the node if it is not, 
 				//then memory leaks, IE can not get to the full node.
@@ -138,24 +138,27 @@ var ViewParser = global.ViewParser = {
 		Var: 'App',
 		Data: {}
 	},
-	registerHandle:registerHandle,
-	app:function(HVP_config) {
+	registerHandle: registerHandle,
+	app: function(userConfig) {
 		ViewParser.scans();
-		// var HVP_config = ViewParser.config,
-		var App = document.getElementById(HVP_config.Id); //configable
+		var HVP_config = ViewParser.config;
+		userConfig = _mix(HVP_config,userConfig)||HVP_config;
+		var App = document.getElementById(userConfig.Id); //configable
 		if (App) {
-			var appName = HVP_config.Var;
-			if (/*!appName || */appName == HVP_config.Id) {
-				//IE does not support the use and the DOM ID of the same variable names, so automatically add '_App' after the most.
-				appName = HVP_config.Id + "_App";
-				console.error("App's name shouldn't the same of the DOM'ID");
-				console.warn("App's name will be set as "+appName);
-			}
-			var template = global[appName] = ViewParser.parseNode(App)( HVP_config.Data ); //App.getAttribute("template-data")//json or url or configable
+			var appName = userConfig.Var;
+			var template = ViewParser.parseNode(App)(userConfig.Data); //App.getAttribute("template-data")//json or url or configable
 			// template.set(HVP_config.Data);
 			App.innerHTML = "";
 			template.append(App);
+			if ( /*!appName || */ appName == userConfig.Id||appName in global) {
+				//IE does not support the use and the DOM ID of the same variable names, so automatically add '_App' after the most.
+				appName = userConfig.Id + "_App";
+				// console.error("App's name shouldn't the same of the DOM'ID");
+				console.warn("App's name will be set as " + appName);
+			}
+			global[appName] = template
 		}
+		return template;
 	},
 	ready: (function() {
 		var ready = "DOMContentLoaded", //_isIE ? "DOMContentLoaded" : "readystatechange",
@@ -164,8 +167,8 @@ var ViewParser = global.ViewParser = {
 
 		_registerEvent(doc, (_isIE && IEfix[ready]) || ready, function() {
 			var callbackObj;
-			while(callbackFunStacks.length){
-				callbackObj = callbackFunStacks.shift(0,1);
+			while (callbackFunStacks.length) {
+				callbackObj = callbackFunStacks.shift(0, 1);
 				callbackObj.callback.call(callbackObj.scope)
 			}
 			ready_status = $TRUE;
@@ -184,18 +187,14 @@ var ViewParser = global.ViewParser = {
 };
 (function() {
 	var scriptTags = document.getElementsByTagName("script"),
-		HVP_config = ViewParser.config,
 		userConfigStr = $.trim(scriptTags[scriptTags.length - 1].innerHTML);
-	ViewParser.ready(Try(function() {
-		var userConfig = userConfigStr ? Function("return" + userConfigStr)() : {};
-		for (var i in userConfig) { //mix
-			HVP_config[i] = userConfig[i];
-		}
-	}, function(e) {
-		throw "config error:" + e.message;
-	}));
 	ViewParser.ready(function() {
+		try{
+			var userConfig = userConfigStr ? Function("return" + userConfigStr)() : {};
+		}catch(e){
+			throw "config error:" + e.message;
+		}
 		ViewParser.scans();
-		ViewParser.app(ViewParser.config)
-	})
+		ViewParser.app(userConfig)
+	});
 }());
