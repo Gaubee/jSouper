@@ -142,7 +142,7 @@ var ViewParser = global.ViewParser = {
 	app: function(userConfig) {
 		ViewParser.scans();
 		var HVP_config = ViewParser.config;
-		userConfig = _mix(HVP_config,userConfig)||HVP_config;
+		userConfig = _mix(HVP_config, userConfig) || HVP_config;
 		var App = document.getElementById(userConfig.Id); //configable
 		if (App) {
 			var appName = userConfig.Var;
@@ -150,7 +150,7 @@ var ViewParser = global.ViewParser = {
 			// template.set(HVP_config.Data);
 			App.innerHTML = "";
 			template.append(App);
-			if ( /*!appName || */ appName == userConfig.Id||appName in global) {
+			if ( /*!appName || */ appName == userConfig.Id || appName in global) {
 				//IE does not support the use and the DOM ID of the same variable names, so automatically add '_App' after the most.
 				appName = userConfig.Id + "_App";
 				// console.error("App's name shouldn't the same of the DOM'ID");
@@ -165,22 +165,28 @@ var ViewParser = global.ViewParser = {
 			ready_status = $FALSE,
 			callbackFunStacks = [];
 
-		_registerEvent(doc, (_isIE && IEfix[ready]) || ready, function() {
+		function _load() {
 			var callbackObj;
 			while (callbackFunStacks.length) {
 				callbackObj = callbackFunStacks.shift(0, 1);
-				callbackObj.callback.call(callbackObj.scope)
+				callbackObj.callback.call(callbackObj.scope || global)
 			}
 			ready_status = $TRUE;
-		});
+		}
+		_registerEvent(doc, (_isIE && IEfix[ready]) || ready, _load);
 		return function(callbackFun, scope) {
 			if (ready_status) {
-				callbackFun.call(scope);
+				callbackFun.call(scope || global);
 			} else {
 				$.p(callbackFunStacks, {
 					callback: callbackFun,
 					scope: scope
 				})
+				//complete ==> onload , interactive ==> DOMContentLoaded
+				//https://developer.mozilla.org/en-US/docs/Web/API/document.readyState
+				if (/complete|interactive/.test(doc.readyState)) { //fix asyn load
+					_load()
+				}
 			}
 		}
 	}())
@@ -189,12 +195,14 @@ var ViewParser = global.ViewParser = {
 	var scriptTags = document.getElementsByTagName("script"),
 		userConfigStr = $.trim(scriptTags[scriptTags.length - 1].innerHTML);
 	ViewParser.ready(function() {
-		try{
-			var userConfig = userConfigStr ? Function("return" + userConfigStr)() : {};
-		}catch(e){
-			throw "config error:" + e.message;
-		}
 		ViewParser.scans();
-		ViewParser.app(userConfig)
+		if (userConfigStr.charAt(0) === "{") {
+			try {
+				var userConfig = userConfigStr ? Function("return" + userConfigStr)() : {};
+			} catch (e) {
+				console.error("config error:" + e.message);
+			}
+			userConfig && ViewParser.app(userConfig)
+		}
 	});
 }());
