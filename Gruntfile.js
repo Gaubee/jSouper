@@ -18,6 +18,7 @@ module.exports = function(grunt) {
 		'src/event.js',
 		'src/SmartTriggerSet_for_DM.js',
 		'src/DataManager.v4.js',
+		'src/_ArrayDataManager.js',
 		'src/$scope.js',
 		// 'src/dataManagerExtendsClass/*.js',
 		'src/templateParse.v1.js',

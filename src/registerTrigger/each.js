@@ -22,40 +22,43 @@ V.rt("#each", function(handle, index, parentHandle) {
 				eachModuleConstructor = V.eachModules[id],
 				inserNew,
 				comment_endeach_node = NodeList_of_ViewInstance[comment_endeach_id].currentNode;
-
 			if (showed_vi_len !== new_data_len) {
 				arrViewInstances.len = new_data_len; //change immediately,to avoid the `subset` trigger the `rebuildTree`,and than trigger each-trigger again.
 
 				var _rebuildTree = dataManager.rebuildTree,
 					_touchOff = DM_proto.touchOff;
-				dataManager.rebuildTree = $.noop//doesn't need rebuild every subset
-				DM_proto.touchOff = $.noop;//touchOff会遍历整个子链，会造成爆炸性增长。
+				dataManager.rebuildTree = $.noop //doesn't need rebuild every subset
+				DM_proto.touchOff = $.noop; //touchOff会遍历整个子链，会造成爆炸性增长。
 
-				data!=$UNDEFINED&&$.ftE($.s(data), function(eachItemData, index) {
-					//TODO:if too mush vi will be create, maybe asyn
-					var viewInstance = arrViewInstances[index];
-					if (!viewInstance) {
-						viewInstance = arrViewInstances[index] = eachModuleConstructor(eachItemData);
-						viewInstance._isEach = {
-							index: index,
-							brotherVI: arrViewInstances
-						}
-						dataManager.subset(viewInstance, arrDataHandleKey + "." + index); //+"."+index //reset arrViewInstance's dataManager
-					}
-					viewInstance.insert(comment_endeach_node)
-					viewInstance.dataManager._eachIgonre= $FALSE;
-				}, showed_vi_len); //showed_vi_len||0
-				
 				if (showed_vi_len > new_data_len) {
 					$.fE(arrViewInstances, function(eachItemHandle) {
-						eachItemHandle.dataManager._eachIgonre = $TRUE;
+						// eachItemHandle.dataManager._eachIgonre = $TRUE;
 						eachItemHandle.remove();
 					}, new_data_len);
+				} else {
+					data != $UNDEFINED && $.ftE($.s(data), function(eachItemData, index) {
+						//TODO:if too mush vi will be create, maybe asyn
+						var viewInstance = arrViewInstances[index];
+						if (!viewInstance) {
+							viewInstance = arrViewInstances[index] = eachModuleConstructor(eachItemData);
+							var viDM = viewInstance.dataManager
+							viDM._isEach = viewInstance._isEach = {
+								index: index,
+								eachVIs: arrViewInstances
+							}
+							// viDM._index = index;
+							// viDM._pprefix = arrDataHandleKey;
+							// debugger
+							dataManager.subset(viDM, arrDataHandleKey + "." + index ); //+"."+index //reset arrViewInstance's dataManager
+						}
+						viewInstance.insert(comment_endeach_node)
+						// viewInstance.dataManager._eachIgonre = $FALSE;
+					}, showed_vi_len); //showed_vi_len||0
 				}
 				// dataManager.rebuildTree = _rebuildTree
 				// dataManager.rebuildTree();
-				(dataManager.rebuildTree = _rebuildTree).call(dataManager);
 				DM_proto.touchOff = _touchOff;
+				(dataManager.rebuildTree = _rebuildTree).call(dataManager);
 			}
 		}
 	}

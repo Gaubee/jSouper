@@ -96,7 +96,7 @@ var doc = document,
 			return i;
 		},
 		iO: function(arr, item) { //indexOf
-			for (var i = 0; i < arr.length; i += 1) {
+			for (var i = 0,len = arr.length; i < len; i += 1) {
 				if (arr[i] === item) {
 					return i;
 				}

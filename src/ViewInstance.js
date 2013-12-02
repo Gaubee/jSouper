@@ -111,7 +111,6 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, dataManager)
 
 	//self.dataManager = dataManager
 	dataManager.collect(self); //touchOff All triggers
-
 	//delete self._triggers._["."] //remove "."(const) key,just touch one time;
 },
 	VI_session = ViewInstance.session = {
@@ -219,16 +218,9 @@ var VI_proto = ViewInstance.prototype = {
 				closeNode = self._close,
 				childNodes = $.s(currentTopNode.childNodes),
 
-				startIndex = 0,
+				startIndex = $.iO(childNodes,openNode),
 				child_node;
 
-			//TODO:use nextSilingNode
-			while (child_node = childNodes[startIndex]) {
-				if (child_node === openNode) {
-					break;
-				}
-				startIndex += 1
-			}
 			while (child_node = childNodes[startIndex]) {
 				$.D.ap(el, child_node);
 				if (child_node === closeNode) {
@@ -236,6 +228,19 @@ var VI_proto = ViewInstance.prototype = {
 				}
 				startIndex += 1
 			}
+			/*
+			//no-TODO:use nextSilingNode
+			//Firefox、Opera对DOM的理解不同，所以用nextSibling还要做兼容处理，而且效率方面不见得有所提高
+			var currentNode = openNode;
+			while($TRUE){
+				var nextNode = currentNode.nextSibling;
+				$.D.ap(el, currentNode);
+				if(nextNode === closeNode){
+					$.D.ap(el, nextNode);
+					break;
+				}
+				currentNode = nextNode;
+			}*/
 			_replaceTopHandleCurrent(self, el);
 			this._canRemoveAble = $FALSE; //Has being recovered into the _packingBag,can't no be remove again. --> it should be insert
 		}

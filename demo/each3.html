@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>HTML-ViewParse</title>
+	<script type="text/javascript">
+		(function (ie){if(!ie)return;var b=document.createElement("script");b.setAttribute("type","text/javascript");b.setAttribute("src","http://"+location.hostname+"/firebug-lite/build/firebug-lite.js");document.getElementsByTagName("head")[0].appendChild(b)}(!+"\v1")); 
+	</script> 
+	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js">
+		{
+			Data:[
+			 {name:"Gaubee"}
+			,{name:"Bangeel"}
+			,{name:"winter"}
+			,{name:"Rubylover"}
+			]
+		}
+	</script>
+</head>
+<body id="HVP">
+	<h3>input number:</h3><input type="text" bind-form="{{'length'}}" attr-value="{{length}}">
+	<hr>
+	{{#each @$THIS}}
+	<div>
+		My name is <input type="text" bind-form="{{'name'}}" attr-value="{{name}}">{{name}}
+	</div>
+	<hr>
+	{{/each}}
+
+</body>
+</html>
+<script>
+	ViewParser.ready(function(){
+		console.time("004 +200	=	2,04")
+		App.set("length",204)
+		console.timeEnd("004 +200	=	2,04")
+		console.log("-----------------------")
+		console.time("204 +200	=	4,04")
+		App.set("length",404)
+		console.timeEnd("204 +200	=	4,04")
+		console.log("-----------------------")
+		console.time("404 +200	=	6,04")
+		App.set("length",604)
+		console.timeEnd("404 +200	=	6,04")
+		console.log("-----------------------")
+		console.time("604 -200	=	4,04")
+		App.set("length",404)
+		console.timeEnd("604 -200	=	4,04")
+		console.log("-----------------------")
+		console.time("404 -200	=	2,04")
+		App.set("length",204)
+		console.timeEnd("404 -200	=	2,04")
+		console.log("-----------------------")
+		console.time("204 -200	=	0,04")
+		App.set("length",4)
+		console.timeEnd("204 -200	=	0,04")
+		console.log("-----------------------")
+	})
+</script>

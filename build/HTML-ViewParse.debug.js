@@ -120,7 +120,7 @@ var doc = document,
 			return i;
 		},
 		iO: function(arr, item) { //indexOf
-			for (var i = 0; i < arr.length; i += 1) {
+			for (var i = 0,len = arr.length; i < len; i += 1) {
 				if (arr[i] === item) {
 					return i;
 				}
@@ -381,7 +381,6 @@ var _event_cache = {},
 							}
 							result = _fn(e);
 						} else if ((e.keyCode === 8 /*backspace*/ || e.keyCode === 46 /*delete*/ ) || _oldValue !== Element.value) { //delete or chinese input
-							console.log(arguments.callee.caller)
 							_deleteOrChienseInput = $TRUE;
 						}
 					} else if (e.type === "blur") {
@@ -686,6 +685,7 @@ function DataManager(baseData) {
 
 	self._siblingDataManagers = [];
 	self._subsetDataManagers = []; //to touch off
+	self._collectDataManagers = {};
 	self._triggerKeys = new SmartTriggerSet({
 		dataManager: self
 	});
@@ -969,12 +969,12 @@ var DM_proto = DataManager.prototype = {
 		//child
 		$.ftE(self._subsetDataManagers, function(childDataManager) {
 			// debugger
-			if (childDataManager._eachIgonre) {
+			/*if (childDataManager._eachIgonre) {
 				return
-			};
+			};*/
 			var prefix = childDataManager._prefix,
 				childResult; // || "";
-			_dm_force_update = $TRUE;
+			_dm_force_update = $TRUE; //TODO: use Stack 
 			if (!key) { //key === "",touchoff all
 				childResult = childDataManager.set(prefix ? self.get(prefix) : self.get())
 			} else if (!prefix) { //prefix==="" equal to $THIS
@@ -1009,6 +1009,21 @@ var DM_proto = DataManager.prototype = {
 		}
 		return self;
 	},
+	_pushToSubSetDM: function(dataManager, prefixKey) {
+		dataManager._parentDataManager = this;
+		dataManager._prefix = prefixKey
+		return $.p(this._subsetDataManagers, dataManager);
+	},
+	_pushToCollectDM: function(dataManager, pprefixKey) {
+		var self = this,
+			collectDataManagers = self._collectDataManagers;
+		var collectDataManager = collectDataManagers[pprefixKey];
+		if (!collectDataManager) {
+			collectDataManager = collectDataManagers[pprefixKey] = new _ArrayDataManager(pprefixKey);
+			self._pushToSubSetDM(collectDataManager, pprefixKey)
+		}
+		collectDataManager.push(dataManager)
+	},
 	collect: function(dataManager) {
 		var self = this,
 			finallyRunStacks = DataManager.session.finallyRunStacks;
@@ -1037,9 +1052,13 @@ var DM_proto = DataManager.prototype = {
 		var self = this,
 			finallyRunStacks = DataManager.session.finallyRunStacks;
 		dataManager.remove();
-		dataManager._prefix = prefixKey;
-		dataManager._parentDataManager = self;
-		$.p(self._subsetDataManagers, dataManager);
+		if (dataManager._isEach) {
+			self._pushToCollectDM(dataManager,
+				//prefixkey === "[0-9]+?" ==> $THIS.0 ==> return ""; else return prefixkey.split(".").pop().join(".")
+				prefixKey.substring(0, prefixKey.length - String(dataManager._isEach.index) - 1))
+		} else {
+			self._pushToSubSetDM(dataManager, prefixKey)
+		}
 		dataManager.rebuildTree()
 		dataManager._database = self.get(prefixKey);
 		// dataManager.set(dataManager._database)
@@ -1052,17 +1071,19 @@ var DM_proto = DataManager.prototype = {
 	remove: function(dataManager) {
 		var self = this;
 		if (dataManager) {
-			var subsetDataManagers = self._subsetDataManagers,
-				index = $.iO(subsetDataManagers, dataManager);
-			subsetDataManagers.splice(index, 1);
-			dataManager._parentDataManager = $UNDEFINED;
+			if (dataManager._isEach) {
+				arrayDataManager = dataManager._arrayDataManager;
+				arrayDataManager && arrayDataManager.remove(dataManager)
+			} else {
+				var subsetDataManagers = self._subsetDataManagers,
+					index = $.iO(subsetDataManagers, dataManager);
+				subsetDataManagers.splice(index, 1);
+				dataManager._parentDataManager = $UNDEFINED;
+			}
 		} else {
 			dataManager = self._parentDataManager;
 			if (dataManager) {
-				subsetDataManagers = dataManager._subsetDataManagers
-				index = $.iO(subsetDataManagers, self);
-				subsetDataManagers.splice(index, 1);
-				self._parentDataManager = $UNDEFINED;
+				dataManager.remove(self);
 			}
 		}
 		return self;
@@ -1106,6 +1127,95 @@ var DM_proto = DataManager.prototype = {
 	buildGetter: function(key) {},
 	buildSetter: function(key) {}*/
 };
+/*
+ * _ArrayDataManager constructor
+ * to mamage #each datamanager
+ */
+
+function _ArrayDataManager(perfix) {
+	this._prefix = perfix;
+	this._showed_len = 0;
+	this._DMs = [];
+}
+var _ArrDM_proto = _ArrayDataManager.prototype
+$.fI(DM_proto, function(fun, funName) {
+	_ArrDM_proto[funName] = function() {
+		var args = arguments;
+		$.ftE(this._DMs, function(_each_dataManager) {
+			_each_dataManager[funName].apply(_each_dataManager, args)
+		})
+	}
+})
+_ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片，所以无需进行特殊处理
+	var self = this;
+	var args = arguments;
+	var DMs = this._DMs;
+	var result;
+	switch (args.length) {
+		case 0:
+			return;
+		case 1:
+			nObj = $.s(key);
+			// self.length(nObj.length);
+			$.ftE(DMs, function(datamanager, i) {
+				datamanager.set(nObj[i])
+			})
+			break;
+		default:
+			var arrKeys = key.split(".");
+			var index = arrKeys.shift();
+			var datamanager = DMs[index]
+			if (arrKeys.length) {
+				result = datamanager.set(arrKeys.join("."), nObj)
+			} else {
+				result = datamanager.set(nObj)
+			}
+	}
+	return result;
+}
+_ArrDM_proto.length = function(length) {
+	var self = this;
+	var showed_len = self._showed_len;
+	var DMs = this._DMs;
+/*	if (length === $UNDEFINED) {
+		return showed_len;
+	} else {
+		if (showed_len < length) {
+			$.ftE(DMs, function(datamanager) {
+				datamanager._canCGable = $TRUE
+			}, length)
+		} else if (length > showed_len) {
+			$.ftE(DMs, function() {
+				datamanager._canCGable = $TRUE
+			}, showed_len)
+		}
+	}*/
+}
+_ArrDM_proto.push = function(datamanager) {
+	var self = this,
+		pperfix = self._prefix;
+	var DMs = this._DMs;
+	var index = String(datamanager._index = DMs.length)
+	datamanager._prefix = pperfix ? pperfix + "." + index : index;
+	$.p(DMs, datamanager)
+	datamanager._arrayDataManager = self;
+	datamanager._parentDataManager = self._parentDataManager;
+}
+_ArrDM_proto.remove = function(datamanager) {
+	var index = datamanager._index
+	var self = this;
+	var pperfix = self._prefix;
+	var DMs = self._DMs;
+	DMs.splice(index, 1);
+	$.ftE(DMs, function(datamanager, i) {
+		var index = String(datamanager._index -= 1);
+		datamanager._prefix = pperfix ? pperfix + "." + index : index;
+	}, index)
+	var oldData = datamanager._parentDataManager.get(pperfix);
+	oldData.splice(index, 1);
+	datamanager._parentDataManager.set(pperfix, oldData)
+	datamanager._arrayDataManager = datamanager._parentDataManager = $UNDEFINED;
+}
 ;
 (function() {
 	var _get = DM_proto.get,
@@ -1787,7 +1897,6 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, dataManager)
 
 	//self.dataManager = dataManager
 	dataManager.collect(self); //touchOff All triggers
-
 	//delete self._triggers._["."] //remove "."(const) key,just touch one time;
 },
 	VI_session = ViewInstance.session = {
@@ -1895,16 +2004,9 @@ var VI_proto = ViewInstance.prototype = {
 				closeNode = self._close,
 				childNodes = $.s(currentTopNode.childNodes),
 
-				startIndex = 0,
+				startIndex = $.iO(childNodes,openNode),
 				child_node;
 
-			//TODO:use nextSilingNode
-			while (child_node = childNodes[startIndex]) {
-				if (child_node === openNode) {
-					break;
-				}
-				startIndex += 1
-			}
 			while (child_node = childNodes[startIndex]) {
 				$.D.ap(el, child_node);
 				if (child_node === closeNode) {
@@ -1912,6 +2014,19 @@ var VI_proto = ViewInstance.prototype = {
 				}
 				startIndex += 1
 			}
+			/*
+			//no-TODO:use nextSilingNode
+			//Firefox、Opera对DOM的理解不同，所以用nextSibling还要做兼容处理，而且效率方面不见得有所提高
+			var currentNode = openNode;
+			while($TRUE){
+				var nextNode = currentNode.nextSibling;
+				$.D.ap(el, currentNode);
+				if(nextNode === closeNode){
+					$.D.ap(el, nextNode);
+					break;
+				}
+				currentNode = nextNode;
+			}*/
 			_replaceTopHandleCurrent(self, el);
 			this._canRemoveAble = $FALSE; //Has being recovered into the _packingBag,can't no be remove again. --> it should be insert
 		}
@@ -2183,7 +2298,7 @@ var placeholder = {
 
 	V = {
 		prefix: "attr-",
-		_nodeTree:function (htmlStr) {
+		_nodeTree: function(htmlStr) {
 			var _shadowBody = $.D.cl(shadowBody);
 			_shadowBody.innerHTML = htmlStr;
 			var insertBefore = [];
@@ -2196,11 +2311,11 @@ var placeholder = {
 					});
 				}
 			});
-			$.fE(insertBefore, function(item,i) {
+			$.fE(insertBefore, function(item, i) {
 				var node = item.baseNode,
 					parentNode = item.parentNode,
 					insertNodesHTML = item.insertNodesHTML;
-				shadowDIV.innerHTML = $.trim(insertNodesHTML);//optimization
+				shadowDIV.innerHTML = $.trim(insertNodesHTML); //optimization
 				//Using innerHTML rendering is complete immediate operation DOM, 
 				//innerHTML otherwise covered again, the node if it is not, 
 				//then memory leaks, IE can not get to the full node.
@@ -2271,25 +2386,27 @@ var ViewParser = global.ViewParser = {
 	config: {
 		Id: 'HVP',
 		Var: 'App',
-		Data: {}
+		Data: $NULL
 	},
-	registerHandle:registerHandle,
-	app:function(HVP_config) {
+	registerHandle: registerHandle,
+	app: function(userConfig) {
 		ViewParser.scans();
-		// var HVP_config = ViewParser.config,
-		var App = document.getElementById(HVP_config.Id); //configable
+		var HVP_config = ViewParser.config;
+		userConfig = _mix(HVP_config, userConfig) || HVP_config;
+		var App = document.getElementById(userConfig.Id); //configable
 		if (App) {
-			var appName = HVP_config.Var;
-			if (/*!appName || */appName == HVP_config.Id) {
-				//IE does not support the use and the DOM ID of the same variable names, so automatically add '_App' after the most.
-				appName = HVP_config.Id + "_App";
-				console.error("App's name shouldn't the same of the DOM'ID");
-				console.warn("App's name will be set as "+appName);
-			}
-			var template = global[appName] = ViewParser.parseNode(App)( HVP_config.Data ); //App.getAttribute("template-data")//json or url or configable
+			var appName = userConfig.Var;
+			var template = ViewParser.parseNode(App)(userConfig.Data); //App.getAttribute("template-data")//json or url or configable
 			// template.set(HVP_config.Data);
 			App.innerHTML = "";
 			template.append(App);
+			if ( /*!appName || */ appName == userConfig.Id || appName in global) {
+				//IE does not support the use and the DOM ID of the same variable names, so automatically add '_App' after the most.
+				appName = userConfig.Id + "_App";
+				// console.error("App's name shouldn't the same of the DOM'ID");
+				console.warn("App's name will be set as " + appName);
+			}
+			global[appName] = template
 		}
 	},
 	ready: (function() {
@@ -2297,22 +2414,28 @@ var ViewParser = global.ViewParser = {
 			ready_status = $FALSE,
 			callbackFunStacks = [];
 
-		_registerEvent(doc, (_isIE && IEfix[ready]) || ready, function() {
+		function _load() {
 			var callbackObj;
-			while(callbackFunStacks.length){
-				callbackObj = callbackFunStacks.shift(0,1);
-				callbackObj.callback.call(callbackObj.scope)
+			while (callbackFunStacks.length) {
+				callbackObj = callbackFunStacks.shift(0, 1);
+				callbackObj.callback.call(callbackObj.scope || global)
 			}
 			ready_status = $TRUE;
-		});
+		}
+		_registerEvent(doc, (_isIE && IEfix[ready]) || ready, _load);
 		return function(callbackFun, scope) {
 			if (ready_status) {
-				callbackFun.call(scope);
+				callbackFun.call(scope || global);
 			} else {
 				$.p(callbackFunStacks, {
 					callback: callbackFun,
 					scope: scope
 				})
+				//complete ==> onload , interactive ==> DOMContentLoaded
+				//https://developer.mozilla.org/en-US/docs/Web/API/document.readyState
+				if (/complete|interactive/.test(doc.readyState)) { //fix asyn load
+					_load()
+				}
 			}
 		}
 	}())
@@ -2321,18 +2444,17 @@ var ViewParser = global.ViewParser = {
 	var scriptTags = document.getElementsByTagName("script"),
 		HVP_config = ViewParser.config,
 		userConfigStr = $.trim(scriptTags[scriptTags.length - 1].innerHTML);
-	ViewParser.ready(Try(function() {
-		var userConfig = userConfigStr ? Function("return" + userConfigStr)() : {};
-		for (var i in userConfig) { //mix
-			HVP_config[i] = userConfig[i];
-		}
-	}, function(e) {
-		throw "config error:" + e.message;
-	}));
 	ViewParser.ready(function() {
 		ViewParser.scans();
-		ViewParser.app(ViewParser.config)
-	})
+		if (userConfigStr.charAt(0) === "{") {
+			try {
+				var userConfig = userConfigStr ? Function("return" + userConfigStr)() : {};
+			} catch (e) {
+				console.error("config error:" + e.message);
+			}
+			userConfig && ViewParser.app(userConfig)
+		}
+	});
 }());
 var _commentPlaceholder = function(handle, parentHandle, commentText) {
 	var handleName = handle.handleName,
@@ -2632,40 +2754,43 @@ V.rt("#each", function(handle, index, parentHandle) {
 				eachModuleConstructor = V.eachModules[id],
 				inserNew,
 				comment_endeach_node = NodeList_of_ViewInstance[comment_endeach_id].currentNode;
-
 			if (showed_vi_len !== new_data_len) {
 				arrViewInstances.len = new_data_len; //change immediately,to avoid the `subset` trigger the `rebuildTree`,and than trigger each-trigger again.
 
 				var _rebuildTree = dataManager.rebuildTree,
 					_touchOff = DM_proto.touchOff;
-				dataManager.rebuildTree = $.noop//doesn't need rebuild every subset
-				DM_proto.touchOff = $.noop;//touchOff会遍历整个子链，会造成爆炸性增长。
+				dataManager.rebuildTree = $.noop //doesn't need rebuild every subset
+				DM_proto.touchOff = $.noop; //touchOff会遍历整个子链，会造成爆炸性增长。
 
-				data!=$UNDEFINED&&$.ftE($.s(data), function(eachItemData, index) {
-					//TODO:if too mush vi will be create, maybe asyn
-					var viewInstance = arrViewInstances[index];
-					if (!viewInstance) {
-						viewInstance = arrViewInstances[index] = eachModuleConstructor(eachItemData);
-						viewInstance._isEach = {
-							index: index,
-							brotherVI: arrViewInstances
-						}
-						dataManager.subset(viewInstance, arrDataHandleKey + "." + index); //+"."+index //reset arrViewInstance's dataManager
-					}
-					viewInstance.insert(comment_endeach_node)
-					viewInstance.dataManager._eachIgonre= $FALSE;
-				}, showed_vi_len); //showed_vi_len||0
-				
 				if (showed_vi_len > new_data_len) {
 					$.fE(arrViewInstances, function(eachItemHandle) {
-						eachItemHandle.dataManager._eachIgonre = $TRUE;
+						// eachItemHandle.dataManager._eachIgonre = $TRUE;
 						eachItemHandle.remove();
 					}, new_data_len);
+				} else {
+					data != $UNDEFINED && $.ftE($.s(data), function(eachItemData, index) {
+						//TODO:if too mush vi will be create, maybe asyn
+						var viewInstance = arrViewInstances[index];
+						if (!viewInstance) {
+							viewInstance = arrViewInstances[index] = eachModuleConstructor(eachItemData);
+							var viDM = viewInstance.dataManager
+							viDM._isEach = viewInstance._isEach = {
+								index: index,
+								eachVIs: arrViewInstances
+							}
+							// viDM._index = index;
+							// viDM._pprefix = arrDataHandleKey;
+							// debugger
+							dataManager.subset(viDM, arrDataHandleKey + "." + index ); //+"."+index //reset arrViewInstance's dataManager
+						}
+						viewInstance.insert(comment_endeach_node)
+						// viewInstance.dataManager._eachIgonre = $FALSE;
+					}, showed_vi_len); //showed_vi_len||0
 				}
 				// dataManager.rebuildTree = _rebuildTree
 				// dataManager.rebuildTree();
-				(dataManager.rebuildTree = _rebuildTree).call(dataManager);
 				DM_proto.touchOff = _touchOff;
+				(dataManager.rebuildTree = _rebuildTree).call(dataManager);
 			}
 		}
 	}

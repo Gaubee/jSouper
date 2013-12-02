@@ -120,7 +120,6 @@ var _event_cache = {},
 							}
 							result = _fn(e);
 						} else if ((e.keyCode === 8 /*backspace*/ || e.keyCode === 46 /*delete*/ ) || _oldValue !== Element.value) { //delete or chinese input
-							console.log(arguments.callee.caller)
 							_deleteOrChienseInput = $TRUE;
 						}
 					} else if (e.type === "blur") {

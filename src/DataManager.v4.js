@@ -22,6 +22,7 @@ function DataManager(baseData) {
 
 	self._siblingDataManagers = [];
 	self._subsetDataManagers = []; //to touch off
+	self._collectDataManagers = {};
 	self._triggerKeys = new SmartTriggerSet({
 		dataManager: self
 	});
@@ -305,12 +306,12 @@ var DM_proto = DataManager.prototype = {
 		//child
 		$.ftE(self._subsetDataManagers, function(childDataManager) {
 			// debugger
-			if (childDataManager._eachIgonre) {
+			/*if (childDataManager._eachIgonre) {
 				return
-			};
+			};*/
 			var prefix = childDataManager._prefix,
 				childResult; // || "";
-			_dm_force_update = $TRUE;
+			_dm_force_update = $TRUE; //TODO: use Stack 
 			if (!key) { //key === "",touchoff all
 				childResult = childDataManager.set(prefix ? self.get(prefix) : self.get())
 			} else if (!prefix) { //prefix==="" equal to $THIS
@@ -345,6 +346,21 @@ var DM_proto = DataManager.prototype = {
 		}
 		return self;
 	},
+	_pushToSubSetDM: function(dataManager, prefixKey) {
+		dataManager._parentDataManager = this;
+		dataManager._prefix = prefixKey
+		return $.p(this._subsetDataManagers, dataManager);
+	},
+	_pushToCollectDM: function(dataManager, pprefixKey) {
+		var self = this,
+			collectDataManagers = self._collectDataManagers;
+		var collectDataManager = collectDataManagers[pprefixKey];
+		if (!collectDataManager) {
+			collectDataManager = collectDataManagers[pprefixKey] = new _ArrayDataManager(pprefixKey);
+			self._pushToSubSetDM(collectDataManager, pprefixKey)
+		}
+		collectDataManager.push(dataManager)
+	},
 	collect: function(dataManager) {
 		var self = this,
 			finallyRunStacks = DataManager.session.finallyRunStacks;
@@ -373,9 +389,13 @@ var DM_proto = DataManager.prototype = {
 		var self = this,
 			finallyRunStacks = DataManager.session.finallyRunStacks;
 		dataManager.remove();
-		dataManager._prefix = prefixKey;
-		dataManager._parentDataManager = self;
-		$.p(self._subsetDataManagers, dataManager);
+		if (dataManager._isEach) {
+			self._pushToCollectDM(dataManager,
+				//prefixkey === "[0-9]+?" ==> $THIS.0 ==> return ""; else return prefixkey.split(".").pop().join(".")
+				prefixKey.substring(0, prefixKey.length - String(dataManager._isEach.index) - 1))
+		} else {
+			self._pushToSubSetDM(dataManager, prefixKey)
+		}
 		dataManager.rebuildTree()
 		dataManager._database = self.get(prefixKey);
 		// dataManager.set(dataManager._database)
@@ -388,17 +408,19 @@ var DM_proto = DataManager.prototype = {
 	remove: function(dataManager) {
 		var self = this;
 		if (dataManager) {
-			var subsetDataManagers = self._subsetDataManagers,
-				index = $.iO(subsetDataManagers, dataManager);
-			subsetDataManagers.splice(index, 1);
-			dataManager._parentDataManager = $UNDEFINED;
+			if (dataManager._isEach) {
+				arrayDataManager = dataManager._arrayDataManager;
+				arrayDataManager && arrayDataManager.remove(dataManager)
+			} else {
+				var subsetDataManagers = self._subsetDataManagers,
+					index = $.iO(subsetDataManagers, dataManager);
+				subsetDataManagers.splice(index, 1);
+				dataManager._parentDataManager = $UNDEFINED;
+			}
 		} else {
 			dataManager = self._parentDataManager;
 			if (dataManager) {
-				subsetDataManagers = dataManager._subsetDataManagers
-				index = $.iO(subsetDataManagers, self);
-				subsetDataManagers.splice(index, 1);
-				self._parentDataManager = $UNDEFINED;
+				dataManager.remove(self);
 			}
 		}
 		return self;

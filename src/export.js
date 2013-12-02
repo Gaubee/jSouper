@@ -136,7 +136,7 @@ var ViewParser = global.ViewParser = {
 	config: {
 		Id: 'HVP',
 		Var: 'App',
-		Data: {}
+		Data: $NULL
 	},
 	registerHandle: registerHandle,
 	app: function(userConfig) {
@@ -158,7 +158,6 @@ var ViewParser = global.ViewParser = {
 			}
 			global[appName] = template
 		}
-		return template;
 	},
 	ready: (function() {
 		var ready = "DOMContentLoaded", //_isIE ? "DOMContentLoaded" : "readystatechange",
@@ -193,6 +192,7 @@ var ViewParser = global.ViewParser = {
 };
 (function() {
 	var scriptTags = document.getElementsByTagName("script"),
+		HVP_config = ViewParser.config,
 		userConfigStr = $.trim(scriptTags[scriptTags.length - 1].innerHTML);
 	ViewParser.ready(function() {
 		ViewParser.scans();
