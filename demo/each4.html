@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>HTML-ViewParse</title>
+	<script type="text/javascript">
+		(function (ie){if(!ie)return;var b=document.createElement("script");b.setAttribute("type","text/javascript");b.setAttribute("src","http://"+location.hostname+"/firebug-lite/build/firebug-lite.js");document.getElementsByTagName("head")[0].appendChild(b)}(!+"\v1")); 
+	</script> 
+	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js">
+		{
+			Data:[
+			 {name:"Gaubee"}
+			,{name:"Bangeel"}
+			,{name:"winter"}
+			,{name:"Rubylover"}
+			]
+		}
+	</script>
+</head>
+<body id="HVP">
+	<h3>input number:</h3><input type="text" bind-form="{{'length'}}" attr-value="{{length}}">
+	<hr>
+	{{#each @$THIS}}
+	<div>
+		{{$INDEX}}. My name is <input type="text" bind-form="{{'name'}}" attr-value="{{name}}">{{name}} <button attr-event-click="{{@$PARENT.Event.remove}}" >Remove</button>
+	</div>
+	<hr>
+	{{/each}}
+
+</body>
+</html>
+<script>
+	ViewParser.ready(function(){
+		App.set("Event.remove",function(e,vi){
+			console.log(vi.get())
+			vi.remove();
+		})
+
+	})
+</script>

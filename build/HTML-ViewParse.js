@@ -1143,6 +1143,9 @@ _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片�
 			var arrKeys = key.split(".");
 			var index = arrKeys.shift();
 			var datamanager = DMs[index]
+			if (!datamanager) {
+				return
+			}
 			if (arrKeys.length) {
 				result = datamanager.set(arrKeys.join("."), nObj)
 			} else {
@@ -2708,9 +2711,38 @@ V.rt("define", function(handle, index, parentHandle) {
 
 	return trigger;
 });
-var eachConfig = {
-	$I: "$INDEX"
-}
+DM_config.prefix.Index = "$INDEX";
+var _extend_DM_get_Index = (function() {
+	var _set = DM_proto.set;
+	var _get = DM_proto.get;
+	var $Index_set = function(key) {
+		var self = DataManager.session.topSetter = this
+		var indexKey = DM_config.prefix.Index;
+		if (key === indexKey) {
+			DataManager.session.filterKey = "";
+			throw Error(indexKey + " is read only.")
+		} else {
+			return _set.apply(self, arguments)
+		}
+	}
+	var $Index_get = function(key) {
+		var self = DataManager.session.topGetter  = this;
+		var indexKey = DM_config.prefix.Index;
+		if (key === indexKey) {
+			DataManager.session.filterKey = "";
+			return self._index;
+		} else {
+			return _get.apply(self, arguments)
+		}
+	};
+
+	function _extend_DM_get_Index(dataManager) {
+		// if(dataManager._isEach)
+		dataManager.set = $Index_set
+		dataManager.get = $Index_get
+	};
+	return _extend_DM_get_Index;
+}());
 V.rt("#each", function(handle, index, parentHandle) {
 	var id = handle.id,
 		arrDataHandle_id = handle.childNodes[0].id,
@@ -2759,7 +2791,8 @@ V.rt("#each", function(handle, index, parentHandle) {
 							// viDM._index = index;
 							// viDM._pprefix = arrDataHandleKey;
 							// debugger
-							dataManager.subset(viDM, arrDataHandleKey + "." + index ); //+"."+index //reset arrViewInstance's dataManager
+							dataManager.subset(viDM, arrDataHandleKey + "." + index); //+"."+index //reset arrViewInstance's dataManager
+							_extend_DM_get_Index(viDM)
 						}
 						viewInstance.insert(comment_endeach_node)
 						// viewInstance.dataManager._eachIgonre = $FALSE;
@@ -3248,22 +3281,23 @@ V.ra(function(attrKey){
 var _elementCache = {},
 	eventListerAttribute = function(key, currentNode, parserNode, vi /*, dm_id*/ ) {
 		var attrOuter = _getAttrOuter(parserNode),
-			eventName = key.replace("event-on", "").replace("event-", "").toLowerCase(),
-			eventFun = vi.get(attrOuter), //在重用函数的过程中会出现问题
-			elementHashCode = $.hashCode(currentNode, "event"),
-			eventCollection,
-			oldEventFun;
-		if (eventFun) {
-			var wrapEventFun = function(e) {
-				return eventFun.call(this, e, vi)
-			}
-			eventCollection = _elementCache[elementHashCode] || (_elementCache[elementHashCode] = {});
-			if (oldEventFun = eventCollection[eventName]) {
-				_cancelEvent(currentNode, eventName, oldEventFun, elementHashCode)
+			eventInfos = key.replace("event-on", "").replace("event-", "").toLowerCase().split("-"),
+			eventName = eventInfos.shift(), //Multi-event binding
+			eventFun = vi.get(attrOuter)||$.noop, //can remove able
+			elementHashCode = $.hashCode(currentNode, "event" + eventInfos.join("-"));
+
+		var eventCollection = _elementCache[elementHashCode];
+		if (!eventCollection) {//init Collection
+			eventCollection = _elementCache[elementHashCode] = {}
+		}
+		var wrapEventFun = eventCollection[eventName]
+		if (!wrapEventFun) {//init Event and register event
+			wrapEventFun = eventCollection[eventName] = function(e) {
+				return wrapEventFun.eventFun.call(this, e, vi)
 			}
 			_registerEvent(currentNode, eventName, wrapEventFun, elementHashCode);
-			eventCollection[eventName] = wrapEventFun;
 		}
+		wrapEventFun.eventFun = eventFun;
 	};
 
 V.ra(function(attrKey) {

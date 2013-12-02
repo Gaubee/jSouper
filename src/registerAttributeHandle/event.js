@@ -1,22 +1,23 @@
 var _elementCache = {},
 	eventListerAttribute = function(key, currentNode, parserNode, vi /*, dm_id*/ ) {
 		var attrOuter = _getAttrOuter(parserNode),
-			eventName = key.replace("event-on", "").replace("event-", "").toLowerCase(),
-			eventFun = vi.get(attrOuter), //在重用函数的过程中会出现问题
-			elementHashCode = $.hashCode(currentNode, "event"),
-			eventCollection,
-			oldEventFun;
-		if (eventFun) {
-			var wrapEventFun = function(e) {
-				return eventFun.call(this, e, vi)
-			}
-			eventCollection = _elementCache[elementHashCode] || (_elementCache[elementHashCode] = {});
-			if (oldEventFun = eventCollection[eventName]) {
-				_cancelEvent(currentNode, eventName, oldEventFun, elementHashCode)
+			eventInfos = key.replace("event-on", "").replace("event-", "").toLowerCase().split("-"),
+			eventName = eventInfos.shift(), //Multi-event binding
+			eventFun = vi.get(attrOuter)||$.noop, //can remove able
+			elementHashCode = $.hashCode(currentNode, "event" + eventInfos.join("-"));
+
+		var eventCollection = _elementCache[elementHashCode];
+		if (!eventCollection) {//init Collection
+			eventCollection = _elementCache[elementHashCode] = {}
+		}
+		var wrapEventFun = eventCollection[eventName]
+		if (!wrapEventFun) {//init Event and register event
+			wrapEventFun = eventCollection[eventName] = function(e) {
+				return wrapEventFun.eventFun.call(this, e, vi)
 			}
 			_registerEvent(currentNode, eventName, wrapEventFun, elementHashCode);
-			eventCollection[eventName] = wrapEventFun;
 		}
+		wrapEventFun.eventFun = eventFun;
 	};
 
 V.ra(function(attrKey) {

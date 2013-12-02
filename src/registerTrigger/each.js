@@ -1,6 +1,35 @@
-var eachConfig = {
-	$I: "$INDEX"
-}
+DM_config.prefix.Index = "$INDEX";
+var _extend_DM_get_Index = (function() {
+	var _set = DM_proto.set;
+	var _get = DM_proto.get;
+	var $Index_set = function(key) {
+		var self = DataManager.session.topSetter = this
+		var indexKey = DM_config.prefix.Index;
+		if (key === indexKey) {
+			DataManager.session.filterKey = "";
+			throw Error(indexKey + " is read only.")
+		} else {
+			return _set.apply(self, arguments)
+		}
+	}
+	var $Index_get = function(key) {
+		var self = DataManager.session.topGetter  = this;
+		var indexKey = DM_config.prefix.Index;
+		if (key === indexKey) {
+			DataManager.session.filterKey = "";
+			return self._index;
+		} else {
+			return _get.apply(self, arguments)
+		}
+	};
+
+	function _extend_DM_get_Index(dataManager) {
+		// if(dataManager._isEach)
+		dataManager.set = $Index_set
+		dataManager.get = $Index_get
+	};
+	return _extend_DM_get_Index;
+}());
 V.rt("#each", function(handle, index, parentHandle) {
 	var id = handle.id,
 		arrDataHandle_id = handle.childNodes[0].id,
@@ -49,7 +78,8 @@ V.rt("#each", function(handle, index, parentHandle) {
 							// viDM._index = index;
 							// viDM._pprefix = arrDataHandleKey;
 							// debugger
-							dataManager.subset(viDM, arrDataHandleKey + "." + index ); //+"."+index //reset arrViewInstance's dataManager
+							dataManager.subset(viDM, arrDataHandleKey + "." + index); //+"."+index //reset arrViewInstance's dataManager
+							_extend_DM_get_Index(viDM)
 						}
 						viewInstance.insert(comment_endeach_node)
 						// viewInstance.dataManager._eachIgonre = $FALSE;

@@ -36,6 +36,9 @@ _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片�
 			var arrKeys = key.split(".");
 			var index = arrKeys.shift();
 			var datamanager = DMs[index]
+			if (!datamanager) {
+				return
+			}
 			if (arrKeys.length) {
 				result = datamanager.set(arrKeys.join("."), nObj)
 			} else {

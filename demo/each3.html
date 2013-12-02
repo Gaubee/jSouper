@@ -21,7 +21,7 @@
 	<hr>
 	{{#each @$THIS}}
 	<div>
-		My name is <input type="text" bind-form="{{'name'}}" attr-value="{{name}}">{{name}}
+		{{$INDEX}}. My name is <input type="text" bind-form="{{'name'}}" attr-value="{{name}}">{{name}} 
 	</div>
 	<hr>
 	{{/each}}
@@ -65,6 +65,7 @@
 			App.set("0.name","in 004")
 			console.timeEnd("set in 004")
 			console.log("-----------------------")
+
 	})
 </script>
 <!--
