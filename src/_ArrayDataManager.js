@@ -5,7 +5,6 @@
 
 function _ArrayDataManager(perfix) {
 	this._prefix = perfix;
-	this._showed_len = 0;
 	this._DMs = [];
 }
 var _ArrDM_proto = _ArrayDataManager.prototype
@@ -49,9 +48,8 @@ _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片�
 }
 _ArrDM_proto.length = function(length) {
 	var self = this;
-	var showed_len = self._showed_len;
 	var DMs = this._DMs;
-/*	if (length === $UNDEFINED) {
+	/*	if (length === $UNDEFINED) {
 		return showed_len;
 	} else {
 		if (showed_len < length) {
@@ -85,8 +83,19 @@ _ArrDM_proto.remove = function(datamanager) {
 		var index = String(datamanager._index -= 1);
 		datamanager._prefix = pperfix ? pperfix + "." + index : index;
 	}, index)
-	var oldData = datamanager._parentDataManager.get(pperfix);
-	oldData.splice(index, 1);
-	datamanager._parentDataManager.set(pperfix, oldData)
-	datamanager._arrayDataManager = datamanager._parentDataManager = $UNDEFINED;
+	var parentDataManager = datamanager._parentDataManager
+	var oldData = pperfix ? parentDataManager.get(pperfix) : parentDataManager.get();
+	if (oldData) {
+		// 对象的数据可能是空值，导致DM实际长度与数据长度不一致，直接splice会错位，所以需要纠正
+		$.sp.call(oldData, index, 1)
+		datamanager._parentDataManager.set(pperfix, oldData)
+		datamanager._arrayDataManager = datamanager._parentDataManager = $UNDEFINED;
+	}
+}
+_ArrDM_proto.lineUp = function(datamanager) {
+	this.remove(datamanager);
+	this.push(datamanager);
+}
+DM_proto.lineUp = function() {
+	this._arrayDataManager && this._arrayDataManager.lineUp(this)
 }

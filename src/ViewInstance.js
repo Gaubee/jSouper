@@ -14,11 +14,11 @@
 				TEMP.viewInstance.get(TEMP.sourceKey);
 				var topGetter = DataManager.session.topGetter,
 					currentTopGetter = DataManager.get(TEMP.dm_id),
-					matchKey = DataManager.session.filterKey||"";
+					matchKey = DataManager.session.filterKey || "";
 				if (topGetter) {
-					if (topGetter!==currentTopGetter||matchKey!==smartTrigger.matchKey) {
+					if (topGetter !== currentTopGetter || matchKey !== smartTrigger.matchKey) {
 						TEMP.dm_id = topGetter.id;
-						currentTopGetter&&smartTrigger.unbind(currentTopGetter._triggerKeys)
+						currentTopGetter && smartTrigger.unbind(currentTopGetter._triggerKeys)
 						smartTrigger.matchKey = matchKey;
 						smartTrigger.bind(topGetter._triggerKeys);
 						currentTopGetter = topGetter
@@ -48,7 +48,7 @@
 				});
 			}
 			$.p(viewInstance.dataManager._viewInstances, viewInstance);
-			_collect.call(self, vi_DM)//self collect self will Forced triggered updates
+			_collect.call(self, vi_DM) //self collect self will Forced triggered updates
 		}
 		return self;
 	};
@@ -89,6 +89,7 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, dataManager)
 	self._AVI = {};
 	self._ALVI = {};
 	self._WVI = {};
+	// self._arrayVI = $NULL;
 	$.D.iB(el, self._open, el.childNodes[0]);
 	$.D.ap(el, self._close);
 	(self._triggers = [])._ = {};
@@ -208,7 +209,7 @@ var VI_proto = ViewInstance.prototype = {
 	},
 	remove: function() {
 		var self = this,
-			el = this._packingBag;
+			el = self._packingBag;
 		// debugger
 		if (self._canRemoveAble) {
 			var handleNodeTree = self.handleNodeTree,
@@ -218,7 +219,7 @@ var VI_proto = ViewInstance.prototype = {
 				closeNode = self._close,
 				childNodes = $.s(currentTopNode.childNodes),
 
-				startIndex = $.iO(childNodes,openNode),
+				startIndex = $.iO(childNodes, openNode),
 				child_node;
 
 			while (child_node = childNodes[startIndex]) {
@@ -242,7 +243,15 @@ var VI_proto = ViewInstance.prototype = {
 				currentNode = nextNode;
 			}*/
 			_replaceTopHandleCurrent(self, el);
-			this._canRemoveAble = $FALSE; //Has being recovered into the _packingBag,can't no be remove again. --> it should be insert
+			self._canRemoveAble = $FALSE; //Has being recovered into the _packingBag,can't no be remove again. --> it should be insert
+			if (self._isEach) {
+				// 排队到队位作为备用
+				self._arrayVI.splice(self.dataManager._index, 1)
+				$.p(self._arrayVI, self);
+
+				//相应的DM以及数据也要做重新排队
+				self.dataManager.lineUp();
+			}
 		}
 		return self;
 	},
@@ -288,7 +297,7 @@ var VI_proto = ViewInstance.prototype = {
 			})
 		})
 	},
-	_buildSmart:function(sKey) {
+	_buildSmart: function(sKey) {
 		var self = this,
 			dataManager = self.dataManager,
 			smartTriggers = self._smartTriggers;
@@ -298,7 +307,7 @@ var VI_proto = ViewInstance.prototype = {
 			smartTrigger = new SmartTriggerHandle(
 				baseKey || (baseKey = ""), //match key
 
-				function(smartTriggerSet) { 
+				function(smartTriggerSet) {
 					self.touchOff(sKey);
 				}, { //TEMP data
 					viewInstance: self,
@@ -309,7 +318,8 @@ var VI_proto = ViewInstance.prototype = {
 			);
 		$.p(smartTriggers, smartTrigger);
 		topGetterTriggerKeys && smartTrigger.bind(topGetterTriggerKeys); // topGetterTriggerKeys.push(baseKey, smartTrigger);
-	}/*,
+	}
+	/*,
 	on: function(eventName, fun) {
 
 	},
@@ -325,4 +335,4 @@ $.ftE(_allEventNames, function(eventName) {
 	VI_proto[eventName] = function(fun) {
 		return fun ? this.on(eventName, fun) : this.trigger(eventName);
 	}
-})
+})*/

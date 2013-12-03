@@ -62,7 +62,10 @@ V.rt("#each", function(handle, index, parentHandle) {
 				if (showed_vi_len > new_data_len) {
 					$.fE(arrViewInstances, function(eachItemHandle) {
 						// eachItemHandle.dataManager._eachIgonre = $TRUE;
+						var isEach = eachItemHandle._isEach
+						eachItemHandle._isEach = $NULL;//移除each标志避免排队
 						eachItemHandle.remove();
+						eachItemHandle._isEach = isEach;//移除each标志避免排队
 					}, new_data_len);
 				} else {
 					data != $UNDEFINED && $.ftE($.s(data), function(eachItemData, index) {
@@ -70,9 +73,11 @@ V.rt("#each", function(handle, index, parentHandle) {
 						var viewInstance = arrViewInstances[index];
 						if (!viewInstance) {
 							viewInstance = arrViewInstances[index] = eachModuleConstructor(eachItemData);
+							viewInstance._arrayVI = arrViewInstances;
 							var viDM = viewInstance.dataManager
 							viDM._isEach = viewInstance._isEach = {
-								index: index,
+								// index 仅仅存储在DM中，避免混乱
+								// index: index,
 								eachVIs: arrViewInstances
 							}
 							// viDM._index = index;
