@@ -1,4 +1,4 @@
-var _layout_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManager, triggerBy, viewInstance_ID) {
+var _layout_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManager, /*triggerBy,*/ viewInstance_ID) {
 	var handle = this,
 		commentPlaceholderElement,
 		layoutViewInstance = V._instances[viewInstance_ID]._ALVI[handle.id];
@@ -19,7 +19,7 @@ var _layout_display = function(show_or_hidden, NodeList_of_ViewInstance, dataMan
 	}
 
 };
-V.rh("#>",V.rh("#layout", function(handle, index, parentHandle) {
+V.rh("#>", V.rh("#layout", function(handle, index, parentHandle) {
 	handle.display = _layout_display; //Custom rendering function
 	_commentPlaceholder(handle, parentHandle);
 }));

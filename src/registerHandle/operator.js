@@ -9,6 +9,5 @@ var _operator_handle  = function(handle, index, parentHandle) {
 },
 _operator_list = "+ - * / % == === != !== > < && || ^ >> << & |".split(" ");
 $.ftE(_operator_list, function(operator) {
-	templateOperatorNum[operator] = 2;
 	V.rh(operator, _operator_handle)
 });

@@ -2,47 +2,61 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 	// DoubleQuotedString = /"(?:\.|(\\\")|[^\""\n])*"/g, //双引号字符串
 	// SingleQuotedString = /'(?:\.|(\\\')|[^\''\n])*'/g, //单引号字符串
 	QuotedString = /"(?:\.|(\\\")|[^\""\n])*"|'(?:\.|(\\\')|[^\''\n])*'/g, //引号字符串
-	templateHandles = {
-		"#if": $TRUE,
-		"#else": $FALSE, //no arguments
-		"/if": $FALSE,
-		"@": $TRUE,
-		"#each": $TRUE,
-		"/each": $FALSE,
-		"#with": $TRUE,
-		"/with": $TRUE,
-		"HTML": $TRUE,
-		"#>": $TRUE,
-		"#layout": $TRUE,
-		"define":$TRUE
-	},
-	templateOperatorNum = {
-		"@": 1
-		// , "!": 1
-		// , "~": 1
-		// , "++": 1
-		// , "--": 1
-		// , "+": 2
-		// , "-": 2
-		// , "*": 2
-		// , "/": 2
-		// , "&&": 2
-		// , "||": 2
-		// , "&": 2
-		// , "|": 2
-		// , "=": 2
-		// , "==": 2
-		// , "===": 2
-		// , "!=": 2
-		// , "!==": 2
-		// , "%": 2
-		// , "^": 2
-		// , ">": 2
-		// , "<": 2
-		// , ">>": 2
-		// , "<<": 2
-	},
-	parse = function(str) {
+	templateHandles = {};
+$.fI(V.handles, function(handleFun, handleName) {
+	var result = $TRUE
+	if (handleName.charAt(0) === "/") {
+		result = $FALSE //no arguments
+	}
+	templateHandles[handleName] = result
+});
+/*{
+	"#if": $TRUE,
+	"#else": $FALSE, //no arguments
+	"/if": $FALSE,
+	"@": $TRUE,
+	"#each": $TRUE,
+	"/each": $FALSE,
+	"#with": $TRUE,
+	"/with": $TRUE,
+	"HTML": $TRUE,
+	"#>": $TRUE,
+	"#layout": $TRUE,
+	"define": $TRUE
+}*/
+var templateOperatorNum = {
+	"@": 1
+	// , "!": 1
+	// , "~": 1
+	// , "++": 1
+	// , "--": 1
+	// , "+": 2
+	// , "-": 2
+	// , "*": 2
+	// , "/": 2
+	// , "&&": 2
+	// , "||": 2
+	// , "&": 2
+	// , "|": 2
+	// , "=": 2
+	// , "==": 2
+	// , "===": 2
+	// , "!=": 2
+	// , "!==": 2
+	// , "%": 2
+	// , "^": 2
+	// , ">": 2
+	// , "<": 2
+	// , ">>": 2
+	// , "<<": 2
+}
+$.ftE(_operator_list, function(operator) {
+	templateOperatorNum[operator] = 2;
+});
+$.ftE(_unary_operator_list, function(operator) {
+	templateOperatorNum[operator] = 1;
+});
+var parse = function(str) {
 		var quotedString = [];
 		var Placeholder = "_" + Math.random(),
 			str = str.replace(QuotedString, function(qs) {
@@ -76,7 +90,7 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 			}).replace(/\{\@\(\{\(([\w\W]+?)\)\}\)\}/g, function(matchStr, matchKey) {
 				return "{@(" + matchKey + ")}";
 			});
-			return result
+		return result
 	},
 	parseArg = function(argStr) {
 		var allStack = [],

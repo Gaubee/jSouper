@@ -1390,177 +1390,6 @@ DM_proto.lineUp = function() {
 		return result;
 	}
 }());
-var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
-	// DoubleQuotedString = /"(?:\.|(\\\")|[^\""\n])*"/g, //双引号字符串
-	// SingleQuotedString = /'(?:\.|(\\\')|[^\''\n])*'/g, //单引号字符串
-	QuotedString = /"(?:\.|(\\\")|[^\""\n])*"|'(?:\.|(\\\')|[^\''\n])*'/g, //引号字符串
-	templateHandles = {
-		"#if": $TRUE,
-		"#else": $FALSE, //no arguments
-		"/if": $FALSE,
-		"@": $TRUE,
-		"#each": $TRUE,
-		"/each": $FALSE,
-		"#with": $TRUE,
-		"/with": $TRUE,
-		"HTML": $TRUE,
-		"#>": $TRUE,
-		"#layout": $TRUE,
-		"define":$TRUE
-	},
-	templateOperatorNum = {
-		"@": 1
-		// , "!": 1
-		// , "~": 1
-		// , "++": 1
-		// , "--": 1
-		// , "+": 2
-		// , "-": 2
-		// , "*": 2
-		// , "/": 2
-		// , "&&": 2
-		// , "||": 2
-		// , "&": 2
-		// , "|": 2
-		// , "=": 2
-		// , "==": 2
-		// , "===": 2
-		// , "!=": 2
-		// , "!==": 2
-		// , "%": 2
-		// , "^": 2
-		// , ">": 2
-		// , "<": 2
-		// , ">>": 2
-		// , "<<": 2
-	},
-	parse = function(str) {
-		var quotedString = [];
-		var Placeholder = "_" + Math.random(),
-			str = str.replace(QuotedString, function(qs) {
-				quotedString.push(qs)
-				return Placeholder;
-			}),
-			result = str.replace(newTemplateMatchReg, function(matchStr, innerStr, index) {
-				innerStr = innerStr.replace(/&gt;/g, ">").replace(/&lt;/g, "<").replace(/&amp;/g, "&") //Semantic confusion with HTML
-				var fun_name = $.trim(innerStr).split(" ")[0];
-				if (fun_name in templateHandles) {
-					if (templateHandles[fun_name]) {
-						var args = innerStr.replace(fun_name, "").split(","),
-							result = "{" + fun_name + "(";
-						$.ftE(args, function(arg) {
-							if (arg = $.trim(arg)) {
-								result += parseIte(parseArg(arg));
-							}
-						});
-						result += ")}"
-						return result;
-					} else {
-						return "{" + fun_name + "()}";
-					}
-				} else {
-					return parseIte(parseArg($.trim(innerStr))); //"{(" + innerStr + ")}";
-				}
-			})
-
-			result = result.replace(RegExp(Placeholder, "g"), function(p) {
-				return quotedString.splice(0, 1);
-			}).replace(/\{\@\(\{\(([\w\W]+?)\)\}\)\}/g, function(matchStr, matchKey) {
-				return "{@(" + matchKey + ")}";
-			});
-			return result
-	},
-	parseArg = function(argStr) {
-		var allStack = [],
-			inner = $TRUE;
-		// console.log("argStr:", argStr);
-		argStr.replace(/\(([\W\w]+?)\)/, function(matchSliceArgStr, sliceArgStr, index) {
-			inner = $FALSE;
-			var stack = parseStr(argStr.substring(0, index));
-			allStack.push.apply(allStack, stack);
-			// console.log();
-			$.p(allStack, {
-				// allStack.push({
-				type: "arg",
-				value: sliceArgStr,
-				parse: parseIte(parseArg(sliceArgStr))
-			})
-			stack = parseStr(argStr.substring(index + matchSliceArgStr.length));
-			allStack.push.apply(allStack, stack);
-		});
-		if (inner) {
-			allStack.push.apply(allStack, parseStr(argStr));
-		}
-		return allStack;
-	},
-	parseStr = function(sliceArgStr) {
-		var stack = [],
-			pointer = 0;
-		sliceArgStr.replace(/([^\w$\(\)]+)/g, function(matchOperator, operator, index, str) { //([\W]+)
-			operator = $.trim(operator);
-			if (operator && operator !== ".") {
-				$.p(stack, {
-					type: "arg",
-					value: str.substring(pointer, index)
-				});
-				$.p(stack, {
-					type: "ope",
-					value: operator,
-					num: templateOperatorNum[operator] || 0
-				});
-				pointer = index + matchOperator.length;
-			}
-			return matchOperator;
-		});
-		if (stack.length && !stack[0].value) {
-			stack.splice(0, 1);
-		}
-		if (sliceArgStr.length - pointer) {
-			$.p(stack, {
-				type: "arg",
-				value: sliceArgStr.substring(pointer, sliceArgStr.length)
-			})
-		}
-		return stack;
-	},
-	parseIte = function(arr) {
-		var result = "";
-		$.ftE(arr, function(block, index) {
-			if (block.type === "arg") {
-				!block.parse && (block.parse = "{(" + block.value + ")}");
-			}
-			if (!block.value) {
-				block.ignore = $TRUE;
-			}
-		});
-		$.ftE(arr, function(block, index) {
-			if (block.type === "ope") {
-				var prev = arr[index - 1],
-					next = arr[index + 1];
-				if (block.num === 1) {
-					if (prev && prev.type === "arg") { //a++
-						block.parse = "{$" + block.value + "(" + prev.parse + ")}";
-						prev.ignore = $TRUE;
-					} else { //++a
-						next.parse = "{" + block.value + "(" + next.parse + ")}"
-						block.ignore = $TRUE;
-					}
-				} else if (block.num === 2) {
-					next.parse = "{" + block.value + "(" + prev.parse + next.parse + ")}"
-					prev.ignore = $TRUE;
-					block.ignore = $TRUE;
-				} else {
-					throw "Unknown type:" + block.value
-				}
-			}
-		});
-		$.ftE(arr, function(block) {
-			if (!block.ignore) {
-				result += block.parse;
-			}
-		});
-		return result; //arr;
-	};
 	//by RubyLouvre(司徒正美)
 	//setAttribute bug:http://www.iefans.net/ie-setattribute-bug/
 var IEfix = {
@@ -2370,101 +2199,6 @@ var placeholder = {
 		// Proto: DynamicComputed /*Proto*/ ,
 		Model: DataManager
 	};
-var ViewParser = global.ViewParser = {
-	scans: function() {
-		$.fE(document.getElementsByTagName("script"), function(scriptNode) {
-			if (scriptNode.getAttribute("type") === "text/template") {
-				V.modules[scriptNode.getAttribute("name")] = ViewParser.parse(scriptNode.innerHTML);
-				$.D.rm(scriptNode)
-			}
-		});
-	},
-	parseStr: function(htmlStr) {
-		return V.parse(parse(htmlStr))
-	},
-	parseNode: function(htmlNode) {
-		return V.parse(parse(htmlNode.innerHTML))
-	},
-	parse: function(html) {
-		if (html instanceof Object) {
-			return this.parseNode(html)
-		}
-		return this.parseStr(html)
-	},
-	modules: V.modules,
-	config: {
-		Id: 'HVP',
-		Var: 'App',
-		Data: $NULL
-	},
-	registerHandle: registerHandle,
-	app: function(userConfig) {
-		ViewParser.scans();
-		var HVP_config = ViewParser.config;
-		userConfig = _mix(HVP_config, userConfig) || HVP_config;
-		var App = document.getElementById(userConfig.Id); //configable
-		if (App) {
-			var appName = userConfig.Var;
-			var template = ViewParser.parseNode(App)(userConfig.Data); //App.getAttribute("template-data")//json or url or configable
-			// template.set(HVP_config.Data);
-			App.innerHTML = "";
-			template.append(App);
-			if ( /*!appName || */ appName == userConfig.Id || appName in global) {
-				//IE does not support the use and the DOM ID of the same variable names, so automatically add '_App' after the most.
-				appName = userConfig.Id + "_App";
-				// console.error("App's name shouldn't the same of the DOM'ID");
-				console.warn("App's name will be set as " + appName);
-			}
-			global[appName] = template
-		}
-	},
-	ready: (function() {
-		var ready = "DOMContentLoaded", //_isIE ? "DOMContentLoaded" : "readystatechange",
-			ready_status = $FALSE,
-			callbackFunStacks = [];
-
-		function _load() {
-			var callbackObj;
-			while (callbackFunStacks.length) {
-				callbackObj = callbackFunStacks.shift(0, 1);
-				callbackObj.callback.call(callbackObj.scope || global)
-			}
-			ready_status = $TRUE;
-		}
-		_registerEvent(doc, (_isIE && IEfix[ready]) || ready, _load);
-		return function(callbackFun, scope) {
-			if (ready_status) {
-				callbackFun.call(scope || global);
-			} else {
-				$.p(callbackFunStacks, {
-					callback: callbackFun,
-					scope: scope
-				})
-				//complete ==> onload , interactive ==> DOMContentLoaded
-				//https://developer.mozilla.org/en-US/docs/Web/API/document.readyState
-				if (/complete|interactive/.test(doc.readyState)) { //fix asyn load
-					_load()
-				}
-			}
-		}
-	}())
-};
-(function() {
-	var scriptTags = document.getElementsByTagName("script"),
-		HVP_config = ViewParser.config,
-		userConfigStr = $.trim(scriptTags[scriptTags.length - 1].innerHTML);
-	ViewParser.ready(function() {
-		ViewParser.scans();
-		if (userConfigStr.charAt(0) === "{") {
-			try {
-				var userConfig = userConfigStr ? Function("return" + userConfigStr)() : {};
-			} catch (e) {
-				console.error("config error:" + e.message);
-			}
-			userConfig && ViewParser.app(userConfig)
-		}
-	});
-}());
 var _commentPlaceholder = function(handle, parentHandle, commentText) {
 	var handleName = handle.handleName,
 		commentText = commentText || (handleName + handle.id),
@@ -2585,7 +2319,7 @@ V.rh("@", function(handle, index, parentHandle) {
 	}
 });
 V.rh("/if", V.rh("#else", V.rh("#if", placeholderHandle)));
-var _layout_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManager, triggerBy, viewInstance_ID) {
+var _layout_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManager, /*triggerBy,*/ viewInstance_ID) {
 	var handle = this,
 		commentPlaceholderElement,
 		layoutViewInstance = V._instances[viewInstance_ID]._ALVI[handle.id];
@@ -2606,7 +2340,7 @@ var _layout_display = function(show_or_hidden, NodeList_of_ViewInstance, dataMan
 	}
 
 };
-V.rh("#>",V.rh("#layout", function(handle, index, parentHandle) {
+V.rh("#>", V.rh("#layout", function(handle, index, parentHandle) {
 	handle.display = _layout_display; //Custom rendering function
 	_commentPlaceholder(handle, parentHandle);
 }));
@@ -2621,12 +2355,10 @@ var _operator_handle  = function(handle, index, parentHandle) {
 },
 _operator_list = "+ - * / % == === != !== > < && || ^ >> << & |".split(" ");
 $.ftE(_operator_list, function(operator) {
-	templateOperatorNum[operator] = 2;
 	V.rh(operator, _operator_handle)
 });
 var _unary_operator_list = "! ~ -".split(" ");// ++ --
 $.ftE(_unary_operator_list, function(operator) {
-	templateOperatorNum[operator] = 1;
 	V.rh(operator, _operator_handle)
 });
 var _with_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManager, triggerBy, viewInstance_ID) {
@@ -3159,68 +2891,6 @@ V.rt("#with", function(handle, index, parentHandle) {
 	}
 	return trigger;
 });
-/*
- * user defined handle function like Handlebarsjs
- */
-function registerHandle(handleName, handleFun) {
-	templateHandles[handleName]= $TRUE;
-	V.rh(handleName, function(handle, index, parentHandle) {
-		var endCommentHandle = _commentPlaceholder(handle, parentHandle, "html_end_" + handle.id),
-			startCommentHandle = _commentPlaceholder(handle, parentHandle, "html_start_" + handle.id);
-	});
-	V.rt(handleName, function(handle, index, parentHandle) {
-		var handleChilds = handle.childNodes,
-			beginCommentId,// = handleChilds[handleChilds.length - 1].id,
-			endCommentId,// = handleChilds[handleChilds.length - 2].id,
-			cacheNode = $.D.cl(shadowDIV),
-			trigger,
-			argumentsIdSet = [];
-		$.ftE(handleChilds, function(handle_arg) {
-			$.p(argumentsIdSet, handle_arg.id);
-		});
-		beginCommentId = argumentsIdSet[argumentsIdSet.length-1]
-		endCommentId = argumentsIdSet[argumentsIdSet.length-2]
-		trigger = {
-			// key:"",//default key === ""
-			bubble: true,
-			event: function(NodeList_of_ViewInstance, dataManager, /*triggerBy,*/ isAttr, viewInstance_ID) {
-				var startCommentNode = NodeList_of_ViewInstance[beginCommentId].currentNode,
-					endCommentNode = NodeList_of_ViewInstance[endCommentId].currentNode,
-					parentNode = endCommentNode.parentNode,
-					brotherNodes = parentNode.childNodes,
-					argumentsDataSet = [],
-					index = -1;
-
-				for (var i = 0, len = argumentsIdSet.length - 2, handle_arg_data, argumentsDataSet; i < len; i += 1) {
-					$.p(argumentsDataSet,NodeList_of_ViewInstance[argumentsIdSet[i]]._data)
-				};
-				$.fE(brotherNodes, function(node, i) {
-					index = i;
-					if (node === startCommentNode) {
-						return $FALSE;
-					}
-				});
-				index = index + 1;
-				$.fE(brotherNodes, function(node, i) {
-					if (node === endCommentNode) {
-						return $FALSE;
-					}
-					$.D.rC(parentNode, node); //remove
-				}, index);
-
-				cacheNode.innerHTML = handleFun.apply(V._instances[viewInstance_ID],argumentsDataSet)
-				$.fE(cacheNode.childNodes, function(node, i) {
-					$.D.iB(parentNode, node, endCommentNode);
-				});
-			}
-		}
-		return trigger;
-	});
-	return ViewParser;
-}
-registerHandle("HTML",function () {
-	return Array.prototype.join.call(arguments,"");
-})
 var _testDIV = $.D.cl(shadowDIV),
 	_getAttrOuter = Function("n", "return n." + (("textContent" in _testDIV) ? "textContent" : "innerText") + "||''");
 
@@ -3679,5 +3349,351 @@ V.ra(function(attrKey) {
 V.ra("style",function () {
 	return _isIE&&_AttributeHandleEvent.style;
 })
+var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
+	// DoubleQuotedString = /"(?:\.|(\\\")|[^\""\n])*"/g, //双引号字符串
+	// SingleQuotedString = /'(?:\.|(\\\')|[^\''\n])*'/g, //单引号字符串
+	QuotedString = /"(?:\.|(\\\")|[^\""\n])*"|'(?:\.|(\\\')|[^\''\n])*'/g, //引号字符串
+	templateHandles = {};
+$.fI(V.handles, function(handleFun, handleName) {
+	var result = $TRUE
+	if (handleName.charAt(0) === "/") {
+		result = $FALSE //no arguments
+	}
+	templateHandles[handleName] = result
+});
+/*{
+	"#if": $TRUE,
+	"#else": $FALSE, //no arguments
+	"/if": $FALSE,
+	"@": $TRUE,
+	"#each": $TRUE,
+	"/each": $FALSE,
+	"#with": $TRUE,
+	"/with": $TRUE,
+	"HTML": $TRUE,
+	"#>": $TRUE,
+	"#layout": $TRUE,
+	"define": $TRUE
+}*/
+var templateOperatorNum = {
+	"@": 1
+	// , "!": 1
+	// , "~": 1
+	// , "++": 1
+	// , "--": 1
+	// , "+": 2
+	// , "-": 2
+	// , "*": 2
+	// , "/": 2
+	// , "&&": 2
+	// , "||": 2
+	// , "&": 2
+	// , "|": 2
+	// , "=": 2
+	// , "==": 2
+	// , "===": 2
+	// , "!=": 2
+	// , "!==": 2
+	// , "%": 2
+	// , "^": 2
+	// , ">": 2
+	// , "<": 2
+	// , ">>": 2
+	// , "<<": 2
+}
+$.ftE(_operator_list, function(operator) {
+	templateOperatorNum[operator] = 2;
+});
+$.ftE(_unary_operator_list, function(operator) {
+	templateOperatorNum[operator] = 1;
+});
+var parse = function(str) {
+		var quotedString = [];
+		var Placeholder = "_" + Math.random(),
+			str = str.replace(QuotedString, function(qs) {
+				quotedString.push(qs)
+				return Placeholder;
+			}),
+			result = str.replace(newTemplateMatchReg, function(matchStr, innerStr, index) {
+				innerStr = innerStr.replace(/&gt;/g, ">").replace(/&lt;/g, "<").replace(/&amp;/g, "&") //Semantic confusion with HTML
+				var fun_name = $.trim(innerStr).split(" ")[0];
+				if (fun_name in templateHandles) {
+					if (templateHandles[fun_name]) {
+						var args = innerStr.replace(fun_name, "").split(","),
+							result = "{" + fun_name + "(";
+						$.ftE(args, function(arg) {
+							if (arg = $.trim(arg)) {
+								result += parseIte(parseArg(arg));
+							}
+						});
+						result += ")}"
+						return result;
+					} else {
+						return "{" + fun_name + "()}";
+					}
+				} else {
+					return parseIte(parseArg($.trim(innerStr))); //"{(" + innerStr + ")}";
+				}
+			})
+
+			result = result.replace(RegExp(Placeholder, "g"), function(p) {
+				return quotedString.splice(0, 1);
+			}).replace(/\{\@\(\{\(([\w\W]+?)\)\}\)\}/g, function(matchStr, matchKey) {
+				return "{@(" + matchKey + ")}";
+			});
+		return result
+	},
+	parseArg = function(argStr) {
+		var allStack = [],
+			inner = $TRUE;
+		// console.log("argStr:", argStr);
+		argStr.replace(/\(([\W\w]+?)\)/, function(matchSliceArgStr, sliceArgStr, index) {
+			inner = $FALSE;
+			var stack = parseStr(argStr.substring(0, index));
+			allStack.push.apply(allStack, stack);
+			// console.log();
+			$.p(allStack, {
+				// allStack.push({
+				type: "arg",
+				value: sliceArgStr,
+				parse: parseIte(parseArg(sliceArgStr))
+			})
+			stack = parseStr(argStr.substring(index + matchSliceArgStr.length));
+			allStack.push.apply(allStack, stack);
+		});
+		if (inner) {
+			allStack.push.apply(allStack, parseStr(argStr));
+		}
+		return allStack;
+	},
+	parseStr = function(sliceArgStr) {
+		var stack = [],
+			pointer = 0;
+		sliceArgStr.replace(/([^\w$\(\)]+)/g, function(matchOperator, operator, index, str) { //([\W]+)
+			operator = $.trim(operator);
+			if (operator && operator !== ".") {
+				$.p(stack, {
+					type: "arg",
+					value: str.substring(pointer, index)
+				});
+				$.p(stack, {
+					type: "ope",
+					value: operator,
+					num: templateOperatorNum[operator] || 0
+				});
+				pointer = index + matchOperator.length;
+			}
+			return matchOperator;
+		});
+		if (stack.length && !stack[0].value) {
+			stack.splice(0, 1);
+		}
+		if (sliceArgStr.length - pointer) {
+			$.p(stack, {
+				type: "arg",
+				value: sliceArgStr.substring(pointer, sliceArgStr.length)
+			})
+		}
+		return stack;
+	},
+	parseIte = function(arr) {
+		var result = "";
+		$.ftE(arr, function(block, index) {
+			if (block.type === "arg") {
+				!block.parse && (block.parse = "{(" + block.value + ")}");
+			}
+			if (!block.value) {
+				block.ignore = $TRUE;
+			}
+		});
+		$.ftE(arr, function(block, index) {
+			if (block.type === "ope") {
+				var prev = arr[index - 1],
+					next = arr[index + 1];
+				if (block.num === 1) {
+					if (prev && prev.type === "arg") { //a++
+						block.parse = "{$" + block.value + "(" + prev.parse + ")}";
+						prev.ignore = $TRUE;
+					} else { //++a
+						next.parse = "{" + block.value + "(" + next.parse + ")}"
+						block.ignore = $TRUE;
+					}
+				} else if (block.num === 2) {
+					next.parse = "{" + block.value + "(" + prev.parse + next.parse + ")}"
+					prev.ignore = $TRUE;
+					block.ignore = $TRUE;
+				} else {
+					throw "Unknown type:" + block.value
+				}
+			}
+		});
+		$.ftE(arr, function(block) {
+			if (!block.ignore) {
+				result += block.parse;
+			}
+		});
+		return result; //arr;
+	};
+/*
+ * user defined handle function like Handlebarsjs
+ */
+function registerHandle(handleName, handleFun) {
+	templateHandles[handleName]= $TRUE;
+	V.rh(handleName, function(handle, index, parentHandle) {
+		var endCommentHandle = _commentPlaceholder(handle, parentHandle, "html_end_" + handle.id),
+			startCommentHandle = _commentPlaceholder(handle, parentHandle, "html_start_" + handle.id);
+	});
+	V.rt(handleName, function(handle, index, parentHandle) {
+		var handleChilds = handle.childNodes,
+			beginCommentId,// = handleChilds[handleChilds.length - 1].id,
+			endCommentId,// = handleChilds[handleChilds.length - 2].id,
+			cacheNode = $.D.cl(shadowDIV),
+			trigger,
+			argumentsIdSet = [];
+		$.ftE(handleChilds, function(handle_arg) {
+			$.p(argumentsIdSet, handle_arg.id);
+		});
+		beginCommentId = argumentsIdSet[argumentsIdSet.length-1]
+		endCommentId = argumentsIdSet[argumentsIdSet.length-2]
+		trigger = {
+			// key:"",//default key === ""
+			bubble: true,
+			event: function(NodeList_of_ViewInstance, dataManager, /*triggerBy,*/ isAttr, viewInstance_ID) {
+				var startCommentNode = NodeList_of_ViewInstance[beginCommentId].currentNode,
+					endCommentNode = NodeList_of_ViewInstance[endCommentId].currentNode,
+					parentNode = endCommentNode.parentNode,
+					brotherNodes = parentNode.childNodes,
+					argumentsDataSet = [],
+					index = -1;
+
+				for (var i = 0, len = argumentsIdSet.length - 2, handle_arg_data, argumentsDataSet; i < len; i += 1) {
+					$.p(argumentsDataSet,NodeList_of_ViewInstance[argumentsIdSet[i]]._data)
+				};
+				$.fE(brotherNodes, function(node, i) {
+					index = i;
+					if (node === startCommentNode) {
+						return $FALSE;
+					}
+				});
+				index = index + 1;
+				$.fE(brotherNodes, function(node, i) {
+					if (node === endCommentNode) {
+						return $FALSE;
+					}
+					$.D.rC(parentNode, node); //remove
+				}, index);
+
+				cacheNode.innerHTML = handleFun.apply(V._instances[viewInstance_ID],argumentsDataSet)
+				$.fE(cacheNode.childNodes, function(node, i) {
+					$.D.iB(parentNode, node, endCommentNode);
+				});
+			}
+		}
+		return trigger;
+	});
+	return ViewParser;
+}
+registerHandle("HTML",function () {
+	return Array.prototype.join.call(arguments,"");
+})
+
+/*
+ * export
+ */
+var ViewParser = global.ViewParser = {
+	scans: function() {
+		$.fE(document.getElementsByTagName("script"), function(scriptNode) {
+			if (scriptNode.getAttribute("type") === "text/template") {
+				V.modules[scriptNode.getAttribute("name")] = ViewParser.parse(scriptNode.innerHTML);
+				$.D.rm(scriptNode)
+			}
+		});
+	},
+	parseStr: function(htmlStr) {
+		return V.parse(parse(htmlStr))
+	},
+	parseNode: function(htmlNode) {
+		return V.parse(parse(htmlNode.innerHTML))
+	},
+	parse: function(html) {
+		if (html instanceof Object) {
+			return this.parseNode(html)
+		}
+		return this.parseStr(html)
+	},
+	modules: V.modules,
+	config: {
+		Id: 'HVP',
+		Var: 'App',
+		Data: $NULL
+	},
+	registerHandle: registerHandle,
+	app: function(userConfig) {
+		ViewParser.scans();
+		var HVP_config = ViewParser.config;
+		userConfig = _mix(HVP_config, userConfig) || HVP_config;
+		var App = document.getElementById(userConfig.Id); //configable
+		if (App) {
+			var appName = userConfig.Var;
+			var template = ViewParser.parseNode(App)(userConfig.Data); //App.getAttribute("template-data")//json or url or configable
+			// template.set(HVP_config.Data);
+			App.innerHTML = "";
+			template.append(App);
+			if ( /*!appName || */ appName == userConfig.Id || appName in global) {
+				//IE does not support the use and the DOM ID of the same variable names, so automatically add '_App' after the most.
+				appName = userConfig.Id + "_App";
+				// console.error("App's name shouldn't the same of the DOM'ID");
+				console.warn("App's name will be set as " + appName);
+			}
+			global[appName] = template
+		}
+	},
+	ready: (function() {
+		var ready = "DOMContentLoaded", //_isIE ? "DOMContentLoaded" : "readystatechange",
+			ready_status = $FALSE,
+			callbackFunStacks = [];
+
+		function _load() {
+			var callbackObj;
+			while (callbackFunStacks.length) {
+				callbackObj = callbackFunStacks.shift(0, 1);
+				callbackObj.callback.call(callbackObj.scope || global)
+			}
+			ready_status = $TRUE;
+		}
+		_registerEvent(doc, (_isIE && IEfix[ready]) || ready, _load);
+		return function(callbackFun, scope) {
+			if (ready_status) {
+				callbackFun.call(scope || global);
+			} else {
+				$.p(callbackFunStacks, {
+					callback: callbackFun,
+					scope: scope
+				})
+				//complete ==> onload , interactive ==> DOMContentLoaded
+				//https://developer.mozilla.org/en-US/docs/Web/API/document.readyState
+				if (/complete|interactive/.test(doc.readyState)) { //fix asyn load
+					_load()
+				}
+			}
+		}
+	}())
+};
+(function() {
+	var scriptTags = document.getElementsByTagName("script"),
+		HVP_config = ViewParser.config,
+		userConfigStr = $.trim(scriptTags[scriptTags.length - 1].innerHTML);
+	ViewParser.ready(function() {
+		ViewParser.scans();
+		if (userConfigStr.charAt(0) === "{") {
+			try {
+				var userConfig = userConfigStr ? Function("return" + userConfigStr)() : {};
+			} catch (e) {
+				console.error("config error:" + e.message);
+			}
+			userConfig && ViewParser.app(userConfig)
+		}
+	});
+}());
 
 }(this));

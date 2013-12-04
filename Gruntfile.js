@@ -21,16 +21,19 @@ module.exports = function(grunt) {
 		'src/_ArrayDataManager.js',
 		'src/$scope.js',
 		// 'src/dataManagerExtendsClass/*.js',
-		'src/templateParse.v1.js',
 		'src/registerAttribute.js',
 		'src/View.js',
 		'src/ViewInstance.js',
 		'src/Handle.js',
-		'src/export.js',
+		'src/export_base.js',
 		'src/registerHandle/*.js',
 		'src/registerTrigger/*.js',
+		'src/registerAttributeHandle/*.js',
+		'src/templateParse.v1.js',
+		
+		//such as registerHandle(markdown,fun...)
 		'src/registerHandle.js',
-		'src/registerAttributeHandle/*.js'
+		'src/export.js'
 	],
 		debugFile = baseFile.slice();
 	debugFile.unshift('src/plugins.js')
