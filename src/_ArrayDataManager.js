@@ -3,9 +3,11 @@
  * to mamage #each datamanager
  */
 
-function _ArrayDataManager(perfix) {
-	this._prefix = perfix;
-	this._DMs = [];
+function _ArrayDataManager(perfix,id) {
+	var self= this;
+	self._id = id;
+	self._prefix = perfix;
+	self._DMs = [];
 }
 var _ArrDM_proto = _ArrayDataManager.prototype
 $.fI(DM_proto, function(fun, funName) {

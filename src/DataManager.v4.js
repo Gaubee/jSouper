@@ -351,12 +351,13 @@ var DM_proto = DataManager.prototype = {
 		dataManager._prefix = prefixKey
 		return $.p(this._subsetDataManagers, dataManager);
 	},
-	_pushToCollectDM: function(dataManager, pprefixKey) {
+	_pushToCollectDM: function(dataManager, pprefixKey, id) {
 		var self = this,
 			collectDataManagers = self._collectDataManagers;
-		var collectDataManager = collectDataManagers[pprefixKey];
+		var hash = pprefixKey+id;
+		var collectDataManager = collectDataManagers[hash];
 		if (!collectDataManager) {
-			collectDataManager = collectDataManagers[pprefixKey] = new _ArrayDataManager(pprefixKey);
+			collectDataManager = collectDataManagers[hash] = new _ArrayDataManager(pprefixKey);
 			self._pushToSubSetDM(collectDataManager, pprefixKey)
 		}
 		collectDataManager.push(dataManager)
@@ -392,7 +393,9 @@ var DM_proto = DataManager.prototype = {
 		if (dataManager._isEach) {
 			self._pushToCollectDM(dataManager,
 				//prefixkey === "[0-9]+?" ==> $THIS.0 ==> return ""; else return prefixkey.split(".").pop().join(".")
-				prefixKey.substring(0, prefixKey.length - String(dataManager._isEach.index) - 1))
+				prefixKey.substring(0, prefixKey.length - String(dataManager._isEach.index) - 1),
+				// in dif handle
+				dataManager._isEach.eachId)
 		} else {
 			self._pushToSubSetDM(dataManager, prefixKey)
 		}

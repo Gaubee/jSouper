@@ -1,4 +1,4 @@
-var _each_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManager, triggerBy, viewInstance_ID) {
+var _each_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManager, /*triggerBy,*/ viewInstance_ID) {
 	var handle = this,
 		parentHandle = handle.parentNode,
 		comment_endeach_id,

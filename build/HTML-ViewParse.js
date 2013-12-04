@@ -992,12 +992,13 @@ var DM_proto = DataManager.prototype = {
 		dataManager._prefix = prefixKey
 		return $.p(this._subsetDataManagers, dataManager);
 	},
-	_pushToCollectDM: function(dataManager, pprefixKey) {
+	_pushToCollectDM: function(dataManager, pprefixKey, id) {
 		var self = this,
 			collectDataManagers = self._collectDataManagers;
-		var collectDataManager = collectDataManagers[pprefixKey];
+		var hash = pprefixKey+id;
+		var collectDataManager = collectDataManagers[hash];
 		if (!collectDataManager) {
-			collectDataManager = collectDataManagers[pprefixKey] = new _ArrayDataManager(pprefixKey);
+			collectDataManager = collectDataManagers[hash] = new _ArrayDataManager(pprefixKey);
 			self._pushToSubSetDM(collectDataManager, pprefixKey)
 		}
 		collectDataManager.push(dataManager)
@@ -1033,7 +1034,9 @@ var DM_proto = DataManager.prototype = {
 		if (dataManager._isEach) {
 			self._pushToCollectDM(dataManager,
 				//prefixkey === "[0-9]+?" ==> $THIS.0 ==> return ""; else return prefixkey.split(".").pop().join(".")
-				prefixKey.substring(0, prefixKey.length - String(dataManager._isEach.index) - 1))
+				prefixKey.substring(0, prefixKey.length - String(dataManager._isEach.index) - 1),
+				// in dif handle
+				dataManager._isEach.eachId)
 		} else {
 			self._pushToSubSetDM(dataManager, prefixKey)
 		}
@@ -1110,9 +1113,11 @@ var DM_proto = DataManager.prototype = {
  * to mamage #each datamanager
  */
 
-function _ArrayDataManager(perfix) {
-	this._prefix = perfix;
-	this._DMs = [];
+function _ArrayDataManager(perfix,id) {
+	var self= this;
+	self._id = id;
+	self._prefix = perfix;
+	self._DMs = [];
 }
 var _ArrDM_proto = _ArrayDataManager.prototype
 $.fI(DM_proto, function(fun, funName) {
@@ -2477,7 +2482,7 @@ V.rh("define", function(handle, index, parentHandle) {
 		return $.noop
 	}
 });
-var _each_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManager, triggerBy, viewInstance_ID) {
+var _each_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManager, /*triggerBy,*/ viewInstance_ID) {
 	var handle = this,
 		parentHandle = handle.parentNode,
 		comment_endeach_id,
@@ -2810,6 +2815,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 							viDM._isEach = viewInstance._isEach = {
 								// index 仅仅存储在DM中，避免混乱
 								// index: index,
+								eachId:id,
 								eachVIs: arrViewInstances
 							}
 							// viDM._index = index;
@@ -3305,17 +3311,19 @@ V.ra(function(attrKey){
 var _elementCache = {},
 	eventListerAttribute = function(key, currentNode, parserNode, vi /*, dm_id*/ ) {
 		var attrOuter = _getAttrOuter(parserNode),
-			eventInfos = key.replace("event-on", "").replace("event-", "").toLowerCase().split("-"),
+			eventInfos = key.replace("event-", "").toLowerCase().split("-"),
 			eventName = eventInfos.shift(), //Multi-event binding
-			eventFun = vi.get(attrOuter)||$.noop, //can remove able
+			eventFun = vi.get(attrOuter) || $.noop, //can remove able
 			elementHashCode = $.hashCode(currentNode, "event" + eventInfos.join("-"));
-
+		if (eventName.indexOf("on") === 0) {
+			eventName = eventName.substring(2)
+		}
 		var eventCollection = _elementCache[elementHashCode];
-		if (!eventCollection) {//init Collection
+		if (!eventCollection) { //init Collection
 			eventCollection = _elementCache[elementHashCode] = {}
 		}
 		var wrapEventFun = eventCollection[eventName]
-		if (!wrapEventFun) {//init Event and register event
+		if (!wrapEventFun) { //init Event and register event
 			wrapEventFun = eventCollection[eventName] = function(e) {
 				return wrapEventFun.eventFun.call(this, e, vi)
 			}
@@ -3566,6 +3574,36 @@ V.rt("#each", function(handle, index, parentHandle) {
 		}
 	}
 	return trigger;
+})
+var _statusEventCache = {},
+	statusListerAttribute = function(key, currentNode, parserNode, vi /*, dm_id*/ ) {
+		var attrOuter = _getAttrOuter(parserNode),
+			statusInfos = key.replace("status-", "").toLowerCase().split("-"),
+			eventName = statusInfos.shift(), //Multi-status binding
+			statusFun = vi.get(attrOuter) || $.noop, //can remove able
+			elementHashCode = $.hashCode(currentNode, "status" + statusInfos.join("-"));
+		if (eventName.indexOf("on") === 0) {
+			eventName = eventName.substring(2)
+		}
+		console.log(attrOuter)
+		var statusCollection = _statusEventCache[elementHashCode];
+		if (!statusCollection) { //init Collection
+			statusCollection = _statusEventCache[elementHashCode] = {}
+		}
+		var wrapstatusFun = statusCollection[eventName]
+		if (!wrapstatusFun) { //init status and register status
+			wrapstatusFun = statusCollection[eventName] = function(e) {
+				return wrapstatusFun.statusFun.call(this, e, vi)
+			}
+			_registerEvent(currentNode, eventName, wrapstatusFun, elementHashCode);
+		}
+		wrapstatusFun.statusFun = statusFun;
+	};
+
+V.ra(function(attrKey) {
+	return attrKey.indexOf("status-") === 0;
+}, function(attrKey) {
+	return statusListerAttribute;
 })
 V.ra("style",function () {
 	return _isIE&&_AttributeHandleEvent.style;

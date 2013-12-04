@@ -78,6 +78,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 							viDM._isEach = viewInstance._isEach = {
 								// index 仅仅存储在DM中，避免混乱
 								// index: index,
+								eachId:id,
 								eachVIs: arrViewInstances
 							}
 							// viDM._index = index;
