@@ -1702,6 +1702,7 @@ function View(arg) {
 	}
 };
 // var V_session = View.session = {};
+
 function _buildHandler(handleNodeTree) {
 	var self = this,
 		handles = self._handles
@@ -1718,7 +1719,7 @@ function _buildHandler(handleNodeTree) {
 	});
 };
 var _attrRegExp = /(\S+)=["']?((?:.(?!["']?\s+(?:\S+)=|[>"']))+.)["']?/g;
-
+var ignoreTagName = "SCRIPT|PRE|TEMPLATE|STYLE|LINK".split("|");
 
 function _buildTrigger(handleNodeTree, dataManager) {
 	var self = this, //View Instance
@@ -1733,15 +1734,18 @@ function _buildTrigger(handleNodeTree, dataManager) {
 					var key = trigger.key || (trigger.key = "");
 					trigger.handleId = trigger.handleId || handle.id;
 					//unshift list and In order to achieve the trigger can be simulated bubble
-					$.us((triggerTable[key]||(triggerTable[key]  =  [])), trigger); //Storage as key -> array
+					$.us((triggerTable[key] || (triggerTable[key] = [])), trigger); //Storage as key -> array
 					$.p(handle._triggers, trigger); //Storage as array
 				}
 			}
 		} else if (handle.type === "element") {
+			if ($.iO(ignoreTagName, handle.tagName) !== -1) {
+				return $FALSE;
+			}
 			var node = handle.node,
 				nodeHTMLStr = node.outerHTML.replace(node.innerHTML, ""),
 				attrs = nodeHTMLStr.match(_attrRegExp);
-			$.fE(node.attributes,function(attr,i){
+			$.fE(node.attributes, function(attr, i) {
 				var value = attr.value;
 				if (_templateMatchRule.test(value)) {
 					attributeHandle(attr.name, value, node, handle, triggerTable);
