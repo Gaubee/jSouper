@@ -96,7 +96,7 @@ var doc = document,
 			return i;
 		},
 		iO: function(arr, item) { //indexOf
-			for (var i = 0,len = arr.length; i < len; i += 1) {
+			for (var i = 0, len = arr.length; i < len; i += 1) {
 				if (arr[i] === item) {
 					return i;
 				}
@@ -173,6 +173,24 @@ var doc = document,
 					delete n.parentNode.removeChild(n);
 				}
 			}
+		},
+		ajax: function(config) {
+			var xhr = new(window.XMLHttpRequest || ActiveXObject)("Microsoft.XMLHTTP");
+			xhr.onreadystatechange = function() {
+				if (xhr.readyState === 4) {
+					var s = xhr.status
+					if (s >= 200 && s < 300 || s === 304 || s === 1223) {
+						(config.success || $.noop)(s, xhr)
+					} else {
+						(config.error || $.noop)(s, xhr)
+					}
+					(config.complete || $.noop)(s, xhr)
+				}
+			}
+			xhr.open(config.type || "GET", config.url, true)
+			// xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest")
+			xhr.send(null)
+			return xhr
 		}
 	},
 	_Object_create_noop = function proto() {},

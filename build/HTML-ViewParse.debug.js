@@ -120,7 +120,7 @@ var doc = document,
 			return i;
 		},
 		iO: function(arr, item) { //indexOf
-			for (var i = 0,len = arr.length; i < len; i += 1) {
+			for (var i = 0, len = arr.length; i < len; i += 1) {
 				if (arr[i] === item) {
 					return i;
 				}
@@ -197,6 +197,24 @@ var doc = document,
 					delete n.parentNode.removeChild(n);
 				}
 			}
+		},
+		ajax: function(config) {
+			var xhr = new(window.XMLHttpRequest || ActiveXObject)("Microsoft.XMLHTTP");
+			xhr.onreadystatechange = function() {
+				if (xhr.readyState === 4) {
+					var s = xhr.status
+					if (s >= 200 && s < 300 || s === 304 || s === 1223) {
+						(config.success || $.noop)(s, xhr)
+					} else {
+						(config.error || $.noop)(s, xhr)
+					}
+					(config.complete || $.noop)(s, xhr)
+				}
+			}
+			xhr.open(config.type || "GET", config.url, true)
+			// xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest")
+			xhr.send(null)
+			return xhr
 		}
 	},
 	_Object_create_noop = function proto() {},
@@ -2341,7 +2359,12 @@ V.rh("@", function(handle, index, parentHandle) {
 	}
 });
 V.rh("/if", V.rh("#else", V.rh("#if", placeholderHandle)));
-var _layout_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManager, /*triggerBy,*/ viewInstance_ID) {
+V.rh("#include", function(handle, index, parentHandle) {
+	handle.display = _layout_display; //Custom rendering function
+	_commentPlaceholder(handle, parentHandle);
+});
+//no var ,for #include to use
+function _layout_display(show_or_hidden, NodeList_of_ViewInstance, dataManager, /*triggerBy,*/ viewInstance_ID) {
 	var handle = this,
 		commentPlaceholderElement,
 		layoutViewInstance = V._instances[viewInstance_ID]._ALVI[handle.id];
@@ -2760,6 +2783,54 @@ V.rt("#if", function(handle, index, parentHandle) {
 		}
 	}
 
+	return trigger;
+});
+var _cache_xhrConifg = {};
+var _require_module = function(url, handleFun) {
+	var xhrConifg = _cache_xhrConifg.hasOwnProperty(url) && _cache_xhrConifg[url]
+	if (xhrConifg) {
+		$.p(xhrConifg.success._, handleFun)
+	} else {
+		var handleQuene = function(status, xhr) {
+			$.ftE(handleQuene._, function(handleFun) {
+				handleFun(status, xhr);
+			})
+		}
+		handleQuene._ = [handleFun];
+		xhrConifg = _cache_xhrConifg[url] = {
+			url: url,
+			success: handleQuene,
+			error: function() {
+				throw new Error("module " + url + " is undefined.")
+			},
+			complete:function(){
+				//GC
+				_cache_xhrConifg[url] = $NULL;
+			}
+		}
+		$.ajax(xhrConifg)
+	}
+}
+V.rt("#include", function(handle, index, parentHandle) {
+	var templateHandle_id = handle.childNodes[0].id;
+
+	//base on layout
+	var trigger = V.triggers["#layout"](handle, index, parentHandle)
+
+	// Ajax NodeList_of_ViewInstance[templateHandle_id]._data
+	var _event = trigger.event;
+	trigger.event = function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
+		var url = NodeList_of_ViewInstance[templateHandle_id]._data;
+		var args = arguments
+		if (!V.modules[url]) {
+			_require_module(url,function(status,xhr){
+				V.modules[url] = ViewParser.parseStr(xhr.responseText)
+				_event.apply(this, args);
+			})
+		} else {
+			_event.apply(this, args);
+		}
+	}
 	return trigger;
 });
 V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
