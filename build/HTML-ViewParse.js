@@ -972,21 +972,26 @@ var DM_proto = DataManager.prototype = {
 	touchOff: function(key) {
 		var self = this;
 		var result;
+
 		var linkKey = "",
 			__arrayLen = self.__arrayLen,
-			__arrayData,
-			arrKey = key.split("."),
-			lastKey = arrKey.pop();
+			__arrayData;
 
-		//寻找长度开始变动的那一层级的数据开始_touchOffSibling
-		arrKey && $.ftE(arrKey, function(maybeArrayKey) {
-			linkKey = linkKey ? linkKey + "." + maybeArrayKey : maybeArrayKey;
-			if ((__arrayData = DM_proto.get.call(self, linkKey)) instanceof Array && __arrayLen[linkKey] !== __arrayData.length) {
-				// console.log(linkKey,__arrayData.length, __arrayLen[linkKey])
-				__arrayLen[linkKey] = __arrayData.length
-				result = self._touchOffSibling(linkKey)
-			}
-		})
+		//简单的判定是否可能是数组类型的操作并且可能影响到长度
+		if (/[^\w]\.?length/.test(key) || /[^\w]\.?[\d]+[^\w]\.?/.test(key)) {
+			var arrKey = key.split("."),
+				lastKey = arrKey.pop();
+
+			//寻找长度开始变动的那一层级的数据开始_touchOffSibling
+			arrKey && $.ftE(arrKey, function(maybeArrayKey) {
+				linkKey = linkKey ? linkKey + "." + maybeArrayKey : maybeArrayKey;
+				if ((__arrayData = DM_proto.get.call(self, linkKey)) instanceof Array && __arrayLen[linkKey] !== __arrayData.length) {
+					// console.log(linkKey,__arrayData.length, __arrayLen[linkKey])
+					__arrayLen[linkKey] = __arrayData.length
+					result = self._touchOffSibling(linkKey)
+				}
+			})
+		}
 		if (!result && (__arrayData = self.get()) instanceof Array && __arrayLen[""] !== __arrayData.length) {
 			__arrayLen[""] = __arrayData.length
 			key = "";
