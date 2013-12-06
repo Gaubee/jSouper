@@ -729,6 +729,9 @@ var _extendIgnore = DataManager.ignoreExtendsObject = function(newObj) {
 	}
 	self.value = newObj
 };*/
+//set时使其进行强制更新
+DataManager.updateExtendObject = {};
+
 var $LENGTH = "length";
 
 function _mix(sObj, nObj) {
@@ -843,7 +846,7 @@ var DM_proto = DataManager.prototype = {
 			filterKey = key;
 		}
 		if (result && result[_DM_extends_object_constructor] && !_dm_get_source) {
-			result = result.get(self,key,result.value);
+			result = result.get(self, key, result.value);
 		}
 		//filterKey应该在extends_object的get后定义，避免被覆盖
 		DataManager.session.filterKey = filterKey;
@@ -898,7 +901,7 @@ var DM_proto = DataManager.prototype = {
 			$.p(setStacks, result_dm_id);
 			result = result.key ? result_dm.set(result.key, nObj) : result_dm.set(nObj);
 			// result = result_dm.touchOff(result.key)
-			setStacks.pop();			
+			setStacks.pop();
 			!setStacks.length && DataManager.finallyRun();
 		} else {
 			switch (argumentLen) {
@@ -940,26 +943,10 @@ var DM_proto = DataManager.prototype = {
 						return;
 					}
 			}
-			result = $UNDEFINED; //var result
-			var linkKey = "",
-				__arrayLen = self.__arrayLen,
-				__arrayData;
-			arrKey && $.ftE(arrKey, function(maybeArrayKey) {
-				linkKey = linkKey ? linkKey + "." + maybeArrayKey : maybeArrayKey;
-				if ((__arrayData = DM_proto.get.call(self, linkKey)) instanceof Array && __arrayLen[linkKey] !== __arrayData.length) {
-					// console.log(linkKey,__arrayData.length, __arrayLen[linkKey])
-					__arrayLen[linkKey] = __arrayData.length
-					result = self.touchOff(linkKey)
-				}
-			})
-			if (!result && (__arrayData = self.get()) instanceof Array && __arrayLen[""] !== __arrayData.length) {
-				__arrayLen[""] = __arrayData.length
-				key = "";
-			}
-			// console.log(key)
+			//TODO:set中的filterKey已经在return中存在，无需再有
 			DataManager.session.filterKey = key;
 			// debugger
-			result = result || self.touchOff(key);
+			result = self.touchOff(key);
 		}
 		// console.log(result)
 		return result;
@@ -1004,7 +991,32 @@ var DM_proto = DataManager.prototype = {
 		}
 		return result;
 	},
-	touchOff: function(key) { //always touchoff from toppest dm
+	touchOff: function(key) {
+		var self = this;
+		var result;
+		var linkKey = "",
+			__arrayLen = self.__arrayLen,
+			__arrayData,
+			arrKey = key.split("."),
+			lastKey = arrKey.pop();
+
+		//寻找长度开始变动的那一层级的数据开始_touchOffSibling
+		arrKey && $.ftE(arrKey, function(maybeArrayKey) {
+			linkKey = linkKey ? linkKey + "." + maybeArrayKey : maybeArrayKey;
+			if ((__arrayData = DM_proto.get.call(self, linkKey)) instanceof Array && __arrayLen[linkKey] !== __arrayData.length) {
+				// console.log(linkKey,__arrayData.length, __arrayLen[linkKey])
+				__arrayLen[linkKey] = __arrayData.length
+				result = self._touchOffSibling(linkKey)
+			}
+		})
+		if (!result && (__arrayData = self.get()) instanceof Array && __arrayLen[""] !== __arrayData.length) {
+			__arrayLen[""] = __arrayData.length
+			key = "";
+		}
+		result || (result = self._touchOffSibling(key))
+		return result;
+	},
+	_touchOffSibling: function(key) { //always touchoff from toppest dm
 		var self = this,
 			database = self._database;
 		$.ftE($.s(_getAllSiblingDataManagers(self)), function(dm) {
