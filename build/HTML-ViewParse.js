@@ -3906,6 +3906,8 @@ var ViewParser = global.ViewParser = {
 			return this._set.call(dm, key, value)
 		},
 		get: function(dm, key, value) {
+			var dm_id = dm.id
+			var observerCache_ = observerCache._
 			/*
 			 * dm collect get mode
 			 */
@@ -3924,26 +3926,44 @@ var ViewParser = global.ViewParser = {
 			var _current_collect_layer = _get_collect_stack.pop()
 
 			//获取上次收集的依赖，将上次依赖进行回退
-			var _oldObserverObj = observerCache._[dm.id];
+			var _oldObserverObjects = observerCache_[dm_id] || (observerCache_[dm_id] = {});
+			var _oldObserverObj
 			//舍弃上一次的依赖关系
-			_oldObserverObj && (_oldObserverObj.abandon = $TRUE)
+			if (_oldObserverObj =_oldObserverObjects[key]) {
+				$.ftE(_oldObserverObj._parent, function(parent) {
+					var abandon_index = $.iO(parent, _oldObserverObj);
+					$.sp.call(parent, abandon_index, 1)
+				})
+				//force GC
+				delete _oldObserverObj._parent
+			}
+
 
 			var _newObserverObj = {
-				// abandon:$FALSE, //delay load
-				dm_id: dm.id,
+				_parent: [],
+				dm_id: dm_id,
 				dm_key: key
 			}
 
 			//保存最近一层依赖
-			observerCache._[dm.id] = _newObserverObj
+			_oldObserverObjects[key] = _newObserverObj
 
 			//将依赖关系你想逆向转换
 			$.ftE(_current_collect_layer, function(relyObj) {
 				var observerObjCollect = observerCache[relyObj.dm_id] || (observerCache[relyObj.dm_id] = {})
-				$.p((observerObjCollect[relyObj.dm_key] = []), _newObserverObj)
+				observerObjs = observerObjCollect[relyObj.dm_key] || (observerObjCollect[relyObj.dm_key] = [])
+
+				//避免重复收集
+				if ($.iO(observerObjs, _newObserverObj) === -1) {
+					var index = $.p(observerObjs, _newObserverObj)
+					$.p(_newObserverObj._parent, observerObjs)
+				}
 			})
 
-			DM_proto.get = _dm_normal_get;
+			//确保是最后一层的了再恢复
+			if (_get_collect_stack.length === 0) {
+				DM_proto.get = _dm_normal_get;
+			}
 
 			return result;
 		},
@@ -3952,22 +3972,22 @@ var ViewParser = global.ViewParser = {
 		}
 	}
 
-	var _dm_normal_set = DM_proto.set
-	DM_proto.set = function() {
+	var _dm_normal_touchOff = DM_proto.touchOff
+	DM_proto.touchOff = function() {
 		var self = this;
 		// debugger
-		var result = _dm_normal_set.apply(self, arguments)
-		if (result.stacks!==0) {//0层的set代表着冒泡到顶层，不代表着进行了set操作
-			var observerObjCollect = observerCache[self.id]
-			if (observerObjCollect) {
-				observerObjCollect = observerObjCollect[DataManager.session.filterKey];
-				observerObjCollect && $.ftE(observerObjCollect, function(observerObj) {
-					console.log(observerObj)
-				})
-			}
+		var result = _dm_normal_touchOff.apply(self, arguments)
+		var observerObjCollect = observerCache[self.id]
+		if (observerObjCollect) {
+			var observerObjs = observerObjCollect[result.key];
+			observerObjs && $.fE(observerObjs, function(observerObj, abandon_index) {
+				DataManager.get(observerObj.dm_id).touchOff(observerObj.dm_key)
+			})
 		}
 		return result;
 	}
+
+	//DataManager.extend
 	_dataManagerExtend("Observer", Observer)
 }())
 

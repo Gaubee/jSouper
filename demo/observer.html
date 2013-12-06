@@ -22,7 +22,7 @@ ViewParser.ready(function(){
 			firstName: "Gaubee",
 			lastName: "bangeel",
 			name: DataManager.Observer(function get() {
-					return "my name is " + this.get("firstName") + " " + this.get("lastName")
+					return "my name is " + this.get("fullName")+" "+ this.get("fullName")+" "+ this.get("lastName")// + " " + this.get("lastName")
 				},function set(key,new_data) {
 					var name = new_data.split(" ");
 					console.log(arguments)
@@ -38,9 +38,9 @@ ViewParser.ready(function(){
 	// },1000)
 	setTimeout(function(){
 		App.set("firstName","firstName")
-	},1500)
+	},500)
 	setTimeout(function(){
 		App.set("lastName","lastName")
-	},2000)
+	},1000)
 })
 </script>
