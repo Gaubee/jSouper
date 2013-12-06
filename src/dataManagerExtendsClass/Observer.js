@@ -1,139 +1,112 @@
-var relyStack = [], //用于搜集依赖的堆栈数据集
-	allRelyContainer = {}, //存储处理过的依赖关系集，在set运作后链式触发 TODO：注意处理循环依赖
-	chain_update_rely = function(id, updataKeys) {
-		var relyContainer = allRelyContainer[id]; // || (allRelyContainer[this.id] = {});
-
-		relyContainer && $.ftE(updataKeys, function(updataKey) { //触发依赖
-			var leaderArr;
-			if (leaderArr = relyContainer[updataKey]) {
-				$.ftE(leaderArr, function(leaderObj) {
-					var leader = leaderObj.dm,
-						key = leaderObj.key;
-					chain_update_rely(leader.id, leader.set(key, leader._getSource(key).get())) //递归:链式更新
-				})
-			}
-		})
-	}
-
-	function Observer(obs) { //动态计算类
+;
+(function() {
+	function Observer(getFun, setFun, formFun) {
 		var self = this;
 		if (!(self instanceof Observer)) {
-			return new Observer(obs);
+			return new Observer(getFun, setFun, formFun)
 		}
-		DataManager.Object(self);
-		if (obs instanceof Function) {
-			self._get = obs;//完全暴露错误给用户，方便调试Try(obs, self);
-			self.set = $.noop;//与defineGetter|defineSetter一样的机制
-			// self._form = $NULL;
-		} else {
-			self._get = obs.get || function() {
-				return self._value
-			};
-			self.set = obs.set?function(){
-				self._value = obs.set.apply(this.arguments)
-			}:$.noop;//Try(obs.set, self) || $.noop;
-			self._form = obs.form//Try(obs.form, self) || $NULL;
-		}
-		self._value;
-		self._valueOf = Observer._initGetData;
-		self._toString = Observer._getData;
+		self._get = getFun || $.noop
+		self._set = setFun || $.noop
+		self._form = formFun || $.noop
+		self._id = $.uid()
+	}
+
+	// 存储处理过的依赖关系集，在set运作后链式触发 TODO：注意处理循环依赖
+	var observerCache = Observer.cache = {
+		//dm_id:{key:[{dm_id:dm,dm_key:"",abandon:false}...]}
+		_: {}
 	};
-Observer._initGetData = function() {
-	var self = this;
-	self.valueOf = self.toString = Observer._getData;
-	return self._value = self.get();
-};
-Observer._getData = function() {
-	return this._value
-};
-Observer.collect = function(leader_id, follower_id) {
-	//allRelyContainer;
-};
-Observer.pickUp = function(leader, leader_key, relySet) {
-	var leader_id = leader.id;
-	$.ftE(relySet, function(relyNode) { //处理依赖结果
-		var relyId = relyNode.id,
-			relyKey = relyNode.key,
-			relyContainer = allRelyContainer[relyId] || (allRelyContainer[relyId] = {});
 
-		if (!(leader_id === relyId && leader_key === relyKey)) { //避免直接的循环依赖
-			cache = relyContainer[relyKey];
-			if (!cache) {
-				cache = relyContainer[relyKey] = [];
-				cache._ = {};
-			}
-			var cache_key = cache._[leader_key] || (cache._[leader_key] = "|");
+	// 原始的DM-get方法
+	var _dm_normal_get = DM_proto.get
 
-			if (cache_key.indexOf("|" + leader_id + "|") === -1) {
-				$.p(cache, {
-					dm: leader,
-					key: leader_key
-				});
-				cache._[leader_key] += leader_id + "|";
-			}
-		}
-	});
-};
-Observer.prototype = {
-	get: function() {
+	// 带收集功能的DM-get
+	var _dm_collect_get = function() {
+		var self = this;
+		var result = _dm_normal_get.apply(self, arguments)
 
-		var self = this,
-			dm = DataManager.session.topGetter,
-			key = DataManager.session.filterKey,
-			result;
-		$.p(relyStack, []); //开始收集
-
-		result = self._value = self._get();
-
-		var relySet = relyStack.pop(); //获取收集结果
-		// console.log(relySet); //debugger;
-		relySet.length && Observer.pickUp(dm, key, relySet);
-
+		//当前收集层
+		var _current_collect_layer = _get_collect_stack[_get_collect_stack.length - 1]
+		//存储相关的依赖信息
+		_current_collect_layer && $.p(_current_collect_layer, {
+			//rely object
+			dm_id: self.id,
+			dm_key: DataManager.session.filterKey
+		})
 		return result;
-	},
-	toString: Observer._initGetData,
-	valueOf: Observer._initGetData
-};
+	}
 
-(function() {
-	var _get = DM_proto.get,
-		_set = DM_proto.set,
-		_collect = DM_proto.collect;
-	DM_proto.get = function() {
-		var result = _get.apply(this, arguments/*$.s(arguments)*/);
-		// console.log(result)
-		// if (result instanceof Observer) {
-		// 	result = result.get()
-		// }
-		if (relyStack.length) {
-			$.p($.lI(relyStack), {
-				id: DataManager.session.topGetter.id,
-				// dataManager: DataManager.session.topGetter,
-				key: DataManager.session.filterKey
+	// 用于搜集依赖的堆栈数据集
+	var _get_collect_stack = []
+
+	// 委托 set\get\form
+	// this ==> dataManager but not Observer-instance
+	Observer.prototype = {
+		set: function(dm, key, value) {
+			return this._set.call(dm, key, value)
+		},
+		get: function(dm, key, value) {
+			/*
+			 * dm collect get mode
+			 */
+			DM_proto.get = _dm_collect_get;
+
+			//生成一层收集层
+			$.p(_get_collect_stack, [])
+
+			//运行原生get
+			var result = this._get.call(dm, key, value)
+
+			/*
+			 * dm normal get mode
+			 */
+			//回收最近一层依赖
+			var _current_collect_layer = _get_collect_stack.pop()
+
+			//获取上次收集的依赖，将上次依赖进行回退
+			var _oldObserverObj = observerCache._[dm.id];
+			//舍弃上一次的依赖关系
+			_oldObserverObj && (_oldObserverObj.abandon = $TRUE)
+
+			var _newObserverObj = {
+				// abandon:$FALSE, //delay load
+				dm_id: dm.id,
+				dm_key: key
+			}
+
+			//保存最近一层依赖
+			observerCache._[dm.id] = _newObserverObj
+
+			//将依赖关系你想逆向转换
+			$.ftE(_current_collect_layer, function(relyObj) {
+				var observerObjCollect = observerCache[relyObj.dm_id] || (observerCache[relyObj.dm_id] = {})
+				$.p((observerObjCollect[relyObj.dm_key] = []), _newObserverObj)
 			})
+
+			DM_proto.get = _dm_normal_get;
+
+			return result;
+		},
+		form: function(dm, key, value) {
+			return this._form.apply(dm, arguments)
 		}
-		return result;
-	};
+	}
+
+	var _dm_normal_set = DM_proto.set
 	DM_proto.set = function() {
-		var self= this,
-			result = _set.apply(self, arguments/*$.s(arguments)*/),
-			relyContainer = allRelyContainer[self.id];
-		if (relyContainer) {
-			// console.log(result,relyContainer)
-			$.ftE(result.updateKey,function(updateKey){
-				var relyObjects = relyContainer[updateKey];
-				relyObjects&&$.ftE(relyObjects,function(relyObject){
-					relyObject.dm.touchOff(relyObject.key)
-				});
-			});
-		}
-		return result;
-	};
-	DM_proto.collect = function(dataManager) {
-		var result = _collect.apply(this, arguments/*$.s(arguments)*/);
-		if (dataManager instanceof DataManager) {
-			Observer.collect(this.id, dataManager.id);
+		var self = this;
+		// debugger
+		var result = _dm_normal_set.apply(self, arguments)
+		if (result.stacks!==0) {//0层的set代表着冒泡到顶层，不代表着进行了set操作
+			var observerObjCollect = observerCache[self.id]
+			if (observerObjCollect) {
+				observerObjCollect = observerObjCollect[DataManager.session.filterKey];
+				observerObjCollect && $.ftE(observerObjCollect, function(observerObj) {
+					console.log(observerObj)
+				})
+			}
 		}
 		return result;
 	}
-}());
+	_dataManagerExtend("Observer", Observer)
+}())

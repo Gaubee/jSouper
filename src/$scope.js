@@ -5,14 +5,14 @@
 		prefix = DM_config.prefix,
 		set = DM_proto.set = function(key) {
 			var self = this,
-				args = arguments/*$.s(arguments)*/,
+				args = arguments /*$.s(arguments)*/ ,
 				result;
 			if (args.length > 1) {
 				if (key.indexOf(prefix.Parent) === 0) { //$parent
 					if (self = self._parentDataManager) {
 						if (key === prefix.Parent) {
 							// args.splice(0, 1);
-							$.sp.call(args,0,1)
+							$.sp.call(args, 0, 1)
 						} else if (key.charAt(prefix.Parent.length) === ".") {
 							args[0] = key.replace(prefix.Parent + ".", "");
 						}
@@ -25,7 +25,7 @@
 				} else if (key.indexOf(prefix.This) === 0) { //$this
 					if (key === prefix.This) {
 						// args.splice(0, 1);
-						$.sp.call(args,0,1)
+						$.sp.call(args, 0, 1)
 					} else if (key.charAt(prefix.This.length) === ".") {
 						args[0] = key.replace(prefix.This + ".", "");
 					}
@@ -37,7 +37,7 @@
 					}
 					if (key === prefix.Top) {
 						// args.splice(0, 1);
-						$.sp.call(args,0,1)
+						$.sp.call(args, 0, 1)
 					} else if (key.charAt(prefix.Top.length) === ".") {
 						args[0] = key.replace(prefix.Top + ".", "");
 					}
@@ -48,23 +48,28 @@
 			} else { //one argument
 				result = _set.apply(self, args);
 			}
-			return result || {
-				key: key,
+			//TODO:简化返回结果，节省内存
+			result || (result = {
+				key: key/*,
 				// allUpdateKey: allUpdateKey,
 				updateKey: [key],
-				chidlUpdateKey: []
-			};
+				chidlUpdateKey: []*/
+			});
+
+			//更新调用堆栈层数，如果是0,则意味着冒泡到顶层的调用即将结束，是最后一层set
+			result.stacks = DataManager.session.setStacks.length
+			return result
 		},
 		get = DM_proto.get = function(key) {
 			var self = this,
-				args = arguments/*$.s(arguments)*/,
+				args = arguments /*$.s(arguments)*/ ,
 				result;
 			if (args.length > 0) {
 				if (key.indexOf(prefix.Parent) === 0) { //$parent
 					if (self = self._parentDataManager) {
 						if (key === prefix.Parent) {
 							// args.splice(0, 1);
-							$.sp.call(args,0,1)
+							$.sp.call(args, 0, 1)
 						} else if (key.charAt(prefix.Parent.length) === ".") {
 							args[0] = key.replace(prefix.Parent + ".", "");
 						}
@@ -77,7 +82,7 @@
 				} else if (key.indexOf(prefix.This) === 0) { //$this
 					if (key === prefix.This) {
 						// args.splice(0, 1);
-						$.sp.call(args,0,1)
+						$.sp.call(args, 0, 1)
 					} else if (key.charAt(prefix.This.length) === ".") {
 						args[0] = key.replace(prefix.This + ".", "");
 					}
@@ -89,7 +94,7 @@
 					}
 					if (key === prefix.Top) {
 						// args.splice(0, 1);
-						$.sp.call(args,0,1)
+						$.sp.call(args, 0, 1)
 					} else if (key.charAt(prefix.Top.length) === ".") {
 						args[0] = key.replace(prefix.Top + ".", "");
 					}
@@ -147,7 +152,7 @@
 			data = self.get(prefixKey),
 			result,
 			topGetter = DataManager.session.topGetter,
-			filterKey = DataManager.session.filterKey||"";
+			filterKey = DataManager.session.filterKey || "";
 		if (filterKey !== prefixKey) { //is smart key
 
 			if (prefixKey.indexOf(prefix.This) === 0) {
@@ -172,7 +177,7 @@
 				}
 			}
 		} else {
-			result = _subset.apply(self, arguments/*$.s(arguments)*/);
+			result = _subset.apply(self, arguments /*$.s(arguments)*/ );
 		}
 		return result;
 	}

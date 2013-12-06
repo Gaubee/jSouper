@@ -31,12 +31,23 @@ function DataManager(baseData) {
 (global.DataManager = DataManager)._instances = {};
 
 var _DM_extends_object_constructor = _placeholder();
-DataManager.Object = function(extendsObj) {
-	extendsObj[_DM_extends_object_constructor] = $TRUE;
-};
+
+// get DataManager instance by id
 DataManager.get = function(id) {
 	return DataManager._instances[id];
 }
+
+/*
+ use _dm_igonre_extend
+
+// ignore extends object in `get` handle
+var _extendIgnore = DataManager.ignoreExtendsObject = function(newObj) {
+	var self = this;
+	if (!(self instanceof _extendIgnore)) {
+		return new _extendIgnore(newObj);
+	}
+	self.value = newObj
+};*/
 var $LENGTH = "length";
 
 function _mix(sObj, nObj) {
@@ -70,6 +81,8 @@ function _getAllSiblingDataManagers(self, result) {
 	});
 	return result;
 };
+
+// smart-key config
 var DM_config = DataManager.config = {
 	prefix: {
 		This: "$THIS",
@@ -77,6 +90,8 @@ var DM_config = DataManager.config = {
 		Top: "$TOP"
 	}
 };
+
+// TEMP object
 DataManager.session = {
 	topGetter: $NULL,
 	topSetter: $NULL,
@@ -84,24 +99,39 @@ DataManager.session = {
 	setStacks: [],
 	finallyRunStacks: []
 };
-//DataManager._finallyQuene = [];
-// DataManager._finallyHash = {};
+
+// to avoid `set` in setting 
+// DataManager._finallyQuene = []; // delay load
 DataManager.finallyRun = function(fun) {
 	var finallyQuene = DataManager._finallyQuene || (DataManager._finallyQuene = []);
 	if (fun) {
 		$.p(finallyQuene, fun)
 	} else {
 		while (finallyQuene.length) {
-			fun = finallyQuene.splice(0, 1)[0]
+			fun = finallyQuene.shift()
 			fun && fun()
 		}
 	}
 }
+
+var _dm_get_source // =$FALSE //get Source ignore extend-Object
+var _dm_mix_source // =$FALSE //mix Source ignore extend-Object
+var _dm_set_source // =$FALSE //set Source ignore extend-Object
+
+//TODO: replace `_dm_force_update` by setting stack
 var _dm_force_update //= $FALSE;  //ignore equal
+
 var DM_proto = DataManager.prototype = {
+	getSource: function() {
+		_dm_get_source = $TRUE;
+		var result = this.get.apply(this, arguments)
+		_dm_get_source = $FALSE;
+		return result;
+	},
 	get: function(key) { //
 		var self = DataManager.session.topGetter = this,
-			result = self._database;
+			result = self._database,
+			filterKey;
 		if (arguments.length !== 0) {
 			var arrKey = key.split("."),
 				// lastKey = arrKey.pop(),
@@ -129,13 +159,19 @@ var DM_proto = DataManager.prototype = {
 		if (arrKey.length && (parent = self._parentDataManager)) { //key不在对象中，查询父级
 			result = parent.get(key);
 		}*/
-			DataManager.session.filterKey = key;
-		} else {
-			DataManager.session.filterKey = $UNDEFINED;
+			filterKey = key;
 		}
-		if (result && result[_DM_extends_object_constructor]) {
-			result = result.get(self);
+		if (result && result[_DM_extends_object_constructor] && !_dm_get_source) {
+			result = result.get(self,key,result.value);
 		}
+		//filterKey应该在extends_object的get后定义，避免被覆盖
+		DataManager.session.filterKey = filterKey;
+		return result;
+	},
+	mixSource: function() {
+		_dm_mix_source = $TRUE;
+		var result = this.mix.apply(this, arguments)
+		_dm_mix_source = $FALSE;
 		return result;
 	},
 	mix: function(key, nObj) {
@@ -155,6 +191,12 @@ var DM_proto = DataManager.prototype = {
 		}
 		return result;
 	},
+	setSource: function() {
+		_dm_set_source = $TRUE;
+		var result = this.set.apply(this, arguments)
+		_dm_set_source = $FALSE;
+		return result;
+	},
 	set: function(key, nObj) {
 		//replace Data 取代原有对象数据
 		var self = DataManager.session.topSetter = this,
@@ -166,7 +208,6 @@ var DM_proto = DataManager.prototype = {
 			nObj = key;
 			key = "";
 		}
-		DataManager.session.filterKey = key;
 
 		var result = self.getTopDataManager(key), //Leader:find the dataManager matched by key
 			setStacks = DataManager.session.setStacks,
@@ -176,16 +217,19 @@ var DM_proto = DataManager.prototype = {
 			$.p(setStacks, result_dm_id);
 			result = result.key ? result_dm.set(result.key, nObj) : result_dm.set(nObj);
 			// result = result_dm.touchOff(result.key)
-			setStacks.pop();
+			setStacks.pop();			
 			!setStacks.length && DataManager.finallyRun();
 		} else {
 			switch (argumentLen) {
 				// case 0:
 				// 	break;
 				case 1:
-					if (self._database !== nObj || _dm_force_update) {
+					var sObj = self._database;
+					if (sObj && sObj[_DM_extends_object_constructor] && !_dm_set_source) {
+						sObj.set(self, "", nObj);
+					} else if (sObj !== nObj || _dm_force_update) {
 						self._database = nObj;
-					} else if (!(nObj instanceof Object)) {
+					} else if (!(nObj instanceof Object)) { //sObj === nObj && no-object
 						return;
 					};
 					break;
@@ -202,8 +246,8 @@ var DM_proto = DataManager.prototype = {
 							cache_cache_n_Obj = cache_n_Obj;
 							cache_n_Obj = cache_n_Obj[currentKey] || (cache_n_Obj[currentKey] = {})
 						});
-						if ((sObj = cache_n_Obj[lastKey]) && sObj[_DM_extends_object_constructor]) {
-							sObj.set(nObj, self, key) //call ExtendsClass API
+						if ((sObj = cache_n_Obj[lastKey]) && sObj[_DM_extends_object_constructor] && !_dm_set_source) {
+							sObj.set(self, key, nObj) //call ExtendsClass API
 						} else if (cache_n_Obj instanceof Object) {
 							cache_n_Obj[lastKey] = nObj;
 						} else if (cache_cache_n_Obj) {
@@ -232,8 +276,11 @@ var DM_proto = DataManager.prototype = {
 				key = "";
 			}
 			// console.log(key)
+			DataManager.session.filterKey = key;
+			// debugger
 			result = result || self.touchOff(key);
 		}
+		// console.log(result)
 		return result;
 	},
 	registerTrigger: function(key, trigger) {
@@ -283,13 +330,16 @@ var DM_proto = DataManager.prototype = {
 			dm._database = database; //maybe on-obj
 			dm._touchOff(key)
 		})
+		return {
+			key: key
+		}
 	},
 	_touchOff: function(key) {
 		var self = this,
 			parent = self._parentDataManager,
 			triggerKeys = self._triggerKeys,
-			updateKey = [key],
-			chidlUpdateKey = [],
+			// updateKey = [key],
+			// chidlUpdateKey = [],
 			allUpdateKey,
 			triggerCollection;
 		//self
@@ -297,7 +347,7 @@ var DM_proto = DataManager.prototype = {
 			//!triggerKey==true;
 			if (!key || !triggerKey || key === triggerKey || triggerKey.indexOf(key + ".") === 0 || key.indexOf(triggerKey + ".") === 0) {
 				// console.log("filter triggerKey:",triggerKey)
-				$.p(updateKey, triggerKey)
+				// $.p(updateKey, triggerKey)
 				$.ftE(triggerCollection, function(smartTriggerHandle) {
 					smartTriggerHandle.event(triggerKeys);
 				})
@@ -306,9 +356,6 @@ var DM_proto = DataManager.prototype = {
 		//child
 		$.ftE(self._subsetDataManagers, function(childDataManager) {
 			// debugger
-			/*if (childDataManager._eachIgonre) {
-				return
-			};*/
 			var prefix = childDataManager._prefix,
 				childResult; // || "";
 			_dm_force_update = $TRUE; //TODO: use Stack 
@@ -328,14 +375,14 @@ var DM_proto = DataManager.prototype = {
 			//如果不进行锁定，当数组因为其子对象被修改，
 			//改动信息就需要冒泡到顶层，等同于强制触发数组的所有关键字，通知所有子对象检查自身是否发生变化。
 			//所以锁定是效率所需。
-			$.p(chidlUpdateKey, childResult);
+			// $.p(chidlUpdateKey, childResult);
 		});
-		return {
+		/*return {
 			key: key,
 			// allUpdateKey: allUpdateKey,
 			updateKey: updateKey,
 			chidlUpdateKey: chidlUpdateKey
-		}
+		}*/
 	},
 	rebuildTree: $.noop,
 	getTop: function() { //get DM tree top
@@ -354,7 +401,7 @@ var DM_proto = DataManager.prototype = {
 	_pushToCollectDM: function(dataManager, pprefixKey, id) {
 		var self = this,
 			collectDataManagers = self._collectDataManagers;
-		var hash = pprefixKey+id;
+		var hash = pprefixKey + id;
 		var collectDataManager = collectDataManagers[hash];
 		if (!collectDataManager) {
 			collectDataManager = collectDataManagers[hash] = new _ArrayDataManager(pprefixKey);

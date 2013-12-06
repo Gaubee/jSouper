@@ -2,31 +2,7 @@
 <html>
 <head>
 	<title>HTML-ViewParse</title>
-	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js">
-	{
-		Data:{
-			title:"Observer",
-			fullName:Observer(function get (argument) {
-				return App.get("firstName")+" "+App.get("lastName")
-			}),
-			firstName:"Gaubee",
-			lastName:"bangeel",
-			name:Observer({
-				get:function(){
-					return "my name is "+App.get("firstName")+" "+App.get("lastName")
-				},
-				set:function(new_data){
-					console.log(new_data)
-					var name = new_data.split(" ");
-					if (name.length>1) {
-						App.set("firstName",name[0]);
-						App.set("lastName",name[name.length-1]);
-					}
-				}
-			})
-		}
-	}
-	</script>
+	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js"></script>
 </head>
 <body>
 	<div id="HVP">
@@ -36,7 +12,35 @@
 </body>
 </html>
 <script>
-setTimeout(function(){
-	App.set("name","a b")
-},1000)
+ViewParser.ready(function(){
+	ViewParser.app({
+		Data: {
+			title: "Observer",
+			fullName: DataManager.Observer(function get(argument) {
+				return this.get("firstName") + " " + this.get("lastName")
+			}),
+			firstName: "Gaubee",
+			lastName: "bangeel",
+			name: DataManager.Observer(function get() {
+					return "my name is " + this.get("firstName") + " " + this.get("lastName")
+				},function set(key,new_data) {
+					var name = new_data.split(" ");
+					console.log(arguments)
+					if (name.length > 1) {
+						this.set("firstName", name[0]);
+						this.set("lastName", name[name.length - 1]);
+					}
+				})
+		}
+	});
+	// setTimeout(function(){
+	// 	App.set("name","a b")
+	// },1000)
+	// setTimeout(function(){
+	// 	App.set("firstName","firstName")
+	// },1500)
+	// setTimeout(function(){
+	// 	App.set("lastName","lastName")
+	// },2000)
+})
 </script>

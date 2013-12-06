@@ -18,6 +18,7 @@ module.exports = function(grunt) {
 		'src/event.js',
 		'src/SmartTriggerSet_for_DM.js',
 		'src/DataManager.v4.js',
+		'src/DataManager.extend.js',
 		'src/_ArrayDataManager.js',
 		'src/$scope.js',
 		// 'src/dataManagerExtendsClass/*.js',
@@ -33,7 +34,8 @@ module.exports = function(grunt) {
 		
 		//such as registerHandle(markdown,fun...)
 		'src/registerHandle.js',
-		'src/export.js'
+		'src/export.js',
+		'src/dataManagerExtendsClass/Observer.js',
 	],
 		debugFile = baseFile.slice();
 	debugFile.unshift('src/plugins.js')
