@@ -560,6 +560,10 @@ var _event_cache = {},
 					_fn(e)
 				}
 			}());
+		} else if (eventName === "ready"){
+			DataManager.finallyRun(function(){
+				_fn({type:"ready"});
+			})
 		}
 		_event_cache[elementHash + $.hashCode(eventFun)] = result;
 		return result;
