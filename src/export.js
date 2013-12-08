@@ -73,7 +73,8 @@ var ViewParser = global.ViewParser = {
 				})
 				//complete ==> onload , interactive ==> DOMContentLoaded
 				//https://developer.mozilla.org/en-US/docs/Web/API/document.readyState
-				if (/complete|interactive/.test(doc.readyState)) { //fix asyn load
+				//seajs src/util-require.js
+				if (/complete|onload/.test(doc.readyState)) { //fix asyn load
 					_load()
 				}
 			}
@@ -96,3 +97,19 @@ var ViewParser = global.ViewParser = {
 		}
 	});
 }());
+
+/*
+ * as AMD & CMD
+ */
+// fork form jQuery
+//module is defined?
+//module !== null
+if (typeof module === "object" && module && typeof module.export === "object") {
+	module.export = ViewParser
+} else {
+	if (typeof define === "function" && define.amd) {
+		define("jSoup", [], function() {
+			return ViewParser
+		})
+	}
+}

@@ -30,10 +30,6 @@ var _statusEventCache = {},
 			}
 		}
 	},
-	__statusFun = function() {
-		var self = this;
-		self.ev(self.vi, self.ke, self.va)
-	},
 	_getValue = function(vi, key) {
 		if ($.isString(key)) {
 			var result = key.substring(1, key.length - 1)
