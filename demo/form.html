@@ -38,11 +38,11 @@
 			<br>
 
 			{{#each radios}}
-			<input id="r2_{{$THIS}}" type="radio" bind-form="{{'$PARENT.radio'}}" attr-checked="{{$PARENT.radio}}" name="radio_2" value="Radio{{$THIS}}">{{$THIS}}{{$PARENT.radio}}
+			<input id="r2_{{$THIS}}" type="radio" bind-form="{{'$PARENT.radio'}}" attr-checked="{{$PARENT.radio}}" name="radio_2" attr-value="Radio{{$THIS}}">{{$THIS}}
 			<!-- the name="radio_2" couldn't same as "radio" which will be two same radio-input and ony one will be selected -->
 			{{/each}}
 			<p>result: {{radio}}</p>
-			<input id="radio_input" type="text" attr-value="{{radio}}" bind-form="{{'radio'}}">
+			<input id="radio_input" type="text" attr-value="{{radio}}" bind-form="{{'radio'}}" attr-disabled="{{radio=='Radio2'}}">
 		</fieldset>
 		<fieldset>
 			<legend>checkbox</legend>

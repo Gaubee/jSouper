@@ -2656,7 +2656,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 						if (!viewInstance) {
 							//临时回滚沉默的功能，保证这个对象的内部渲染正确
 							DM_proto.touchOff = _touchOff;
-							viewInstance = arrViewInstances[index] = eachModuleConstructor( eachItemData );
+							viewInstance = arrViewInstances[index] = eachModuleConstructor(eachItemData);
 							DM_proto.touchOff = $.noop;
 
 							viewInstance._arrayVI = arrViewInstances;
@@ -3086,6 +3086,7 @@ var _AttributeHandleEvent = {
 			currentNode[key] = $FALSE;
 		}
 	},
+	// checked:self.bool,
 	radio: function(key, currentNode, parserNode) { //radio checked
 		var attrOuter = _getAttrOuter(parserNode);
 		if (attrOuter === currentNode.value) {
@@ -3093,11 +3094,11 @@ var _AttributeHandleEvent = {
 		}
 	}
 };
+var __bool = _AttributeHandleEvent.checked = _AttributeHandleEvent.bool;
 if (_isIE) {
 	var __radio = _AttributeHandleEvent.radio;
 	_AttributeHandleEvent.radio = function(key, currentNode, parserNode) {
 		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
-		console.log("IE checked", attrOuter)
 		if (attrOuter === currentNode.value) {
 			currentNode.defaultChecked = attrOuter;
 		} else {
@@ -3105,10 +3106,8 @@ if (_isIE) {
 		}
 		(this._attributeHandle = __radio)(key, currentNode, parserNode);
 	}
-	var __bool = _AttributeHandleEvent.bool;
-	_AttributeHandleEvent.bool = function(key, currentNode, parserNode) {
+	_AttributeHandleEvent.checked = function(key, currentNode, parserNode) {
 		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
-		console.log("IE selected", attrOuter)
 		if (attrOuter) {
 			currentNode.defaultChecked = attrOuter;
 		} else {
@@ -3118,12 +3117,16 @@ if (_isIE) {
 	}
 }
 var _boolAssignment = " checked selected disabled readonly multiple defer declare noresize nowrap noshade compact truespeed async typemustmatch open novalidate ismap default seamless autoplay controls loop muted reversed scoped autofocus required formnovalidate editable draggable hidden "
-/*for ie fix*/+"defaultSelected ";
+/*for ie fix*/
++ "defaultSelected ";
 V.ra(function(attrKey) {
 	return _boolAssignment.indexOf(" " + attrKey + " ") !== -1;
 }, function(attrKey, element) {
 	var result = _AttributeHandleEvent.bool
-	switch (element.type.toLowerCase()) {
+	switch (element.type) {
+		case "checkbox":
+			(attrKey === "checked") && (result = _AttributeHandleEvent.checked)
+			break;
 		case "radio":
 			(attrKey === "checked") && (result = _AttributeHandleEvent.radio)
 			break

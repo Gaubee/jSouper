@@ -36,6 +36,7 @@ var _AttributeHandleEvent = {
 			currentNode[key] = $FALSE;
 		}
 	},
+	// checked:self.bool,
 	radio: function(key, currentNode, parserNode) { //radio checked
 		var attrOuter = _getAttrOuter(parserNode);
 		if (attrOuter === currentNode.value) {
@@ -43,11 +44,11 @@ var _AttributeHandleEvent = {
 		}
 	}
 };
+var __bool = _AttributeHandleEvent.checked = _AttributeHandleEvent.bool;
 if (_isIE) {
 	var __radio = _AttributeHandleEvent.radio;
 	_AttributeHandleEvent.radio = function(key, currentNode, parserNode) {
 		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
-		console.log("IE checked", attrOuter)
 		if (attrOuter === currentNode.value) {
 			currentNode.defaultChecked = attrOuter;
 		} else {
@@ -55,10 +56,8 @@ if (_isIE) {
 		}
 		(this._attributeHandle = __radio)(key, currentNode, parserNode);
 	}
-	var __bool = _AttributeHandleEvent.bool;
-	_AttributeHandleEvent.bool = function(key, currentNode, parserNode) {
+	_AttributeHandleEvent.checked = function(key, currentNode, parserNode) {
 		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
-		console.log("IE selected", attrOuter)
 		if (attrOuter) {
 			currentNode.defaultChecked = attrOuter;
 		} else {

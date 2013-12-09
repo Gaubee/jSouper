@@ -75,7 +75,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 						if (!viewInstance) {
 							//临时回滚沉默的功能，保证这个对象的内部渲染正确
 							DM_proto.touchOff = _touchOff;
-							viewInstance = arrViewInstances[index] = eachModuleConstructor( eachItemData );
+							viewInstance = arrViewInstances[index] = eachModuleConstructor(eachItemData);
 							DM_proto.touchOff = $.noop;
 
 							viewInstance._arrayVI = arrViewInstances;
