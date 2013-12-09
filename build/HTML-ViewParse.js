@@ -717,7 +717,7 @@ DataManager.updateExtendObject = {};
 var $LENGTH = "length";
 
 function _mix(sObj, nObj) {
-	var obj_nx,
+	var obj_n,
 		obj_s,
 		i;
 	if (sObj instanceof Object && nObj instanceof Object) {
@@ -3866,8 +3866,9 @@ var ViewParser = global.ViewParser = {
 // fork form jQuery
 //module is defined?
 //module !== null
-if (typeof module === "object" && module && typeof module.export === "object") {
-	module.export = ViewParser
+//fix IE 关键字
+if (typeof module === "object" && module && typeof module["export"] === "object") {
+	module["export"] = ViewParser
 } else {
 	if (typeof define === "function" && define.amd) {
 		define("jSoup", [], function() {

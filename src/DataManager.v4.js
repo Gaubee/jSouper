@@ -54,7 +54,7 @@ DataManager.updateExtendObject = {};
 var $LENGTH = "length";
 
 function _mix(sObj, nObj) {
-	var obj_nx,
+	var obj_n,
 		obj_s,
 		i;
 	if (sObj instanceof Object && nObj instanceof Object) {
