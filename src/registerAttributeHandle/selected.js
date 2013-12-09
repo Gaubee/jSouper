@@ -4,7 +4,7 @@ _AttributeHandleEvent.select = function(key, currentNode, parserNode, vi) { //se
 		selectHashCode = $.hashCode(currentNode, "selected"),
 		options = currentNode.options;
 	currentNode[selectHashCode] = attrOuter;
-	// console.log(attrOuter,typeof data, currentNode, selectHashCode)
+	// console.log(attrOuter, selectHashCode)
 	if (data instanceof Array) {
 		if (currentNode.multiple) {
 			$.ftE(options, function(optionNode) {
@@ -19,7 +19,7 @@ _AttributeHandleEvent.select = function(key, currentNode, parserNode, vi) { //se
 		}
 	} else {
 		$.ftE(options, function(optionNode) {
-			optionNode.selected = data === optionNode.value
+			optionNode.selected = (data === optionNode.value)
 		})
 	}
 }
@@ -47,7 +47,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 				selectHashCode = $.hashCode(currentNode, "selected"),
 				touchKey = currentNode[selectHashCode],
 				DM_finallyRun = DataManager.finallyRun;
-			// console.log(touchKey,currentNode);
+			// console.log(touchKey);
 			if (touchKey) { //value-map
 				var finallyRun;
 				if (!(finallyRun = DM_finallyRun[selectHashCode])) {

@@ -31,6 +31,7 @@ var _formCache = {},
 		},
 		"select": {
 			eventNames: ["change"],
+			//设置初值，表单如果不选择进行直接的提交也需要有初始值
 			init: function(currentNode, vi, attrOuter) {
 				//---init value
 				var _init_hashCode = $.hashCode(currentNode, "init"),
@@ -66,7 +67,8 @@ var _formCache = {},
 			inner: function(e, vi, attrOuter, value /*for arguments*/ ) {
 				// console.log(e.target.tagName==="OPTION")
 				var ele = this;
-				var obj = vi.get(attrOuter)
+				var obj = vi.get(attrOuter);
+				var args = arguments;
 
 				if (ele.multiple) {
 					value = [];
@@ -79,8 +81,8 @@ var _formCache = {},
 					value = ele.options[ele.selectedIndex].value;
 				}
 				if (obj && obj[_DM_extends_object_constructor] && obj.form) {
-					arguments[3] = value;
-					vi.set(attrOuter, obj.form.apply(ele, arguments))
+					args[3] = value;
+					vi.set(attrOuter, obj.form.apply(ele, args))
 				} else {
 					vi.set(attrOuter, value)
 					// console.log(ele.options)

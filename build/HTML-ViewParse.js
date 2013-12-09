@@ -18,7 +18,7 @@ var doc = document,
 	_split_laveStr,//@split export argument
 	$ = {
 		id: 9,
-		uidAvator: _placeholder,
+		uidAvator: _placeholder(),
 		hashCode: function(obj, prefix) {
 			var uidAvator = (prefix || "") + $.uidAvator,
 				codeID;
@@ -1610,8 +1610,7 @@ draggable
 			$.fE(attrViewInstance._triggers, function(key) {
 				$.us(triggerTable[key] || (triggerTable[key] = []), attrTrigger);
 			});
-			// console.log(attrKey,attrValue)
-			node.removeAttribute(attrKey);
+			// node.removeAttribute(baseAttrKey);
 		//}
 	};
 /*
@@ -1677,9 +1676,11 @@ function _buildTrigger(handleNodeTree, dataManager) {
 				nodeHTMLStr = node.outerHTML.replace(node.innerHTML, ""),
 				attrs = nodeHTMLStr.match(_attrRegExp);
 			$.fE(node.attributes, function(attr, i) {
-				var value = attr.value;
+				var value = attr.value,
+					name = attr.name;
 				if (_templateMatchRule.test(value)) {
-					attributeHandle(attr.name, value, node, handle, triggerTable);
+					attributeHandle(name, value, node, handle, triggerTable);
+					node.removeAttribute(name);
 				}
 			})
 		}
@@ -3200,6 +3201,7 @@ var _formCache = {},
 		},
 		"select": {
 			eventNames: ["change"],
+			//设置初值，表单如果不选择进行直接的提交也需要有初始值
 			init: function(currentNode, vi, attrOuter) {
 				//---init value
 				var _init_hashCode = $.hashCode(currentNode, "init"),
@@ -3235,7 +3237,8 @@ var _formCache = {},
 			inner: function(e, vi, attrOuter, value /*for arguments*/ ) {
 				// console.log(e.target.tagName==="OPTION")
 				var ele = this;
-				var obj = vi.get(attrOuter)
+				var obj = vi.get(attrOuter);
+				var args = arguments;
 
 				if (ele.multiple) {
 					value = [];
@@ -3248,8 +3251,8 @@ var _formCache = {},
 					value = ele.options[ele.selectedIndex].value;
 				}
 				if (obj && obj[_DM_extends_object_constructor] && obj.form) {
-					arguments[3] = value;
-					vi.set(attrOuter, obj.form.apply(ele, arguments))
+					args[3] = value;
+					vi.set(attrOuter, obj.form.apply(ele, args))
 				} else {
 					vi.set(attrOuter, value)
 					// console.log(ele.options)
@@ -3337,7 +3340,7 @@ _AttributeHandleEvent.select = function(key, currentNode, parserNode, vi) { //se
 		selectHashCode = $.hashCode(currentNode, "selected"),
 		options = currentNode.options;
 	currentNode[selectHashCode] = attrOuter;
-	// console.log(attrOuter,typeof data, currentNode, selectHashCode)
+	// console.log(attrOuter, selectHashCode)
 	if (data instanceof Array) {
 		if (currentNode.multiple) {
 			$.ftE(options, function(optionNode) {
@@ -3352,7 +3355,7 @@ _AttributeHandleEvent.select = function(key, currentNode, parserNode, vi) { //se
 		}
 	} else {
 		$.ftE(options, function(optionNode) {
-			optionNode.selected = data === optionNode.value
+			optionNode.selected = (data === optionNode.value)
 		})
 	}
 }
@@ -3380,7 +3383,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 				selectHashCode = $.hashCode(currentNode, "selected"),
 				touchKey = currentNode[selectHashCode],
 				DM_finallyRun = DataManager.finallyRun;
-			// console.log(touchKey,currentNode);
+			// console.log(touchKey);
 			if (touchKey) { //value-map
 				var finallyRun;
 				if (!(finallyRun = DM_finallyRun[selectHashCode])) {

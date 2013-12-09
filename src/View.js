@@ -61,9 +61,11 @@ function _buildTrigger(handleNodeTree, dataManager) {
 				nodeHTMLStr = node.outerHTML.replace(node.innerHTML, ""),
 				attrs = nodeHTMLStr.match(_attrRegExp);
 			$.fE(node.attributes, function(attr, i) {
-				var value = attr.value;
+				var value = attr.value,
+					name = attr.name;
 				if (_templateMatchRule.test(value)) {
-					attributeHandle(attr.name, value, node, handle, triggerTable);
+					attributeHandle(name, value, node, handle, triggerTable);
+					node.removeAttribute(name);
 				}
 			})
 		}

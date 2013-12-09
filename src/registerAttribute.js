@@ -116,7 +116,6 @@ draggable
 			$.fE(attrViewInstance._triggers, function(key) {
 				$.us(triggerTable[key] || (triggerTable[key] = []), attrTrigger);
 			});
-			// console.log(attrKey,attrValue)
-			node.removeAttribute(attrKey);
+			// node.removeAttribute(baseAttrKey);
 		//}
 	};

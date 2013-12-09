@@ -16,7 +16,7 @@ var doc = document,
 	_split_laveStr,//@split export argument
 	$ = {
 		id: 9,
-		uidAvator: _placeholder,
+		uidAvator: _placeholder(),
 		hashCode: function(obj, prefix) {
 			var uidAvator = (prefix || "") + $.uidAvator,
 				codeID;
