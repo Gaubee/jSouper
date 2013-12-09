@@ -11,7 +11,7 @@
 		Data:{
 			text:"form-bind",
 			radio:"Radio2",
-			radios:new String("123"),
+			radios:"123".split(""),
 			checkbox1:true,
 			checkbox2:"false",
 			select:{
@@ -38,7 +38,7 @@
 			<br>
 
 			{{#each radios}}
-			<input id="r2_{{$THIS}}" type="radio" bind-form="{{'$PARENT.radio'}}" attr-checked="{{$PARENT.radio}}" name="radio_2" value="Radio{{$THIS}}">{{$THIS}}
+			<input id="r2_{{$THIS}}" type="radio" bind-form="{{'$PARENT.radio'}}" attr-checked="{{$PARENT.radio}}" name="radio_2" value="Radio{{$THIS}}">{{$THIS}}{{$PARENT.radio}}
 			<!-- the name="radio_2" couldn't same as "radio" which will be two same radio-input and ony one will be selected -->
 			{{/each}}
 			<p>result: {{radio}}</p>

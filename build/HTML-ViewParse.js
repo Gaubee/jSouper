@@ -1027,10 +1027,7 @@ var DM_proto = DataManager.prototype = {
 	},
 	_touchOff: function(key) {
 		var self = this,
-			parent = self._parentDataManager,
 			triggerKeys = self._triggerKeys,
-			// updateKey = [key],
-			// chidlUpdateKey = [],
 			allUpdateKey,
 			triggerCollection;
 		//self
@@ -1068,12 +1065,6 @@ var DM_proto = DataManager.prototype = {
 			//所以锁定是效率所需。
 			// $.p(chidlUpdateKey, childResult);
 		});
-		/*return {
-			key: key,
-			// allUpdateKey: allUpdateKey,
-			updateKey: updateKey,
-			chidlUpdateKey: chidlUpdateKey
-		}*/
 	},
 	rebuildTree: $.noop,
 	getTop: function() { //get DM tree top
@@ -1109,7 +1100,6 @@ var DM_proto = DataManager.prototype = {
 				$.p(dataManager._siblingDataManagers, self);
 				self.rebuildTree()
 				dataManager._database = self._database;
-				// dataManager.set(dataManager._database)
 				finallyRunStacks.push(self.id)
 				dataManager.getTop().touchOff("");
 				finallyRunStacks.pop();
@@ -1139,8 +1129,10 @@ var DM_proto = DataManager.prototype = {
 			self._pushToSubSetDM(dataManager, prefixKey)
 		}
 		dataManager.rebuildTree()
+
+		//注意：each会置空touchOff使其无效，导致each运行时页面数据无法更新，
+		//所以each对象内部的数据自身获取临时数据进行更新完成后，再移除touchOff
 		dataManager._database = self.get(prefixKey);
-		// dataManager.set(dataManager._database)
 		finallyRunStacks.push(self.id)
 		self.getTop().touchOff("");
 		finallyRunStacks.pop();
@@ -1258,7 +1250,7 @@ _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片�
 		case 0:
 			return;
 		case 1:
-			nObj = $.s(key);
+			nObj = key instanceof Object?key:$.s(key);
 			// self.length(nObj.length);
 			$.ftE(DMs, function(datamanager, i) {
 				datamanager.set(nObj[i])
@@ -2599,7 +2591,7 @@ var _extend_DM_get_Index = (function() {
 		}
 	}
 	var $Index_get = function(key) {
-		var self = DataManager.session.topGetter  = this;
+		var self = DataManager.session.topGetter = this;
 		var indexKey = DM_config.prefix.Index;
 		if (key === indexKey) {
 			DataManager.session.filterKey = "";
@@ -2618,9 +2610,9 @@ var _extend_DM_get_Index = (function() {
 }());
 V.rt("#each", function(handle, index, parentHandle) {
 	var id = handle.id,
-		arrDataHandle =  handle.childNodes[0],
+		arrDataHandle = handle.childNodes[0],
 		arrDataHandle_id = arrDataHandle.id,
-		arrDataHandle_Key= arrDataHandle.childNodes[0].node.data,
+		arrDataHandle_Key = arrDataHandle.childNodes[0].node.data,
 		comment_endeach_id = parentHandle.childNodes[index + 3].id, //eachHandle --> eachComment --> endeachHandle --> endeachComment
 		trigger;
 	trigger = {
@@ -2644,7 +2636,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 					_touchOff = DM_proto.touchOff;
 				//沉默相关多余操作的API，提升效率
 				dataManager.rebuildTree = $.noop //doesn't need rebuild every subset
-				DM_proto.touchOff = $.noop; //touchOff会遍历整个子链，会造成爆炸性增长。
+				DM_proto.touchOff = $.noop; //subset的touchOff会遍历整个子链，会造成爆炸性增长。
 
 				if (showed_vi_len > new_data_len) {
 					$.fE(arrViewInstances, function(eachItemHandle) {
@@ -2661,23 +2653,28 @@ V.rt("#each", function(handle, index, parentHandle) {
 						//TODO:if too mush vi will be create, maybe asyn
 						var viewInstance = arrViewInstances[index];
 						if (!viewInstance) {
-							viewInstance = arrViewInstances[index] = eachModuleConstructor(eachItemData);
+							//临时回滚沉默的功能，保证这个对象的内部渲染正确
+							DM_proto.touchOff = _touchOff;
+							viewInstance = arrViewInstances[index] = eachModuleConstructor( eachItemData );
+							DM_proto.touchOff = $.noop;
+
 							viewInstance._arrayVI = arrViewInstances;
 							var viDM = viewInstance.dataManager
 							viDM._isEach = viewInstance._isEach = {
 								//_index在push到Array_DM时才进行真正定义，由于remove会重新更正_index，所以这个参数完全交给Array_DM管理
 								// _index: index,
-								eachId:id,
+								eachId: id,
 								eachVIs: arrViewInstances
 							}
 							dataManager.subset(viDM, arrDataHandle_Key + "." + index); //+"."+index //reset arrViewInstance's dataManager
 							_extend_DM_get_Index(viDM)
 						}
 						viewInstance.insert(comment_endeach_node)
-					}, showed_vi_len/*||0*/);
+					}, showed_vi_len /*||0*/ );
 				}
 				//回滚沉默的功能
-				DM_proto.touchOff = _touchOff;
+				//强制刷新，保证each中子对象的smartkey的渲染正确
+				(DM_proto.touchOff = _touchOff).call(dataManager);
 				(dataManager.rebuildTree = _rebuildTree).call(dataManager);
 			}
 		}

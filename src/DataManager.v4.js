@@ -353,10 +353,7 @@ var DM_proto = DataManager.prototype = {
 	},
 	_touchOff: function(key) {
 		var self = this,
-			parent = self._parentDataManager,
 			triggerKeys = self._triggerKeys,
-			// updateKey = [key],
-			// chidlUpdateKey = [],
 			allUpdateKey,
 			triggerCollection;
 		//self
@@ -394,12 +391,6 @@ var DM_proto = DataManager.prototype = {
 			//所以锁定是效率所需。
 			// $.p(chidlUpdateKey, childResult);
 		});
-		/*return {
-			key: key,
-			// allUpdateKey: allUpdateKey,
-			updateKey: updateKey,
-			chidlUpdateKey: chidlUpdateKey
-		}*/
 	},
 	rebuildTree: $.noop,
 	getTop: function() { //get DM tree top
@@ -435,7 +426,6 @@ var DM_proto = DataManager.prototype = {
 				$.p(dataManager._siblingDataManagers, self);
 				self.rebuildTree()
 				dataManager._database = self._database;
-				// dataManager.set(dataManager._database)
 				finallyRunStacks.push(self.id)
 				dataManager.getTop().touchOff("");
 				finallyRunStacks.pop();
@@ -465,8 +455,10 @@ var DM_proto = DataManager.prototype = {
 			self._pushToSubSetDM(dataManager, prefixKey)
 		}
 		dataManager.rebuildTree()
+
+		//注意：each会置空touchOff使其无效，导致each运行时页面数据无法更新，
+		//所以each对象内部的数据自身获取临时数据进行更新完成后，再移除touchOff
 		dataManager._database = self.get(prefixKey);
-		// dataManager.set(dataManager._database)
 		finallyRunStacks.push(self.id)
 		self.getTop().touchOff("");
 		finallyRunStacks.pop();
