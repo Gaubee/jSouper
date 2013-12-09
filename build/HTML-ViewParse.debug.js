@@ -1272,11 +1272,13 @@ _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片�
 		case 0:
 			return;
 		case 1:
-			nObj = key instanceof Object?key:$.s(key);
-			// self.length(nObj.length);
-			$.ftE(DMs, function(datamanager, i) {
-				datamanager.set(nObj[i])
-			})
+			if (key) {
+				nObj = key instanceof Object?key:$.s(key);
+				// self.length(nObj.length);
+				$.ftE(DMs, function(datamanager, i) {
+					datamanager.set(nObj[i])
+				})
+			}
 			break;
 		default:
 			//TODO: don't create Array to save memory
@@ -2631,13 +2633,20 @@ var _extend_DM_get_Index = (function() {
 	};
 	return _extend_DM_get_Index;
 }());
+var Arr_sort = Array.prototype.sort;
 V.rt("#each", function(handle, index, parentHandle) {
-	var id = handle.id,
-		arrDataHandle = handle.childNodes[0],
-		arrDataHandle_id = arrDataHandle.id,
-		arrDataHandle_Key = arrDataHandle.childNodes[0].node.data,
-		comment_endeach_id = parentHandle.childNodes[index + 3].id, //eachHandle --> eachComment --> endeachHandle --> endeachComment
-		trigger;
+	var id = handle.id;
+	var arrDataHandle = handle.childNodes[0];
+	var arrDataHandle_id = arrDataHandle.id;
+	var arrDataHandle_Key = arrDataHandle.childNodes[0].node.data;
+	var arrDataHandle_sort = handle.childNodes[1];
+	// console.log(arrDataHandle_sort)
+	if (arrDataHandle_sort.type === "handle") {
+		var arrDataHandle_sort_id = arrDataHandle_sort.id;
+	}
+	var comment_endeach_id = parentHandle.childNodes[index + 3].id; //eachHandle --> eachComment --> endeachHandle --> endeachComment
+	var trigger;
+
 	trigger = {
 		// smartTrigger:$NULL,
 		// key:$NULL,
@@ -2652,6 +2661,40 @@ V.rt("#each", function(handle, index, parentHandle) {
 				eachModuleConstructor = V.eachModules[id],
 				inserNew,
 				comment_endeach_node = NodeList_of_ViewInstance[comment_endeach_id].currentNode;
+			if (arrDataHandle_sort_id && data) {
+				var sort_handle = NodeList_of_ViewInstance[arrDataHandle_sort_id]._data
+				var finallyRun = DataManager.finallyRun;
+				var type = typeof sort_handle
+				if (/function|string/.test(type)) {
+					var old_sort = $.s(data);
+					try {
+						if (type === "function") {
+							data.sort(sort_handle);
+						} else {//string
+							if (sort_handle === "asc") {
+								data.sort()
+							} else if (sort_handle === "desc") {
+								data.sort().reverse()
+							}
+						}
+					} catch (e) {
+						throw TypeError("#each-data's type error.")
+					}
+					$.ftE(old_sort, function(value, index) {
+						if (data[index] !== value) {
+							var setSort = finallyRun[id];
+							if (!setSort) {
+								setSort = finallyRun[id] = function() {
+									setSort.vi.set(arrDataHandle_Key, setSort.vi.get(arrDataHandle_Key))
+									finallyRun[id] = $NULL;
+								}
+								finallyRun(setSort)
+							}
+							setSort.vi = viewInstance
+						}
+					})
+				}
+			}
 			if (showed_vi_len !== new_data_len) {
 				arrViewInstances.len = new_data_len; //change immediately,to avoid the `subset` trigger the `rebuildTree`,and than trigger each-trigger again.
 

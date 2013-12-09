@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>HTML-ViewParse</title>
+	<script type="text/javascript">
+		(function (ie){if(!ie)return;var b=document.createElement("script");b.setAttribute("type","text/javascript");b.setAttribute("src","http://"+location.hostname+"/firebug-lite/build/firebug-lite.js");document.getElementsByTagName("head")[0].appendChild(b)}(!+"\v1")); 
+	</script> 
+	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js">
+		{
+			Data: {
+				list1: [{
+					name: "Gaubee"
+				}, {
+					name: "Bangeel"
+				}, {
+					name: "winter"
+				}, {
+					name: "Rubylover"
+				}],
+				list2: [
+					"Gaubee",
+					"Bangeel",
+					"winter",
+					"Rubylover"
+				],
+				sort: {
+					list1:null,
+					type:"asc",
+					change:function(e,vi){
+						if (vi.get("sort.type")==="asc") {
+							vi.set("sort.list1",vi.get("sort.asc"))
+							vi.set("sort.type","desc")
+						}else{
+							vi.set("sort.list1",vi.get("sort.desc"))
+							vi.set("sort.type","asc")
+						}
+					},
+					asc: function(a, b) {
+						return a.name.charAt(0) > b.name.charAt(0)
+					},
+					desc:function(b,a){
+						return a.name.charAt(0) > b.name.charAt(0)
+					}
+				}
+			}
+		}
+	</script>
+</head>
+<body id="HVP">
+	<button 
+	  status-ready="{{'{{'list2_sort'}}={{'desc'}}'}}" 
+	  status-click="{{'{{'list2_sort'}}={{'desc'}}'}}"
+	>
+		desc
+	</button>
+	<button 
+	  status-click="{{'{{'list2_sort'}}={{'asc'}}'}}"
+	>
+		asc
+	</button>
+	<hr>
+	{{#each list2,list2_sort}}<!-- desc asc  -->
+	<div>
+		{{$THIS}}
+	</div>
+	<hr>
+	{{/each}}
+	<br>
+	<br>
+	<br>
+	<button event-click="{{'sort.change'}}">To {{sort.type}}</button>
+	<br>
+	{{#each list1,sort.list1}}
+		{{name}}
+		<br>
+	{{/each}}
+</body>
+</html>
+<script>
+	ViewParser.ready(function(){
+		// App.set("sort")
+	})
+</script>

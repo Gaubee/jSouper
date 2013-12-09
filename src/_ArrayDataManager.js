@@ -27,11 +27,13 @@ _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片�
 		case 0:
 			return;
 		case 1:
-			nObj = key instanceof Object?key:$.s(key);
-			// self.length(nObj.length);
-			$.ftE(DMs, function(datamanager, i) {
-				datamanager.set(nObj[i])
-			})
+			if (key) {
+				nObj = key instanceof Object?key:$.s(key);
+				// self.length(nObj.length);
+				$.ftE(DMs, function(datamanager, i) {
+					datamanager.set(nObj[i])
+				})
+			}
 			break;
 		default:
 			//TODO: don't create Array to save memory
