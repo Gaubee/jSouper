@@ -34,6 +34,7 @@ _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片�
 			})
 			break;
 		default:
+			//TODO: don't create Array to save memory
 			var arrKeys = key.split(".");
 			var index = arrKeys.shift();
 			var datamanager = DMs[index]
@@ -47,23 +48,6 @@ _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片�
 			}
 	}
 	return result;
-}
-_ArrDM_proto.length = function(length) {
-	var self = this;
-	var DMs = this._DMs;
-	/*	if (length === $UNDEFINED) {
-		return showed_len;
-	} else {
-		if (showed_len < length) {
-			$.ftE(DMs, function(datamanager) {
-				datamanager._canCGable = $TRUE
-			}, length)
-		} else if (length > showed_len) {
-			$.ftE(DMs, function() {
-				datamanager._canCGable = $TRUE
-			}, showed_len)
-		}
-	}*/
 }
 _ArrDM_proto.push = function(datamanager) {
 	var self = this,

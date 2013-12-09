@@ -1,7 +1,5 @@
 DM_config.prefix.Index = "$INDEX";
 var _extend_DM_get_Index = (function() {
-	var _set = DM_proto.set;
-	var _get = DM_proto.get;
 	var $Index_set = function(key) {
 		var self = DataManager.session.topSetter = this
 		var indexKey = DM_config.prefix.Index;
@@ -9,7 +7,7 @@ var _extend_DM_get_Index = (function() {
 			DataManager.session.filterKey = "";
 			throw Error(indexKey + " is read only.")
 		} else {
-			return _set.apply(self, arguments)
+			return DM_proto.set.apply(self, arguments)
 		}
 	}
 	var $Index_get = function(key) {
@@ -19,7 +17,7 @@ var _extend_DM_get_Index = (function() {
 			DataManager.session.filterKey = "";
 			return self._index;
 		} else {
-			return _get.apply(self, arguments)
+			return DM_proto.get.apply(self, arguments)
 		}
 	};
 
@@ -38,7 +36,6 @@ V.rt("#each", function(handle, index, parentHandle) {
 	trigger = {
 		// smartTrigger:$NULL,
 		// key:$NULL,
-		// key:$.isString(arrDataHandleKey)?arrDataHandleKey.substring(1,arrDataHandleKey.length-1):arrDataHandleKey+".length",
 		event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
 			var arrDataHandleKey = NodeList_of_ViewInstance[arrDataHandle_id]._data,
 				data = dataManager.get(arrDataHandleKey),
@@ -56,16 +53,18 @@ V.rt("#each", function(handle, index, parentHandle) {
 
 				var _rebuildTree = dataManager.rebuildTree,
 					_touchOff = DM_proto.touchOff;
+				//沉默相关多余操作的API，提升效率
 				dataManager.rebuildTree = $.noop //doesn't need rebuild every subset
 				DM_proto.touchOff = $.noop; //touchOff会遍历整个子链，会造成爆炸性增长。
 
 				if (showed_vi_len > new_data_len) {
 					$.fE(arrViewInstances, function(eachItemHandle) {
-						// eachItemHandle.dataManager._eachIgonre = $TRUE;
 						var isEach = eachItemHandle._isEach
-						eachItemHandle._isEach = $NULL;//移除each标志避免排队
+						//移除each标志避免排队
+						eachItemHandle._isEach = $NULL;
 						eachItemHandle.remove();
-						eachItemHandle._isEach = isEach;//移除each标志避免排队
+						//恢复原有each标志
+						eachItemHandle._isEach = isEach;
 					}, new_data_len);
 				} else {
 					data != $UNDEFINED && $.ftE($.s(data), function(eachItemData, index) {
@@ -81,18 +80,13 @@ V.rt("#each", function(handle, index, parentHandle) {
 								eachId:id,
 								eachVIs: arrViewInstances
 							}
-							// viDM._index = index;
-							// viDM._pprefix = arrDataHandleKey;
-							// debugger
 							dataManager.subset(viDM, arrDataHandleKey + "." + index); //+"."+index //reset arrViewInstance's dataManager
 							_extend_DM_get_Index(viDM)
 						}
 						viewInstance.insert(comment_endeach_node)
-						// viewInstance.dataManager._eachIgonre = $FALSE;
-					}, showed_vi_len); //showed_vi_len||0
+					}, showed_vi_len/*||0*/);
 				}
-				// dataManager.rebuildTree = _rebuildTree
-				// dataManager.rebuildTree();
+				//回滚沉默的功能
 				DM_proto.touchOff = _touchOff;
 				(dataManager.rebuildTree = _rebuildTree).call(dataManager);
 			}

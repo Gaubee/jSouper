@@ -30,7 +30,7 @@ var doc = document,
 	shadowBody = doc.createElement("body"),
 	shadowDIV = doc.createElement("div"),
 	_placeholder = function(prefix) {
-		return prefix || "@" + Math.random().toString(36).substring(2)
+		return prefix || "@" + Math.random().toString(36).substr(2)
 	},
 	_booleanFalseRegExp = /false|undefined|null|NaN/,
 	$NULL = null,
@@ -39,7 +39,7 @@ var doc = document,
 	$FALSE = !$TRUE,
 	$ = {
 		id: 9,
-		uidAvator: Math.random().toString(36).substring(2),
+		uidAvator: _placeholder,
 		hashCode: function(obj, prefix) {
 			var uidAvator = (prefix || "") + $.uidAvator,
 				codeID;
@@ -1275,6 +1275,7 @@ _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片�
 			})
 			break;
 		default:
+			//TODO: don't create Array to save memory
 			var arrKeys = key.split(".");
 			var index = arrKeys.shift();
 			var datamanager = DMs[index]
@@ -1288,23 +1289,6 @@ _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片�
 			}
 	}
 	return result;
-}
-_ArrDM_proto.length = function(length) {
-	var self = this;
-	var DMs = this._DMs;
-	/*	if (length === $UNDEFINED) {
-		return showed_len;
-	} else {
-		if (showed_len < length) {
-			$.ftE(DMs, function(datamanager) {
-				datamanager._canCGable = $TRUE
-			}, length)
-		} else if (length > showed_len) {
-			$.ftE(DMs, function() {
-				datamanager._canCGable = $TRUE
-			}, showed_len)
-		}
-	}*/
 }
 _ArrDM_proto.push = function(datamanager) {
 	var self = this,
@@ -2614,8 +2598,6 @@ V.rt("define", function(handle, index, parentHandle) {
 });
 DM_config.prefix.Index = "$INDEX";
 var _extend_DM_get_Index = (function() {
-	var _set = DM_proto.set;
-	var _get = DM_proto.get;
 	var $Index_set = function(key) {
 		var self = DataManager.session.topSetter = this
 		var indexKey = DM_config.prefix.Index;
@@ -2623,7 +2605,7 @@ var _extend_DM_get_Index = (function() {
 			DataManager.session.filterKey = "";
 			throw Error(indexKey + " is read only.")
 		} else {
-			return _set.apply(self, arguments)
+			return DM_proto.set.apply(self, arguments)
 		}
 	}
 	var $Index_get = function(key) {
@@ -2633,7 +2615,7 @@ var _extend_DM_get_Index = (function() {
 			DataManager.session.filterKey = "";
 			return self._index;
 		} else {
-			return _get.apply(self, arguments)
+			return DM_proto.get.apply(self, arguments)
 		}
 	};
 
@@ -2652,7 +2634,6 @@ V.rt("#each", function(handle, index, parentHandle) {
 	trigger = {
 		// smartTrigger:$NULL,
 		// key:$NULL,
-		// key:$.isString(arrDataHandleKey)?arrDataHandleKey.substring(1,arrDataHandleKey.length-1):arrDataHandleKey+".length",
 		event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
 			var arrDataHandleKey = NodeList_of_ViewInstance[arrDataHandle_id]._data,
 				data = dataManager.get(arrDataHandleKey),
@@ -2670,16 +2651,18 @@ V.rt("#each", function(handle, index, parentHandle) {
 
 				var _rebuildTree = dataManager.rebuildTree,
 					_touchOff = DM_proto.touchOff;
+				//沉默相关多余操作的API，提升效率
 				dataManager.rebuildTree = $.noop //doesn't need rebuild every subset
 				DM_proto.touchOff = $.noop; //touchOff会遍历整个子链，会造成爆炸性增长。
 
 				if (showed_vi_len > new_data_len) {
 					$.fE(arrViewInstances, function(eachItemHandle) {
-						// eachItemHandle.dataManager._eachIgonre = $TRUE;
 						var isEach = eachItemHandle._isEach
-						eachItemHandle._isEach = $NULL;//移除each标志避免排队
+						//移除each标志避免排队
+						eachItemHandle._isEach = $NULL;
 						eachItemHandle.remove();
-						eachItemHandle._isEach = isEach;//移除each标志避免排队
+						//恢复原有each标志
+						eachItemHandle._isEach = isEach;
 					}, new_data_len);
 				} else {
 					data != $UNDEFINED && $.ftE($.s(data), function(eachItemData, index) {
@@ -2695,18 +2678,13 @@ V.rt("#each", function(handle, index, parentHandle) {
 								eachId:id,
 								eachVIs: arrViewInstances
 							}
-							// viDM._index = index;
-							// viDM._pprefix = arrDataHandleKey;
-							// debugger
 							dataManager.subset(viDM, arrDataHandleKey + "." + index); //+"."+index //reset arrViewInstance's dataManager
 							_extend_DM_get_Index(viDM)
 						}
 						viewInstance.insert(comment_endeach_node)
-						// viewInstance.dataManager._eachIgonre = $FALSE;
-					}, showed_vi_len); //showed_vi_len||0
+					}, showed_vi_len/*||0*/);
 				}
-				// dataManager.rebuildTree = _rebuildTree
-				// dataManager.rebuildTree();
+				//回滚沉默的功能
 				DM_proto.touchOff = _touchOff;
 				(dataManager.rebuildTree = _rebuildTree).call(dataManager);
 			}
@@ -2756,7 +2734,7 @@ V.rt("", function(handle, index, parentHandle) {
 				key: ".", //const trigger
 				bubble: $TRUE,
 				event: function(NodeList_of_ViewInstance, dataManager) {
-					NodeList_of_ViewInstance[this.handleId]._data = key.substring(1, key.length - 1);
+					NodeList_of_ViewInstance[this.handleId]._data = key.substr(1, key.length - 2);
 				}
 			};
 		} else { //String for databese by key
@@ -3179,7 +3157,7 @@ var _elementCache = {},
 			eventFun = vi.get(attrOuter) || $.noop, //can remove able
 			elementHashCode = $.hashCode(currentNode, "event" + eventInfos.join("-"));
 		if (eventName.indexOf("on") === 0) {
-			eventName = eventName.substring(2)
+			eventName = eventName.substr(2)
 		}
 		var eventCollection = _elementCache[elementHashCode];
 		if (!eventCollection) { //init Collection
@@ -3472,7 +3450,7 @@ var _statusEventCache = {},
 	},
 	_getValue = function(vi, key) {
 		if ($.isString(key)) {
-			var result = key.substring(1, key.length - 1)
+			var result = key.substr(1, key.length - 2)
 		} else {
 			result = vi.get(key)
 		}
@@ -3485,7 +3463,7 @@ var _statusEventCache = {},
 			// statusFun = vi.get(attrOuter) || $.noop, //can remove able
 			elementHashCode = $.hashCode(currentNode, "status" + statusInfos.join("-"));
 		if (eventName.indexOf("on") === 0) {
-			eventName = eventName.substring(2)
+			eventName = eventName.substr(2)
 		}
 		var args = [];
 		var operatorKey = $.trim(attrOuter.replace(newTemplateMatchReg, function(matchTemp, matchKey) {
@@ -3631,14 +3609,11 @@ var parse = function(str) {
 	parseArg = function(argStr) {
 		var allStack = [],
 			inner = $TRUE;
-		// console.log("argStr:", argStr);
 		argStr.replace(/\(([\W\w]+?)\)/, function(matchSliceArgStr, sliceArgStr, index) {
 			inner = $FALSE;
-			var stack = parseStr(argStr.substring(0, index));
+			var stack = parseStr(argStr.substr(0, index));
 			allStack.push.apply(allStack, stack);
-			// console.log();
 			$.p(allStack, {
-				// allStack.push({
 				type: "arg",
 				value: sliceArgStr,
 				parse: parseIte(parseArg(sliceArgStr))

@@ -6,7 +6,7 @@ var doc = document,
 	shadowBody = doc.createElement("body"),
 	shadowDIV = doc.createElement("div"),
 	_placeholder = function(prefix) {
-		return prefix || "@" + Math.random().toString(36).substring(2)
+		return prefix || "@" + Math.random().toString(36).substr(2)
 	},
 	_booleanFalseRegExp = /false|undefined|null|NaN/,
 	$NULL = null,
@@ -15,7 +15,7 @@ var doc = document,
 	$FALSE = !$TRUE,
 	$ = {
 		id: 9,
-		uidAvator: Math.random().toString(36).substring(2),
+		uidAvator: _placeholder,
 		hashCode: function(obj, prefix) {
 			var uidAvator = (prefix || "") + $.uidAvator,
 				codeID;

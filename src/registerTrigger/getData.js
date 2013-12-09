@@ -40,7 +40,7 @@ V.rt("", function(handle, index, parentHandle) {
 				key: ".", //const trigger
 				bubble: $TRUE,
 				event: function(NodeList_of_ViewInstance, dataManager) {
-					NodeList_of_ViewInstance[this.handleId]._data = key.substring(1, key.length - 1);
+					NodeList_of_ViewInstance[this.handleId]._data = key.substr(1, key.length - 2);
 				}
 			};
 		} else { //String for databese by key

@@ -32,7 +32,7 @@ var _statusEventCache = {},
 	},
 	_getValue = function(vi, key) {
 		if ($.isString(key)) {
-			var result = key.substring(1, key.length - 1)
+			var result = key.substr(1, key.length - 2)
 		} else {
 			result = vi.get(key)
 		}
@@ -45,7 +45,7 @@ var _statusEventCache = {},
 			// statusFun = vi.get(attrOuter) || $.noop, //can remove able
 			elementHashCode = $.hashCode(currentNode, "status" + statusInfos.join("-"));
 		if (eventName.indexOf("on") === 0) {
-			eventName = eventName.substring(2)
+			eventName = eventName.substr(2)
 		}
 		var args = [];
 		var operatorKey = $.trim(attrOuter.replace(newTemplateMatchReg, function(matchTemp, matchKey) {

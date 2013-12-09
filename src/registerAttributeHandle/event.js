@@ -6,7 +6,7 @@ var _elementCache = {},
 			eventFun = vi.get(attrOuter) || $.noop, //can remove able
 			elementHashCode = $.hashCode(currentNode, "event" + eventInfos.join("-"));
 		if (eventName.indexOf("on") === 0) {
-			eventName = eventName.substring(2)
+			eventName = eventName.substr(2)
 		}
 		var eventCollection = _elementCache[elementHashCode];
 		if (!eventCollection) { //init Collection

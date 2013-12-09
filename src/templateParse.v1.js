@@ -95,14 +95,11 @@ var parse = function(str) {
 	parseArg = function(argStr) {
 		var allStack = [],
 			inner = $TRUE;
-		// console.log("argStr:", argStr);
 		argStr.replace(/\(([\W\w]+?)\)/, function(matchSliceArgStr, sliceArgStr, index) {
 			inner = $FALSE;
-			var stack = parseStr(argStr.substring(0, index));
+			var stack = parseStr(argStr.substr(0, index));
 			allStack.push.apply(allStack, stack);
-			// console.log();
 			$.p(allStack, {
-				// allStack.push({
 				type: "arg",
 				value: sliceArgStr,
 				parse: parseIte(parseArg(sliceArgStr))
