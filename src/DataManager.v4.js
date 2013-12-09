@@ -456,8 +456,9 @@ var DM_proto = DataManager.prototype = {
 		dataManager.remove();
 		if (dataManager._isEach) {
 			self._pushToCollectDM(dataManager,
-				//prefixkey === "[0-9]+?" ==> $THIS.0 ==> return ""; else return prefixkey.split(".").pop().join(".")
-				prefixKey.substring(0, prefixKey.length - String(dataManager._isEach.index) - 1),
+				//prefixkey === "[0-9]+?" ==> $THIS.0 ==> return ""; 
+				//else return prefixkey.split(".").pop().join(".")
+				$.lst(prefixKey,"."),
 				// in dif handle
 				dataManager._isEach.eachId)
 		} else {

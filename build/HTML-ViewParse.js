@@ -15,6 +15,7 @@ var doc = document,
 	$UNDEFINED,
 	$TRUE = !$UNDEFINED,
 	$FALSE = !$TRUE,
+	_split_laveStr,//@split export argument
 	$ = {
 		id: 9,
 		uidAvator: _placeholder,
@@ -39,6 +40,16 @@ var doc = document,
 		isString: function(str) {
 			var start = str.charAt(0);
 			return (start === str.charAt(str.length - 1)) && "\'\"".indexOf(start) !== -1;
+		},
+		st: function(str, splitKey) { //split
+			var index = str.indexOf(splitKey);
+			_split_laveStr = str.substr(index + 1);
+			return  str.substring(0, index);
+		},
+		lst:function(str,splitKey){//last split
+			var index = str.lastIndexOf(splitKey);
+			_split_laveStr = str.substr(index + 1);
+			return  str.substring(0, index);
 		},
 		trim: function(str) {
 			str = str.replace(/^\s\s*/, '')
@@ -1119,8 +1130,9 @@ var DM_proto = DataManager.prototype = {
 		dataManager.remove();
 		if (dataManager._isEach) {
 			self._pushToCollectDM(dataManager,
-				//prefixkey === "[0-9]+?" ==> $THIS.0 ==> return ""; else return prefixkey.split(".").pop().join(".")
-				prefixKey.substring(0, prefixKey.length - String(dataManager._isEach.index) - 1),
+				//prefixkey === "[0-9]+?" ==> $THIS.0 ==> return ""; 
+				//else return prefixkey.split(".").pop().join(".")
+				$.lst(prefixKey,"."),
 				// in dif handle
 				dataManager._isEach.eachId)
 		} else {
@@ -2606,16 +2618,17 @@ var _extend_DM_get_Index = (function() {
 }());
 V.rt("#each", function(handle, index, parentHandle) {
 	var id = handle.id,
-		arrDataHandle_id = handle.childNodes[0].id,
+		arrDataHandle =  handle.childNodes[0],
+		arrDataHandle_id = arrDataHandle.id,
+		arrDataHandle_Key= arrDataHandle.childNodes[0].node.data,
 		comment_endeach_id = parentHandle.childNodes[index + 3].id, //eachHandle --> eachComment --> endeachHandle --> endeachComment
 		trigger;
 	trigger = {
 		// smartTrigger:$NULL,
 		// key:$NULL,
 		event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
-			var arrDataHandleKey = NodeList_of_ViewInstance[arrDataHandle_id]._data,
-				data = dataManager.get(arrDataHandleKey),
-				// arrTriggerKey = arrDataHandleKey + ".length",
+			var data = NodeList_of_ViewInstance[arrDataHandle_id]._data,
+				// arrTriggerKey = arrDataHandle_Key + ".length",
 				viewInstance = V._instances[viewInstance_ID],
 				allArrViewInstances = viewInstance._AVI,
 				arrViewInstances = allArrViewInstances[id] || (allArrViewInstances[id] = []),
@@ -2637,13 +2650,14 @@ V.rt("#each", function(handle, index, parentHandle) {
 					$.fE(arrViewInstances, function(eachItemHandle) {
 						var isEach = eachItemHandle._isEach
 						//移除each标志避免排队
-						eachItemHandle._isEach = $NULL;
+						eachItemHandle._isEach = $FALSE;
 						eachItemHandle.remove();
 						//恢复原有each标志
 						eachItemHandle._isEach = isEach;
 					}, new_data_len);
 				} else {
-					data != $UNDEFINED && $.ftE($.s(data), function(eachItemData, index) {
+					//undefined null false "" 0 ...
+					data && $.ftE($.s(data), function(eachItemData, index) {
 						//TODO:if too mush vi will be create, maybe asyn
 						var viewInstance = arrViewInstances[index];
 						if (!viewInstance) {
@@ -2651,12 +2665,12 @@ V.rt("#each", function(handle, index, parentHandle) {
 							viewInstance._arrayVI = arrViewInstances;
 							var viDM = viewInstance.dataManager
 							viDM._isEach = viewInstance._isEach = {
-								// index 仅仅存储在DM中，避免混乱
-								// index: index,
+								//_index在push到Array_DM时才进行真正定义，由于remove会重新更正_index，所以这个参数完全交给Array_DM管理
+								// _index: index,
 								eachId:id,
 								eachVIs: arrViewInstances
 							}
-							dataManager.subset(viDM, arrDataHandleKey + "." + index); //+"."+index //reset arrViewInstance's dataManager
+							dataManager.subset(viDM, arrDataHandle_Key + "." + index); //+"."+index //reset arrViewInstance's dataManager
 							_extend_DM_get_Index(viDM)
 						}
 						viewInstance.insert(comment_endeach_node)

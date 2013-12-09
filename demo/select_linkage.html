@@ -15,12 +15,12 @@
     <script name="linkage" type="text/template">
         {{#if length}}
         <select bind-form="{{'select_value'}}"><!--  attr-selected="{{@select_value}}" -->
-            {{#each @$THIS}}
+            {{#each $THIS}}
             <option attr-value="{{name}}" attr-title="{{name}}">*{{name}}*</option>
             {{/each}}
         </select>
         {{/if}}
-        {{#each @$THIS}}
+        {{#each $THIS}}
         {{#layout 'linkage','childs',name===$PARENT.select_value}}<!--  -->
         <!-- {{#layout 'linkage','childs',childs}} -->
         {{/each}}

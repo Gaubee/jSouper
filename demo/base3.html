@@ -16,14 +16,14 @@
 		<h3>the List</h3>
 		<ul>
 			<p>{{list.length}}</p>
-			{{#each @list}}
+			{{#each list}}
 				<li>{{$INDEX}}:{{title}}</li>
 			{{/each}}
 		</ul>
 		<hr>
 		<ul>
 			<p>{{list.length}}</p>
-			{{#each @list}}
+			{{#each list}}
 				<li>{{$THIS.title}}=={{title}}</li>
 			{{/each}}
 		</ul>

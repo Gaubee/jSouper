@@ -30,16 +30,17 @@ var _extend_DM_get_Index = (function() {
 }());
 V.rt("#each", function(handle, index, parentHandle) {
 	var id = handle.id,
-		arrDataHandle_id = handle.childNodes[0].id,
+		arrDataHandle =  handle.childNodes[0],
+		arrDataHandle_id = arrDataHandle.id,
+		arrDataHandle_Key= arrDataHandle.childNodes[0].node.data,
 		comment_endeach_id = parentHandle.childNodes[index + 3].id, //eachHandle --> eachComment --> endeachHandle --> endeachComment
 		trigger;
 	trigger = {
 		// smartTrigger:$NULL,
 		// key:$NULL,
 		event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
-			var arrDataHandleKey = NodeList_of_ViewInstance[arrDataHandle_id]._data,
-				data = dataManager.get(arrDataHandleKey),
-				// arrTriggerKey = arrDataHandleKey + ".length",
+			var data = NodeList_of_ViewInstance[arrDataHandle_id]._data,
+				// arrTriggerKey = arrDataHandle_Key + ".length",
 				viewInstance = V._instances[viewInstance_ID],
 				allArrViewInstances = viewInstance._AVI,
 				arrViewInstances = allArrViewInstances[id] || (allArrViewInstances[id] = []),
@@ -61,13 +62,14 @@ V.rt("#each", function(handle, index, parentHandle) {
 					$.fE(arrViewInstances, function(eachItemHandle) {
 						var isEach = eachItemHandle._isEach
 						//移除each标志避免排队
-						eachItemHandle._isEach = $NULL;
+						eachItemHandle._isEach = $FALSE;
 						eachItemHandle.remove();
 						//恢复原有each标志
 						eachItemHandle._isEach = isEach;
 					}, new_data_len);
 				} else {
-					data != $UNDEFINED && $.ftE($.s(data), function(eachItemData, index) {
+					//undefined null false "" 0 ...
+					data && $.ftE($.s(data), function(eachItemData, index) {
 						//TODO:if too mush vi will be create, maybe asyn
 						var viewInstance = arrViewInstances[index];
 						if (!viewInstance) {
@@ -75,12 +77,12 @@ V.rt("#each", function(handle, index, parentHandle) {
 							viewInstance._arrayVI = arrViewInstances;
 							var viDM = viewInstance.dataManager
 							viDM._isEach = viewInstance._isEach = {
-								// index 仅仅存储在DM中，避免混乱
-								// index: index,
+								//_index在push到Array_DM时才进行真正定义，由于remove会重新更正_index，所以这个参数完全交给Array_DM管理
+								// _index: index,
 								eachId:id,
 								eachVIs: arrViewInstances
 							}
-							dataManager.subset(viDM, arrDataHandleKey + "." + index); //+"."+index //reset arrViewInstance's dataManager
+							dataManager.subset(viDM, arrDataHandle_Key + "." + index); //+"."+index //reset arrViewInstance's dataManager
 							_extend_DM_get_Index(viDM)
 						}
 						viewInstance.insert(comment_endeach_node)

@@ -13,6 +13,7 @@ var doc = document,
 	$UNDEFINED,
 	$TRUE = !$UNDEFINED,
 	$FALSE = !$TRUE,
+	_split_laveStr,//@split export argument
 	$ = {
 		id: 9,
 		uidAvator: _placeholder,
@@ -37,6 +38,16 @@ var doc = document,
 		isString: function(str) {
 			var start = str.charAt(0);
 			return (start === str.charAt(str.length - 1)) && "\'\"".indexOf(start) !== -1;
+		},
+		st: function(str, splitKey) { //split
+			var index = str.indexOf(splitKey);
+			_split_laveStr = str.substr(index + 1);
+			return  str.substring(0, index);
+		},
+		lst:function(str,splitKey){//last split
+			var index = str.lastIndexOf(splitKey);
+			_split_laveStr = str.substr(index + 1);
+			return  str.substring(0, index);
 		},
 		trim: function(str) {
 			str = str.replace(/^\s\s*/, '')

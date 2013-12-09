@@ -19,7 +19,7 @@
 <body id="HVP">
 	<h3>input number:</h3><input type="text" bind-form="{{'length'}}" attr-value="{{length}}">
 	<hr>
-	{{#each @$THIS}}
+	{{#each $THIS}}
 	<div>
 		{{$INDEX}}. My name is <input type="text" bind-form="{{'name'}}" attr-value="{{name}}">{{name}} <button attr-event-click="{{@$PARENT.Event.remove}}" >Remove</button>
 	</div>
