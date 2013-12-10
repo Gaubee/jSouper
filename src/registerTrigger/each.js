@@ -62,10 +62,19 @@ V.rt("#each", function(handle, index, parentHandle) {
 				var type = typeof sort_handle
 				if (/function|string/.test(type)) {
 					var old_sort = $.s(data);
+					data = data;
 					try {
 						if (type === "function") {
 							data.sort(sort_handle);
-						} else {//string
+						} else { //string
+							sort_handle = $.trim(sort_handle);
+							if ($.st(sort_handle, " ") === "by") {
+								var sort_key = $.st($.trim(_split_laveStr), " ");
+								sort_handle = $.trim(_split_laveStr);
+								/asc|desc/.test(sort_handle) && data.sort(function(a, b) {
+									return a[sort_key] > b[sort_key]
+								})
+							}
 							if (sort_handle === "asc") {
 								data.sort()
 							} else if (sort_handle === "desc") {
@@ -80,7 +89,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 							var setSort = finallyRun[id];
 							if (!setSort) {
 								setSort = finallyRun[id] = function() {
-									setSort.vi.set(arrDataHandle_Key, setSort.vi.get(arrDataHandle_Key))
+									setSort.vi.set(arrDataHandle_Key, data)
 									finallyRun[id] = $NULL;
 								}
 								finallyRun(setSort)
