@@ -41,13 +41,15 @@ var doc = document,
 		},
 		st: function(str, splitKey) { //split
 			var index = str.indexOf(splitKey);
-			_split_laveStr = str.substr(index + 1);
-			return  str.substring(0, index);
+			_split_laveStr = str.substr(index+splitKey.length);
+			//false is undefined
+			return  index!==-1&&str.substring(0, index);
 		},
 		lst:function(str,splitKey){//last split
 			var index = str.lastIndexOf(splitKey);
-			_split_laveStr = str.substr(index + 1);
-			return  str.substring(0, index);
+			_split_laveStr = str.substr(index + splitKey.length);
+			//false is undefined
+			return  index!==-1&&str.substring(0, index);
 		},
 		trim: function(str) {
 			str = str.replace(/^\s\s*/, '')

@@ -65,13 +65,15 @@ var doc = document,
 		},
 		st: function(str, splitKey) { //split
 			var index = str.indexOf(splitKey);
-			_split_laveStr = str.substr(index + 1);
-			return  str.substring(0, index);
+			_split_laveStr = str.substr(index+splitKey.length);
+			//false is undefined
+			return  index!==-1&&str.substring(0, index);
 		},
 		lst:function(str,splitKey){//last split
 			var index = str.lastIndexOf(splitKey);
-			_split_laveStr = str.substr(index + 1);
-			return  str.substring(0, index);
+			_split_laveStr = str.substr(index + splitKey.length);
+			//false is undefined
+			return  index!==-1&&str.substring(0, index);
 		},
 		trim: function(str) {
 			str = str.replace(/^\s\s*/, '')
@@ -3485,13 +3487,14 @@ V.rt("#each", function(handle, index, parentHandle) {
 	}
 	return trigger;
 })
+DataManager.config.prefix.Get = "$GET";
 var _statusEventCache = {},
 	_statusEvent = {
 		"=": function(vi, key, value) {
 			vi.set(key, value)
 		},
 		"+": function(vi, key, value) {
-			var oldvalue = vi.get(key)||"";
+			var oldvalue = vi.get(key) || "";
 			if (typeof oldvalue === "string") { //oldvalue is string ,not array or any type elses.
 				if (oldvalue.indexOf(value) === -1) {
 					vi.set(key, oldvalue + value)
@@ -3499,77 +3502,83 @@ var _statusEventCache = {},
 			}
 		},
 		"-": function(vi, key, value) {
-			var oldvalue = vi.get(key)||"";
+			var oldvalue = vi.get(key) || "";
 			if (oldvalue && typeof oldvalue === "string") { //oldvalue is string ,not array or any type elses.
 				if (oldvalue.indexOf(value) !== -1) {
-					vi.set(key, oldvalue.replace(value,""));
+					vi.set(key, oldvalue.replace(value, ""));
 				}
 			}
 		},
-		"?": function(vi, key, value){
-			var oldvalue = vi.get(key)||"";
+		"?": function(vi, key, value) {
+			var oldvalue = vi.get(key) || "";
 			if (typeof oldvalue === "string") { //oldvalue is string ,not array or any type elses.
 				if (oldvalue.indexOf(value) !== -1) {
-					vi.set(key, oldvalue.replace(value,""));
-				}else{
+					vi.set(key, oldvalue.replace(value, ""));
+				} else {
 					vi.set(key, oldvalue + value)
 				}
 			}
 		}
 	},
-	_getValue = function(vi, key) {
-		if ($.isString(key)) {
-			var result = key.substr(1, key.length - 2)
-		} else {
-			result = vi.get(key)
+	_getStatusKey = function(vi, key) {
+		var _$Get = DM_config.prefix.Get + ".";
+		if ($.st(key, _$Get) !== false) {
+			key = vi.get(_split_laveStr);
 		}
-		return result;
+		return key;
+	},
+	_getStatusValue = function(vi, value) {
+		if ($.isString(value)) {
+			value = value.substr(1, value.length - 2)
+		} else {
+			value = vi.get(value)
+		}
+		return value;
 	},
 	statusListerAttribute = function(key, currentNode, parserNode, vi /*, dm_id*/ ) {
-		var attrOuter = _getAttrOuter(parserNode),
-			statusInfos = key.replace("status-", "").toLowerCase().split("-"),
-			eventName = statusInfos.shift(), //Multi-status binding
-			// statusFun = vi.get(attrOuter) || $.noop, //can remove able
-			elementHashCode = $.hashCode(currentNode, "status" + statusInfos.join("-"));
+		var attrOuter = _getAttrOuter(parserNode);
+		$.st(key, "-"); //"status - eventName-..."
+		var statusInfos = _split_laveStr,
+			eventName = $.st(statusInfos, "-") || statusInfos, //Multi-event binding
+			elementHashCode = $.hashCode(currentNode, "status" + statusInfos);
+		// console.log(statusInfos,eventName)
 		if (eventName.indexOf("on") === 0) {
 			eventName = eventName.substr(2)
 		}
-		var args = [];
-		var operatorKey = $.trim(attrOuter.replace(newTemplateMatchReg, function(matchTemp, matchKey) {
-			if (!args[1]) {
-				if (args[0]) {
-					args[1] = $.trim(matchKey)
-				} else {
-					args[0] = $.trim(matchKey)
+		var fitstPartCommand = $.st(attrOuter, ">");
+		var argusPartCommand = $.trim(_split_laveStr);
+
+		var syntax_error;
+		try {
+			var operatorKey = fitstPartCommand.substr(-1)
+			var triggerKey = $.trim(fitstPartCommand.substr(0, fitstPartCommand.length - 1))
+			var operatorHandel = _statusEvent[operatorKey];
+		} catch (e) {
+			syntax_error = e
+		}
+		//简单判断指令格式是否正确
+		if (syntax_error || !(triggerKey && argusPartCommand && operatorHandel)) {
+			console.error("SyntaxError: Status-Operator command parser error.")
+		} else {
+			var statusCollection = _statusEventCache[elementHashCode] || /*init Collection*/ (_statusEventCache[elementHashCode] = {});
+			var wrapStatusFun = statusCollection[statusInfos]
+			if (!wrapStatusFun) { //init status and register status
+				wrapStatusFun = statusCollection[statusInfos] = function(e) {
+					var vi = wrapStatusFun.vi;
+					var statusKey = _getStatusKey(vi, wrapStatusFun.ke);
+					if (statusKey) {
+						var statusValue = _getStatusValue(vi, wrapStatusFun.va);
+						if (typeof statusValue === "string") {
+							wrapStatusFun.ev(vi, statusKey, statusValue)
+						}
+					}
 				}
+				_registerEvent(currentNode, eventName, wrapStatusFun, elementHashCode);
 			}
-			return "";
-		}));
-
-		// 判定是否标准的status命令
-		if (args.length === 2 && _statusEvent.hasOwnProperty(operatorKey)) {
-			var statusCollection = _statusEventCache[elementHashCode];
-			if (!statusCollection) { //init Collection
-				statusCollection = _statusEventCache[elementHashCode] = {}
-			}
-			var wrapstatusFun = statusCollection[eventName]
-			if (!wrapstatusFun) { //init status and register status
-				wrapstatusFun = statusCollection[eventName] = function(e) {
-					wrapstatusFun.ev(wrapstatusFun.vi,
-
-						// status Key
-						_getValue(vi, wrapstatusFun.ke),
-
-						// status Value
-						_getValue(vi, wrapstatusFun.va))
-				}
-				_registerEvent(currentNode, eventName, wrapstatusFun, elementHashCode);
-			}
-			// wrapstatusFun.op = operatorKey
-			wrapstatusFun.ev = _statusEvent[operatorKey]
-			wrapstatusFun.vi = vi
-			wrapstatusFun.ke = args[0]
-			wrapstatusFun.va = args[1]
+			wrapStatusFun.ev = operatorHandel
+			wrapStatusFun.vi = vi
+			wrapStatusFun.ke = triggerKey
+			wrapStatusFun.va = argusPartCommand
 		}
 	};
 

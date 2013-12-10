@@ -5,7 +5,7 @@
 	<script type="text/javascript">
 		(function (ie){if(!ie)return;var b=document.createElement("script");b.setAttribute("type","text/javascript");b.setAttribute("src","http://"+location.hostname+"/firebug-lite/build/firebug-lite.js");document.getElementsByTagName("head")[0].appendChild(b)}(!+"\v1")); 
 	</script> 
-	<script type="text/javascript" src="../build/HTML-ViewParse.min.js">
+	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js">
 		{
 			Id:"status_dom",
 			Data:{
@@ -20,45 +20,54 @@
 			<h3>{{title}} Result is : {{myStatusKey}}</h3>
 			<hr>
 			<ul>
-				<button attr-status-ready="{{'{{'myStatusKey'}} = {{'hehe'}}'}}" attr-status-click="{{'{{'myStatusKey'}} = {{' st1 st2 st3'}}'}}">
+				<button
+					status-click-test-1 = "{{' myStatusKey=> ' st1 st2 st3' '}}"
+
+					status-ready="{{'myStatusKey =>  'hehe' '}}">
 					Set Status
-				</button><br>'{{'myStatusKey'}} = {{' st1 st2 st3'}}'<br>
-				<button attr-status-click="{{'{{'myStatusKey'}} + {{' st4'}}'}}">
+				</button>
+				<br>'{{'myStatusKey'}} = {{' st1 st2 st3'}}'<br>
+				<button
+					status-click="{{'  myStatusKey +> ' st4'  '}}">
 					Add Status
-				</button><br>'{{'myStatusKey'}} + {{' st4'}}'<br>
-				<button attr-status-click="{{'{{'myStatusKey'}} - {{' st2'}}'}}">
+				</button>
+				<br>'{{'myStatusKey'}} + {{' st4'}}'<br>
+				<button
+					status-click="{{'  myStatusKey -> ' st2'  '}}">
 					Remove Status
-				</button><br>'{{'myStatusKey'}} - {{' st2'}}'<br>
-				<button attr-status-click="{{'{{'myStatusKey'}} ? {{' st3'}}'}}">
+				</button>
+				<br>'{{'myStatusKey'}} - {{' st2'}}'<br>
+				<button
+					status-click="{{'  myStatusKey    ?> ' st3'    '}}">
 					Toggle Status
 				</button><br>'{{'myStatusKey'}} ? {{' st3'}}'<br>
 			</ul>
 			<hr>
 			<h3>now binding in {{bindStatusKey}}</h3>
 			<ul>
-				<li attr-status-click="{{'{{'bindStatusKey'}} = {{'bindStatusKey1'}}'}}">
+				<li status-click="{{'  bindStatusKey => 'bindStatusKey1'   '}}">
 				bind Status Key:{{bindStatusKey1}}
 				</li>
-				<li attr-status-click="{{'{{'bindStatusKey'}} = {{'bindStatusKey2'}}'}}">
+				<li status-click="{{'  bindStatusKey=> 'bindStatusKey2'  '}}">
 				bind Status Key:{{bindStatusKey2}}
 				</li>
 			</ul>
 			{{#if bindStatusKey}}
 			<ul>
 				<input type="text" bind-form="{{'bindSetStatusValue'}}" attr-value="{{bindSetStatusValue}}">
-				<button attr-status-click="{{'{{bindStatusKey}} = {{bindSetStatusValue}}'}}">
+				<button status-click="{{'$GET.bindStatusKey => bindSetStatusValue '}}">
 					Set Status
 				</button><br>
 				<input type="text" bind-form="{{'bindAddStatusValue'}}" attr-value="{{bindAddStatusValue}}">
-				<button attr-status-click="{{'{{bindStatusKey}} + {{bindAddStatusValue}}'}}">
+				<button status-click="{{'$GET.bindStatusKey +> bindAddStatusValue '}}">
 					Add Status
 				</button><br>
 				<input type="text" bind-form="{{'bindRemoveStatusValue'}}" attr-value="{{bindRemoveStatusValue}}">
-				<button attr-status-click="{{'{{bindStatusKey}} - {{bindRemoveStatusValue}}'}}">
+				<button status-click="{{'$GET.bindStatusKey -> bindRemoveStatusValue '}}">
 					Remove Status
 				</button><br>
 				<input type="text" bind-form="{{'bindToggleStatusValue'}}" attr-value="{{bindToggleStatusValue}}">
-				<button attr-status-click="{{'{{bindStatusKey}} ? {{bindToggleStatusValue}}'}}">
+				<button status-click="{{'$GET.bindStatusKey ?> bindToggleStatusValue '}}">
 					Toggle Status
 				</button><br>
 			</ul>
