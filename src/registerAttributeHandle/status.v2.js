@@ -6,7 +6,7 @@ var _statusEventCache = {},
 		},
 		"+": function(vi, key, value) {
 			var oldvalue = vi.get(key) || "";
-			if (typeof oldvalue === "string") { //oldvalue is string ,not array or any type elses.
+			if ($.st(oldvalue)) { //oldvalue is string ,not array or any type elses.
 				if (oldvalue.indexOf(value) === -1) {
 					vi.set(key, oldvalue + value)
 				}
@@ -14,7 +14,7 @@ var _statusEventCache = {},
 		},
 		"-": function(vi, key, value) {
 			var oldvalue = vi.get(key) || "";
-			if (oldvalue && typeof oldvalue === "string") { //oldvalue is string ,not array or any type elses.
+			if (oldvalue && $.st(oldvalue)) { //oldvalue is string ,not array or any type elses.
 				if (oldvalue.indexOf(value) !== -1) {
 					vi.set(key, oldvalue.replace(value, ""));
 				}
@@ -22,7 +22,7 @@ var _statusEventCache = {},
 		},
 		"?": function(vi, key, value) {
 			var oldvalue = vi.get(key) || "";
-			if (typeof oldvalue === "string") { //oldvalue is string ,not array or any type elses.
+			if ($.st(oldvalue)) { //oldvalue is string ,not array or any type elses.
 				if (oldvalue.indexOf(value) !== -1) {
 					vi.set(key, oldvalue.replace(value, ""));
 				} else {
@@ -79,7 +79,7 @@ var _statusEventCache = {},
 					var statusKey = _getStatusKey(vi, wrapStatusFun.ke);
 					if (statusKey) {
 						var statusValue = _getStatusValue(vi, wrapStatusFun.va);
-						if (typeof statusValue === "string") {
+						if ($.iS(statusValue)) {
 							wrapStatusFun.ev(vi, statusKey, statusValue)
 						}
 					}

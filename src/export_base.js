@@ -48,6 +48,7 @@ var placeholder = {
 
 	V = {
 		prefix: "attr-",
+		namespace:"fix:",
 		_nodeTree: function(htmlStr) {
 			var _shadowBody = $.D.cl(shadowBody);
 			_shadowBody.innerHTML = htmlStr;

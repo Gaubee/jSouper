@@ -91,7 +91,7 @@
 			//将依赖关系你想逆向转换
 			$.ftE(_current_collect_layer, function(relyObj) {
 				var observerObjCollect = observerCache[relyObj.dm_id] || (observerCache[relyObj.dm_id] = {})
-				observerObjs = observerObjCollect[relyObj.dm_key] || (observerObjCollect[relyObj.dm_key] = [])
+				var observerObjs = observerObjCollect[relyObj.dm_key] || (observerObjCollect[relyObj.dm_key] = [])
 
 				//避免重复收集
 				if ($.iO(observerObjs, _newObserverObj) === -1) {

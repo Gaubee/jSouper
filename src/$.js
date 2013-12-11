@@ -4,16 +4,37 @@ var global = global || this /*strict model use "global" else than "this"*/ ;
 var doc = document,
 	_isIE = !global.dispatchEvent, //!+"\v1",
 	shadowBody = doc.createElement("body"),
+	fragment = function() {
+		return doc.createDocumentFragment().appendChild(doc.createElement("div"))
+	},
+	_fg = fragment(),
 	shadowDIV = doc.createElement("div"),
 	_placeholder = function(prefix) {
 		return prefix || "@" + Math.random().toString(36).substr(2)
+	},
+	//@jQuery
+	rsingleTag = /^<(\w+)\s*\/?>(?:<\/\1>|)$/,
+	rxhtmlTag = /<(?!area|br|col|embed|hr|img|input|link|meta|param)(([\w:]+)[^>]*)\/>/gi,
+	rtagName = /<([\w:]+)/,
+	// We have to close these tags to support XHTML (#13200)
+	wrapMap = {
+
+		// Support: IE 9
+		option: [1, "<select multiple='multiple'>", "</select>"],
+
+		thead: [1, "<table>", "</table>"],
+		col: [2, "<table><colgroup>", "</colgroup></table>"],
+		tr: [2, "<table><tbody>", "</tbody></table>"],
+		td: [3, "<table><tbody><tr>", "</tr></tbody></table>"],
+
+		_default: [0, "", ""]
 	},
 	_booleanFalseRegExp = /false|undefined|null|NaN/,
 	$NULL = null,
 	$UNDEFINED,
 	$TRUE = !$UNDEFINED,
 	$FALSE = !$TRUE,
-	_split_laveStr,//@split export argument
+	_split_laveStr, //@split export argument
 	$ = {
 		id: 9,
 		uidAvator: _placeholder(),
@@ -35,21 +56,24 @@ var doc = document,
 		uid: function() {
 			return this.id = this.id + 1;
 		},
+		iS: function(str) {
+			return typeof str === "string"
+		},
 		isString: function(str) {
 			var start = str.charAt(0);
 			return (start === str.charAt(str.length - 1)) && "\'\"".indexOf(start) !== -1;
 		},
 		st: function(str, splitKey) { //split
 			var index = str.indexOf(splitKey);
-			_split_laveStr = str.substr(index+splitKey.length);
+			_split_laveStr = str.substr(index + splitKey.length);
 			//false is undefined
-			return  index!==-1&&str.substring(0, index);
+			return index !== -1 && str.substring(0, index);
 		},
-		lst:function(str,splitKey){//last split
+		lst: function(str, splitKey) { //last split
 			var index = str.lastIndexOf(splitKey);
 			_split_laveStr = str.substr(index + splitKey.length);
 			//false is undefined
-			return  index!==-1&&str.substring(0, index);
+			return index !== -1 && str.substring(0, index);
 		},
 		trim: function(str) {
 			str = str.replace(/^\s\s*/, '')
@@ -78,7 +102,7 @@ var doc = document,
 		},
 		s: function(likeArr) { //slice
 			var array;
-			if (typeof likeArr === "string") {
+			if ($.iS(likeArr)) {
 				return likeArr.split('');
 			}
 			try {
@@ -122,6 +146,9 @@ var doc = document,
 			}
 		},
 		ftE: function(arr, callback, index) { //fastEach
+			if (!arr) {
+				debugger
+			};
 			for (var i = index || 0, len = arr.length; i < len; i += 1) {
 				callback(arr[i], i);
 			}
@@ -152,6 +179,33 @@ var doc = document,
 		D: { //DOM
 			C: function(info) { //Comment
 				return document.createComment(info)
+			},
+			cs: function(nodeHTML) { //createElement by Str
+				var result;
+				if (nodeHTML.charAt(0) === "<" && nodeHTML.charAt(nodeHTML.length - 1) === ">" && nodeHTML.length >= 3) {
+					var parse = rsingleTag.exec(nodeHTML);
+					if (parse) {
+						result = doc.createElement(parse[1])
+					} else {
+						//@jQuery
+						var tag = rtagName.exec(nodeHTML);
+						tag = tag ? tag[1] : "";
+
+						var wrap = wrapMap[tag] || wrapMap._default;
+
+						result = _fg;
+						result.innerHTML = wrap[1] + nodeHTML.replace(rxhtmlTag, "<$1></$2>") + wrap[2];
+
+						// Descend through wrappers to the right content
+						var j = wrap[0] + 1;
+						while (j--) {
+							result = result.lastChild;
+						}
+					}
+				} else {
+					result = doc.createTextNode(nodeHTML);
+				}
+				return result;
 			},
 			iB: function(parentNode, insertNode, beforNode) { //insertBefore
 				// try{

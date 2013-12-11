@@ -6,16 +6,37 @@ var global = global || this /*strict model use "global" else than "this"*/ ;
 var doc = document,
 	_isIE = !global.dispatchEvent, //!+"\v1",
 	shadowBody = doc.createElement("body"),
+	fragment = function() {
+		return doc.createDocumentFragment().appendChild(doc.createElement("div"))
+	},
+	_fg = fragment(),
 	shadowDIV = doc.createElement("div"),
 	_placeholder = function(prefix) {
 		return prefix || "@" + Math.random().toString(36).substr(2)
+	},
+	//@jQuery
+	rsingleTag = /^<(\w+)\s*\/?>(?:<\/\1>|)$/,
+	rxhtmlTag = /<(?!area|br|col|embed|hr|img|input|link|meta|param)(([\w:]+)[^>]*)\/>/gi,
+	rtagName = /<([\w:]+)/,
+	// We have to close these tags to support XHTML (#13200)
+	wrapMap = {
+
+		// Support: IE 9
+		option: [1, "<select multiple='multiple'>", "</select>"],
+
+		thead: [1, "<table>", "</table>"],
+		col: [2, "<table><colgroup>", "</colgroup></table>"],
+		tr: [2, "<table><tbody>", "</tbody></table>"],
+		td: [3, "<table><tbody><tr>", "</tr></tbody></table>"],
+
+		_default: [0, "", ""]
 	},
 	_booleanFalseRegExp = /false|undefined|null|NaN/,
 	$NULL = null,
 	$UNDEFINED,
 	$TRUE = !$UNDEFINED,
 	$FALSE = !$TRUE,
-	_split_laveStr,//@split export argument
+	_split_laveStr, //@split export argument
 	$ = {
 		id: 9,
 		uidAvator: _placeholder(),
@@ -37,21 +58,24 @@ var doc = document,
 		uid: function() {
 			return this.id = this.id + 1;
 		},
+		iS: function(str) {
+			return typeof str === "string"
+		},
 		isString: function(str) {
 			var start = str.charAt(0);
 			return (start === str.charAt(str.length - 1)) && "\'\"".indexOf(start) !== -1;
 		},
 		st: function(str, splitKey) { //split
 			var index = str.indexOf(splitKey);
-			_split_laveStr = str.substr(index+splitKey.length);
+			_split_laveStr = str.substr(index + splitKey.length);
 			//false is undefined
-			return  index!==-1&&str.substring(0, index);
+			return index !== -1 && str.substring(0, index);
 		},
-		lst:function(str,splitKey){//last split
+		lst: function(str, splitKey) { //last split
 			var index = str.lastIndexOf(splitKey);
 			_split_laveStr = str.substr(index + splitKey.length);
 			//false is undefined
-			return  index!==-1&&str.substring(0, index);
+			return index !== -1 && str.substring(0, index);
 		},
 		trim: function(str) {
 			str = str.replace(/^\s\s*/, '')
@@ -80,7 +104,7 @@ var doc = document,
 		},
 		s: function(likeArr) { //slice
 			var array;
-			if (typeof likeArr === "string") {
+			if ($.iS(likeArr)) {
 				return likeArr.split('');
 			}
 			try {
@@ -124,6 +148,9 @@ var doc = document,
 			}
 		},
 		ftE: function(arr, callback, index) { //fastEach
+			if (!arr) {
+				debugger
+			};
 			for (var i = index || 0, len = arr.length; i < len; i += 1) {
 				callback(arr[i], i);
 			}
@@ -154,6 +181,33 @@ var doc = document,
 		D: { //DOM
 			C: function(info) { //Comment
 				return document.createComment(info)
+			},
+			cs: function(nodeHTML) { //createElement by Str
+				var result;
+				if (nodeHTML.charAt(0) === "<" && nodeHTML.charAt(nodeHTML.length - 1) === ">" && nodeHTML.length >= 3) {
+					var parse = rsingleTag.exec(nodeHTML);
+					if (parse) {
+						result = doc.createElement(parse[1])
+					} else {
+						//@jQuery
+						var tag = rtagName.exec(nodeHTML);
+						tag = tag ? tag[1] : "";
+
+						var wrap = wrapMap[tag] || wrapMap._default;
+
+						result = _fg;
+						result.innerHTML = wrap[1] + nodeHTML.replace(rxhtmlTag, "<$1></$2>") + wrap[2];
+
+						// Descend through wrappers to the right content
+						var j = wrap[0] + 1;
+						while (j--) {
+							result = result.lastChild;
+						}
+					}
+				} else {
+					result = doc.createTextNode(nodeHTML);
+				}
+				return result;
 			},
 			iB: function(parentNode, insertNode, beforNode) { //insertBefore
 				// try{
@@ -561,7 +615,7 @@ var _event_cache = {},
 	},
 	_addEventListener = function(Element, eventName, eventFun, elementHash) {
 		var eventConfig = _registerEventBase(Element, eventName, eventFun, elementHash)
-		if (typeof eventConfig.name === "string") {
+		if ($.iS(eventConfig.name)) {
 			Element.addEventListener(eventConfig.name, eventConfig.fn, $FALSE);
 		} else {
 			$.ftE(eventConfig.name, function(eventName) {
@@ -575,7 +629,7 @@ var _event_cache = {},
 	},
 	_attachEvent = function(Element, eventName, eventFun, elementHash) {
 		var eventConfig = _registerEventBase(Element, eventName, eventFun, elementHash)
-		if (typeof eventConfig.name === "string") {
+		if ($.iS(eventConfig.name)) {
 			Element.attachEvent("on" + eventConfig.name, eventConfig.fn);
 		} else {
 			$.ftE(eventConfig.name, function(eventName) {
@@ -819,7 +873,7 @@ var DM_proto = DataManager.prototype = {
 				if (_isIE) {
 					do { //fix IE String
 						var perkey = arrKey[anchor++];
-						if (typeof result === "string" && ~~perkey == perkey) {
+						if ($.iS(result) && ~~perkey == perkey) {
 							result = result.charAt(perkey)
 						} else {
 							result = result[perkey];
@@ -1124,7 +1178,7 @@ var DM_proto = DataManager.prototype = {
 			self._pushToCollectDM(dataManager,
 				//prefixkey === "[0-9]+?" ==> $THIS.0 ==> return ""; 
 				//else return prefixkey.split(".").pop().join(".")
-				$.lst(prefixKey,"."),
+				$.lst(prefixKey, "."),
 				// in dif handle
 				dataManager._isEach.eachId)
 		} else {
@@ -1655,6 +1709,40 @@ function _buildHandler(handleNodeTree) {
 var _attrRegExp = /(\S+)=["']?((?:.(?!["']?\s+(?:\S+)=|[>"']))+.)["']?/g;
 var ignoreTagName = "SCRIPT|PRE|TEMPLATE|STYLE|LINK".split("|");
 
+var _outerHTML = (function() {
+	// if (shadowDIV.outerHTML) {
+	// 	var _tagHTML = function(node) {
+	// 		return node.outerHTML.replace(node.innerHTML, "");
+	// 	}
+	// } else {
+	var _wrapDIV = fragment();
+	var _tagHTML = function(node) {
+		// console.log(node.outerHTML);
+		// console.log(node.innerHTML);
+		// console.log(node.outerHTML.replace(node.innerHTML, ""))
+		node = $.D.cl(node);
+		_wrapDIV.appendChild(node);
+		var outerHTMLStr = _wrapDIV.innerHTML;
+		_wrapDIV.removeChild(node);
+
+		return outerHTMLStr;
+	}
+	// }
+	var fireOuterHTML = function(node) {
+		var outerHTMLStr = _tagHTML(node);
+		var tagNamespace = V.namespace.toUpperCase();
+		if (outerHTMLStr.toUpperCase().indexOf(tagNamespace) === 1) { //tagName = <attr-xxx></attr-xxx>
+			var plen = tagNamespace.length;
+			var alltagName = rtagName.exec(outerHTMLStr)[1];
+			var _perfixStr = "<" + outerHTMLStr.substr(plen + 1, outerHTMLStr.length - plen - alltagName.length - 2);
+			var _laveStr = outerHTMLStr.substr(outerHTMLStr.length - alltagName.length - 1 + plen)
+			outerHTMLStr = _perfixStr + _laveStr;
+		}
+		return outerHTMLStr;
+	}
+	return fireOuterHTML;
+}());
+
 function _buildTrigger(handleNodeTree, dataManager) {
 	var self = this, //View Instance
 		triggerTable = self._triggerTable;
@@ -1673,12 +1761,13 @@ function _buildTrigger(handleNodeTree, dataManager) {
 				}
 			}
 		} else if (handle.type === "element") {
-			if ($.iO(ignoreTagName, handle.tagName) !== -1) {
+			if ($.iO(ignoreTagName, handle.node.tagName) !== -1) {
 				return $FALSE;
 			}
 			var node = handle.node,
-				nodeHTMLStr = node.outerHTML.replace(node.innerHTML, ""),
+				nodeHTMLStr = _outerHTML(node),
 				attrs = nodeHTMLStr.match(_attrRegExp);
+			handle.nodeStr = nodeHTMLStr;
 			$.fE(node.attributes, function(attr, i) {
 				var value = attr.value,
 					name = attr.name;
@@ -1687,6 +1776,8 @@ function _buildTrigger(handleNodeTree, dataManager) {
 					node.removeAttribute(name);
 				}
 			})
+		} else { // textNode and Comment
+			handle.nodeStr = handle.node.data;
 		}
 	});
 };
@@ -1702,7 +1793,12 @@ function _create(data) { //data maybe basedata or dataManager
 		node = $.pI(NodeList_of_ViewInstance, $.c(node));
 		if (!node.ignore) {
 			var currentParentNode = NodeList_of_ViewInstance[parentNode.id].currentNode || topNode.currentNode;
-			var currentNode = node.currentNode = $.D.cl(node.node);
+			if ("nodeStr" in node) {
+				var currentNode = node.type === "comment" ? $.D.C(node.nodeStr) : $.D.cs(node.nodeStr);
+			} else {
+				currentNode = $.D.cl(node.node);
+			}
+			node.currentNode = currentNode;
 			$.D.ap(currentParentNode, currentNode);
 		} else {
 
@@ -2243,6 +2339,7 @@ var placeholder = {
 
 	V = {
 		prefix: "attr-",
+		namespace:"fix:",
 		_nodeTree: function(htmlStr) {
 			var _shadowBody = $.D.cl(shadowBody);
 			_shadowBody.innerHTML = htmlStr;
@@ -2766,7 +2863,6 @@ V.rt("", function(handle, index, parentHandle) {
 					}
 					// data = String(data);
 					if (nodeHandle._data !== data) {
-						// console.log(currentNode.data,nodeHandle._data,data,currentNode.parentNode.outerHTML)
 						currentNode.data = nodeHandle._data = data;
 					}
 				}
@@ -3177,6 +3273,7 @@ V.ra(function(attrKey) {
 	return _boolAssignment.indexOf(" " + attrKey + " ") !== -1;
 }, function(attrKey, element) {
 	var result = _AttributeHandleEvent.bool
+	console.log(element.type)
 	switch (element.type) {
 		case "checkbox":
 			(attrKey === "checked") && (result = _AttributeHandleEvent.checked)
@@ -3381,7 +3478,7 @@ var _event_by_fun = (function() {
 		attrKey = "onclick";
 
 	_testDIV.setAttribute(attrKey, testEvent);
-	if (typeof _testDIV.getAttribute(attrKey) === "string") {
+	if ($.iS(_testDIV.getAttribute(attrKey))) {
 		return $FALSE;
 	}
 	return $TRUE;
@@ -3473,7 +3570,7 @@ var _statusEventCache = {},
 		},
 		"+": function(vi, key, value) {
 			var oldvalue = vi.get(key) || "";
-			if (typeof oldvalue === "string") { //oldvalue is string ,not array or any type elses.
+			if ($.st(oldvalue)) { //oldvalue is string ,not array or any type elses.
 				if (oldvalue.indexOf(value) === -1) {
 					vi.set(key, oldvalue + value)
 				}
@@ -3481,7 +3578,7 @@ var _statusEventCache = {},
 		},
 		"-": function(vi, key, value) {
 			var oldvalue = vi.get(key) || "";
-			if (oldvalue && typeof oldvalue === "string") { //oldvalue is string ,not array or any type elses.
+			if (oldvalue && $.st(oldvalue)) { //oldvalue is string ,not array or any type elses.
 				if (oldvalue.indexOf(value) !== -1) {
 					vi.set(key, oldvalue.replace(value, ""));
 				}
@@ -3489,7 +3586,7 @@ var _statusEventCache = {},
 		},
 		"?": function(vi, key, value) {
 			var oldvalue = vi.get(key) || "";
-			if (typeof oldvalue === "string") { //oldvalue is string ,not array or any type elses.
+			if ($.st(oldvalue)) { //oldvalue is string ,not array or any type elses.
 				if (oldvalue.indexOf(value) !== -1) {
 					vi.set(key, oldvalue.replace(value, ""));
 				} else {
@@ -3546,7 +3643,7 @@ var _statusEventCache = {},
 					var statusKey = _getStatusKey(vi, wrapStatusFun.ke);
 					if (statusKey) {
 						var statusValue = _getStatusValue(vi, wrapStatusFun.va);
-						if (typeof statusValue === "string") {
+						if ($.iS(statusValue)) {
 							wrapStatusFun.ev(vi, statusKey, statusValue)
 						}
 					}
@@ -4022,7 +4119,7 @@ if (typeof module === "object" && module && typeof module["export"] === "object"
 			//将依赖关系你想逆向转换
 			$.ftE(_current_collect_layer, function(relyObj) {
 				var observerObjCollect = observerCache[relyObj.dm_id] || (observerCache[relyObj.dm_id] = {})
-				observerObjs = observerObjCollect[relyObj.dm_key] || (observerObjCollect[relyObj.dm_key] = [])
+				var observerObjs = observerObjCollect[relyObj.dm_key] || (observerObjCollect[relyObj.dm_key] = [])
 
 				//避免重复收集
 				if ($.iO(observerObjs, _newObserverObj) === -1) {

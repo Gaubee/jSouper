@@ -291,7 +291,7 @@ var _event_cache = {},
 	},
 	_addEventListener = function(Element, eventName, eventFun, elementHash) {
 		var eventConfig = _registerEventBase(Element, eventName, eventFun, elementHash)
-		if (typeof eventConfig.name === "string") {
+		if ($.iS(eventConfig.name)) {
 			Element.addEventListener(eventConfig.name, eventConfig.fn, $FALSE);
 		} else {
 			$.ftE(eventConfig.name, function(eventName) {
@@ -305,7 +305,7 @@ var _event_cache = {},
 	},
 	_attachEvent = function(Element, eventName, eventFun, elementHash) {
 		var eventConfig = _registerEventBase(Element, eventName, eventFun, elementHash)
-		if (typeof eventConfig.name === "string") {
+		if ($.iS(eventConfig.name)) {
 			Element.attachEvent("on" + eventConfig.name, eventConfig.fn);
 		} else {
 			$.ftE(eventConfig.name, function(eventName) {
