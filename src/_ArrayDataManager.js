@@ -30,8 +30,8 @@ _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片�
 			if (key) {
 				nObj = key instanceof Object?key:$.s(key);
 				// self.length(nObj.length);
-				$.ftE(DMs, function(datamanager, i) {
-					datamanager.set(nObj[i])
+				$.ftE(nObj, function(nObj_item, i) {
+					DMs[i].set(nObj_item)
 				})
 			}
 			break;
@@ -39,7 +39,7 @@ _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片�
 			//TODO: don't create Array to save memory
 			var arrKeys = key.split(".");
 			var index = arrKeys.shift();
-			var datamanager = DMs[index]
+			var datamanager = DMs[index];
 			if (!datamanager) {
 				return
 			}
