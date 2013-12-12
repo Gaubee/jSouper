@@ -945,7 +945,7 @@ var DM_proto = DataManager.prototype = {
 			case 0:
 				break;
 			case 1:
-				result = self.get(); //maybe ExtendsClass
+				result = self._database/*get()*/; //maybe ExtendsClass
 				result = self.set(_mix(result, key));
 				break;
 			default:
@@ -1093,7 +1093,7 @@ var DM_proto = DataManager.prototype = {
 				}
 			})
 		}
-		if (!result && (__arrayData = self.get()) instanceof Array && __arrayLen[""] !== __arrayData.length) {
+		if (!result && (__arrayData = self._database/*get()*/) instanceof Array && __arrayLen[""] !== __arrayData.length) {
 			__arrayLen[""] = __arrayData.length
 			key = "";
 		}
@@ -1312,90 +1312,98 @@ _dataManagerExtend.get = function(exObjProto) {
  * to mamage #each datamanager
  */
 
-function _ArrayDataManager(perfix,id) {
-	var self= this;
-	self._id = id;
-	self._prefix = perfix;
-	self._DMs = [];
+function _ArrayDataManager(perfix, id) {
+    var self = this;
+    self._id = id;
+    self._prefix = perfix;
+    self._DMs = [];
 }
 var _ArrDM_proto = _ArrayDataManager.prototype
 $.fI(DM_proto, function(fun, funName) {
-	_ArrDM_proto[funName] = function() {
-		var args = arguments;
-		$.ftE(this._DMs, function(_each_dataManager) {
-			_each_dataManager[funName].apply(_each_dataManager, args)
-		})
-	}
+    _ArrDM_proto[funName] = function() {
+        var args = arguments;
+        $.ftE(this._DMs, function(_each_dataManager) {
+            _each_dataManager[funName].apply(_each_dataManager, args)
+        })
+    }
 })
 _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片，所以无需进行特殊处理
-	var self = this;
-	var args = arguments;
-	var DMs = this._DMs;
-	var result;
-	switch (args.length) {
-		case 0:
-			return;
-		case 1:
-			if (key) {
-				nObj = key instanceof Object?key:$.s(key);
-				// self.length(nObj.length);
-				$.ftE(nObj, function(nObj_item, i) {
-					DMs[i].set(nObj_item)
-				})
-			}
-			break;
-		default:
-			//TODO: don't create Array to save memory
-			var arrKeys = key.split(".");
-			var index = arrKeys.shift();
-			var datamanager = DMs[index];
-			if (!datamanager) {
-				return
-			}
-			if (arrKeys.length) {
-				result = datamanager.set(arrKeys.join("."), nObj)
-			} else {
-				result = datamanager.set(nObj)
-			}
-	}
-	return result;
+    var self = this;
+    var args = arguments;
+    var DMs = this._DMs;
+    var result;
+    switch (args.length) {
+        case 0:
+            return;
+        case 1:
+            if (key) {
+                nObj = key instanceof Object ? key : $.s(key);
+                // self.length(nObj.length);
+                $.ftE(nObj, function(nObj_item, i) {
+                    var DM = DMs[i];
+                    if (nObj_item !== DM._database) { //强制优化，但是$INDEX关键字要缓存判定更新
+                        DM._database = nObj_item;
+                        DM.touchOff("");
+                    } else if (DM.__cacheIndex !== DM._index) {
+                        DM.__cacheIndex = DM._index;
+                        DM.touchOff(DM_config.prefix.Index);
+                    }
+                })
+            }
+            break;
+        default:
+            //TODO: don't create Array to save memory
+            var arrKeys = key.split(".");
+            var index = arrKeys.shift();
+            var datamanager = DMs[index];
+            if (!datamanager) {
+                return
+            }
+            if (arrKeys.length) {
+                result = datamanager.set(arrKeys.join("."), nObj)
+            } else {
+                result = datamanager.set(nObj)
+            }
+    }
+    return result;
 }
 _ArrDM_proto.push = function(datamanager) {
-	var self = this,
-		pperfix = self._prefix;
-	var DMs = this._DMs;
-	var index = String(datamanager._index = DMs.length)
-	datamanager._prefix = pperfix ? pperfix + "." + index : index;
-	$.p(DMs, datamanager)
-	datamanager._arrayDataManager = self;
-	datamanager._parentDataManager = self._parentDataManager;
+    var self = this,
+        pperfix = self._prefix;
+    var DMs = this._DMs;
+    var index = String(datamanager._index = DMs.length)
+    datamanager._prefix = pperfix ? pperfix + "." + index : index;
+    $.p(DMs, datamanager)
+    datamanager._arrayDataManager = self;
+    datamanager._parentDataManager = self._parentDataManager;
 }
 _ArrDM_proto.remove = function(datamanager) {
-	var index = datamanager._index
-	var self = this;
-	var pperfix = self._prefix;
-	var DMs = self._DMs;
-	DMs.splice(index, 1);
-	$.ftE(DMs, function(datamanager, i) {
-		var index = String(datamanager._index -= 1);
-		datamanager._prefix = pperfix ? pperfix + "." + index : index;
-	}, index)
-	var parentDataManager = datamanager._parentDataManager
-	var oldData = pperfix ? parentDataManager.get(pperfix) : parentDataManager.get();
-	if (oldData) {
-		// 对象的数据可能是空值，导致DM实际长度与数据长度不一致，直接splice会错位，所以需要纠正
-		$.sp.call(oldData, index, 1)
-		datamanager._parentDataManager.set(pperfix, oldData)
-		datamanager._arrayDataManager = datamanager._parentDataManager = $UNDEFINED;
-	}
+    var index = datamanager._index
+    var self = this;
+    var pperfix = self._prefix;
+    var DMs = self._DMs;
+    DMs.splice(index, 1);
+    $.ftE(DMs, function(datamanager, i) {
+        var index = String(datamanager._index -= 1);
+        datamanager._prefix = pperfix ? pperfix + "." + index : index;
+    }, index)
+    var parentDataManager = datamanager._parentDataManager
+    var oldData = pperfix ? parentDataManager.get(pperfix) : parentDataManager.database /*get()*/ ;
+    if (oldData) {
+        // 对象的数据可能是空值，导致DM实际长度与数据长度不一致，直接splice会错位，所以需要纠正
+        $.sp.call(oldData, index, 1)
+        datamanager._parentDataManager.set(pperfix, oldData)
+        datamanager._arrayDataManager = datamanager._parentDataManager = $UNDEFINED;
+    }
 }
 _ArrDM_proto.lineUp = function(datamanager) {
-	this.remove(datamanager);
-	this.push(datamanager);
+    this.remove(datamanager);
+    this.push(datamanager);
 }
 DM_proto.lineUp = function() {
-	this._arrayDataManager && this._arrayDataManager.lineUp(this)
+    this._arrayDataManager && this._arrayDataManager.lineUp(this)
 }
+
 ;
 (function() {
 	var _get = DM_proto.get,
@@ -2750,157 +2758,159 @@ V.rt("define", function(handle, index, parentHandle) {
 });
 DM_config.prefix.Index = "$INDEX";
 var _extend_DM_get_Index = (function() {
-	var $Index_set = function(key) {
-		var self = DataManager.session.topSetter = this
-		var indexKey = DM_config.prefix.Index;
-		if (key === indexKey) {
-			DataManager.session.filterKey = "";
-			throw Error(indexKey + " is read only.")
-		} else {
-			return DM_proto.set.apply(self, arguments)
-		}
-	}
-	var $Index_get = function(key) {
-		var self = DataManager.session.topGetter = this;
-		var indexKey = DM_config.prefix.Index;
-		if (key === indexKey) {
-			DataManager.session.filterKey = "";
-			return self._index;
-		} else {
-			return DM_proto.get.apply(self, arguments)
-		}
-	};
+    var $Index_set = function(key) {
+        var self = this;
+        var indexKey = DM_config.prefix.Index;
+        if (key === indexKey) {
+            DataManager.session.topSetter = self;
+            DataManager.session.filterKey = "";
+            throw Error(indexKey + " is read only.")
+        } else {
+            return DM_proto.set.apply(self, arguments)
+        }
+    }
+    var $Index_get = function(key) {
+        var self = this;
+        var indexKey = DM_config.prefix.Index;
+        if (key === indexKey) {
+            DataManager.session.topGetter = self;
+            DataManager.session.filterKey = "";
+            return self._index;
+        } else {
+            return DM_proto.get.apply(self, arguments)
+        }
+    };
 
-	function _extend_DM_get_Index(dataManager) {
-		// if(dataManager._isEach)
-		dataManager.set = $Index_set
-		dataManager.get = $Index_get
-	};
-	return _extend_DM_get_Index;
+    function _extend_DM_get_Index(dataManager) {
+        // if(dataManager._isEach)
+        dataManager.set = $Index_set
+        dataManager.get = $Index_get
+    };
+    return _extend_DM_get_Index;
 }());
 var Arr_sort = Array.prototype.sort;
 V.rt("#each", function(handle, index, parentHandle) {
-	var id = handle.id;
-	var arrDataHandle = handle.childNodes[0];
-	var arrDataHandle_id = arrDataHandle.id;
-	var arrDataHandle_Key = arrDataHandle.childNodes[0].node.data;
-	var arrDataHandle_sort = handle.childNodes[1];
-	// console.log(arrDataHandle_sort)
-	if (arrDataHandle_sort.type === "handle") {
-		var arrDataHandle_sort_id = arrDataHandle_sort.id;
-	}
-	var comment_endeach_id = parentHandle.childNodes[index + 3].id; //eachHandle --> eachComment --> endeachHandle --> endeachComment
-	var trigger;
+    var id = handle.id;
+    var arrDataHandle = handle.childNodes[0];
+    var arrDataHandle_id = arrDataHandle.id;
+    var arrDataHandle_Key = arrDataHandle.childNodes[0].node.data;
+    var arrDataHandle_sort = handle.childNodes[1];
+    // console.log(arrDataHandle_sort)
+    if (arrDataHandle_sort.type === "handle") {
+        var arrDataHandle_sort_id = arrDataHandle_sort.id;
+    }
+    var comment_endeach_id = parentHandle.childNodes[index + 3].id; //eachHandle --> eachComment --> endeachHandle --> endeachComment
+    var trigger;
 
-	trigger = {
-		// smartTrigger:$NULL,
-		// key:$NULL,
-		event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
-			var data = NodeList_of_ViewInstance[arrDataHandle_id]._data,
-				// arrTriggerKey = arrDataHandle_Key + ".length",
-				viewInstance = V._instances[viewInstance_ID],
-				allArrViewInstances = viewInstance._AVI,
-				arrViewInstances = allArrViewInstances[id] || (allArrViewInstances[id] = []),
-				showed_vi_len = arrViewInstances.len,
-				new_data_len = data ? data.length : 0,
-				eachModuleConstructor = V.eachModules[id],
-				inserNew,
-				comment_endeach_node = NodeList_of_ViewInstance[comment_endeach_id].currentNode;
-			if (arrDataHandle_sort_id && data) {
-				var sort_handle = NodeList_of_ViewInstance[arrDataHandle_sort_id]._data
-				var finallyRun = DataManager.finallyRun;
-				var type = typeof sort_handle
-				if (/function|string/.test(type)) {
-					var old_sort = $.s(data);
-					data = data;
-					try {
-						if (type === "function") {
-							data.sort(sort_handle);
-						} else { //string
-							sort_handle = $.trim(sort_handle);
-							if ($.st(sort_handle, " ") === "by") {
-								var sort_key = $.st($.trim(_split_laveStr), " ");
-								sort_handle = $.trim(_split_laveStr);
-								/asc|desc/.test(sort_handle) && data.sort(function(a, b) {
-									return a[sort_key] > b[sort_key]
-								})
-							}
-							if (sort_handle === "asc") {
-								data.sort()
-							} else if (sort_handle === "desc") {
-								data.sort().reverse()
-							}
-						}
-					} catch (e) {
-						throw TypeError("#each-data's type error.")
-					}
-					$.ftE(old_sort, function(value, index) {
-						if (data[index] !== value) {
-							var setSort = finallyRun[id];
-							if (!setSort) {
-								setSort = finallyRun[id] = function() {
-									setSort.vi.set(arrDataHandle_Key, data)
-									finallyRun[id] = $NULL;
-								}
-								finallyRun(setSort)
-							}
-							setSort.vi = viewInstance
-						}
-					})
-				}
-			}
-			if (showed_vi_len !== new_data_len) {
-				arrViewInstances.len = new_data_len; //change immediately,to avoid the `subset` trigger the `rebuildTree`,and than trigger each-trigger again.
+    trigger = {
+        // smartTrigger:$NULL,
+        // key:$NULL,
+        event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
+            var data = NodeList_of_ViewInstance[arrDataHandle_id]._data,
+                // arrTriggerKey = arrDataHandle_Key + ".length",
+                viewInstance = V._instances[viewInstance_ID],
+                allArrViewInstances = viewInstance._AVI,
+                arrViewInstances = allArrViewInstances[id] || (allArrViewInstances[id] = []),
+                showed_vi_len = arrViewInstances.len,
+                new_data_len = data ? data.length : 0,
+                eachModuleConstructor = V.eachModules[id],
+                inserNew,
+                comment_endeach_node = NodeList_of_ViewInstance[comment_endeach_id].currentNode;
+            if (arrDataHandle_sort_id && data) {
+                var sort_handle = NodeList_of_ViewInstance[arrDataHandle_sort_id]._data
+                var finallyRun = DataManager.finallyRun;
+                var type = typeof sort_handle
+                if (/function|string/.test(type)) {
+                    var old_sort = $.s(data);
+                    data = data;
+                    try {
+                        if (type === "function") {
+                            data.sort(sort_handle);
+                        } else { //string
+                            sort_handle = $.trim(sort_handle);
+                            if ($.st(sort_handle, " ") === "by") {
+                                var sort_key = $.st($.trim(_split_laveStr), " ");
+                                sort_handle = $.trim(_split_laveStr);
+                                /asc|desc/.test(sort_handle) && data.sort(function(a, b) {
+                                    return a[sort_key] > b[sort_key]
+                                })
+                            }
+                            if (sort_handle === "asc") {
+                                data.sort()
+                            } else if (sort_handle === "desc") {
+                                data.sort().reverse()
+                            }
+                        }
+                    } catch (e) {
+                        throw TypeError("#each-data's type error.")
+                    }
+                    $.ftE(old_sort, function(value, index) {
+                        if (data[index] !== value) {
+                            var setSort = finallyRun[id];
+                            if (!setSort) {
+                                setSort = finallyRun[id] = function() {
+                                    setSort.vi.set(arrDataHandle_Key, data)
+                                    finallyRun[id] = $NULL;
+                                }
+                                finallyRun(setSort)
+                            }
+                            setSort.vi = viewInstance
+                        }
+                    })
+                }
+            }
+            if (showed_vi_len !== new_data_len) {
+                arrViewInstances.len = new_data_len; //change immediately,to avoid the `subset` trigger the `rebuildTree`,and than trigger each-trigger again.
 
-				var _rebuildTree = dataManager.rebuildTree,
-					_touchOff = DM_proto.touchOff;
-				//沉默相关多余操作的API，提升效率
-				dataManager.rebuildTree = $.noop //doesn't need rebuild every subset
-				DM_proto.touchOff = $.noop; //subset的touchOff会遍历整个子链，会造成爆炸性增长。
+                var _rebuildTree = dataManager.rebuildTree,
+                    _touchOff = DM_proto.touchOff;
+                //沉默相关多余操作的API，提升效率
+                dataManager.rebuildTree = $.noop //doesn't need rebuild every subset
+                DM_proto.touchOff = $.noop; //subset的touchOff会遍历整个子链，会造成爆炸性增长。
 
-				if (showed_vi_len > new_data_len) {
-					$.fE(arrViewInstances, function(eachItemHandle) {
-						var isEach = eachItemHandle._isEach
-						//移除each标志避免排队
-						eachItemHandle._isEach = $FALSE;
-						eachItemHandle.remove();
-						//恢复原有each标志
-						eachItemHandle._isEach = isEach;
-					}, new_data_len);
-				} else {
-					//undefined null false "" 0 ...
-					data && $.ftE($.s(data), function(eachItemData, index) {
-						//TODO:if too mush vi will be create, maybe asyn
-						var viewInstance = arrViewInstances[index];
-						if (!viewInstance) {
-							//临时回滚沉默的功能，保证这个对象的内部渲染正确
-							DM_proto.touchOff = _touchOff;
-							viewInstance = arrViewInstances[index] = eachModuleConstructor(eachItemData);
-							DM_proto.touchOff = $.noop;
+                if (showed_vi_len > new_data_len) {
+                    $.fE(arrViewInstances, function(eachItemHandle) {
+                        var isEach = eachItemHandle._isEach
+                        //移除each标志避免排队
+                        eachItemHandle._isEach = $FALSE;
+                        eachItemHandle.remove();
+                        //恢复原有each标志
+                        eachItemHandle._isEach = isEach;
+                    }, new_data_len);
+                } else {
+                    //undefined null false "" 0 ...
+                    data && $.ftE($.s(data), function(eachItemData, index) {
+                        //TODO:if too mush vi will be create, maybe asyn
+                        var viewInstance = arrViewInstances[index];
+                        if (!viewInstance) {
+                            viewInstance = arrViewInstances[index] = eachModuleConstructor(eachItemData);
 
-							viewInstance._arrayVI = arrViewInstances;
-							var viDM = viewInstance.dataManager
-							viDM._isEach = viewInstance._isEach = {
-								//_index在push到Array_DM时才进行真正定义，由于remove会重新更正_index，所以这个参数完全交给Array_DM管理
-								// _index: index,
-								eachId: id,
-								eachVIs: arrViewInstances
-							}
-							dataManager.subset(viDM, arrDataHandle_Key + "." + index); //+"."+index //reset arrViewInstance's dataManager
-							_extend_DM_get_Index(viDM)
-						}
-						viewInstance.insert(comment_endeach_node)
-					}, showed_vi_len /*||0*/ );
-				}
-				//回滚沉默的功能
-				//强制刷新，保证each中子对象的smartkey的渲染正确
-				(DM_proto.touchOff = _touchOff).call(dataManager);
-				(dataManager.rebuildTree = _rebuildTree).call(dataManager);
-			}
-		}
-	}
-	return trigger
+                            viewInstance._arrayVI = arrViewInstances;
+                            var viDM = viewInstance.dataManager
+                            viDM._isEach = viewInstance._isEach = {
+                                //_index在push到Array_DM时才进行真正定义，由于remove会重新更正_index，所以这个参数完全交给Array_DM管理
+                                // _index: index,
+                                eachId: id,
+                                eachVIs: arrViewInstances
+                            }
+                            dataManager.subset(viDM, arrDataHandle_Key + "." + index); //+"."+index //reset arrViewInstance's dataManager
+                            _extend_DM_get_Index(viDM)
+                            //强制刷新，保证这个对象的内部渲染正确，在subset后刷新，保证smartkey的渲染正确
+                            _touchOff.call(viDM);
+                            viDM.__cacheIndex = viDM._index;
+                        }
+                        viewInstance.insert(comment_endeach_node)
+                    }, showed_vi_len /*||0*/ );
+                }
+                //回滚沉默的功能
+                DM_proto.touchOff = _touchOff; //.call(dataManager);
+                (dataManager.rebuildTree = _rebuildTree).call(dataManager);
+            }
+        }
+    }
+    return trigger
 });
+
 V.rt("", function(handle, index, parentHandle) {
 	var textHandle = handle.childNodes[0],
 		textHandleId = textHandle.id,

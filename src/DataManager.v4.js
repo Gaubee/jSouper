@@ -185,7 +185,7 @@ var DM_proto = DataManager.prototype = {
 			case 0:
 				break;
 			case 1:
-				result = self.get(); //maybe ExtendsClass
+				result = self._database/*get()*/; //maybe ExtendsClass
 				result = self.set(_mix(result, key));
 				break;
 			default:
@@ -333,7 +333,7 @@ var DM_proto = DataManager.prototype = {
 				}
 			})
 		}
-		if (!result && (__arrayData = self.get()) instanceof Array && __arrayLen[""] !== __arrayData.length) {
+		if (!result && (__arrayData = self._database/*get()*/) instanceof Array && __arrayLen[""] !== __arrayData.length) {
 			__arrayLen[""] = __arrayData.length
 			key = "";
 		}
