@@ -11,7 +11,7 @@ function registerHandle(handleName, handleFun) {
 		var handleChilds = handle.childNodes,
 			beginCommentId,// = handleChilds[handleChilds.length - 1].id,
 			endCommentId,// = handleChilds[handleChilds.length - 2].id,
-			cacheNode = $.D.cl(shadowDIV),
+			cacheNode = fragment(),//$.D.cl(shadowDIV),
 			trigger,
 			argumentsIdSet = [];
 		$.ftE(handleChilds, function(handle_arg) {

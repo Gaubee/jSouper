@@ -1,4 +1,4 @@
-var _testDIV = $.D.cl(shadowDIV),
+var _testDIV = fragment(),//$.D.cl(shadowDIV),
 	_getAttrOuter = Function("n", "return n." + (("textContent" in _testDIV) ? "textContent" : "innerText") + "||''");
 
 var _AttributeHandleEvent = {

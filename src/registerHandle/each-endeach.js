@@ -31,7 +31,7 @@ var _each_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManag
 V.rh("#each", function(handle, index, parentHandle) {
 	//The Nodes between #each and /each will be pulled out , and not to be rendered.
 	//which will be combined into new View module.
-	var _shadowBody = $.D.cl(shadowBody),
+	var _shadowBody = fragment(/*"body"*/),//$.D.cl(shadowBody),
 		eachModuleHandle = new ElementHandle(_shadowBody),
 		endIndex = 0;
 

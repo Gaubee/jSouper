@@ -3,31 +3,42 @@ var global = global || this /*strict model use "global" else than "this"*/ ;
 
 var doc = document,
 	_isIE = !global.dispatchEvent, //!+"\v1",
-	shadowBody = doc.createElement("body"),
-	fragment = function() {
-		return doc.createDocumentFragment().appendChild(doc.createElement("div"))
+	fragment = function(nodeTag) {
+		return (fragment.fg || (fragment.fg = doc.createDocumentFragment())).appendChild(doc.createElement(nodeTag || "div"))
 	},
 	_fg = fragment(),
-	shadowDIV = doc.createElement("div"),
+	// shadowBody = fragment("body"),
+	shadowDIV = fragment(),
 	_placeholder = function(prefix) {
 		return prefix || "@" + Math.random().toString(36).substr(2)
 	},
 	//@jQuery
+	support = (function() {
+		var div = fragment("div");
+		// Setup
+		div.setAttribute("className", "t");
+		div.innerHTML = "  <link/><table></table><a href='/a'>a</a><input type='checkbox'/>";
+		return {
+			htmlSerialize: !! div.getElementsByTagName("link").length
+		}
+	}()),
 	rsingleTag = /^<(\w+)\s*\/?>(?:<\/\1>|)$/,
 	rxhtmlTag = /<(?!area|br|col|embed|hr|img|input|link|meta|param)(([\w:]+)[^>]*)\/>/gi,
 	rtagName = /<([\w:]+)/,
 	// We have to close these tags to support XHTML (#13200)
 	wrapMap = {
-
-		// Support: IE 9
 		option: [1, "<select multiple='multiple'>", "</select>"],
-
+		legend: [1, "<fieldset>", "</fieldset>"],
+		area: [1, "<map>", "</map>"],
+		param: [1, "<object>", "</object>"],
 		thead: [1, "<table>", "</table>"],
-		col: [2, "<table><colgroup>", "</colgroup></table>"],
 		tr: [2, "<table><tbody>", "</tbody></table>"],
+		col: [2, "<table><tbody></tbody><colgroup>", "</colgroup></table>"],
 		td: [3, "<table><tbody><tr>", "</tr></tbody></table>"],
 
-		_default: [0, "", ""]
+		// IE6-8 can't serialize link, script, style, or any html5 (NoScope) tags,
+		// unless wrapped in a div with non-breaking characters in front of it.
+		_default: support.htmlSerialize ? [0, "", ""] : [1, "X<div>", "</div>"]
 	},
 	_booleanFalseRegExp = /false|undefined|null|NaN/,
 	$NULL = null,
@@ -146,9 +157,6 @@ var doc = document,
 			}
 		},
 		ftE: function(arr, callback, index) { //fastEach
-			if (!arr) {
-				debugger
-			};
 			for (var i = index || 0, len = arr.length; i < len; i += 1) {
 				callback(arr[i], i);
 			}
@@ -178,7 +186,7 @@ var doc = document,
 		},
 		D: { //DOM
 			C: function(info) { //Comment
-				return document.createComment(info)
+				return doc.createComment(info)
 			},
 			cs: function(nodeHTML) { //createElement by Str
 				var result;

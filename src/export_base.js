@@ -50,7 +50,7 @@ var placeholder = {
 		prefix: "attr-",
 		namespace:"fix:",
 		_nodeTree: function(htmlStr) {
-			var _shadowBody = $.D.cl(shadowBody);
+			var _shadowBody = fragment(/*"body"*/);//$.D.cl(shadowBody);
 			_shadowBody.innerHTML = htmlStr;
 			var insertBefore = [];
 			_traversal(_shadowBody, function(node, index, parentNode) {

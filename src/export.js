@@ -3,7 +3,7 @@
  */
 var ViewParser = global.ViewParser = {
 	scans: function() {
-		$.fE(document.getElementsByTagName("script"), function(scriptNode) {
+		$.fE(doc.getElementsByTagName("script"), function(scriptNode) {
 			if (scriptNode.getAttribute("type") === "text/template") {
 				V.modules[scriptNode.getAttribute("name")] = ViewParser.parse(scriptNode.innerHTML);
 				$.D.rm(scriptNode)
@@ -33,7 +33,7 @@ var ViewParser = global.ViewParser = {
 		ViewParser.scans();
 		var HVP_config = ViewParser.config;
 		userConfig = _mix(HVP_config, userConfig) || HVP_config;
-		var App = document.getElementById(userConfig.Id); //configable
+		var App = doc.getElementById(userConfig.Id); //configable
 		if (App) {
 			var appName = userConfig.Var;
 			var template = ViewParser.parseNode(App)(userConfig.Data); //App.getAttribute("template-data")//json or url or configable
@@ -82,7 +82,7 @@ var ViewParser = global.ViewParser = {
 	}())
 };
 (function() {
-	var scriptTags = document.getElementsByTagName("script"),
+	var scriptTags = doc.getElementsByTagName("script"),
 		HVP_config = ViewParser.config,
 		userConfigStr = $.trim(scriptTags[scriptTags.length - 1].innerHTML);
 	ViewParser.ready(function() {

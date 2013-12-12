@@ -5,31 +5,42 @@ var global = global || this /*strict model use "global" else than "this"*/ ;
 
 var doc = document,
 	_isIE = !global.dispatchEvent, //!+"\v1",
-	shadowBody = doc.createElement("body"),
-	fragment = function() {
-		return doc.createDocumentFragment().appendChild(doc.createElement("div"))
+	fragment = function(nodeTag) {
+		return (fragment.fg || (fragment.fg = doc.createDocumentFragment())).appendChild(doc.createElement(nodeTag || "div"))
 	},
 	_fg = fragment(),
-	shadowDIV = doc.createElement("div"),
+	// shadowBody = fragment("body"),
+	shadowDIV = fragment(),
 	_placeholder = function(prefix) {
 		return prefix || "@" + Math.random().toString(36).substr(2)
 	},
 	//@jQuery
+	support = (function() {
+		var div = fragment("div");
+		// Setup
+		div.setAttribute("className", "t");
+		div.innerHTML = "  <link/><table></table><a href='/a'>a</a><input type='checkbox'/>";
+		return {
+			htmlSerialize: !! div.getElementsByTagName("link").length
+		}
+	}()),
 	rsingleTag = /^<(\w+)\s*\/?>(?:<\/\1>|)$/,
 	rxhtmlTag = /<(?!area|br|col|embed|hr|img|input|link|meta|param)(([\w:]+)[^>]*)\/>/gi,
 	rtagName = /<([\w:]+)/,
 	// We have to close these tags to support XHTML (#13200)
 	wrapMap = {
-
-		// Support: IE 9
 		option: [1, "<select multiple='multiple'>", "</select>"],
-
+		legend: [1, "<fieldset>", "</fieldset>"],
+		area: [1, "<map>", "</map>"],
+		param: [1, "<object>", "</object>"],
 		thead: [1, "<table>", "</table>"],
-		col: [2, "<table><colgroup>", "</colgroup></table>"],
 		tr: [2, "<table><tbody>", "</tbody></table>"],
+		col: [2, "<table><tbody></tbody><colgroup>", "</colgroup></table>"],
 		td: [3, "<table><tbody><tr>", "</tr></tbody></table>"],
 
-		_default: [0, "", ""]
+		// IE6-8 can't serialize link, script, style, or any html5 (NoScope) tags,
+		// unless wrapped in a div with non-breaking characters in front of it.
+		_default: support.htmlSerialize ? [0, "", ""] : [1, "X<div>", "</div>"]
 	},
 	_booleanFalseRegExp = /false|undefined|null|NaN/,
 	$NULL = null,
@@ -148,9 +159,6 @@ var doc = document,
 			}
 		},
 		ftE: function(arr, callback, index) { //fastEach
-			if (!arr) {
-				debugger
-			};
 			for (var i = index || 0, len = arr.length; i < len; i += 1) {
 				callback(arr[i], i);
 			}
@@ -180,7 +188,7 @@ var doc = document,
 		},
 		D: { //DOM
 			C: function(info) { //Comment
-				return document.createComment(info)
+				return doc.createComment(info)
 			},
 			cs: function(nodeHTML) { //createElement by Str
 				var result;
@@ -1309,8 +1317,8 @@ _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片�
 			if (key) {
 				nObj = key instanceof Object?key:$.s(key);
 				// self.length(nObj.length);
-				$.ftE(DMs, function(datamanager, i) {
-					datamanager.set(nObj[i])
+				$.ftE(nObj, function(nObj_item, i) {
+					DMs[i].set(nObj_item)
 				})
 			}
 			break;
@@ -1318,7 +1326,7 @@ _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片�
 			//TODO: don't create Array to save memory
 			var arrKeys = key.split(".");
 			var index = arrKeys.shift();
-			var datamanager = DMs[index]
+			var datamanager = DMs[index];
 			if (!datamanager) {
 				return
 			}
@@ -1642,7 +1650,7 @@ draggable
 		// console.log(attrValue,":",_matchRule.test(attrValue)||_templateMatchRule.test(attrValue))
 		//if (/*_matchRule.test(attrValue)||*/_templateMatchRule.test(attrValue)) {
 			var attrViewInstance = (V.attrModules[handle.id + attrKey] = ViewParser.parse(attrValue))(),
-				_shadowDIV = $.D.cl(shadowDIV), //parserNode
+				_shadowDIV = fragment(),//$.D.cl(shadowDIV), //parserNode
 				_attributeHandle = _AttributeHandle(attrKey,node);
 			attrViewInstance.append(_shadowDIV);
 			attrViewInstance._isAttr = {
@@ -1676,145 +1684,183 @@ draggable
  */
 
 function View(arg) {
-	var self = this;
-	if (!(self instanceof View)) {
-		return new View(arg);
-	}
-	self.handleNodeTree = arg;
-	self._handles = [];
-	self._triggerTable = {};
-	_buildHandler.call(self);
-	_buildTrigger.call(self);
-	return function(data) {
-		return _create.call(self, data);
-	}
+    var self = this;
+    if (!(self instanceof View)) {
+        return new View(arg);
+    }
+    self.handleNodeTree = arg;
+    self._handles = [];
+    self._triggerTable = {};
+    _buildHandler.call(self);
+    _buildTrigger.call(self);
+    return function(data) {
+        return _create.call(self, data);
+    }
 };
 // var V_session = View.session = {};
 
 function _buildHandler(handleNodeTree) {
-	var self = this,
-		handles = self._handles
-		handleNodeTree = handleNodeTree || self.handleNodeTree;
-	_traversal(handleNodeTree, function(item_node, index, handleNodeTree) {
-		item_node.parentNode = handleNodeTree;
-		if (item_node.type === "handle") {
-			var handleFactory = V.handles[item_node.handleName];
-			if (handleFactory) {
-				var handle = handleFactory(item_node, index, handleNodeTree)
-				handle && $.p(handles, handle);
-			}
-		}
-	});
+    var self = this,
+        handles = self._handles
+        handleNodeTree = handleNodeTree || self.handleNodeTree;
+    _traversal(handleNodeTree, function(item_node, index, handleNodeTree) {
+        item_node.parentNode = handleNodeTree;
+        if (item_node.type === "handle") {
+            var handleFactory = V.handles[item_node.handleName];
+            if (handleFactory) {
+                var handle = handleFactory(item_node, index, handleNodeTree)
+                handle && $.p(handles, handle);
+            }
+        }
+    });
 };
 var _attrRegExp = /(\S+)=["']?((?:.(?!["']?\s+(?:\S+)=|[>"']))+.)["']?/g;
 var ignoreTagName = "SCRIPT|PRE|TEMPLATE|STYLE|LINK".split("|");
 
 var _outerHTML = (function() {
-	// if (shadowDIV.outerHTML) {
-	// 	var _tagHTML = function(node) {
-	// 		return node.outerHTML.replace(node.innerHTML, "");
-	// 	}
-	// } else {
-	var _wrapDIV = fragment();
-	var _tagHTML = function(node) {
-		// console.log(node.outerHTML);
-		// console.log(node.innerHTML);
-		// console.log(node.outerHTML.replace(node.innerHTML, ""))
-		node = $.D.cl(node);
-		_wrapDIV.appendChild(node);
-		var outerHTMLStr = _wrapDIV.innerHTML;
-		_wrapDIV.removeChild(node);
+    // if (shadowDIV.outerHTML) {
+    // 	var _tagHTML = function(node) {
+    // 		return node.outerHTML.replace(node.innerHTML, "");
+    // 	}
+    // } else {
+    var _wrapDIV = fragment();
+    var _tagHTML = function(node) {
+        // console.log(node.outerHTML);
+        // console.log(node.innerHTML);
+        // console.log(node.outerHTML.replace(node.innerHTML, ""))
+        node = $.D.cl(node);
+        _wrapDIV.appendChild(node);
+        var outerHTMLStr = _wrapDIV.innerHTML;
+        _wrapDIV.removeChild(node);
 
-		return outerHTMLStr;
-	}
-	// }
-	var fireOuterHTML = function(node) {
-		var outerHTMLStr = _tagHTML(node);
-		var tagNamespace = V.namespace.toUpperCase();
-		if (outerHTMLStr.toUpperCase().indexOf(tagNamespace) === 1) { //tagName = <attr-xxx></attr-xxx>
-			var plen = tagNamespace.length;
-			var alltagName = rtagName.exec(outerHTMLStr)[1];
-			var _perfixStr = "<" + outerHTMLStr.substr(plen + 1, outerHTMLStr.length - plen - alltagName.length - 2);
-			var _laveStr = outerHTMLStr.substr(outerHTMLStr.length - alltagName.length - 1 + plen)
-			outerHTMLStr = _perfixStr + _laveStr;
-		}
-		return outerHTMLStr;
-	}
-	return fireOuterHTML;
+        return outerHTMLStr;
+    }
+    // }
+    var fireOuterHTML = function(node) {
+        var outerHTMLStr = _tagHTML(node);
+        var tagNamespace = V.namespace.toUpperCase();
+        if (outerHTMLStr.toUpperCase().indexOf(tagNamespace) === 1) { //tagName = <attr-xxx></attr-xxx>
+            var plen = tagNamespace.length;
+            var alltagName = rtagName.exec(outerHTMLStr)[1];
+            var _perfixStr = "<" + outerHTMLStr.substr(plen + 1, outerHTMLStr.length - plen - alltagName.length - 2);
+            var _laveStr = outerHTMLStr.substr(outerHTMLStr.length - alltagName.length - 1 + plen)
+            outerHTMLStr = _perfixStr + _laveStr;
+        }
+        return outerHTMLStr;
+    }
+    return fireOuterHTML;
 }());
 
 function _buildTrigger(handleNodeTree, dataManager) {
-	var self = this, //View Instance
-		triggerTable = self._triggerTable;
-	handleNodeTree = handleNodeTree || self.handleNodeTree,
-	_traversal(handleNodeTree, function(handle, index, parentHandle) {
-		if (handle.type === "handle") {
-			var triggerFactory = V.triggers[handle.handleName];
-			if (triggerFactory) {
-				var trigger = triggerFactory(handle, index, parentHandle);
-				if (trigger) {
-					var key = trigger.key || (trigger.key = "");
-					trigger.handleId = trigger.handleId || handle.id;
-					//unshift list and In order to achieve the trigger can be simulated bubble
-					$.us((triggerTable[key] || (triggerTable[key] = [])), trigger); //Storage as key -> array
-					$.p(handle._triggers, trigger); //Storage as array
-				}
-			}
-		} else if (handle.type === "element") {
-			if ($.iO(ignoreTagName, handle.node.tagName) !== -1) {
-				return $FALSE;
-			}
-			var node = handle.node,
-				nodeHTMLStr = _outerHTML(node),
-				attrs = nodeHTMLStr.match(_attrRegExp);
-			handle.nodeStr = nodeHTMLStr;
-			$.fE(node.attributes, function(attr, i) {
-				var value = attr.value,
-					name = attr.name;
-				if (_templateMatchRule.test(value)) {
-					attributeHandle(name, value, node, handle, triggerTable);
-					node.removeAttribute(name);
-				}
-			})
-		} else { // textNode and Comment
-			handle.nodeStr = handle.node.data;
-		}
-	});
+    var self = this, //View Instance
+        triggerTable = self._triggerTable;
+    handleNodeTree = handleNodeTree || self.handleNodeTree,
+    _traversal(handleNodeTree, function(handle, index, parentHandle) {
+        if (handle.type === "handle") {
+            var triggerFactory = V.triggers[handle.handleName];
+            if (triggerFactory) {
+                var trigger = triggerFactory(handle, index, parentHandle);
+                if (trigger) {
+                    var key = trigger.key || (trigger.key = "");
+                    trigger.handleId = trigger.handleId || handle.id;
+                    //unshift list and In order to achieve the trigger can be simulated bubble
+                    $.us((triggerTable[key] || (triggerTable[key] = [])), trigger); //Storage as key -> array
+                    $.p(handle._triggers, trigger); //Storage as array
+                }
+            }
+        } else if (handle.type === "element") {
+            if ($.iO(ignoreTagName, handle.node.tagName) !== -1) {
+                return $FALSE;
+            }
+            var node = handle.node,
+                nodeHTMLStr = _outerHTML(node),
+                attrs = nodeHTMLStr.match(_attrRegExp);
+            handle.nodeStr = nodeHTMLStr;
+            handle.tag = node.tagName.toLowerCase().replace(V.namespace.toLowerCase(),"");
+            $.fE(node.attributes, function(attr, i) {
+                var value = attr.value,
+                    name = attr.name;
+                if (_templateMatchRule.test(value)) {
+                    attributeHandle(name, value, node, handle, triggerTable);
+                    node.removeAttribute(name);
+                }
+            })
+        } else { // textNode and Comment
+            handle.nodeStr = handle.node.data;
+        }
+    });
 };
 
 function _create(data) { //data maybe basedata or dataManager
-	var self = this,
-		NodeList_of_ViewInstance = {}, //save newDOM  without the most top of parentNode -- change with append!!
-		topNode = $.c(self.handleNodeTree);
-	topNode.currentNode = $.D.cl(shadowBody);
-	$.pI(NodeList_of_ViewInstance, topNode);
+    var self = this,
+        NodeList_of_ViewInstance = {}, //save newDOM  without the most top of parentNode -- change with append!!
+        topNode = $.c(self.handleNodeTree);
+    topNode.currentNode = fragment("body"); //$.D.cl(shadowBody);
+    $.pI(NodeList_of_ViewInstance, topNode);
 
-	_traversal(topNode, function(node, index, parentNode) {
-		node = $.pI(NodeList_of_ViewInstance, $.c(node));
-		if (!node.ignore) {
-			var currentParentNode = NodeList_of_ViewInstance[parentNode.id].currentNode || topNode.currentNode;
-			if ("nodeStr" in node) {
-				var currentNode = node.type === "comment" ? $.D.C(node.nodeStr) : $.D.cs(node.nodeStr);
-			} else {
-				currentNode = $.D.cl(node.node);
-			}
-			node.currentNode = currentNode;
-			$.D.ap(currentParentNode, currentNode);
-		} else {
+    var catchNodes = [];
+    var catchNodesStr = "";
+    _traversal(topNode, function(node, index, parentNode) {
+        node = $.pI(NodeList_of_ViewInstance, $.c(node));
+        if (!node.ignore) {
+            console.log()
+            if ("nodeStr" in node) {
+                if (node.type === "text") {
+                    var currentNode = doc.createTextNode(node.nodeStr);
+                } else if (wrapMap.hasOwnProperty(node.tag)) {
+                    currentNode = $.D.cs(node.nodeStr);
+                } else if (node.type === "comment") { //comment 
+                    catchNodesStr += "<!--" + node.nodeStr + "-->";
+                } else { //Element
+                    catchNodesStr += node.nodeStr
+                }
+            } else {
+                currentNode = $.D.cl(node.node);
+            }
+            node.currentNode = currentNode;
 
-			_traversal(node, function(node) { //ignore Node's childNodes will be ignored too.
-				node = $.pI(NodeList_of_ViewInstance, $.c(node));
-			});
-			return $FALSE
-		}
-	});
+            $.p(catchNodes, {
+                parentId: parentNode.id,
+                currentId: node.id
+            })
+            // $.D.ap(NodeList_of_ViewInstance[parentNode.id].currentNode /*|| topNode.currentNode*/ , currentNode);
+        } else {
 
+            _traversal(node, function(node) { //ignore Node's childNodes will be ignored too.
+                node = $.pI(NodeList_of_ViewInstance, $.c(node));
+            });
+            return $FALSE
+        }
+    });
 
-	$.fE(self._handles, function(handle) {
-		handle.call(self, NodeList_of_ViewInstance);
-	});
-	return ViewInstance(self.handleNodeTree, NodeList_of_ViewInstance, self._triggerTable, data);
+    var nodeCollections = $.D.cs("<div>" + catchNodesStr + "</div>")
+    // debugger
+    $.ftE(catchNodes, function(nodeInfo) {
+        var parentHandle = NodeList_of_ViewInstance[nodeInfo.parentId];
+        var parentNode = parentHandle.currentNode;
+        var currentHandle = NodeList_of_ViewInstance[nodeInfo.currentId];
+        var currentNode = currentHandle.currentNode;
+        if (!currentNode) {
+            currentNode = currentHandle.currentNode = nodeCollections.firstChild;
+        }
+        if (parentNode instanceof HTMLUnknownElement) {
+            //it Must be empty
+            var new_parentNode = parentHandle.currentNode = $.D.cs(_outerHTML(parentNode));
+            var p_parentNode = parentNode.parentNode;
+            if (p_parentNode) {
+                $.D.re(p_parentNode, new_parentNode, parentNode)
+            }
+            parentNode = new_parentNode;
+        }
+        $.D.ap(parentNode, currentNode);
+    })
+
+    $.fE(self._handles, function(handle) {
+        handle.call(self, NodeList_of_ViewInstance);
+    });
+    return ViewInstance(self.handleNodeTree, NodeList_of_ViewInstance, self._triggerTable, data);
 };
+
 /*
  * View Instance constructor
  */
@@ -2341,7 +2387,7 @@ var placeholder = {
 		prefix: "attr-",
 		namespace:"fix:",
 		_nodeTree: function(htmlStr) {
-			var _shadowBody = $.D.cl(shadowBody);
+			var _shadowBody = fragment(/*"body"*/);//$.D.cl(shadowBody);
 			_shadowBody.innerHTML = htmlStr;
 			var insertBefore = [];
 			_traversal(_shadowBody, function(node, index, parentNode) {
@@ -2457,7 +2503,7 @@ var _each_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManag
 V.rh("#each", function(handle, index, parentHandle) {
 	//The Nodes between #each and /each will be pulled out , and not to be rendered.
 	//which will be combined into new View module.
-	var _shadowBody = $.D.cl(shadowBody),
+	var _shadowBody = fragment(/*"body"*/),//$.D.cl(shadowBody),
 		eachModuleHandle = new ElementHandle(_shadowBody),
 		endIndex = 0;
 
@@ -3198,7 +3244,7 @@ V.rt("#with", function(handle, index, parentHandle) {
 	}
 	return trigger;
 });
-var _testDIV = $.D.cl(shadowDIV),
+var _testDIV = fragment(),//$.D.cl(shadowDIV),
 	_getAttrOuter = Function("n", "return n." + (("textContent" in _testDIV) ? "textContent" : "innerText") + "||''");
 
 var _AttributeHandleEvent = {
@@ -3860,7 +3906,7 @@ function registerHandle(handleName, handleFun) {
 		var handleChilds = handle.childNodes,
 			beginCommentId,// = handleChilds[handleChilds.length - 1].id,
 			endCommentId,// = handleChilds[handleChilds.length - 2].id,
-			cacheNode = $.D.cl(shadowDIV),
+			cacheNode = fragment(),//$.D.cl(shadowDIV),
 			trigger,
 			argumentsIdSet = [];
 		$.ftE(handleChilds, function(handle_arg) {
@@ -3915,7 +3961,7 @@ registerHandle("HTML",function () {
  */
 var ViewParser = global.ViewParser = {
 	scans: function() {
-		$.fE(document.getElementsByTagName("script"), function(scriptNode) {
+		$.fE(doc.getElementsByTagName("script"), function(scriptNode) {
 			if (scriptNode.getAttribute("type") === "text/template") {
 				V.modules[scriptNode.getAttribute("name")] = ViewParser.parse(scriptNode.innerHTML);
 				$.D.rm(scriptNode)
@@ -3945,7 +3991,7 @@ var ViewParser = global.ViewParser = {
 		ViewParser.scans();
 		var HVP_config = ViewParser.config;
 		userConfig = _mix(HVP_config, userConfig) || HVP_config;
-		var App = document.getElementById(userConfig.Id); //configable
+		var App = doc.getElementById(userConfig.Id); //configable
 		if (App) {
 			var appName = userConfig.Var;
 			var template = ViewParser.parseNode(App)(userConfig.Data); //App.getAttribute("template-data")//json or url or configable
@@ -3994,7 +4040,7 @@ var ViewParser = global.ViewParser = {
 	}())
 };
 (function() {
-	var scriptTags = document.getElementsByTagName("script"),
+	var scriptTags = doc.getElementsByTagName("script"),
 		HVP_config = ViewParser.config,
 		userConfigStr = $.trim(scriptTags[scriptTags.length - 1].innerHTML);
 	ViewParser.ready(function() {
