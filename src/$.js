@@ -32,9 +32,11 @@ var doc = document,
 		area: [1, "<map>", "</map>"],
 		param: [1, "<object>", "</object>"],
 		thead: [1, "<table>", "</table>"],
+		tbody: [1, "<table>", "</table>"],
 		tr: [2, "<table><tbody>", "</tbody></table>"],
 		col: [2, "<table><tbody></tbody><colgroup>", "</colgroup></table>"],
 		td: [3, "<table><tbody><tr>", "</tr></tbody></table>"],
+		th: [3, "<table><tbody><tr>", "</tr></tbody></table>"],
 
 		// IE6-8 can't serialize link, script, style, or any html5 (NoScope) tags,
 		// unless wrapped in a div with non-breaking characters in front of it.

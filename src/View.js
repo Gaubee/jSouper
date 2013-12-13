@@ -95,7 +95,7 @@ function _buildTrigger(handleNodeTree, dataManager) {
                 nodeHTMLStr = _outerHTML(node),
                 attrs = nodeHTMLStr.match(_attrRegExp);
             handle.nodeStr = nodeHTMLStr;
-            handle.tag = node.tagName.toLowerCase().replace(V.namespace.toLowerCase(),"");
+            handle.tag = node.tagName.toLowerCase().replace(V.namespace.toLowerCase(), "");
             $.fE(node.attributes, function(attr, i) {
                 var value = attr.value,
                     name = attr.name;
@@ -122,7 +122,6 @@ function _create(data) { //data maybe basedata or dataManager
     _traversal(topNode, function(node, index, parentNode) {
         node = $.pI(NodeList_of_ViewInstance, $.c(node));
         if (!node.ignore) {
-            console.log()
             if ("nodeStr" in node) {
                 if (node.type === "text") {
                     var currentNode = doc.createTextNode(node.nodeStr);
@@ -162,16 +161,34 @@ function _create(data) { //data maybe basedata or dataManager
         if (!currentNode) {
             currentNode = currentHandle.currentNode = nodeCollections.firstChild;
         }
-        if (parentNode instanceof HTMLUnknownElement) {
+        try {
+            $.D.ap(parentNode, currentNode);
+        } catch (e) {
+            //maybe HTMLUnknownElement,IE7- can't konwn
+            // if (parentNode instanceof HTMLUnknownElement) {
             //it Must be empty
-            var new_parentNode = parentHandle.currentNode = $.D.cs(_outerHTML(parentNode));
+            var new_parentNode = parentHandle.currentNode = doc.createElement(parentHandle.tag);
+            //clone attributes
+            $.ftE(parentNode.attributes, function(attr) {
+                //fix IE
+                try {
+                    if (attr.value !== $NULL) {
+                        new_parentNode[IEfix[attr.name] || attr.name] = attr.value;
+                    }
+                } catch (e) {
+                    // alert(attr.name+":"+attr.value)
+                }
+                // new_parentNode.setAttribute(/*IEfix[attr.name] ||*/ attr.name, attr.value);
+            })
             var p_parentNode = parentNode.parentNode;
             if (p_parentNode) {
                 $.D.re(p_parentNode, new_parentNode, parentNode)
             }
-            parentNode = new_parentNode;
+            // alert(new_parentNode.outerHTML);
+            // if (currentNode===null) {debugger};
+            $.D.ap(new_parentNode, currentNode);
+            // }
         }
-        $.D.ap(parentNode, currentNode);
     })
 
     $.fE(self._handles, function(handle) {
