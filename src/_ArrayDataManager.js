@@ -73,13 +73,14 @@ _ArrDM_proto.remove = function(datamanager) {
     var self = this;
     var pperfix = self._prefix;
     var DMs = self._DMs;
-    DMs.splice(index, 1);
+    $.sp.call(DMs,index,1);
+    // DMs.splice(index, 1);
     $.ftE(DMs, function(datamanager, i) {
         var index = String(datamanager._index -= 1);
         datamanager._prefix = pperfix ? pperfix + "." + index : index;
     }, index)
     var parentDataManager = datamanager._parentDataManager
-    var oldData = pperfix ? parentDataManager.get(pperfix) : parentDataManager.database /*get()*/ ;
+    var oldData = pperfix ? parentDataManager.get(pperfix) : parentDataManager._database /*get()*/ ;
     if (oldData) {
         // 对象的数据可能是空值，导致DM实际长度与数据长度不一致，直接splice会错位，所以需要纠正
         $.sp.call(oldData, index, 1)
