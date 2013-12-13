@@ -1807,8 +1807,14 @@ function _buildTrigger(handleNodeTree, dataManager) {
             var node = handle.node,
                 nodeHTMLStr = _outerHTML(node),
                 attrs = nodeHTMLStr.match(_attrRegExp);
-            handle.nodeStr = nodeHTMLStr;
             handle.tag = node.tagName.toLowerCase().replace(V.namespace.toLowerCase(), "");
+            if (wrapMap.hasOwnProperty(handle.tag)) {
+                var wrapStr = wrapMap[handle.tag];
+                handle.tagDeep = wrapStr[0];
+                handle.nodeStr = wrapStr[1] + nodeHTMLStr + wrapStr[2];
+            } else {
+                handle.nodeStr = nodeHTMLStr;
+            }
             $.fE(node.attributes, function(attr, i) {
                 var value = attr.value,
                     name = attr.name;
@@ -1817,8 +1823,11 @@ function _buildTrigger(handleNodeTree, dataManager) {
                     node.removeAttribute(name);
                 }
             })
-        } else { // textNode and Comment
-            handle.nodeStr = handle.node.data;
+        } else if(handle.type === "comment"){//Comment
+           !handle.nodeStr&&( handle.nodeStr = "<!--" + handle.node.data + "-->");
+        }else{ // textNode 
+            //stringHandle:如果这个文本节点是绑定值的（父节点是处理函数节点），那么这个文本节点的默认渲染将是空
+            handle.nodeStr===$UNDEFINED&&(handle.nodeStr = handle.asArg?"":handle.node.data);
         }
     });
 };
@@ -1832,40 +1841,39 @@ function _create(data) { //data maybe basedata or dataManager
 
     var catchNodes = [];
     var catchNodesStr = "";
-    _traversal(topNode, function(node, index, parentNode) {
-        node = $.pI(NodeList_of_ViewInstance, $.c(node));
-        if (!node.ignore) {
-            if ("nodeStr" in node) {
-                if (node.type === "text") {
-                    var currentNode = doc.createTextNode(node.nodeStr);
-                } else if (wrapMap.hasOwnProperty(node.tag)) {
-                    currentNode = $.D.cs(node.nodeStr);
-                } else if (node.type === "comment") { //comment 
-                    catchNodesStr += "<!--" + node.nodeStr + "-->";
-                } else { //Element
-                    catchNodesStr += node.nodeStr
+    _traversal(topNode, function(handle, index, parentNode) {
+        handle = $.pI(NodeList_of_ViewInstance, $.c(handle));
+        if (!handle.ignore) {
+            if ("nodeStr" in handle) {
+                if (handle.type === "text") {
+                    var currentNode = doc.createTextNode(handle.nodeStr);
+                }
+                /*else if (wrapMap.hasOwnProperty(handle.tag)) {
+                    currentNode = $.D.cs(handle.nodeStr);
+                } */else { //Element and comment 
+                    catchNodesStr += handle.nodeStr
                 }
             } else {
-                currentNode = $.D.cl(node.node);
+                currentNode = $.D.cl(handle.node);
             }
-            node.currentNode = currentNode;
+            handle.currentNode = currentNode;
 
             $.p(catchNodes, {
                 parentId: parentNode.id,
-                currentId: node.id
+                currentId: handle.id
             })
             // $.D.ap(NodeList_of_ViewInstance[parentNode.id].currentNode /*|| topNode.currentNode*/ , currentNode);
         } else {
-
-            _traversal(node, function(node) { //ignore Node's childNodes will be ignored too.
-                node = $.pI(NodeList_of_ViewInstance, $.c(node));
+            //ignore Node's childNodes will be ignored too.
+            _traversal(handle, function(handle) {
+                /*handle = */$.pI(NodeList_of_ViewInstance, $.c(handle));
             });
             return $FALSE
         }
     });
 
     var nodeCollections = $.D.cs("<div>" + catchNodesStr + "</div>")
-    // debugger
+
     $.ftE(catchNodes, function(nodeInfo) {
         var parentHandle = NodeList_of_ViewInstance[nodeInfo.parentId];
         var parentNode = parentHandle.currentNode;
@@ -1873,6 +1881,17 @@ function _create(data) { //data maybe basedata or dataManager
         var currentNode = currentHandle.currentNode;
         if (!currentNode) {
             currentNode = currentHandle.currentNode = nodeCollections.firstChild;
+            if (currentHandle.tagDeep) {
+                switch (currentHandle.tagDeep) {
+                    case 3:
+                        currentNode = currentNode.lastChild;
+                    case 2:
+                        currentNode = currentNode.lastChild;
+                    default: // case 1
+                        currentHandle.currentNode = currentNode.lastChild;
+                        nodeCollections.removeChild(nodeCollections.firstChild);
+                }
+            }
         }
         try {
             $.D.ap(parentNode, currentNode);
@@ -2568,8 +2587,6 @@ V.rh("#each", function(handle, index, parentHandle) {
 	// handle.arrViewInstances = [];//Should be at the same level with currentNode
 	// handle.len = 0;
 	var layer = 1;
-	console.log("parentHandle.childNodes:")
-	console.table(parentHandle.childNodes)
 	$.fE(parentHandle.childNodes, function(childHandle, index) {
 		endIndex = index;
 		if (childHandle.handleName === "#each") {
@@ -2598,6 +2615,8 @@ V.rh("", function(handle, index, parentHandle) {
 	if (!textHandle) {//{()} 无参数
 		textHandle = $.p(handle.childNodes,new TextHandle(doc.createTextNode("")))
 	}
+	// 校准类型
+	textHandle.asArg = $TRUE;
 	if (parentHandle.type !== "handle") { //is textNode
 		if (textHandle) {
 			$.iA(parentHandle.childNodes, handle, textHandle);
@@ -2831,7 +2850,6 @@ V.rt("#each", function(handle, index, parentHandle) {
     if (arrDataHandle_sort.type === "handle") {
         var arrDataHandle_sort_id = arrDataHandle_sort.id;
     }
-    console.log(parentHandle.childNodes,parentHandle.childNodes.length,index);
     var comment_endeach_id = parentHandle.childNodes[index + 3].id; //eachHandle --> eachComment --> endeachHandle --> endeachComment
     var trigger;
 
@@ -2961,61 +2979,63 @@ V.rt("#each", function(handle, index, parentHandle) {
 });
 
 V.rt("", function(handle, index, parentHandle) {
-	var textHandle = handle.childNodes[0],
-		textHandleId = textHandle.id,
-		key = textHandle.node.data,
-		trigger;
+    var textHandle = handle.childNodes[0],
+        textHandleId = textHandle.id,
+        key = textHandle.node.data,
+        trigger;
 
-	if (parentHandle.type !== "handle") { //as textHandle
-		if ($.isString(key)) { // single String
-			trigger = { //const 
-				key: ".", //const trigger
-				bubble: $TRUE,
-				event: function(NodeList_of_ViewInstance, dataManager) {
-					NodeList_of_ViewInstance[textHandleId].currentNode.data = key.substring(1, key.length - 1);
-				}
-			};
-		} else { //String for databese by key
-			trigger = {
-				key: key,
-				event: function(NodeList_of_ViewInstance, dataManager, /* triggerBy,*/ isAttr/*, vi*/) { //call by ViewInstance's Node
-					var data = dataManager.get(key),
-						nodeHandle = NodeList_of_ViewInstance[textHandleId],
-						currentNode = nodeHandle.currentNode;
-					if (isAttr) {
-						//IE浏览器直接编译，故不需要转义，其他浏览器需要以字符串绑定到属性中。需要转义，否则会出现引号冲突
-						if (isAttr.key.indexOf("on") === 0 && !_isIE) {
-							data = String(data).replace(/"/g, '\\"').replace(/'/g, "\\'");
-						}
-					}
-					// data = String(data);
-					if (nodeHandle._data !== data) {
-						currentNode.data = nodeHandle._data = data;
-					}
-				}
-			}
-		}
-	} else { //as stringHandle
-		if ($.isString(key)) { // single String
-			trigger = { //const 
-				key: ".", //const trigger
-				bubble: $TRUE,
-				event: function(NodeList_of_ViewInstance, dataManager) {
-					NodeList_of_ViewInstance[this.handleId]._data = key.substr(1, key.length - 2);
-				}
-			};
-		} else { //String for databese by key
-			trigger = {
-				key: key,
-				bubble: $TRUE,
-				event: function(NodeList_of_ViewInstance, dataManager) {
-					NodeList_of_ViewInstance[this.handleId]._data = dataManager.get(key);
-				}
-			};
-		}
-	}
-	return trigger;
+    if (parentHandle.type !== "handle") { //as textHandle
+        if ($.isString(key)) { // single String
+            trigger = { //const 
+                key: ".", //const trigger
+                bubble: $TRUE,
+                event: function(NodeList_of_ViewInstance, dataManager) {
+                    NodeList_of_ViewInstance[textHandleId].currentNode.data = key.substring(1, key.length - 1);
+                }
+            };
+        } else { //String for databese by key
+            trigger = {
+                key: key,
+                event: function(NodeList_of_ViewInstance, dataManager, /* triggerBy,*/ isAttr /*, vi*/ ) { //call by ViewInstance's Node
+                    var data = dataManager.get(key),
+                        nodeHandle = NodeList_of_ViewInstance[textHandleId],
+                        currentNode = nodeHandle.currentNode;
+                    if (isAttr) {
+                        //IE浏览器直接编译，故不需要转义，其他浏览器需要以字符串绑定到属性中。需要转义，否则会出现引号冲突
+                        if (isAttr.key.indexOf("on") === 0 && !_isIE) {
+                            data = String(data).replace(/"/g, '\\"').replace(/'/g, "\\'");
+                        }
+                    }
+                    // data = String(data);
+                    if (nodeHandle._data !== data) {
+                        nodeHandle._data = data;
+                        currentNode.data = data === $UNDEFINED ? "" : data;
+                    }
+                }
+            }
+        }
+    } else { //as stringHandle
+        if ($.isString(key)) { // single String
+            trigger = { //const 
+                key: ".", //const trigger
+                bubble: $TRUE,
+                event: function(NodeList_of_ViewInstance, dataManager) {
+                    NodeList_of_ViewInstance[this.handleId]._data = key.substr(1, key.length - 2);
+                }
+            };
+        } else { //String for databese by key
+            trigger = {
+                key: key,
+                bubble: $TRUE,
+                event: function(NodeList_of_ViewInstance, dataManager) {
+                    NodeList_of_ViewInstance[this.handleId]._data = dataManager.get(key);
+                }
+            };
+        }
+    }
+    return trigger;
 });
+
 V.rt("@", function(handle, index, parentHandle) {
 	var textHandle = handle.childNodes[0],
 		textHandleId = textHandle.id,

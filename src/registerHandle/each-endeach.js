@@ -38,8 +38,6 @@ V.rh("#each", function(handle, index, parentHandle) {
 	// handle.arrViewInstances = [];//Should be at the same level with currentNode
 	// handle.len = 0;
 	var layer = 1;
-	console.log("parentHandle.childNodes:")
-	console.table(parentHandle.childNodes)
 	$.fE(parentHandle.childNodes, function(childHandle, index) {
 		endIndex = index;
 		if (childHandle.handleName === "#each") {

@@ -43,7 +43,6 @@ V.rt("#each", function(handle, index, parentHandle) {
     if (arrDataHandle_sort.type === "handle") {
         var arrDataHandle_sort_id = arrDataHandle_sort.id;
     }
-    console.log(parentHandle.childNodes,parentHandle.childNodes.length,index);
     var comment_endeach_id = parentHandle.childNodes[index + 3].id; //eachHandle --> eachComment --> endeachHandle --> endeachComment
     var trigger;
 

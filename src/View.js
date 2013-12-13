@@ -94,8 +94,14 @@ function _buildTrigger(handleNodeTree, dataManager) {
             var node = handle.node,
                 nodeHTMLStr = _outerHTML(node),
                 attrs = nodeHTMLStr.match(_attrRegExp);
-            handle.nodeStr = nodeHTMLStr;
             handle.tag = node.tagName.toLowerCase().replace(V.namespace.toLowerCase(), "");
+            if (wrapMap.hasOwnProperty(handle.tag)) {
+                var wrapStr = wrapMap[handle.tag];
+                handle.tagDeep = wrapStr[0];
+                handle.nodeStr = wrapStr[1] + nodeHTMLStr + wrapStr[2];
+            } else {
+                handle.nodeStr = nodeHTMLStr;
+            }
             $.fE(node.attributes, function(attr, i) {
                 var value = attr.value,
                     name = attr.name;
@@ -104,8 +110,11 @@ function _buildTrigger(handleNodeTree, dataManager) {
                     node.removeAttribute(name);
                 }
             })
-        } else { // textNode and Comment
-            handle.nodeStr = handle.node.data;
+        } else if(handle.type === "comment"){//Comment
+           !handle.nodeStr&&( handle.nodeStr = "<!--" + handle.node.data + "-->");
+        }else{ // textNode 
+            //stringHandle:如果这个文本节点是绑定值的（父节点是处理函数节点），那么这个文本节点的默认渲染将是空
+            handle.nodeStr===$UNDEFINED&&(handle.nodeStr = handle.asArg?"":handle.node.data);
         }
     });
 };
@@ -119,40 +128,39 @@ function _create(data) { //data maybe basedata or dataManager
 
     var catchNodes = [];
     var catchNodesStr = "";
-    _traversal(topNode, function(node, index, parentNode) {
-        node = $.pI(NodeList_of_ViewInstance, $.c(node));
-        if (!node.ignore) {
-            if ("nodeStr" in node) {
-                if (node.type === "text") {
-                    var currentNode = doc.createTextNode(node.nodeStr);
-                } else if (wrapMap.hasOwnProperty(node.tag)) {
-                    currentNode = $.D.cs(node.nodeStr);
-                } else if (node.type === "comment") { //comment 
-                    catchNodesStr += "<!--" + node.nodeStr + "-->";
-                } else { //Element
-                    catchNodesStr += node.nodeStr
+    _traversal(topNode, function(handle, index, parentNode) {
+        handle = $.pI(NodeList_of_ViewInstance, $.c(handle));
+        if (!handle.ignore) {
+            if ("nodeStr" in handle) {
+                if (handle.type === "text") {
+                    var currentNode = doc.createTextNode(handle.nodeStr);
+                }
+                /*else if (wrapMap.hasOwnProperty(handle.tag)) {
+                    currentNode = $.D.cs(handle.nodeStr);
+                } */else { //Element and comment 
+                    catchNodesStr += handle.nodeStr
                 }
             } else {
-                currentNode = $.D.cl(node.node);
+                currentNode = $.D.cl(handle.node);
             }
-            node.currentNode = currentNode;
+            handle.currentNode = currentNode;
 
             $.p(catchNodes, {
                 parentId: parentNode.id,
-                currentId: node.id
+                currentId: handle.id
             })
             // $.D.ap(NodeList_of_ViewInstance[parentNode.id].currentNode /*|| topNode.currentNode*/ , currentNode);
         } else {
-
-            _traversal(node, function(node) { //ignore Node's childNodes will be ignored too.
-                node = $.pI(NodeList_of_ViewInstance, $.c(node));
+            //ignore Node's childNodes will be ignored too.
+            _traversal(handle, function(handle) {
+                /*handle = */$.pI(NodeList_of_ViewInstance, $.c(handle));
             });
             return $FALSE
         }
     });
 
     var nodeCollections = $.D.cs("<div>" + catchNodesStr + "</div>")
-    // debugger
+
     $.ftE(catchNodes, function(nodeInfo) {
         var parentHandle = NodeList_of_ViewInstance[nodeInfo.parentId];
         var parentNode = parentHandle.currentNode;
@@ -160,6 +168,17 @@ function _create(data) { //data maybe basedata or dataManager
         var currentNode = currentHandle.currentNode;
         if (!currentNode) {
             currentNode = currentHandle.currentNode = nodeCollections.firstChild;
+            if (currentHandle.tagDeep) {
+                switch (currentHandle.tagDeep) {
+                    case 3:
+                        currentNode = currentNode.lastChild;
+                    case 2:
+                        currentNode = currentNode.lastChild;
+                    default: // case 1
+                        currentHandle.currentNode = currentNode.lastChild;
+                        nodeCollections.removeChild(nodeCollections.firstChild);
+                }
+            }
         }
         try {
             $.D.ap(parentNode, currentNode);

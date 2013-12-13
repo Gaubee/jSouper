@@ -4,6 +4,8 @@ V.rh("", function(handle, index, parentHandle) {
 	if (!textHandle) {//{()} 无参数
 		textHandle = $.p(handle.childNodes,new TextHandle(doc.createTextNode("")))
 	}
+	// 校准类型
+	textHandle.asArg = $TRUE;
 	if (parentHandle.type !== "handle") { //is textNode
 		if (textHandle) {
 			$.iA(parentHandle.childNodes, handle, textHandle);
