@@ -1,31 +1,40 @@
 <!DOCTYPE html>
+
 <head>
-	<title>HTML-ViewParse</title>
-<script type="text/javascript" src="../build/HTML-ViewParse.debug.js">
-		{
-			Id:"aboutMe",
-			Data:{
-				name:"Gaubee",
-				boy:true,
-				age:20
-			}
-		}
-	</script>
-	<style>
-		nav{
-			color: blue;
-		}
-		.nav{
-			font-size: 32px;
-		}
-	</style>
+    <title>HTML-ViewParse</title>
+    <script type="text/javascript">
+    (function(ie) {
+        if (!ie) return;
+        var b = document.createElement("script");
+        b.setAttribute("type", "text/javascript");
+        b.setAttribute("src", "http://" + location.hostname + "/firebug-lite/build/firebug-lite.js");
+        document.getElementsByTagName("head")[0].appendChild(b)
+    }(!+"\v1"));
+    </script>
+    <script type="text/javascript" src="../build/HTML-ViewParse.debug.js">
+    {
+        Id: "aboutMe",
+        Data: {
+            name: "Gaubee",
+            boy: true,
+            age: 20
+        }
+    }
+    </script>
+    <style>
+    nav {
+        color: blue;
+    }
+    .nav {
+        font-size: 32px;
+    }
+    </style>
 </head>
+
 <body id="aboutMe">
-	<h2>my name is {{name}}</h2>
-	<fix:nav zz="csa" class="nav">I'm a 
-		{{#if boy}}boy{{#else}}girl{{/if}}
-		and now is {{age}} years old.
-	</fix:nav>
+    <h2>my name is {{name}}</h2>
+    <fix:nav zz="csa" class="nav">I'm a {{#if boy}}boy{{#else}}girl{{/if}} and now is {{age}} years old.
+    </fix:nav>
 </body>
 
 </html>

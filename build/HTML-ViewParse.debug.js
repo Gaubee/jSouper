@@ -1751,9 +1751,9 @@ var ignoreTagName = "SCRIPT|PRE|TEMPLATE|STYLE|LINK".split("|");
 
 var _outerHTML = (function() {
     // if (shadowDIV.outerHTML) {
-    // 	var _tagHTML = function(node) {
-    // 		return node.outerHTML.replace(node.innerHTML, "");
-    // 	}
+    //  var _tagHTML = function(node) {
+    //      return node.outerHTML.replace(node.innerHTML, "");
+    //  }
     // } else {
     var _wrapDIV = fragment();
     var _tagHTML = function(node) {
@@ -1884,13 +1884,15 @@ function _create(data) { //data maybe basedata or dataManager
             //clone attributes
             $.ftE(parentNode.attributes, function(attr) {
                 //fix IE
-                try {
-                    if (attr.value !== $NULL) {
-                        new_parentNode[IEfix[attr.name] || attr.name] = attr.value;
-                    }
-                } catch (e) {
-                    // alert(attr.name+":"+attr.value)
+                // try {
+                var name = IEfix[attr.name] || attr.name;
+                var value = parentNode.getAttribute(name);
+                if (value !== $NULL && value !== "") {
+                    new_parentNode[name] = value;
                 }
+                // } catch (e) {
+                //     // alert(attr.name+":"+attr.value)
+                // }
                 // new_parentNode.setAttribute(/*IEfix[attr.name] ||*/ attr.name, attr.value);
             })
             var p_parentNode = parentNode.parentNode;
