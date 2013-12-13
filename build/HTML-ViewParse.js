@@ -2795,6 +2795,8 @@ var _extend_DM_get_Index = (function() {
     return _extend_DM_get_Index;
 }());
 var Arr_sort = Array.prototype.sort;
+var _rebuildTree = DM_proto.rebuildTree,
+    _touchOff = DM_proto.touchOff;
 V.rt("#each", function(handle, index, parentHandle) {
     var id = handle.id;
     var arrDataHandle = handle.childNodes[0];
@@ -2868,10 +2870,8 @@ V.rt("#each", function(handle, index, parentHandle) {
             if (showed_vi_len !== new_data_len) {
                 arrViewInstances.len = new_data_len; //change immediately,to avoid the `subset` trigger the `rebuildTree`,and than trigger each-trigger again.
 
-                var _rebuildTree = dataManager.rebuildTree,
-                    _touchOff = DM_proto.touchOff;
                 //沉默相关多余操作的API，提升效率
-                dataManager.rebuildTree = $.noop //doesn't need rebuild every subset
+                DM_proto.rebuildTree = $.noop //doesn't need rebuild every subset
                 DM_proto.touchOff = $.noop; //subset的touchOff会遍历整个子链，会造成爆炸性增长。
 
                 if (showed_vi_len > new_data_len) {
@@ -2906,7 +2906,7 @@ V.rt("#each", function(handle, index, parentHandle) {
                                 dataManager.subset(viDM, arrDataHandle_Key + "." + index); //+"."+index //reset arrViewInstance's dataManager
                                 _extend_DM_get_Index(viDM)
                                 //强制刷新，保证这个对象的内部渲染正确，在subset后刷新，保证smartkey的渲染正确
-                                _touchOff.call(viDM);
+                                _touchOff.call(viDM,"");
                                 viDM.__cacheIndex = viDM._index;
                             }
                             //自带的inser，针对each做特殊优化
@@ -2928,7 +2928,7 @@ V.rt("#each", function(handle, index, parentHandle) {
                 }
                 //回滚沉默的功能
                 DM_proto.touchOff = _touchOff; //.call(dataManager);
-                (dataManager.rebuildTree = _rebuildTree).call(dataManager);
+                (DM_proto.rebuildTree = _rebuildTree).call(dataManager);
             }
         }
     }

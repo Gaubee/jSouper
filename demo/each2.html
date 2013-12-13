@@ -1,51 +1,41 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-	<title>HTML-ViewParse</title>
-	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js">
-		{
-			Id: "define",
-			Data: {
-				arr: [
-					["1",
-						"2",
-						"3",
-						"4",
-						"5",
-						"6"
-					],
-					["11",
-						"22",
-						"33",
-						"44",
-						"55",
-						"66"
-					]
-				]
-			}
-		}
-	</script>
+    <title>HTML-ViewParse</title>
+    <script type="text/javascript" src="../build/HTML-ViewParse.debug.js">
+    {
+        Id: "define",
+        Data: {
+            arr: [
+                ["1", "2", "3", "4", "5", "6"],
+                ["11", "22", "33", "44", "55", "66"]
+            ]
+        }
+    }
+    </script>
 </head>
+
 <body>
-	<div id="define">
-		<ol>
-		{{#each arr}}
-			<li>
-				<p>{{$THIS}}
-				</p>
-				<ul>
-				{{#each $THIS}}
-					<li>
-						<p>
-							{{$THIS}}
-						</p>
-					</li>
-				{{/each}}
-				</ul>
-			</li>
-		{{/each}}
-		</ol>
-	</div>
+    <div id="define">
+        <ol>
+            {{#each arr}}
+            <li>
+                <p>{{$THIS}}
+                </p>
+                <ul>
+                    {{#each $THIS}}
+                    <li>
+                        <p>
+                            {{$THIS}}
+                        </p>
+                    </li>
+                    {{/each}}
+                </ul>
+            </li>
+            {{/each}}
+        </ol>
+    </div>
 </body>
 
 </html>
