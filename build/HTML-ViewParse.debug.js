@@ -1716,8 +1716,8 @@ function View(arg) {
     self._triggerTable = {};
     _buildHandler.call(self);
     _buildTrigger.call(self);
-    return function(data,isAttribute) {
-        return _create.call(self, data,isAttribute);
+    return function(data, isAttribute) {
+        return _create.call(self, data, isAttribute);
     }
 };
 // var V_session = View.session = {};
@@ -1795,17 +1795,9 @@ function _buildTrigger(handleNodeTree, dataManager) {
             if ($.iO(ignoreTagName, handle.node.tagName) !== -1) {
                 return $FALSE;
             }
-            var node = handle.node,
-                nodeHTMLStr = _outerHTML(node),
-                attrs = nodeHTMLStr.match(_attrRegExp);
+            var node = handle.node;
+            // var attrs = nodeHTMLStr.match(_attrRegExp);
             handle.tag = node.tagName.toLowerCase().replace(V.namespace.toLowerCase(), "");
-            if (wrapMap.hasOwnProperty(handle.tag)) {
-                var wrapStr = wrapMap[handle.tag];
-                handle.tagDeep = wrapStr[0];
-                handle.nodeStr = wrapStr[1] + nodeHTMLStr + wrapStr[2];
-            } else {
-                handle.nodeStr = nodeHTMLStr;
-            }
             $.fE(node.attributes, function(attr, i) {
                 var value = attr.value,
                     name = attr.name;
@@ -1813,17 +1805,25 @@ function _buildTrigger(handleNodeTree, dataManager) {
                     attributeHandle(name, value, node, handle, triggerTable);
                     node.removeAttribute(name);
                 }
-            })
-        } else if(handle.type === "comment"){//Comment
-           !handle.nodeStr&&( handle.nodeStr = "<!--" + handle.node.data + "-->");
-        }else{ // textNode 
+            });
+            var nodeHTMLStr = _outerHTML(node);
+            if (wrapMap.hasOwnProperty(handle.tag)) {
+                var wrapStr = wrapMap[handle.tag];
+                handle.tagDeep = wrapStr[0];
+                handle.nodeStr = wrapStr[1] + nodeHTMLStr + wrapStr[2];
+            } else {
+                handle.nodeStr = nodeHTMLStr;
+            }
+        } else if (handle.type === "comment") { //Comment
+            !handle.nodeStr && (handle.nodeStr = "<!--" + handle.node.data + "-->");
+        } else { // textNode 
             //stringHandle:如果这个文本节点是绑定值的（父节点是处理函数节点），那么这个文本节点的默认渲染将是空
-            handle.nodeStr===$UNDEFINED&&(handle.nodeStr = handle.asArg?"":handle.node.data);
+            handle.nodeStr === $UNDEFINED && (handle.nodeStr = handle.asArg ? "" : handle.node.data);
         }
     });
 };
 
-function _create(data,isAttribute) { //data maybe basedata or dataManager
+function _create(data, isAttribute) { //data maybe basedata or dataManager
     var self = this,
         NodeList_of_ViewInstance = {}, //save newDOM  without the most top of parentNode -- change with append!!
         topNode = $.c(self.handleNodeTree);
@@ -1841,7 +1841,8 @@ function _create(data,isAttribute) { //data maybe basedata or dataManager
                 }
                 /*else if (wrapMap.hasOwnProperty(handle.tag)) {
                     currentNode = $.D.cs(handle.nodeStr);
-                } */else { //Element and comment 
+                } */
+                else { //Element and comment 
                     catchNodesStr += handle.nodeStr
                 }
             } else {
@@ -1857,7 +1858,8 @@ function _create(data,isAttribute) { //data maybe basedata or dataManager
         } else {
             //ignore Node's childNodes will be ignored too.
             _traversal(handle, function(handle) {
-                /*handle = */$.pI(NodeList_of_ViewInstance, $.c(handle));
+                /*handle = */
+                $.pI(NodeList_of_ViewInstance, $.c(handle));
             });
             return $FALSE
         }
@@ -3371,6 +3373,7 @@ var _AttributeHandleEvent = {
 	// checked:self.bool,
 	radio: function(key, currentNode, parserNode) { //radio checked
 		var attrOuter = _getAttrOuter(parserNode);
+		console.log(attrOuter,currentNode.value);
 		if (attrOuter === currentNode.value) {
 			currentNode[key] = attrOuter;
 		}
