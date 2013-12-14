@@ -33,6 +33,7 @@ var _extend_DM_get_Index = (function() {
 var Arr_sort = Array.prototype.sort;
 var _rebuildTree = DM_proto.rebuildTree,
     _touchOff = DM_proto.touchOff;
+
 V.rt("#each", function(handle, index, parentHandle) {
     var id = handle.id;
     var arrDataHandle = handle.childNodes[0];
@@ -124,7 +125,7 @@ V.rt("#each", function(handle, index, parentHandle) {
                     if (data) {
                         var fragment = $.D.cl(fr);
                         var elParentNode = comment_endeach_node.parentNode;
-                        
+
                         $.ftE($.s(data), function(eachItemData, index) {
                             //TODO:if too mush vi will be create, maybe asyn
                             var viewInstance = arrViewInstances[index];
@@ -142,7 +143,7 @@ V.rt("#each", function(handle, index, parentHandle) {
                                 dataManager.subset(viDM, arrDataHandle_Key + "." + index); //+"."+index //reset arrViewInstance's dataManager
                                 _extend_DM_get_Index(viDM)
                                 //强制刷新，保证这个对象的内部渲染正确，在subset后刷新，保证smartkey的渲染正确
-                                _touchOff.call(viDM,"");
+                                _touchOff.call(viDM, "");
                                 viDM.__cacheIndex = viDM._index;
                             }
                             //自带的inser，针对each做特殊优化
@@ -155,7 +156,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 
                             _moveChild(viewInstance, elParentNode);
 
-                        }, showed_vi_len /*||0*/ );
+                        }, showed_vi_len );
 
                         //统一插入
                         $.D.iB(elParentNode, fragment, comment_endeach_node);

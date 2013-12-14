@@ -9,7 +9,11 @@ function _ArrayDataManager(perfix, id) {
     self._prefix = perfix;
     self._DMs = [];
 }
-var _ArrDM_proto = _ArrayDataManager.prototype
+var _ArrDM_proto = _ArrayDataManager.prototype;
+
+//用于优化抽离的vi运行remove引发的$INDEX大变动的问题
+var _remove_index;// = 0;
+
 $.fI(DM_proto, function(fun, funName) {
     _ArrDM_proto[funName] = function() {
         var args = arguments;
@@ -39,7 +43,7 @@ _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片�
                         DM.__cacheIndex = DM._index;
                         DM.touchOff(DM_config.prefix.Index);
                     }
-                })
+                },_remove_index)
             }
             break;
         default:
@@ -84,7 +88,9 @@ _ArrDM_proto.remove = function(datamanager) {
     if (oldData) {
         // 对象的数据可能是空值，导致DM实际长度与数据长度不一致，直接splice会错位，所以需要纠正
         $.sp.call(oldData, index, 1)
-        datamanager._parentDataManager.set(pperfix, oldData)
+        _remove_index = index;
+        parentDataManager.set(pperfix, oldData);
+        _remove_index = 0;
         datamanager._arrayDataManager = datamanager._parentDataManager = $UNDEFINED;
     }
 }

@@ -221,8 +221,9 @@ var VI_proto = ViewInstance.prototype = {
                 NodeList = self.NodeList,
                 currentTopNode = self.topNode(), //NodeList[handleNodeTree.id].currentNode,
                 openNode = self._open,
-                closeNode = self._close,
-                childNodes = $.s(currentTopNode.childNodes),
+                closeNode = self._close;
+                
+/*            var childNodes = $.s(currentTopNode.childNodes),
 
                 startIndex = $.iO(childNodes, openNode),
                 child_node;
@@ -233,9 +234,9 @@ var VI_proto = ViewInstance.prototype = {
                     break;
                 }
                 startIndex += 1
-            }
+            }*/
             
-			/*
+			
 			//no-TODO:use nextSilingNode
 			//Firefox、Opera对DOM的理解不同，所以用nextSibling还要做兼容处理，而且效率方面不见得有所提高
 			var currentNode = openNode;
@@ -247,7 +248,7 @@ var VI_proto = ViewInstance.prototype = {
 					break;
 				}
 				currentNode = nextNode;
-			}*/
+			}
             _replaceTopHandleCurrent(self, el);
             self._canRemoveAble = $FALSE; //Has being recovered into the _packingBag,can't no be remove again. --> it should be insert
             if (self._isEach) {
