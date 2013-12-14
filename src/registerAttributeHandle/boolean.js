@@ -5,7 +5,6 @@ V.ra(function(attrKey) {
 	return _boolAssignment.indexOf(" " + attrKey + " ") !== -1;
 }, function(attrKey, element) {
 	var result = _AttributeHandleEvent.bool
-	console.log(element.type)
 	switch (element.type) {
 		case "checkbox":
 			(attrKey === "checked") && (result = _AttributeHandleEvent.checked)

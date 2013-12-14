@@ -89,7 +89,7 @@ draggable
 		attrKey = (_isIE && IEfix[attrKey]) || attrKey
 		// console.log(attrValue,":",_matchRule.test(attrValue)||_templateMatchRule.test(attrValue))
 		//if (/*_matchRule.test(attrValue)||*/_templateMatchRule.test(attrValue)) {
-			var attrViewInstance = (V.attrModules[handle.id + attrKey] = ViewParser.parse(attrValue))(),
+			var attrViewInstance = (V.attrModules[handle.id + attrKey] = ViewParser.parse(attrValue))($UNDEFINED,$TRUE),
 				_shadowDIV = fragment(),//$.D.cl(shadowDIV), //parserNode
 				_attributeHandle = _AttributeHandle(attrKey,node);
 			attrViewInstance.append(_shadowDIV);

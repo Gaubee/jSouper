@@ -1650,7 +1650,7 @@ draggable
 		attrKey = (_isIE && IEfix[attrKey]) || attrKey
 		// console.log(attrValue,":",_matchRule.test(attrValue)||_templateMatchRule.test(attrValue))
 		//if (/*_matchRule.test(attrValue)||*/_templateMatchRule.test(attrValue)) {
-			var attrViewInstance = (V.attrModules[handle.id + attrKey] = ViewParser.parse(attrValue))(),
+			var attrViewInstance = (V.attrModules[handle.id + attrKey] = ViewParser.parse(attrValue))($UNDEFINED,$TRUE),
 				_shadowDIV = fragment(),//$.D.cl(shadowDIV), //parserNode
 				_attributeHandle = _AttributeHandle(attrKey,node);
 			attrViewInstance.append(_shadowDIV);
@@ -1694,8 +1694,8 @@ function View(arg) {
     self._triggerTable = {};
     _buildHandler.call(self);
     _buildTrigger.call(self);
-    return function(data) {
-        return _create.call(self, data);
+    return function(data,isAttribute) {
+        return _create.call(self, data,isAttribute);
     }
 };
 // var V_session = View.session = {};
@@ -1801,7 +1801,7 @@ function _buildTrigger(handleNodeTree, dataManager) {
     });
 };
 
-function _create(data) { //data maybe basedata or dataManager
+function _create(data,isAttribute) { //data maybe basedata or dataManager
     var self = this,
         NodeList_of_ViewInstance = {}, //save newDOM  without the most top of parentNode -- change with append!!
         topNode = $.c(self.handleNodeTree);
@@ -1857,7 +1857,7 @@ function _create(data) { //data maybe basedata or dataManager
                     case 2:
                         currentNode = currentNode.lastChild;
                     default: // case 1
-                        currentHandle.currentNode = currentNode.lastChild;
+                        currentNode = currentHandle.currentNode = currentNode.lastChild;
                         nodeCollections.removeChild(nodeCollections.firstChild);
                 }
             }
@@ -1872,25 +1872,17 @@ function _create(data) { //data maybe basedata or dataManager
             //clone attributes
             $.ftE(parentNode.attributes, function(attr) {
                 //fix IE
-                // try {
                 var name = IEfix[attr.name] || attr.name;
                 var value = parentNode.getAttribute(name);
                 if (value !== $NULL && value !== "") {
                     new_parentNode[name] = value;
                 }
-                // } catch (e) {
-                //     // alert(attr.name+":"+attr.value)
-                // }
-                // new_parentNode.setAttribute(/*IEfix[attr.name] ||*/ attr.name, attr.value);
             })
             var p_parentNode = parentNode.parentNode;
             if (p_parentNode) {
                 $.D.re(p_parentNode, new_parentNode, parentNode)
             }
-            // alert(new_parentNode.outerHTML);
-            // if (currentNode===null) {debugger};
             $.D.ap(new_parentNode, currentNode);
-            // }
         }
     })
 
@@ -3391,7 +3383,6 @@ V.ra(function(attrKey) {
 	return _boolAssignment.indexOf(" " + attrKey + " ") !== -1;
 }, function(attrKey, element) {
 	var result = _AttributeHandleEvent.bool
-	console.log(element.type)
 	switch (element.type) {
 		case "checkbox":
 			(attrKey === "checked") && (result = _AttributeHandleEvent.checked)
