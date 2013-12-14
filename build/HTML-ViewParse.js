@@ -962,21 +962,24 @@ var DM_proto = DataManager.prototype = {
                     var database = self._database || (self._database = {}),
                         sObj,
                         cache_n_Obj = database,
-                        cache_cache_n_Obj,
-                        arrKey = key.split("."),
-                        lastKey = arrKey.pop();
-                    $.ftE(arrKey, function(currentKey) {
+                        cache_cache_n_Obj;
+
+                    var perkey = $.st(key,".");
+                    var back_perkey;
+                    while(perkey){
+                    	back_perkey = perkey;
                         cache_cache_n_Obj = cache_n_Obj;
-                        cache_n_Obj = cache_n_Obj[currentKey] || (cache_n_Obj[currentKey] = {})
-                    });
-                    if ((sObj = cache_n_Obj[lastKey]) && sObj[_DM_extends_object_constructor] && !_dm_set_source) {
+                        cache_n_Obj = cache_n_Obj[perkey] || (cache_n_Obj[perkey] = {})
+                    	perkey = $.st(_split_laveStr, ".");
+                    }
+                    if ((sObj = cache_n_Obj[_split_laveStr]) && sObj[_DM_extends_object_constructor] && !_dm_set_source) {
                         sObj.set(self, key, nObj) //call ExtendsClass API
                     } else if (cache_n_Obj instanceof Object) {
-                        cache_n_Obj[lastKey] = nObj;
+                        cache_n_Obj[_split_laveStr] = nObj;
                     } else if (cache_cache_n_Obj) {
-                        (cache_cache_n_Obj[$.lI(arrKey)] = {})[lastKey] = nObj
+                        (cache_cache_n_Obj[back_perkey] = {})[_split_laveStr] = nObj
                     } else { //arrKey.length === 0,and database instanceof no-Object
-                        (self._database = {})[lastKey] = nObj
+                        (self._database = {})[_split_laveStr] = nObj
                     }
                 } else if (!(nObj instanceof Object)) { //no any change, if instanceof Object and ==,just run touchOff
                     return;
