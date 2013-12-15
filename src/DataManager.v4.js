@@ -336,15 +336,12 @@ var DM_proto = DataManager.prototype = {
     },
     _touchOff: function(key) {
         var self = this,
-            triggerKeys = self._triggerKeys,
-            allUpdateKey,
-            triggerCollection;
+            triggerKeys = self._triggerKeys;
         //self
         triggerKeys.forIn(function(triggerCollection, triggerKey) {
             //!triggerKey==true;
             if (!key || !triggerKey || key === triggerKey || triggerKey.indexOf(key + ".") === 0 || key.indexOf(triggerKey + ".") === 0) {
-                // console.log("filter triggerKey:",triggerKey)
-                // $.p(updateKey, triggerKey)
+                if (triggerKey==="radio") {debugger};
                 $.ftE(triggerCollection, function(smartTriggerHandle) {
                     smartTriggerHandle.event(triggerKeys);
                 })
@@ -401,6 +398,7 @@ var DM_proto = DataManager.prototype = {
         collectDataManager.push(dataManager)
     },
     collect: function(dataManager) {
+        debugger
         var self = this,
             finallyRunStacks = DataManager.session.finallyRunStacks;
         if (self !== dataManager) {

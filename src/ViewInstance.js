@@ -10,7 +10,6 @@
         $.ftE(self._viewInstances, function(childViewInstance) {
             $.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
                 var TEMP = smartTrigger.TEMP;
-
                 TEMP.viewInstance.get(TEMP.sourceKey);
                 var topGetter = DataManager.session.topGetter,
                     currentTopGetter = DataManager.get(TEMP.dm_id),
@@ -24,6 +23,8 @@
                         currentTopGetter = topGetter
                     }
                 }
+                console.log("rebuildTree:",TEMP.sourceKey,matchKey,topGetter,TEMP.viewInstance.get(TEMP.sourceKey))
+                if (TEMP.sourceKey === "$PARENT.radio") {debugger};
                 //smartTrigger.event(currentTopGetter._triggerKeys);//filter as dm.getTop().touchOff("")
             })
         })
@@ -222,8 +223,8 @@ var VI_proto = ViewInstance.prototype = {
                 currentTopNode = self.topNode(), //NodeList[handleNodeTree.id].currentNode,
                 openNode = self._open,
                 closeNode = self._close;
-                
-/*            var childNodes = $.s(currentTopNode.childNodes),
+                /*   
+         var childNodes = $.s(currentTopNode.childNodes),
 
                 startIndex = $.iO(childNodes, openNode),
                 child_node;
@@ -295,6 +296,8 @@ var VI_proto = ViewInstance.prototype = {
             NodeList = self.NodeList;
         VI_session.touchHandleIdSet = {};
         VI_session.touchStacks = [];
+        // console.log(self._id,key)
+        // if (key==="$PARENT.radio") {debugger};
         // collect trigger stack
         _bubbleTrigger.call(self, self._triggers._[key], NodeList, dataManager)
         // trigger trigger stack

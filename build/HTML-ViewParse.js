@@ -1076,15 +1076,12 @@ var DM_proto = DataManager.prototype = {
     },
     _touchOff: function(key) {
         var self = this,
-            triggerKeys = self._triggerKeys,
-            allUpdateKey,
-            triggerCollection;
+            triggerKeys = self._triggerKeys;
         //self
         triggerKeys.forIn(function(triggerCollection, triggerKey) {
             //!triggerKey==true;
             if (!key || !triggerKey || key === triggerKey || triggerKey.indexOf(key + ".") === 0 || key.indexOf(triggerKey + ".") === 0) {
-                // console.log("filter triggerKey:",triggerKey)
-                // $.p(updateKey, triggerKey)
+                if (triggerKey==="radio") {debugger};
                 $.ftE(triggerCollection, function(smartTriggerHandle) {
                     smartTriggerHandle.event(triggerKeys);
                 })
@@ -1141,6 +1138,7 @@ var DM_proto = DataManager.prototype = {
         collectDataManager.push(dataManager)
     },
     collect: function(dataManager) {
+        debugger
         var self = this,
             finallyRunStacks = DataManager.session.finallyRunStacks;
         if (self !== dataManager) {
@@ -1692,43 +1690,16 @@ function View(arg) {
     self.handleNodeTree = arg;
     self._handles = [];
     self._triggerTable = {};
-    _buildHandler.call(self);
-    _buildTrigger.call(self);
+    _buildHandler(self);
+    _buildTrigger(self);
     return function(data, isAttribute) {
-        return _create.call(self, data, isAttribute);
+        return _create(self, data, isAttribute);
     }
 };
-// var V_session = View.session = {};
-
-function _buildHandler(handleNodeTree) {
-    var self = this,
-        handles = self._handles
-        handleNodeTree = handleNodeTree || self.handleNodeTree;
-    _traversal(handleNodeTree, function(item_node, index, handleNodeTree) {
-        item_node.parentNode = handleNodeTree;
-        if (item_node.type === "handle") {
-            var handleFactory = V.handles[item_node.handleName];
-            if (handleFactory) {
-                var handle = handleFactory(item_node, index, handleNodeTree)
-                handle && $.p(handles, handle);
-            }
-        }
-    });
-};
-var _attrRegExp = /(\S+)=["']?((?:.(?!["']?\s+(?:\S+)=|[>"']))+.)["']?/g;
-var ignoreTagName = "SCRIPT|PRE|TEMPLATE|STYLE|LINK".split("|");
 
 var _outerHTML = (function() {
-    // if (shadowDIV.outerHTML) {
-    //  var _tagHTML = function(node) {
-    //      return node.outerHTML.replace(node.innerHTML, "");
-    //  }
-    // } else {
     var _wrapDIV = fragment();
     var _tagHTML = function(node) {
-        // console.log(node.outerHTML);
-        // console.log(node.innerHTML);
-        // console.log(node.outerHTML.replace(node.innerHTML, ""))
         node = $.D.cl(node);
         _wrapDIV.appendChild(node);
         var outerHTMLStr = _wrapDIV.innerHTML;
@@ -1736,7 +1707,6 @@ var _outerHTML = (function() {
 
         return outerHTMLStr;
     }
-    // }
     var fireOuterHTML = function(node) {
         var outerHTMLStr = _tagHTML(node);
         var tagNamespace = V.namespace.toUpperCase();
@@ -1752,10 +1722,64 @@ var _outerHTML = (function() {
     return fireOuterHTML;
 }());
 
-function _buildTrigger(handleNodeTree, dataManager) {
-    var self = this, //View Instance
-        triggerTable = self._triggerTable;
-    handleNodeTree = handleNodeTree || self.handleNodeTree,
+var _isHTMLUnknownElement = typeof HTMLUnknownElement === "function" ? function(tagName) {
+        return doc.createElement(tagName) instanceof HTMLUnknownElement;
+    } : function(tagName) {
+        //maybe HTMLUnknownElement,IE7- can't konwn
+        return " a abbr acronym address applet area b base basefont bdo big blockquote body br button caption center cite code col colgroup dd del dfn dir div dl dt em fieldset font form frame frameset head hr html i iframe img input ins kbd label legend li link map menu meta noframes noscript object ol optgroup option p param pre q s samp script select small span strike strong style sub sup table tbody td textarea tfoot th thead title tr tt u ul var marquee h1 h2 h3 h4 h5 h6 xmp plaintext listing nobr bgsound bas blink comment isindex multiple noframe person ".indexOf(" " + tagName + " ") === -1;
+    };
+
+function _buildHandler(self) {
+    var handles = self._handles;
+    var handleNodeTree = self.handleNodeTree;
+    _traversal(handleNodeTree, function(handle, index, parentHandle) {
+        handle.parentNode = parentHandle;
+        var node = handle.node;
+        if (handle.type === "handle") {
+            var handleFactory = V.handles[handle.handleName];
+            if (handleFactory) {
+                var handle = handleFactory(handle, index, parentHandle)
+                handle && $.p(handles, handle);
+            }
+        } else if (handle.type === "element") {
+            handle.tag = node.tagName.toLowerCase().replace(V.namespace.toLowerCase(), "");
+            if (_isHTMLUnknownElement(handle.tag)) {
+                console.log(handle.tag);
+                (handle._unEleAttr = [])._ = {};
+                //save attributes
+                $.ftE(node.attributes, function(attr) {
+                    //fix IE
+                    var name = attr.name;
+                    var value = node.getAttribute(name);
+                    if (value === $NULL || value === "") { //fix IE6-8 is dif
+                        name = _isIE && IEfix[name];
+                        value = name && node.getAttribute(name);
+                    }
+                    //boolean\tabIndex should be save
+                    //style shoule be handle alone
+                    if (name && value !== $NULL && value !== "" && name !== "style") {
+                        //be an Element, attribute's name may be diffrend;
+                        name = (_isIE && IEfix[name]) || name;
+                        $.p(handle._unEleAttr, name);
+                        handle._unEleAttr._[name] = value;
+                        // console.log("saveAttribute:", name, " : ", value, "(" + name + ")");
+                    }
+                });
+                //save style
+                var cssText = node.style.getAttribute("cssText");
+                if (cssText) {
+                    handle._unEleAttr._["style"] = cssText;
+                }
+            }
+        }
+    });
+};
+var _attrRegExp = /(\S+)=["']?((?:.(?!["']?\s+(?:\S+)=|[>"']))+.)["']?/g;
+var ignoreTagName = "SCRIPT|PRE|TEMPLATE|STYLE|LINK".split("|");
+
+function _buildTrigger(self) {
+    var triggerTable = self._triggerTable;
+    var handleNodeTree = self.handleNodeTree;
     _traversal(handleNodeTree, function(handle, index, parentHandle) {
         if (handle.type === "handle") {
             var triggerFactory = V.triggers[handle.handleName];
@@ -1775,7 +1799,6 @@ function _buildTrigger(handleNodeTree, dataManager) {
             }
             var node = handle.node;
             // var attrs = nodeHTMLStr.match(_attrRegExp);
-            handle.tag = node.tagName.toLowerCase().replace(V.namespace.toLowerCase(), "");
             $.fE(node.attributes, function(attr, i) {
                 var value = attr.value,
                     name = attr.name;
@@ -1801,11 +1824,11 @@ function _buildTrigger(handleNodeTree, dataManager) {
     });
 };
 
-function _create(data, isAttribute) { //data maybe basedata or dataManager
-    var self = this,
-        NodeList_of_ViewInstance = {}, //save newDOM  without the most top of parentNode -- change with append!!
+function _create(self, data, isAttribute) { //data maybe basedata or dataManager
+    //save newDOM  without the most top of parentNode -- change with append!!
+    var NodeList_of_ViewInstance = {},
         topNode = $.c(self.handleNodeTree);
-    topNode.currentNode = fragment("body"); //$.D.cl(shadowBody);
+    topNode.currentNode = fragment("body");
     $.pI(NodeList_of_ViewInstance, topNode);
 
     var catchNodes = [];
@@ -1813,17 +1836,25 @@ function _create(data, isAttribute) { //data maybe basedata or dataManager
     _traversal(topNode, function(handle, index, parentNode) {
         handle = $.pI(NodeList_of_ViewInstance, $.c(handle));
         if (!handle.ignore) {
-            if ("nodeStr" in handle) {
+            var _unknownElementAttribute = handle._unEleAttr;
+            if (_unknownElementAttribute) { //HTMLUnknownElement
+                currentNode = doc.createElement(handle.tag);
+                $.ftE(_unknownElementAttribute, function(attrName) {
+                    // console.log("setAttribute:", attrName, " : ", _unknownElementAttribute._[attrName])
+                    currentNode[attrName] = _unknownElementAttribute._[attrName];
+                })
+                //set Style
+                var cssText = _unknownElementAttribute._["cssText"];
+                if (cssText) {
+                    currentNode.style.setAttribute('cssText', cssText);
+                }
+            } else if ("nodeStr" in handle) {
                 if (handle.type === "text") {
                     var currentNode = doc.createTextNode(handle.nodeStr);
-                }
-                /*else if (wrapMap.hasOwnProperty(handle.tag)) {
-                    currentNode = $.D.cs(handle.nodeStr);
-                } */
-                else { //Element and comment 
+                } else { //Element and comment
                     catchNodesStr += handle.nodeStr
                 }
-            } else {
+            } else { // ignored tagName 
                 currentNode = $.D.cl(handle.node);
             }
             handle.currentNode = currentNode;
@@ -1832,17 +1863,17 @@ function _create(data, isAttribute) { //data maybe basedata or dataManager
                 parentId: parentNode.id,
                 currentId: handle.id
             })
-            // $.D.ap(NodeList_of_ViewInstance[parentNode.id].currentNode /*|| topNode.currentNode*/ , currentNode);
         } else {
             //ignore Node's childNodes will be ignored too.
+            //just create an instance
             _traversal(handle, function(handle) {
-                /*handle = */
                 $.pI(NodeList_of_ViewInstance, $.c(handle));
             });
             return $FALSE
         }
     });
 
+    //createNode
     var nodeCollections = $.D.cs("<div>" + catchNodesStr + "</div>")
 
     $.ftE(catchNodes, function(nodeInfo) {
@@ -1864,28 +1895,7 @@ function _create(data, isAttribute) { //data maybe basedata or dataManager
                 }
             }
         }
-        try {
-            $.D.ap(parentNode, currentNode);
-        } catch (e) {
-            //maybe HTMLUnknownElement,IE7- can't konwn
-            // if (parentNode instanceof HTMLUnknownElement) {
-            //it Must be empty
-            var new_parentNode = parentHandle.currentNode = doc.createElement(parentHandle.tag);
-            //clone attributes
-            $.ftE(parentNode.attributes, function(attr) {
-                //fix IE
-                var name = IEfix[attr.name] || attr.name;
-                var value = parentNode.getAttribute(name);
-                if (value !== $NULL && value !== "") {
-                    new_parentNode[name] = value;
-                }
-            })
-            var p_parentNode = parentNode.parentNode;
-            if (p_parentNode) {
-                $.D.re(p_parentNode, new_parentNode, parentNode)
-            }
-            $.D.ap(new_parentNode, currentNode);
-        }
+        $.D.ap(parentNode, currentNode);
     })
 
     $.fE(self._handles, function(handle) {
@@ -1906,7 +1916,6 @@ function _create(data, isAttribute) { //data maybe basedata or dataManager
         $.ftE(self._viewInstances, function(childViewInstance) {
             $.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
                 var TEMP = smartTrigger.TEMP;
-
                 TEMP.viewInstance.get(TEMP.sourceKey);
                 var topGetter = DataManager.session.topGetter,
                     currentTopGetter = DataManager.get(TEMP.dm_id),
@@ -1920,6 +1929,8 @@ function _create(data, isAttribute) { //data maybe basedata or dataManager
                         currentTopGetter = topGetter
                     }
                 }
+                console.log("rebuildTree:",TEMP.sourceKey,matchKey,topGetter,TEMP.viewInstance.get(TEMP.sourceKey))
+                if (TEMP.sourceKey === "$PARENT.radio") {debugger};
                 //smartTrigger.event(currentTopGetter._triggerKeys);//filter as dm.getTop().touchOff("")
             })
         })
@@ -2118,8 +2129,8 @@ var VI_proto = ViewInstance.prototype = {
                 currentTopNode = self.topNode(), //NodeList[handleNodeTree.id].currentNode,
                 openNode = self._open,
                 closeNode = self._close;
-                
-/*            var childNodes = $.s(currentTopNode.childNodes),
+                /*   
+         var childNodes = $.s(currentTopNode.childNodes),
 
                 startIndex = $.iO(childNodes, openNode),
                 child_node;
@@ -2191,6 +2202,8 @@ var VI_proto = ViewInstance.prototype = {
             NodeList = self.NodeList;
         VI_session.touchHandleIdSet = {};
         VI_session.touchStacks = [];
+        // console.log(self._id,key)
+        // if (key==="$PARENT.radio") {debugger};
         // collect trigger stack
         _bubbleTrigger.call(self, self._triggers._[key], NodeList, dataManager)
         // trigger trigger stack
@@ -2806,6 +2819,7 @@ var _rebuildTree = DM_proto.rebuildTree,
     _touchOff = DM_proto.touchOff;
 
 V.rt("#each", function(handle, index, parentHandle) {
+    debugger
     var id = handle.id;
     var arrDataHandle = handle.childNodes[0];
     var arrDataHandle_id = arrDataHandle.id;
@@ -2914,7 +2928,9 @@ V.rt("#each", function(handle, index, parentHandle) {
                                 dataManager.subset(viDM, arrDataHandle_Key + "." + index); //+"."+index //reset arrViewInstance's dataManager
                                 _extend_DM_get_Index(viDM)
                                 //强制刷新，保证这个对象的内部渲染正确，在subset后刷新，保证smartkey的渲染正确
+                                console.group("touchOff:",viewInstance._triggers._["$PARENT.radio"],viewInstance._id)
                                 _touchOff.call(viDM, "");
+                                console.groupEnd("touchOff:",viewInstance._triggers._["$PARENT.radio"],viewInstance._id)
                                 viDM.__cacheIndex = viDM._index;
                             }
                             //自带的inser，针对each做特殊优化
