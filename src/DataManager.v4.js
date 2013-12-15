@@ -42,11 +42,11 @@ DataManager.get = function(id) {
 
 // ignore extends object in `get` handle
 var _extendIgnore = DataManager.ignoreExtendsObject = function(newObj) {
-	var self = this;
-	if (!(self instanceof _extendIgnore)) {
-		return new _extendIgnore(newObj);
-	}
-	self.value = newObj
+    var self = this;
+    if (!(self instanceof _extendIgnore)) {
+        return new _extendIgnore(newObj);
+    }
+    self.value = newObj
 };*/
 //set时使其进行强制更新
 DataManager.updateExtendObject = {};
@@ -224,13 +224,13 @@ var DM_proto = DataManager.prototype = {
                         cache_n_Obj = database,
                         cache_cache_n_Obj;
 
-                    var perkey = $.st(key,".");
+                    var perkey = $.st(key, ".");
                     var back_perkey;
-                    while(perkey){
-                    	back_perkey = perkey;
+                    while (perkey) {
+                        back_perkey = perkey;
                         cache_cache_n_Obj = cache_n_Obj;
                         cache_n_Obj = cache_n_Obj[perkey] || (cache_n_Obj[perkey] = {})
-                    	perkey = $.st(_split_laveStr, ".");
+                        perkey = $.st(_split_laveStr, ".");
                     }
                     if ((sObj = cache_n_Obj[_split_laveStr]) && sObj[_DM_extends_object_constructor] && !_dm_set_source) {
                         sObj.set(self, key, nObj) //call ExtendsClass API
@@ -341,7 +341,6 @@ var DM_proto = DataManager.prototype = {
         triggerKeys.forIn(function(triggerCollection, triggerKey) {
             //!triggerKey==true;
             if (!key || !triggerKey || key === triggerKey || triggerKey.indexOf(key + ".") === 0 || key.indexOf(triggerKey + ".") === 0) {
-                if (triggerKey==="radio") {debugger};
                 $.ftE(triggerCollection, function(smartTriggerHandle) {
                     smartTriggerHandle.event(triggerKeys);
                 })
@@ -398,26 +397,20 @@ var DM_proto = DataManager.prototype = {
         collectDataManager.push(dataManager)
     },
     collect: function(dataManager) {
-        debugger
-        var self = this,
-            finallyRunStacks = DataManager.session.finallyRunStacks;
+        // debugger
+        var self = this;
         if (self !== dataManager) {
             if ($.iO(self._siblingDataManagers, dataManager) === -1) {
                 $.p(self._siblingDataManagers, dataManager);
                 $.p(dataManager._siblingDataManagers, self);
                 self.rebuildTree()
                 dataManager._database = self._database;
-                finallyRunStacks.push(self.id)
-                dataManager.getTop().touchOff("");
-                finallyRunStacks.pop();
-                !finallyRunStacks.length && DataManager.finallyRun();
             }
         } else {
-            // self.set(self._database)
-            finallyRunStacks.push(self.id)
+            // finallyRunStacks.push(self.id)
             self.getTop().touchOff("");
-            finallyRunStacks.pop();
-            !finallyRunStacks.length && DataManager.finallyRun();
+            // finallyRunStacks.pop();
+            // !finallyRunStacks.length && DataManager.finallyRun();
         }
         return self;
     },
@@ -502,6 +495,6 @@ var DM_proto = DataManager.prototype = {
         }
     }
     /*,
-	buildGetter: function(key) {},
-	buildSetter: function(key) {}*/
+    buildGetter: function(key) {},
+    buildSetter: function(key) {}*/
 };

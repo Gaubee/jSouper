@@ -35,7 +35,6 @@ var _rebuildTree = DM_proto.rebuildTree,
     _touchOff = DM_proto.touchOff;
 
 V.rt("#each", function(handle, index, parentHandle) {
-    debugger
     var id = handle.id;
     var arrDataHandle = handle.childNodes[0];
     var arrDataHandle_id = arrDataHandle.id;
@@ -144,9 +143,7 @@ V.rt("#each", function(handle, index, parentHandle) {
                                 dataManager.subset(viDM, arrDataHandle_Key + "." + index); //+"."+index //reset arrViewInstance's dataManager
                                 _extend_DM_get_Index(viDM)
                                 //强制刷新，保证这个对象的内部渲染正确，在subset后刷新，保证smartkey的渲染正确
-                                console.group("touchOff:",viewInstance._triggers._["$PARENT.radio"],viewInstance._id)
                                 _touchOff.call(viDM, "");
-                                console.groupEnd("touchOff:",viewInstance._triggers._["$PARENT.radio"],viewInstance._id)
                                 viDM.__cacheIndex = viDM._index;
                             }
                             //自带的inser，针对each做特殊优化

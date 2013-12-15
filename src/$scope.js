@@ -3,6 +3,8 @@
 	var _get = DM_proto.get,
 		_set = DM_proto.set,
 		prefix = DM_config.prefix,
+		_rebuildTree = DM_proto.rebuildTree,
+		_subset = DM_proto.subset,
 		set = DM_proto.set = function(key) {
 			var self = this,
 				args = arguments /*$.s(arguments)*/ ,
@@ -106,9 +108,7 @@
 				result = _get.apply(self, args);
 			}
 			return result;
-		},
-		_rebuildTree = DM_proto.rebuildTree,
-		_subset = DM_proto.subset;
+		};
 
 	function _getAllSmartDataManagers(self, result) {
 		result ? $.p(result, self) : (result = []);
@@ -134,13 +134,7 @@
 					var data = smart_dataManager.get(smart_prefix);
 					var topGetter = DataManager.session.topGetter
 					if (topGetter !== smartSource.topGetter && (smartSource.topGetter = topGetter)) {
-						console.log("rebuild", dm.id,
-							"\n\tself:", self.id,
-							"\n\ttopGetter:", topGetter.id,
-							"\n\tparent:", dm._parentDataManager && dm._parentDataManager.id)
-
 						smart_dataManager.subset(dm, smart_prefix);
-						// console.log(data)
 					}
 				}
 			}

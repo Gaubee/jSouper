@@ -13,7 +13,25 @@ function View(arg) {
     _buildHandler(self);
     _buildTrigger(self);
     return function(data, isAttribute) {
-        return _create(self, data, isAttribute);
+        var id = $.uid();
+        var finallyRunStacks = DataManager.session.finallyRunStacks;
+        var finallyRun = DataManager.finallyRun;
+
+        //push mark
+        finallyRunStacks.push(id)
+
+        var vi = _create(self, data, isAttribute);
+
+        //TODO:create with callback then getTop.touchOff
+        vi.dataManager.getTop().touchOff("");
+
+        //pop mark
+        finallyRunStacks.pop();
+
+        //last layer,and run finallyRun
+        !finallyRunStacks.length && DataManager.finallyRun();
+
+        return vi
     }
 };
 
@@ -221,5 +239,5 @@ function _create(self, data, isAttribute) { //data maybe basedata or dataManager
     $.fE(self._handles, function(handle) {
         handle.call(self, NodeList_of_ViewInstance);
     });
-    return ViewInstance(self.handleNodeTree, NodeList_of_ViewInstance, self._triggerTable, data);
+    return new ViewInstance(self.handleNodeTree, NodeList_of_ViewInstance, self._triggerTable, data);
 };

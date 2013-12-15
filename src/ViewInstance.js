@@ -20,11 +20,9 @@
                         currentTopGetter && smartTrigger.unbind(currentTopGetter._triggerKeys)
                         smartTrigger.matchKey = matchKey;
                         smartTrigger.bind(topGetter._triggerKeys);
-                        currentTopGetter = topGetter
+                        currentTopGetter = topGetter;
                     }
                 }
-                console.log("rebuildTree:",TEMP.sourceKey,matchKey,topGetter,TEMP.viewInstance.get(TEMP.sourceKey))
-                if (TEMP.sourceKey === "$PARENT.radio") {debugger};
                 //smartTrigger.event(currentTopGetter._triggerKeys);//filter as dm.getTop().touchOff("")
             })
         })
@@ -70,7 +68,8 @@
         }
     };
 }());
-var ViewInstance = function(handleNodeTree, NodeList, triggerTable, dataManager) {
+
+function ViewInstance(handleNodeTree, NodeList, triggerTable, dataManager) {
     if (!(this instanceof ViewInstance)) {
         return new ViewInstance(handleNodeTree, NodeList, triggerTable, dataManager);
     }
@@ -103,22 +102,22 @@ var ViewInstance = function(handleNodeTree, NodeList, triggerTable, dataManager)
         self._triggers._[key] = tiggerCollection;
     });
     /*$.fE(triggerTable["."], function(tiggerFun) { //const value
-		tiggerFun.event(NodeList, dataManager);
-	});*/
+        tiggerFun.event(NodeList, dataManager);
+    });*/
 
     if (!(dataManager instanceof DataManager)) {
         dataManager = DataManager(dataManager);
     }
     self._smartTriggers = [];
 
-    //self.dataManager = dataManager
+    //bind viewInstance with DataManger
     dataManager.collect(self); //touchOff All triggers
     //delete self._triggers._["."] //remove "."(const) key,just touch one time;
-},
-    VI_session = ViewInstance.session = {
-        touchHandleIdSet: $NULL,
-        touchStacks: $NULL
-    };
+};
+var VI_session = ViewInstance.session = {
+    touchHandleIdSet: $NULL,
+    touchStacks: $NULL
+};
 
 function _bubbleTrigger(tiggerCollection, NodeList, dataManager /*, eventTrigger*/ ) {
     var self = this, // result,
@@ -138,8 +137,8 @@ function _bubbleTrigger(tiggerCollection, NodeList, dataManager /*, eventTrigger
             touchHandleIdSet[trigger.handleId] = $TRUE;
         }
         /*else{
-			console.log(trigger.handleId)
-		}*/
+            console.log(trigger.handleId)
+        }*/
     });
 
 };
@@ -171,26 +170,14 @@ function _replaceTopHandleCurrent(self, el) {
 var fr = doc.createDocumentFragment();
 
 var VI_proto = ViewInstance.prototype = {
-    // reDraw: function() {
-    // 	var self = this,
-    // 		dataManager = self.dataManager;
-
-    // 	$.fE(self._triggers, function(key) {
-    // 		dataManager._touchOffSubset(key)
-    // 	});
-    // 	return self;
-    // },
     append: function(el) {
         var self = this,
-            handleNodeTree = self.handleNodeTree,
-            NodeList = self.NodeList,
-            currentTopNode = NodeList[handleNodeTree.id].currentNode;
+            currentTopNode = self.topNode();
 
         $.fE(currentTopNode.childNodes, function(child_node) {
             $.D.ap(fr, child_node);
         });
         $.D.ap(el, fr);
-        // _replaceTopHandleCurrent(self, el);
 
         _moveChild(self, el);
 
@@ -198,16 +185,13 @@ var VI_proto = ViewInstance.prototype = {
     },
     insert: function(el) {
         var self = this,
-            handleNodeTree = self.handleNodeTree,
-            NodeList = self.NodeList,
-            currentTopNode = self.topNode(), //NodeList[handleNodeTree.id].currentNode,
+            currentTopNode = self.topNode(),
             elParentNode = el.parentNode;
 
         $.fE(currentTopNode.childNodes, function(child_node) {
             $.D.ap(fr, child_node);
         });
         $.D.iB(elParentNode, fr, el);
-        // _replaceTopHandleCurrent(self, elParentNode);
 
         _moveChild(self, elParentNode);
 
@@ -223,33 +207,18 @@ var VI_proto = ViewInstance.prototype = {
                 currentTopNode = self.topNode(), //NodeList[handleNodeTree.id].currentNode,
                 openNode = self._open,
                 closeNode = self._close;
-                /*   
-         var childNodes = $.s(currentTopNode.childNodes),
 
-                startIndex = $.iO(childNodes, openNode),
-                child_node;
-
-            while (child_node = childNodes[startIndex]) {
-                $.D.ap(el, child_node);
-                if (child_node === closeNode) {
+            //TODO:fix Firefox Opera
+            var currentNode = openNode;
+            while ($TRUE) {
+                var nextNode = currentNode.nextSibling;
+                $.D.ap(el, currentNode);
+                if (nextNode === closeNode) {
+                    $.D.ap(el, nextNode);
                     break;
                 }
-                startIndex += 1
-            }*/
-            
-			
-			//no-TODO:use nextSilingNode
-			//Firefox、Opera对DOM的理解不同，所以用nextSibling还要做兼容处理，而且效率方面不见得有所提高
-			var currentNode = openNode;
-			while($TRUE){
-				var nextNode = currentNode.nextSibling;
-				$.D.ap(el, currentNode);
-				if(nextNode === closeNode){
-					$.D.ap(el, nextNode);
-					break;
-				}
-				currentNode = nextNode;
-			}
+                currentNode = nextNode;
+            }
             _replaceTopHandleCurrent(self, el);
             self._canRemoveAble = $FALSE; //Has being recovered into the _packingBag,can't no be remove again. --> it should be insert
             if (self._isEach) {
@@ -294,12 +263,15 @@ var VI_proto = ViewInstance.prototype = {
         var self = this,
             dataManager = self.dataManager,
             NodeList = self.NodeList;
+        if (key==="radio") {debugger};
         VI_session.touchHandleIdSet = {};
-        VI_session.touchStacks = [];
-        // console.log(self._id,key)
-        // if (key==="$PARENT.radio") {debugger};
+
         // collect trigger stack
+        VI_session.touchStacks = [];
+
+        // if (key==="$PARENT.radio") {debugger};
         _bubbleTrigger.call(self, self._triggers._[key], NodeList, dataManager)
+
         // trigger trigger stack
         $.ftE(VI_session.touchStacks, function(eventStack) {
             $.ftE(eventStack, function(trigger) {
@@ -322,27 +294,19 @@ var VI_proto = ViewInstance.prototype = {
                 }, { //TEMP data
                     viewInstance: self,
                     dm_id: dataManager.id,
-                    // triggerSet: topGetterTriggerKeys,
                     sourceKey: sKey
                 }
             );
         $.p(smartTriggers, smartTrigger);
         topGetterTriggerKeys && smartTrigger.bind(topGetterTriggerKeys); // topGetterTriggerKeys.push(baseKey, smartTrigger);
     }
-    /*,
-	on: function(eventName, fun) {
-
-	},
-	trigger: function(eventName) {
-
-	}*/
 };
 /*var _allEventNames = ("blur focus focusin focusout load resize" +
-	"scroll unload click dblclick mousedown mouseup mousemove" +
-	"mouseover mouseout mouseenter mouseleave change select" +
-	"submit keydown keypress keyup error contextmenu").split(" ");
+    "scroll unload click dblclick mousedown mouseup mousemove" +
+    "mouseover mouseout mouseenter mouseleave change select" +
+    "submit keydown keypress keyup error contextmenu").split(" ");
 $.ftE(_allEventNames, function(eventName) {
-	VI_proto[eventName] = function(fun) {
-		return fun ? this.on(eventName, fun) : this.trigger(eventName);
-	}
+    VI_proto[eventName] = function(fun) {
+        return fun ? this.on(eventName, fun) : this.trigger(eventName);
+    }
 })*/
