@@ -6,7 +6,7 @@ var _statusEventCache = {},
 		},
 		"+": function(vi, key, value) {
 			var oldvalue = vi.get(key) || "";
-			if ($.st(oldvalue)) { //oldvalue is string ,not array or any type elses.
+			if ($.iS(oldvalue)) { //oldvalue is string ,not array or any type elses.
 				if (oldvalue.indexOf(value) === -1) {
 					vi.set(key, oldvalue + value)
 				}
@@ -14,7 +14,7 @@ var _statusEventCache = {},
 		},
 		"-": function(vi, key, value) {
 			var oldvalue = vi.get(key) || "";
-			if (oldvalue && $.st(oldvalue)) { //oldvalue is string ,not array or any type elses.
+			if (oldvalue && $.iS(oldvalue)) { //oldvalue is string ,not array or any type elses.
 				if (oldvalue.indexOf(value) !== -1) {
 					vi.set(key, oldvalue.replace(value, ""));
 				}
@@ -22,7 +22,7 @@ var _statusEventCache = {},
 		},
 		"?": function(vi, key, value) {
 			var oldvalue = vi.get(key) || "";
-			if ($.st(oldvalue)) { //oldvalue is string ,not array or any type elses.
+			if ($.iS(oldvalue)) { //oldvalue is string ,not array or any type elses.
 				if (oldvalue.indexOf(value) !== -1) {
 					vi.set(key, oldvalue.replace(value, ""));
 				} else {

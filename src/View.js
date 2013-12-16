@@ -15,7 +15,6 @@ function View(arg) {
     return function(data, isAttribute) {
         var id = $.uid();
         var finallyRunStacks = DataManager.session.finallyRunStacks;
-        var finallyRun = DataManager.finallyRun;
 
         //push mark
         finallyRunStacks.push(id)
@@ -29,7 +28,7 @@ function View(arg) {
         finallyRunStacks.pop();
 
         //last layer,and run finallyRun
-        !finallyRunStacks.length && DataManager.finallyRun();
+        !finallyRunStacks.length && finallyRun();
 
         return vi
     }

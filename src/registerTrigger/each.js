@@ -63,7 +63,6 @@ V.rt("#each", function(handle, index, parentHandle) {
                 comment_endeach_node = NodeList_of_ViewInstance[comment_endeach_id].currentNode;
             if (arrDataHandle_sort_id && data) {
                 var sort_handle = NodeList_of_ViewInstance[arrDataHandle_sort_id]._data
-                var finallyRun = DataManager.finallyRun;
                 var type = typeof sort_handle
                 if (/function|string/.test(type)) {
                     var old_sort = $.s(data);

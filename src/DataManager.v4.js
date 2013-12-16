@@ -96,7 +96,6 @@ DataManager.session = {
 var _finallyQuene = DataManager._finallyQuene = [];
 _finallyQuene._ = {};
 var finallyRun = DataManager.finallyRun = function(fun) {
-    var _finallyQuene = DataManager._finallyQuene;
     if (fun) {
         finallyRun.register(fun, fun);
     } else {
@@ -109,7 +108,7 @@ var finallyRun = DataManager.finallyRun = function(fun) {
     }
 }
 finallyRun.register = function(id, fun) {
-    if (_finallyQuene._[id]) {
+    if (!_finallyQuene._[id]) {
         $.p(_finallyQuene, id);
     }
     _finallyQuene._[id] = fun;
@@ -412,6 +411,7 @@ var DM_proto = DataManager.prototype = {
         }
         finallyRunStacks.pop();
         if (dataManager && !finallyRunStacks.length) {
+            //self === dataManager || finallyRunStacks === 0
             self.getTop().touchOff("");
             DataManager.finallyRun();
         }

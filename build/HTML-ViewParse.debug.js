@@ -858,7 +858,6 @@ DataManager.session = {
 var _finallyQuene = DataManager._finallyQuene = [];
 _finallyQuene._ = {};
 var finallyRun = DataManager.finallyRun = function(fun) {
-    var _finallyQuene = DataManager._finallyQuene;
     if (fun) {
         finallyRun.register(fun, fun);
     } else {
@@ -871,7 +870,7 @@ var finallyRun = DataManager.finallyRun = function(fun) {
     }
 }
 finallyRun.register = function(id, fun) {
-    if (_finallyQuene._[id]) {
+    if (!_finallyQuene._[id]) {
         $.p(_finallyQuene, id);
     }
     _finallyQuene._[id] = fun;
@@ -1174,6 +1173,7 @@ var DM_proto = DataManager.prototype = {
         }
         finallyRunStacks.pop();
         if (dataManager && !finallyRunStacks.length) {
+            //self === dataManager || finallyRunStacks === 0
             self.getTop().touchOff("");
             DataManager.finallyRun();
         }
@@ -1707,7 +1707,6 @@ function View(arg) {
     return function(data, isAttribute) {
         var id = $.uid();
         var finallyRunStacks = DataManager.session.finallyRunStacks;
-        var finallyRun = DataManager.finallyRun;
 
         //push mark
         finallyRunStacks.push(id)
@@ -1721,7 +1720,7 @@ function View(arg) {
         finallyRunStacks.pop();
 
         //last layer,and run finallyRun
-        !finallyRunStacks.length && DataManager.finallyRun();
+        !finallyRunStacks.length && finallyRun();
 
         return vi
     }
@@ -2845,7 +2844,6 @@ V.rt("#each", function(handle, index, parentHandle) {
                 comment_endeach_node = NodeList_of_ViewInstance[comment_endeach_id].currentNode;
             if (arrDataHandle_sort_id && data) {
                 var sort_handle = NodeList_of_ViewInstance[arrDataHandle_sort_id]._data
-                var finallyRun = DataManager.finallyRun;
                 var type = typeof sort_handle
                 if (/function|string/.test(type)) {
                     var old_sort = $.s(data);
@@ -3691,7 +3689,7 @@ var _statusEventCache = {},
 		},
 		"+": function(vi, key, value) {
 			var oldvalue = vi.get(key) || "";
-			if ($.st(oldvalue)) { //oldvalue is string ,not array or any type elses.
+			if ($.iS(oldvalue)) { //oldvalue is string ,not array or any type elses.
 				if (oldvalue.indexOf(value) === -1) {
 					vi.set(key, oldvalue + value)
 				}
@@ -3699,7 +3697,7 @@ var _statusEventCache = {},
 		},
 		"-": function(vi, key, value) {
 			var oldvalue = vi.get(key) || "";
-			if (oldvalue && $.st(oldvalue)) { //oldvalue is string ,not array or any type elses.
+			if (oldvalue && $.iS(oldvalue)) { //oldvalue is string ,not array or any type elses.
 				if (oldvalue.indexOf(value) !== -1) {
 					vi.set(key, oldvalue.replace(value, ""));
 				}
@@ -3707,7 +3705,7 @@ var _statusEventCache = {},
 		},
 		"?": function(vi, key, value) {
 			var oldvalue = vi.get(key) || "";
-			if ($.st(oldvalue)) { //oldvalue is string ,not array or any type elses.
+			if ($.iS(oldvalue)) { //oldvalue is string ,not array or any type elses.
 				if (oldvalue.indexOf(value) !== -1) {
 					vi.set(key, oldvalue.replace(value, ""));
 				} else {
