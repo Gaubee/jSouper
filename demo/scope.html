@@ -1,19 +1,25 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-	<title>HTML-ViewParse</title>
-	<script type="text/javascript" src="../build/HTML-ViewParse.debug.js"></script>
+    <title>HTML-ViewParse</title>
+    <script type="text/javascript" src="../build/HTML-ViewParse.debug.js"></script>
+    <style>
+    html{
+    	font-weight: bold;
+    }
+    </style>
 </head>
+
 <body>
 
 </body>
-	
-<script type="text/template" name="data">
 
-<h3>self:{(name)}</h3>
-<h3>parent:{($PARENT.name)}</h3>
-<h3>top:{($TOP.name)}</h3>
-<h3>this:{($THIS.name)}</h3>
+<script type="text/template" name="data">
+<div attr-style="color:{{color}}"> self: {{color}}</div>
+<div attr-style="color:{{$PARENT.color}}">parent:{{$PARENT.color}}</div>
+<div attr-style="color:{{$TOP.color}}"> top: {{$TOP.color}}</div>
+<div attr-style="color:{{$THIS.color}}">this:{{$THIS.color}}</div>
 <hr>
 </script>
 
@@ -21,32 +27,65 @@
 </html>
 
 <script type="text/javascript">
-	ViewParser.scans();
+ViewParser.ready(function() {
 
-	var data = ViewParser.modules["data"];
+    data = ViewParser.modules["data"];
 
-	var vModel = data({
-		name:"top",
-		child:{}
-	}).append(document.body);
+    //main data-tree-1
+    vModel1 = data({
+        color: "#000",
+        child:{
+        	color:"#666",
+        	child:{
+        		color:"#aaa"
+        	}
+        }
+    }).append(document.body);
 
-	var childVM = data({
-		name:"center",
-		child:{}
-	}).append(document.body);
+    //child
+    childVM = data({
+        color: "blue"//un useful
+    }).append(document.body);
 
-	vModel.dataManager.subset(childVM,"child");
+    vModel1.dataManager.subset(childVM, "child");
 
-	var cchildVM = data({
-		name:"bottom"			
-	}).append(document.body);
+    //child -> child
+    cchildVM = data({
+        color: "green"//un useful
+    }).append(document.body);
 
-	childVM.dataManager.subset(cchildVM,"child");
+    childVM.dataManager.subset(cchildVM, "child");
 
-	var anonymousVM = data().append(document.body)
+    //child -> child -> parent -> child
+    anonymousVM = data().append(document.body)
 
-	cchildVM.dataManager.subset(anonymousVM,"$PARENT.child");
-	setTimeout(function  (argument) {
-		anonymousVM.set("$TOP.name","this is Top!!! touch off by the last viewInstance Fork Me!")
-	},1000)
+    cchildVM.dataManager.subset(anonymousVM, "$PARENT.child");
+
+//--------------------------------------------------
+    //main data-tree-2
+    vModel2 = data({
+    	color:"#00f",
+    	child:{
+    		color:"#33f"
+    	}
+    }).append(document.body);
+
+    //child
+    childVM2 = data().append(document.body);
+    vModel2.dataManager.subset(childVM2,"child");
+
+ 	setTimeout(function() {
+ 		//childVM -> childVM2
+ 		debugger
+    	childVM.dataManager.collect(childVM2);
+    }, 1000);
+
+ 	setTimeout(function() {
+    	childVM.set("color","green");
+    }, 1500);
+
+    setTimeout(function(argument) {
+        anonymousVM.set("$TOP.color", "red")
+    }, 2000);
+});
 </script>

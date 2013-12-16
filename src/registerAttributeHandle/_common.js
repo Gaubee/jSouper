@@ -29,7 +29,6 @@ var _AttributeHandleEvent = {
 	},
 	bool: function(key, currentNode, parserNode) {
 		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
-		// console.log("key:", key, "attrOuter:", attrOuter)
 		if (attrOuter) { // currentNode.setAttribute(key, key);
 			currentNode[key] = key;
 		} else { // currentNode.removeAttribute(key);
@@ -39,7 +38,6 @@ var _AttributeHandleEvent = {
 	// checked:self.bool,
 	radio: function(key, currentNode, parserNode) { //radio checked
 		var attrOuter = _getAttrOuter(parserNode);
-		console.log(attrOuter,currentNode.value);
 		if (attrOuter === currentNode.value) {
 			currentNode[key] = attrOuter;
 		}

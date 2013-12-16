@@ -799,17 +799,6 @@ DataManager.get = function(id) {
     return DataManager._instances[id];
 }
 
-/*
- use _dm_igonre_extend
-
-// ignore extends object in `get` handle
-var _extendIgnore = DataManager.ignoreExtendsObject = function(newObj) {
-    var self = this;
-    if (!(self instanceof _extendIgnore)) {
-        return new _extendIgnore(newObj);
-    }
-    self.value = newObj
-};*/
 //set时使其进行强制更新
 DataManager.updateExtendObject = {};
 
@@ -866,17 +855,26 @@ DataManager.session = {
 };
 
 // to avoid `set` in setting 
-// DataManager._finallyQuene = []; // delay load
-DataManager.finallyRun = function(fun) {
-    var finallyQuene = DataManager._finallyQuene || (DataManager._finallyQuene = []);
+var _finallyQuene = DataManager._finallyQuene = [];
+_finallyQuene._ = {};
+var finallyRun = DataManager.finallyRun = function(fun) {
+    var _finallyQuene = DataManager._finallyQuene;
     if (fun) {
-        $.p(finallyQuene, fun)
+        finallyRun.register(fun, fun);
     } else {
-        while (finallyQuene.length) {
-            fun = finallyQuene.shift()
-            fun && fun()
+        while (_finallyQuene.length) {
+            var funid = _finallyQuene.shift();
+            fun = _finallyQuene._[funid];
+            _finallyQuene._[funid] = $NULL;
+            fun && fun();
         }
     }
+}
+finallyRun.register = function(id, fun) {
+    if (_finallyQuene._[id]) {
+        $.p(_finallyQuene, id);
+    }
+    _finallyQuene._[id] = fun;
 }
 
 var _dm_get_source // =$FALSE //get Source ignore extend-Object
@@ -910,7 +908,7 @@ var DM_proto = DataManager.prototype = {
                     perkey = $.st(_split_laveStr, ".");
                 }
                 //lastKey
-                result = $.iS(result) ? result.charAt(_split_laveStr) : result[_split_laveStr];
+                result = $.iS(result) ? result.charAt(_split_laveStr) : (result && result[_split_laveStr]);
             }
 
             filterKey = key;
@@ -1161,18 +1159,23 @@ var DM_proto = DataManager.prototype = {
     collect: function(dataManager) {
         // debugger
         var self = this;
+        var finallyRunStacks = DataManager.session.finallyRunStacks;
+
+        finallyRunStacks.push(self.id);
         if (self !== dataManager) {
             if ($.iO(self._siblingDataManagers, dataManager) === -1) {
                 $.p(self._siblingDataManagers, dataManager);
                 $.p(dataManager._siblingDataManagers, self);
                 self.rebuildTree()
                 dataManager._database = self._database;
+            } else {
+                dataManager = $NULL;
             }
-        } else {
-            // finallyRunStacks.push(self.id)
+        }
+        finallyRunStacks.pop();
+        if (dataManager && !finallyRunStacks.length) {
             self.getTop().touchOff("");
-            // finallyRunStacks.pop();
-            // !finallyRunStacks.length && DataManager.finallyRun();
+            DataManager.finallyRun();
         }
         return self;
     },
@@ -1979,7 +1982,10 @@ function _create(self, data, isAttribute) { //data maybe basedata or dataManager
                     viewInstance._buildSmart(sKey);
                 });
             }
-            $.p(viewInstance.dataManager._viewInstances, viewInstance);
+
+            //to rebuildTree => remark smartyKeys
+            $.p(self._viewInstances, viewInstance);
+
             _collect.call(self, vi_DM) //self collect self will Forced triggered updates
         }
         return self;
@@ -1995,6 +2001,7 @@ function _create(self, data, isAttribute) { //data maybe basedata or dataManager
             var vi_DM = viewInstance.dataManager;
             if (!vi_DM) {
                 vi_DM = DataManager();
+                //收集触发器
                 vi_DM.collect(viewInstance);
             }
             _subset.call(self, vi_DM, prefix);
@@ -3345,7 +3352,6 @@ var _AttributeHandleEvent = {
 	},
 	bool: function(key, currentNode, parserNode) {
 		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
-		// console.log("key:", key, "attrOuter:", attrOuter)
 		if (attrOuter) { // currentNode.setAttribute(key, key);
 			currentNode[key] = key;
 		} else { // currentNode.removeAttribute(key);
@@ -3355,7 +3361,6 @@ var _AttributeHandleEvent = {
 	// checked:self.bool,
 	radio: function(key, currentNode, parserNode) { //radio checked
 		var attrOuter = _getAttrOuter(parserNode);
-		console.log(attrOuter,currentNode.value);
 		if (attrOuter === currentNode.value) {
 			currentNode[key] = attrOuter;
 		}

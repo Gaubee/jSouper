@@ -37,17 +37,6 @@ DataManager.get = function(id) {
     return DataManager._instances[id];
 }
 
-/*
- use _dm_igonre_extend
-
-// ignore extends object in `get` handle
-var _extendIgnore = DataManager.ignoreExtendsObject = function(newObj) {
-    var self = this;
-    if (!(self instanceof _extendIgnore)) {
-        return new _extendIgnore(newObj);
-    }
-    self.value = newObj
-};*/
 //set时使其进行强制更新
 DataManager.updateExtendObject = {};
 
@@ -104,17 +93,26 @@ DataManager.session = {
 };
 
 // to avoid `set` in setting 
-// DataManager._finallyQuene = []; // delay load
-DataManager.finallyRun = function(fun) {
-    var finallyQuene = DataManager._finallyQuene || (DataManager._finallyQuene = []);
+var _finallyQuene = DataManager._finallyQuene = [];
+_finallyQuene._ = {};
+var finallyRun = DataManager.finallyRun = function(fun) {
+    var _finallyQuene = DataManager._finallyQuene;
     if (fun) {
-        $.p(finallyQuene, fun)
+        finallyRun.register(fun, fun);
     } else {
-        while (finallyQuene.length) {
-            fun = finallyQuene.shift()
-            fun && fun()
+        while (_finallyQuene.length) {
+            var funid = _finallyQuene.shift();
+            fun = _finallyQuene._[funid];
+            _finallyQuene._[funid] = $NULL;
+            fun && fun();
         }
     }
+}
+finallyRun.register = function(id, fun) {
+    if (_finallyQuene._[id]) {
+        $.p(_finallyQuene, id);
+    }
+    _finallyQuene._[id] = fun;
 }
 
 var _dm_get_source // =$FALSE //get Source ignore extend-Object
@@ -148,7 +146,7 @@ var DM_proto = DataManager.prototype = {
                     perkey = $.st(_split_laveStr, ".");
                 }
                 //lastKey
-                result = $.iS(result) ? result.charAt(_split_laveStr) : result[_split_laveStr];
+                result = $.iS(result) ? result.charAt(_split_laveStr) : (result && result[_split_laveStr]);
             }
 
             filterKey = key;
@@ -399,18 +397,23 @@ var DM_proto = DataManager.prototype = {
     collect: function(dataManager) {
         // debugger
         var self = this;
+        var finallyRunStacks = DataManager.session.finallyRunStacks;
+
+        finallyRunStacks.push(self.id);
         if (self !== dataManager) {
             if ($.iO(self._siblingDataManagers, dataManager) === -1) {
                 $.p(self._siblingDataManagers, dataManager);
                 $.p(dataManager._siblingDataManagers, self);
                 self.rebuildTree()
                 dataManager._database = self._database;
+            } else {
+                dataManager = $NULL;
             }
-        } else {
-            // finallyRunStacks.push(self.id)
+        }
+        finallyRunStacks.pop();
+        if (dataManager && !finallyRunStacks.length) {
             self.getTop().touchOff("");
-            // finallyRunStacks.pop();
-            // !finallyRunStacks.length && DataManager.finallyRun();
+            DataManager.finallyRun();
         }
         return self;
     },

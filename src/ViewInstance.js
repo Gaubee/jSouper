@@ -46,7 +46,10 @@
                     viewInstance._buildSmart(sKey);
                 });
             }
-            $.p(viewInstance.dataManager._viewInstances, viewInstance);
+
+            //to rebuildTree => remark smartyKeys
+            $.p(self._viewInstances, viewInstance);
+
             _collect.call(self, vi_DM) //self collect self will Forced triggered updates
         }
         return self;
@@ -62,6 +65,7 @@
             var vi_DM = viewInstance.dataManager;
             if (!vi_DM) {
                 vi_DM = DataManager();
+                //收集触发器
                 vi_DM.collect(viewInstance);
             }
             _subset.call(self, vi_DM, prefix);
