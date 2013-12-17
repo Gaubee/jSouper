@@ -61,6 +61,8 @@ V.rt("#each", function(handle, index, parentHandle) {
                 eachModuleConstructor = V.eachModules[id],
                 inserNew,
                 comment_endeach_node = NodeList_of_ViewInstance[comment_endeach_id].currentNode;
+
+            /*+ Sort*/
             if (arrDataHandle_sort_id && data) {
                 var sort_handle = NodeList_of_ViewInstance[arrDataHandle_sort_id]._data
                 var type = typeof sort_handle
@@ -103,6 +105,8 @@ V.rt("#each", function(handle, index, parentHandle) {
                     })
                 }
             }
+            /*- Sort*/
+
             if (showed_vi_len !== new_data_len) {
                 arrViewInstances.len = new_data_len; //change immediately,to avoid the `subset` trigger the `rebuildTree`,and than trigger each-trigger again.
 

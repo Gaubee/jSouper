@@ -1279,7 +1279,7 @@ function _ArrayDataManager(perfix, id) {
 var _ArrDM_proto = _ArrayDataManager.prototype;
 
 //用于优化抽离的vi运行remove引发的$INDEX大变动的问题
-var _remove_index;// = 0;
+var _remove_index; // = 0;
 
 $.fI(DM_proto, function(fun, funName) {
     _ArrDM_proto[funName] = function() {
@@ -1299,18 +1299,21 @@ _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片�
             return;
         case 1:
             if (key) {
-                nObj = key instanceof Object ? key : $.s(key);
+                nObj = key instanceof Array ? key : $.s(key);
                 // self.length(nObj.length);
                 $.ftE(nObj, function(nObj_item, i) {
                     var DM = DMs[i];
+                    //针对remove的优化
                     if (nObj_item !== DM._database) { //强制优化，但是$INDEX关键字要缓存判定更新
                         DM._database = nObj_item;
-                        DM.touchOff();
+                        DM.touchOff("");
                     } else if (DM.__cacheIndex !== DM._index) {
                         DM.__cacheIndex = DM._index;
-                        DM.touchOff(DM_config.prefix.Index);
+                        DM.touchOff("DM_config.prefix.Index");
+                    } else { //确保子集更新
+                        DM.touchOff("");
                     }
-                },_remove_index)
+                }, _remove_index)
             }
             break;
         default:
@@ -1344,7 +1347,7 @@ _ArrDM_proto.remove = function(datamanager) {
     var self = this;
     var pperfix = self._prefix;
     var DMs = self._DMs;
-    $.sp.call(DMs,index,1);
+    $.sp.call(DMs, index, 1);
     // DMs.splice(index, 1);
     $.ftE(DMs, function(datamanager, i) {
         var index = String(datamanager._index -= 1);
@@ -2822,6 +2825,8 @@ V.rt("#each", function(handle, index, parentHandle) {
                 eachModuleConstructor = V.eachModules[id],
                 inserNew,
                 comment_endeach_node = NodeList_of_ViewInstance[comment_endeach_id].currentNode;
+
+            /*+ Sort*/
             if (arrDataHandle_sort_id && data) {
                 var sort_handle = NodeList_of_ViewInstance[arrDataHandle_sort_id]._data
                 var type = typeof sort_handle
@@ -2864,6 +2869,8 @@ V.rt("#each", function(handle, index, parentHandle) {
                     })
                 }
             }
+            /*- Sort*/
+
             if (showed_vi_len !== new_data_len) {
                 arrViewInstances.len = new_data_len; //change immediately,to avoid the `subset` trigger the `rebuildTree`,and than trigger each-trigger again.
 
@@ -3201,7 +3208,7 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
             var isShow = $.trim(String(NodeList_of_ViewInstance[ifHandle_id]._data)).replace(_booleanFalseRegExp, ""),
                 AllLayoutViewInstance = V._instances[viewInstance_ID]._ALVI,
                 layoutViewInstance = AllLayoutViewInstance[id];
-            // console.log(isShow,":",NodeList_of_ViewInstance[ifHandle_id]._data)
+            // console.log(ifHandle,":",NodeList_of_ViewInstance[ifHandle_id]._data)
             if (isShow) {
                 if (!layoutViewInstance) {
                     var key = NodeList_of_ViewInstance[dataHandle_id]._data;

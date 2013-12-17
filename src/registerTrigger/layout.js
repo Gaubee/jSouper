@@ -26,7 +26,7 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
             var isShow = $.trim(String(NodeList_of_ViewInstance[ifHandle_id]._data)).replace(_booleanFalseRegExp, ""),
                 AllLayoutViewInstance = V._instances[viewInstance_ID]._ALVI,
                 layoutViewInstance = AllLayoutViewInstance[id];
-            // console.log(isShow,":",NodeList_of_ViewInstance[ifHandle_id]._data)
+            // console.log(ifHandle,":",NodeList_of_ViewInstance[ifHandle_id]._data)
             if (isShow) {
                 if (!layoutViewInstance) {
                     var key = NodeList_of_ViewInstance[dataHandle_id]._data;
