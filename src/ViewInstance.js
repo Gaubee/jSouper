@@ -23,7 +23,6 @@
                         currentTopGetter = topGetter;
                     }
                 }
-                //smartTrigger.event(currentTopGetter._triggerKeys);//filter as dm.getTop().touchOff("")
             })
         })
         $.ftE(self._subsetDataManagers, function(childDataManager) {
@@ -267,7 +266,6 @@ var VI_proto = ViewInstance.prototype = {
         var self = this,
             dataManager = self.dataManager,
             NodeList = self.NodeList;
-        if (key==="radio") {debugger};
         VI_session.touchHandleIdSet = {};
 
         // collect trigger stack

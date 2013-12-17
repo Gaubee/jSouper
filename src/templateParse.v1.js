@@ -2,6 +2,7 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 	// DoubleQuotedString = /"(?:\.|(\\\")|[^\""\n])*"/g, //双引号字符串
 	// SingleQuotedString = /'(?:\.|(\\\')|[^\''\n])*'/g, //单引号字符串
 	QuotedString = /"(?:\.|(\\\")|[^\""\n])*"|'(?:\.|(\\\')|[^\''\n])*'/g, //引号字符串
+	ScriptNodeString = /<script[^>]*>([\s\S]*?)<\/script>/gi,
 	templateHandles = {};
 $.fI(V.handles, function(handleFun, handleName) {
 	var result = $TRUE
@@ -58,10 +59,15 @@ $.ftE(_unary_operator_list, function(operator) {
 });
 var parse = function(str) {
 		var quotedString = [];
+		var scriptNodeString = [];
 		var Placeholder = "_" + Math.random(),
+			ScriptPlaceholder = "_" + Math.random(),
 			str = str.replace(QuotedString, function(qs) {
 				quotedString.push(qs)
 				return Placeholder;
+			}).replace(ScriptNodeString,function (sns) {
+				scriptNodeString.push(sns);
+				return ScriptPlaceholder;
 			}),
 			result = str.replace(newTemplateMatchReg, function(matchStr, innerStr, index) {
 				innerStr = innerStr.replace(/&gt;/g, ">").replace(/&lt;/g, "<").replace(/&amp;/g, "&") //Semantic confusion with HTML
@@ -85,8 +91,10 @@ var parse = function(str) {
 				}
 			})
 
-			result = result.replace(RegExp(Placeholder, "g"), function(p) {
-				return quotedString.splice(0, 1);
+			result = result.replace(RegExp(ScriptPlaceholder, "g"),function(p) {
+				return scriptNodeString.shift();
+			}).replace(RegExp(Placeholder, "g"), function(p) {
+				return quotedString.shift();
 			}).replace(/\{\@\(\{\(([\w\W]+?)\)\}\)\}/g, function(matchStr, matchKey) {
 				return "{@(" + matchKey + ")}";
 			});

@@ -638,7 +638,7 @@ var _event_cache = {},
 				}
 			}());
 		} else if (eventName === "ready"){
-			DataManager.finallyRun(function(){
+			finallyRun.register(elementHash,function(){
 				_fn({type:"ready"});
 			})
 		}
@@ -902,7 +902,7 @@ var DM_proto = DataManager.prototype = {
                 anchor = 0;
             if (result != $UNDEFINED && result !== $FALSE) { //null|undefined|false
                 var perkey = $.st(key, ".");
-                while (perkey) {
+                while (perkey&&result) {
                     result = result[perkey];
                     perkey = $.st(_split_laveStr, ".");
                 }
@@ -1053,6 +1053,7 @@ var DM_proto = DataManager.prototype = {
         return result;
     },
     touchOff: function(key) {
+        key === $UNDEFINED && (key = "");
         var self = this;
         var result;
 
@@ -1121,7 +1122,6 @@ var DM_proto = DataManager.prototype = {
             } else if (key.indexOf(prefix + ".") === 0) { //key is a part of prefix,must had be changed
                 prefix = key.replace(prefix + ".", "")
                 childResult = childDataManager.set(prefix, self.get(key))
-                // childDataManager.touchOff("")
             }
             _dm_force_update = $FALSE;
             //如果不进行锁定，当数组因为其子对象被修改，
@@ -1174,7 +1174,7 @@ var DM_proto = DataManager.prototype = {
         finallyRunStacks.pop();
         if (dataManager && !finallyRunStacks.length) {
             //self === dataManager || finallyRunStacks === 0
-            self.getTop().touchOff("");
+            self.getTop().touchOff();
             DataManager.finallyRun();
         }
         return self;
@@ -1327,7 +1327,7 @@ _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片�
                     var DM = DMs[i];
                     if (nObj_item !== DM._database) { //强制优化，但是$INDEX关键字要缓存判定更新
                         DM._database = nObj_item;
-                        DM.touchOff("");
+                        DM.touchOff();
                     } else if (DM.__cacheIndex !== DM._index) {
                         DM.__cacheIndex = DM._index;
                         DM.touchOff(DM_config.prefix.Index);
@@ -1714,7 +1714,7 @@ function View(arg) {
         var vi = _create(self, data, isAttribute);
 
         //TODO:create with callback then getTop.touchOff
-        vi.dataManager.getTop().touchOff("");
+        vi.dataManager.getTop().touchOff();
 
         //pop mark
         finallyRunStacks.pop();
@@ -1958,7 +1958,6 @@ function _create(self, data, isAttribute) { //data maybe basedata or dataManager
                         currentTopGetter = topGetter;
                     }
                 }
-                //smartTrigger.event(currentTopGetter._triggerKeys);//filter as dm.getTop().touchOff("")
             })
         })
         $.ftE(self._subsetDataManagers, function(childDataManager) {
@@ -2202,7 +2201,6 @@ var VI_proto = ViewInstance.prototype = {
         var self = this,
             dataManager = self.dataManager,
             NodeList = self.NodeList;
-        if (key==="radio") {debugger};
         VI_session.touchHandleIdSet = {};
 
         // collect trigger stack
@@ -2390,116 +2388,120 @@ CommentHandle.prototype = Handle("comment", {
  * parse rule
  */
 var placeholder = {
-	"<": "&lt;",
-	">": "&gt;",
-	"{": _placeholder(),
-	"(": _placeholder(),
-	")": _placeholder(),
-	"}": _placeholder()
+    "<": "&lt;",
+    ">": "&gt;",
+    "{": _placeholder(),
+    "(": _placeholder(),
+    ")": _placeholder(),
+    "}": _placeholder()
 },
-	_Rg = function(s) {
-		return RegExp(s, "g")
-	},
-	placeholderReg = {
-		"<": /</g,
-		">": />/g,
-		"/{": /\\\{/g,
-		"{": _Rg(placeholder["{"]),
-		"/(": /\\\(/g,
-		"(": _Rg(placeholder["("]),
-		"/)": /\\\)/g,
-		")": _Rg(placeholder[")"]),
-		"/}": /\\\}/g,
-		"}": _Rg(placeholder["}"])
-	}, _head = /\{([\w\W]*?)\(/g,
-	_footer = /\)[\s]*\}/g,
-	parseRule = function(str) {
-		var parseStr = str
-			.replace(/</g, placeholder["<"])
-			.replace(/>/g, placeholder[">"])
-			.replace(placeholderReg["/{"], placeholder["{"])
-			.replace(placeholderReg["/("], placeholder["("])
-			.replace(placeholderReg["/)"], placeholder[")"])
-			.replace(placeholderReg["/}"], placeholder["}"])
-			.replace(_head, "<span type='handle' handle='$1'>")
-			.replace(_footer, "</span>")
-			.replace(placeholderReg["{"], "{")
-			.replace(placeholderReg["("], "(")
-			.replace(placeholderReg[")"], ")")
-			.replace(placeholderReg["}"], "}");
-		return parseStr;
-	},
-	_matchRule = /\{[\w\W]*?\([\w\W]*?\)[\s]*\}/,
-	/*
-	 * expores function
-	 */
+    _Rg = function(s) {
+        return RegExp(s, "g")
+    },
+    placeholderReg = {
+        "<": /</g,
+        ">": />/g,
+        "/{": /\\\{/g,
+        "{": _Rg(placeholder["{"]),
+        "/(": /\\\(/g,
+        "(": _Rg(placeholder["("]),
+        "/)": /\\\)/g,
+        ")": _Rg(placeholder[")"]),
+        "/}": /\\\}/g,
+        "}": _Rg(placeholder["}"])
+    }, _head = /\{([\w\W]*?)\(/g,
+    _footer = /\)[\s]*\}/g,
+    parseRule = function(str) {
+        var parseStr = str
+            .replace(/</g, placeholder["<"])
+            .replace(/>/g, placeholder[">"])
+            .replace(placeholderReg["/{"], placeholder["{"])
+            .replace(placeholderReg["/("], placeholder["("])
+            .replace(placeholderReg["/)"], placeholder[")"])
+            .replace(placeholderReg["/}"], placeholder["}"])
+            .replace(_head, "<span type='handle' handle='$1'>")
+            .replace(_footer, "</span>")
+            .replace(placeholderReg["{"], "{")
+            .replace(placeholderReg["("], "(")
+            .replace(placeholderReg[")"], ")")
+            .replace(placeholderReg["}"], "}");
+        return parseStr;
+    },
+    _matchRule = /\{[\w\W]*?\([\w\W]*?\)[\s]*\}/,
+    /*
+     * expores function
+     */
 
-	V = {
-		prefix: "attr-",
-		namespace:"fix:",
-		_nodeTree: function(htmlStr) {
-			var _shadowBody = fragment(/*"body"*/);//$.D.cl(shadowBody);
-			_shadowBody.innerHTML = htmlStr;
-			var insertBefore = [];
-			_traversal(_shadowBody, function(node, index, parentNode) {
-				if (node.nodeType === 3) {
-					$.p(insertBefore, {
-						baseNode: node,
-						parentNode: parentNode,
-						insertNodesHTML: parseRule(node.data)
-					});
-				}
-			});
-			$.fE(insertBefore, function(item, i) {
-				var node = item.baseNode,
-					parentNode = item.parentNode,
-					insertNodesHTML = item.insertNodesHTML;
-				shadowDIV.innerHTML = $.trim(insertNodesHTML); //optimization
-				//Using innerHTML rendering is complete immediate operation DOM, 
-				//innerHTML otherwise covered again, the node if it is not, 
-				//then memory leaks, IE can not get to the full node.
-				$.fE(shadowDIV.childNodes, function(refNode) {
-					$.D.iB(parentNode, refNode, node)
-				})
-				$.D.rC(parentNode, node);
-			});
-			//when re-rendering,select node's child will be filter by ``` _shadowBody.innerHTML = _shadowBody.innerHTML;```
-			return new ElementHandle(_shadowBody);
-		},
-		parse: function(htmlStr) {
-			return View(this._nodeTree(htmlStr));
-		},
-		rt: function(handleName, triggerFactory) {
-			return V.triggers[handleName] = triggerFactory;
-		},
-		rh: function(handleName, handle) {
-			return V.handles[handleName] = handle
-		},
-		ra: function(match, handle) {
-			var attrHandle = V.attrHandles[V.attrHandles.length] = {
-				match: $NULL,
-				handle: handle
-			}
-			if (typeof match === "function") {
-				attrHandle.match = match;
-			} else {
-				attrHandle.match = function(attrKey) {
-					return attrKey === match;
-				}
-			}
-		},
-		triggers: {},
-		handles: {},
-		attrHandles: [],
-		modules: {},
-		attrModules: {},
-		eachModules: {},
-		withModules: {},
-		_instances: {},
+    V = {
+        prefix: "attr-",
+        namespace: "fix:",
+        _nodeTree: function(htmlStr) {
+            var _shadowBody = fragment( /*"body"*/ ); //$.D.cl(shadowBody);
+            _shadowBody.innerHTML = htmlStr;
+            var insertBefore = [];
+            _traversal(_shadowBody, function(node, index, parentNode) {
+                if (node.nodeType === 1 && $.iO(ignoreTagName, node.tagName) !== -1) {
+                    return $FALSE;
+                }
+                if (node.nodeType === 3) { //text Node
+                    $.p(insertBefore, {
+                        baseNode: node,
+                        parentNode: parentNode,
+                        insertNodesHTML: parseRule(node.data)
+                    });
+                }
+            });
+            $.fE(insertBefore, function(item, i) {
+                var node = item.baseNode,
+                    parentNode = item.parentNode,
+                    insertNodesHTML = item.insertNodesHTML;
+                shadowDIV.innerHTML = $.trim(insertNodesHTML); //optimization
+                //Using innerHTML rendering is complete immediate operation DOM, 
+                //innerHTML otherwise covered again, the node if it is not, 
+                //then memory leaks, IE can not get to the full node.
+                $.fE(shadowDIV.childNodes, function(refNode) {
+                    $.D.iB(parentNode, refNode, node)
+                })
+                $.D.rC(parentNode, node);
+            });
+            //when re-rendering,select node's child will be filter by ``` _shadowBody.innerHTML = _shadowBody.innerHTML;```
+            return new ElementHandle(_shadowBody);
+        },
+        parse: function(htmlStr) {
+            return View(this._nodeTree(htmlStr));
+        },
+        rt: function(handleName, triggerFactory) {
+            return V.triggers[handleName] = triggerFactory;
+        },
+        rh: function(handleName, handle) {
+            return V.handles[handleName] = handle
+        },
+        ra: function(match, handle) {
+            var attrHandle = V.attrHandles[V.attrHandles.length] = {
+                match: $NULL,
+                handle: handle
+            }
+            if (typeof match === "function") {
+                attrHandle.match = match;
+            } else {
+                attrHandle.match = function(attrKey) {
+                    return attrKey === match;
+                }
+            }
+        },
+        triggers: {},
+        handles: {},
+        attrHandles: [],
+        modules: {},
+        attrModules: {},
+        eachModules: {},
+        withModules: {},
+        _instances: {},
 
-		// Proto: DynamicComputed /*Proto*/ ,
-		Model: DataManager
-	};
+        // Proto: DynamicComputed /*Proto*/ ,
+        Model: DataManager
+    };
+
 var _commentPlaceholder = function(handle, parentHandle, commentText) {
 	var handleName = handle.handleName,
 		commentText = commentText || (handleName + handle.id),
@@ -3122,103 +3124,132 @@ V.rt("#if", function(handle, index, parentHandle) {
 });
 var _cache_xhrConifg = {};
 var _require_module = function(url, handleFun) {
-	var xhrConifg = _cache_xhrConifg.hasOwnProperty(url) && _cache_xhrConifg[url]
-	if (xhrConifg) {
-		$.p(xhrConifg.success._, handleFun)
-	} else {
-		var handleQuene = function(status, xhr) {
-			$.ftE(handleQuene._, function(handleFun) {
-				handleFun(status, xhr);
-			})
-		}
-		handleQuene._ = [handleFun];
-		xhrConifg = _cache_xhrConifg[url] = {
-			url: url,
-			success: handleQuene,
-			error: function() {
-				throw new Error("module " + url + " is undefined.")
-			},
-			complete:function(){
-				//GC
-				_cache_xhrConifg[url] = $NULL;
-			}
-		}
-		$.ajax(xhrConifg)
-	}
+    var xhrConifg = _cache_xhrConifg.hasOwnProperty(url) && _cache_xhrConifg[url]
+    if (xhrConifg) {
+        $.p(xhrConifg.success._, handleFun)
+    } else {
+        var handleQuene = function(status, xhr) {
+            $.ftE(handleQuene._, function(handleFun) {
+                handleFun(status, xhr);
+            })
+        }
+        handleQuene._ = [handleFun];
+        xhrConifg = _cache_xhrConifg[url] = {
+            url: url,
+            success: handleQuene,
+            error: function() {
+                throw new Error("module " + url + " is undefined.")
+            },
+            complete: function() {
+                //GC
+                _cache_xhrConifg[url] = $NULL;
+            }
+        }
+        $.ajax(xhrConifg)
+    }
+};
+var _runScripted = _placeholder("_");
+
+function _runScript(node) {
+    var scriptNodeList = node.getElementsByTagName('script');
+    $.ftE(scriptNodeList, function(scriptNode) {
+        if ((!scriptNode.type || scriptNode.type === "text/javascript") && !scriptNode[_runScripted]) {
+            var newScript = doc.createElement("script");
+            //TODO:clone attribute;
+            newScript.text = scriptNode.text;
+            newScript[_runScripted] = $TRUE;
+            // console.log(scriptNode)
+            scriptNode.parentNode.replaceChild(newScript, scriptNode);
+        }
+    })
 }
 V.rt("#include", function(handle, index, parentHandle) {
-	var templateHandle_id = handle.childNodes[0].id;
+    var templateHandle_id = handle.childNodes[0].id;
 
-	//base on layout
-	var trigger = V.triggers["#layout"](handle, index, parentHandle)
+    //base on layout
+    var trigger = V.triggers["#layout"](handle, index, parentHandle);
+    var layoutViewInstance;
 
-	// Ajax NodeList_of_ViewInstance[templateHandle_id]._data
-	var _event = trigger.event;
-	trigger.event = function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
-		var url = NodeList_of_ViewInstance[templateHandle_id]._data;
-		var args = arguments
-		if (!V.modules[url]) {
-			_require_module(url,function(status,xhr){
-				V.modules[url] = ViewParser.parseStr(xhr.responseText)
-				_event.apply(this, args);
-			})
-		} else {
-			_event.apply(this, args);
-		}
-	}
-	return trigger;
+    // Ajax NodeList_of_ViewInstance[templateHandle_id]._data
+    var _event = trigger.event;
+    trigger.event = function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
+        var url = NodeList_of_ViewInstance[templateHandle_id]._data;
+        var args = arguments
+        if (!V.modules[url]) {
+            _require_module(url, function(status, xhr) {
+                V.modules[url] = ViewParser.parseStr(xhr.responseText)
+                layoutViewInstance = _event.apply(this, args);
+                if (layoutViewInstance && !layoutViewInstance._runScripted) {
+                    layoutViewInstance._runScripted = $TRUE;
+                    _runScript(layoutViewInstance.topNode());
+                }
+            })
+        } else {
+            layoutViewInstance = _event.apply(this, args);
+            if (!layoutViewInstance._runScripted) {
+                layoutViewInstance._runScripted = $TRUE;
+                _runScript(layoutViewInstance.topNode());
+            }
+        }
+    }
+    return trigger;
 });
-V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
-	// console.log(handle)
-	var id = handle.id,
-		childNodes = handle.childNodes,
-		templateHandle_id = childNodes[0].id,
-		dataHandle_id = childNodes[1].id,
-		ifHandle = childNodes[2],
-		ifHandle_id = ifHandle.type==="handle" && ifHandle.id,
-		comment_layout_id = parentHandle.childNodes[index + 1].id, //eachHandle --> eachComment --> endeachHandle --> endeachComment
-		trigger;
 
-	trigger = {
-		event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
-			var AllLayoutViewInstance = V._instances[viewInstance_ID]._ALVI;
-			if (!AllLayoutViewInstance[id]) {
-				var key = NodeList_of_ViewInstance[dataHandle_id]._data,
-					layoutViewInstance = AllLayoutViewInstance[id] = V.modules[NodeList_of_ViewInstance[templateHandle_id]._data]().insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
-				dataManager.subset(layoutViewInstance, key);
-			}
-		}
-	}
-	if (ifHandle_id) {
-		trigger.event = function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID){
-			var isShow = $.trim(String(NodeList_of_ViewInstance[ifHandle_id]._data)).replace(_booleanFalseRegExp,""),
-				AllLayoutViewInstance = V._instances[viewInstance_ID]._ALVI,
-				layoutViewInstance = AllLayoutViewInstance[id];
-			// console.log(isShow,":",NodeList_of_ViewInstance[ifHandle_id]._data)
-			if(isShow){
-				if (!layoutViewInstance) {
-					var key = NodeList_of_ViewInstance[dataHandle_id]._data;
-					if(dataManager.get(key)){
-						// console.log(key,":",dataManager.get(key))
-						layoutViewInstance = AllLayoutViewInstance[id] = V.modules[NodeList_of_ViewInstance[templateHandle_id]._data]();
-						dataManager.subset(layoutViewInstance, key);
-					}
-				}
-				if(layoutViewInstance&&!layoutViewInstance._canRemoveAble){
-					// console.log("show",layoutViewInstance._id)
-					layoutViewInstance.insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
-				}
-				// console.log(isShow,layoutViewInstance.get())
-			}else{
-				if(layoutViewInstance&&layoutViewInstance._canRemoveAble){
-					// console.log("hidden",layoutViewInstance._id)
-					layoutViewInstance.remove();
-				}
-			}
-		}
-	}
-	return trigger;
+V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
+    // console.log(handle)
+    var id = handle.id,
+        childNodes = handle.childNodes,
+        templateHandle_id = childNodes[0].id,
+        dataHandle_id = childNodes[1].id,
+        ifHandle = childNodes[2],
+        ifHandle_id = ifHandle.type === "handle" && ifHandle.id,
+        comment_layout_id = parentHandle.childNodes[index + 1].id, //eachHandle --> eachComment --> endeachHandle --> endeachComment
+        trigger;
+
+    trigger = {
+        event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
+            var AllLayoutViewInstance = V._instances[viewInstance_ID]._ALVI;
+            var layoutViewInstance = AllLayoutViewInstance[id];
+            if (!layoutViewInstance) {
+                var key = NodeList_of_ViewInstance[dataHandle_id]._data,
+                    layoutViewInstance = AllLayoutViewInstance[id] = V.modules[NodeList_of_ViewInstance[templateHandle_id]._data]().insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
+                dataManager.subset(layoutViewInstance, key);
+            }
+            return layoutViewInstance;
+        }
+    }
+    if (ifHandle_id) {
+        trigger.event = function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
+            var isShow = $.trim(String(NodeList_of_ViewInstance[ifHandle_id]._data)).replace(_booleanFalseRegExp, ""),
+                AllLayoutViewInstance = V._instances[viewInstance_ID]._ALVI,
+                layoutViewInstance = AllLayoutViewInstance[id];
+            // console.log(isShow,":",NodeList_of_ViewInstance[ifHandle_id]._data)
+            if (isShow) {
+                if (!layoutViewInstance) {
+                    var key = NodeList_of_ViewInstance[dataHandle_id]._data;
+                    if (dataManager.get(key)) {
+                        // console.log(key,":",dataManager.get(key))
+                        layoutViewInstance = AllLayoutViewInstance[id] = V.modules[NodeList_of_ViewInstance[templateHandle_id]._data]();
+                        dataManager.subset(layoutViewInstance, key);
+                    }
+                }
+                if (layoutViewInstance && !layoutViewInstance._canRemoveAble) {
+                    // console.log("show",layoutViewInstance._id)
+                    layoutViewInstance.insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
+                }
+                // console.log(isShow,layoutViewInstance.get())
+            } else {
+                if (layoutViewInstance && layoutViewInstance._canRemoveAble) {
+                    // console.log("hidden",layoutViewInstance._id)
+                    layoutViewInstance.remove();
+                }
+            }
+            return layoutViewInstance;
+        }
+    }
+    return trigger;
 }));
+
 V.rt("!", V.rt("nega", function(handle, index, parentHandle) { //Negate
 	var nageteHandlesId = handle.childNodes[0].id,
 		trigger;
@@ -3788,6 +3819,7 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 	// DoubleQuotedString = /"(?:\.|(\\\")|[^\""\n])*"/g, //双引号字符串
 	// SingleQuotedString = /'(?:\.|(\\\')|[^\''\n])*'/g, //单引号字符串
 	QuotedString = /"(?:\.|(\\\")|[^\""\n])*"|'(?:\.|(\\\')|[^\''\n])*'/g, //引号字符串
+	ScriptNodeString = /<script[^>]*>([\s\S]*?)<\/script>/gi,
 	templateHandles = {};
 $.fI(V.handles, function(handleFun, handleName) {
 	var result = $TRUE
@@ -3844,10 +3876,15 @@ $.ftE(_unary_operator_list, function(operator) {
 });
 var parse = function(str) {
 		var quotedString = [];
+		var scriptNodeString = [];
 		var Placeholder = "_" + Math.random(),
+			ScriptPlaceholder = "_" + Math.random(),
 			str = str.replace(QuotedString, function(qs) {
 				quotedString.push(qs)
 				return Placeholder;
+			}).replace(ScriptNodeString,function (sns) {
+				scriptNodeString.push(sns);
+				return ScriptPlaceholder;
 			}),
 			result = str.replace(newTemplateMatchReg, function(matchStr, innerStr, index) {
 				innerStr = innerStr.replace(/&gt;/g, ">").replace(/&lt;/g, "<").replace(/&amp;/g, "&") //Semantic confusion with HTML
@@ -3871,8 +3908,10 @@ var parse = function(str) {
 				}
 			})
 
-			result = result.replace(RegExp(Placeholder, "g"), function(p) {
-				return quotedString.splice(0, 1);
+			result = result.replace(RegExp(ScriptPlaceholder, "g"),function(p) {
+				return scriptNodeString.shift();
+			}).replace(RegExp(Placeholder, "g"), function(p) {
+				return quotedString.shift();
 			}).replace(/\{\@\(\{\(([\w\W]+?)\)\}\)\}/g, function(matchStr, matchKey) {
 				return "{@(" + matchKey + ")}";
 			});

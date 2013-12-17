@@ -38,7 +38,7 @@ _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片�
                     var DM = DMs[i];
                     if (nObj_item !== DM._database) { //强制优化，但是$INDEX关键字要缓存判定更新
                         DM._database = nObj_item;
-                        DM.touchOff("");
+                        DM.touchOff();
                     } else if (DM.__cacheIndex !== DM._index) {
                         DM.__cacheIndex = DM._index;
                         DM.touchOff(DM_config.prefix.Index);

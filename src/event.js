@@ -282,7 +282,7 @@ var _event_cache = {},
 				}
 			}());
 		} else if (eventName === "ready"){
-			DataManager.finallyRun(function(){
+			finallyRun.register(elementHash,function(){
 				_fn({type:"ready"});
 			})
 		}

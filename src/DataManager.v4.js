@@ -140,7 +140,7 @@ var DM_proto = DataManager.prototype = {
                 anchor = 0;
             if (result != $UNDEFINED && result !== $FALSE) { //null|undefined|false
                 var perkey = $.st(key, ".");
-                while (perkey) {
+                while (perkey&&result) {
                     result = result[perkey];
                     perkey = $.st(_split_laveStr, ".");
                 }
@@ -291,6 +291,7 @@ var DM_proto = DataManager.prototype = {
         return result;
     },
     touchOff: function(key) {
+        key === $UNDEFINED && (key = "");
         var self = this;
         var result;
 
@@ -359,7 +360,6 @@ var DM_proto = DataManager.prototype = {
             } else if (key.indexOf(prefix + ".") === 0) { //key is a part of prefix,must had be changed
                 prefix = key.replace(prefix + ".", "")
                 childResult = childDataManager.set(prefix, self.get(key))
-                // childDataManager.touchOff("")
             }
             _dm_force_update = $FALSE;
             //如果不进行锁定，当数组因为其子对象被修改，
@@ -412,7 +412,7 @@ var DM_proto = DataManager.prototype = {
         finallyRunStacks.pop();
         if (dataManager && !finallyRunStacks.length) {
             //self === dataManager || finallyRunStacks === 0
-            self.getTop().touchOff("");
+            self.getTop().touchOff();
             DataManager.finallyRun();
         }
         return self;

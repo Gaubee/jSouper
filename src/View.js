@@ -22,7 +22,7 @@ function View(arg) {
         var vi = _create(self, data, isAttribute);
 
         //TODO:create with callback then getTop.touchOff
-        vi.dataManager.getTop().touchOff("");
+        vi.dataManager.getTop().touchOff();
 
         //pop mark
         finallyRunStacks.pop();
