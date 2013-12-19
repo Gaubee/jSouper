@@ -135,9 +135,6 @@ var DM_proto = DataManager.prototype = {
         if (key === $UNDEFINED || key === "") {
             filterKey = "";
         } else {
-            var arrKey = key.split("."),
-                // lastKey = arrKey.pop(),
-                anchor = 0;
             if (result != $UNDEFINED && result !== $FALSE) { //null|undefined|false
                 var perkey = $.st(key, ".");
                 while (perkey && result) {

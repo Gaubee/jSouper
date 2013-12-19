@@ -31,8 +31,6 @@ var _extend_DM_get_Index = (function() {
     return _extend_DM_get_Index;
 }());
 var Arr_sort = Array.prototype.sort;
-var _rebuildTree = DM_proto.rebuildTree,
-    _touchOff = DM_proto.touchOff;
 
 V.rt("#each", function(handle, index, parentHandle) {
     var id = handle.id;
@@ -47,6 +45,8 @@ V.rt("#each", function(handle, index, parentHandle) {
     var comment_endeach_id = parentHandle.childNodes[index + 3].id; //eachHandle --> eachComment --> endeachHandle --> endeachComment
     var trigger;
 
+    var _rebuildTree = DM_proto.rebuildTree,
+        _touchOff = DM_proto.touchOff;
     trigger = {
         // smartTrigger:$NULL,
         // key:$NULL,
