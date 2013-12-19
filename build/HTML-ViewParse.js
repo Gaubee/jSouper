@@ -880,7 +880,10 @@ var DM_proto = DataManager.prototype = {
                 anchor = 0;
             if (result != $UNDEFINED && result !== $FALSE) { //null|undefined|false
                 var perkey = $.st(key, ".");
-                while (perkey&&result) {
+                while (perkey && result) {
+                    if (result[_DM_extends_object_constructor]) {
+                        result = result.value;
+                    }
                     result = result[perkey];
                     perkey = $.st(_split_laveStr, ".");
                 }
@@ -966,17 +969,23 @@ var DM_proto = DataManager.prototype = {
                     while (perkey) {
                         back_perkey = perkey;
                         cache_cache_n_Obj = cache_n_Obj;
+                        if (cache_n_Obj[_DM_extends_object_constructor]) {
+                            cache_n_Obj.set(self, key, nObj);
+                            break;
+                        }
                         cache_n_Obj = cache_n_Obj[perkey] || (cache_n_Obj[perkey] = {})
                         perkey = $.st(_split_laveStr, ".");
                     }
-                    if ((sObj = cache_n_Obj[_split_laveStr]) && sObj[_DM_extends_object_constructor] && !_dm_set_source) {
-                        sObj.set(self, key, nObj) //call ExtendsClass API
-                    } else if (cache_n_Obj instanceof Object) {
-                        cache_n_Obj[_split_laveStr] = nObj;
-                    } else if (cache_cache_n_Obj) {
-                        (cache_cache_n_Obj[back_perkey] = {})[_split_laveStr] = nObj
-                    } else { //arrKey.length === 0,and database instanceof no-Object
-                        (self._database = {})[_split_laveStr] = nObj
+                    if (!perkey) {
+                        if ((sObj = cache_n_Obj[_split_laveStr]) && sObj[_DM_extends_object_constructor] && !_dm_set_source) {
+                            sObj.set(self, key, nObj) //call ExtendsClass API
+                        } else if (cache_n_Obj instanceof Object) {
+                            cache_n_Obj[_split_laveStr] = nObj;
+                        } else if (cache_cache_n_Obj) {
+                            (cache_cache_n_Obj[back_perkey] = {})[_split_laveStr] = nObj
+                        } else { //arrKey.length === 0,and database instanceof no-Object
+                            (self._database = {})[_split_laveStr] = nObj
+                        }
                     }
                 } else if (!(nObj instanceof Object)) { //no any change, if instanceof Object and ==,just run touchOff
                     return;
@@ -2677,7 +2686,7 @@ var _with_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManag
 V.rh("#with", function(handle, index, parentHandle) {
 	//The Nodes between #with and /with will be pulled out , and not to be rendered.
 	//which will be combined into new View module.
-	var _shadowBody = $.D.cl(shadowBody),
+	var _shadowBody = fragment(),//$.D.cl(shadowBody),
 		withModuleHandle = new ElementHandle(_shadowBody),
 		endIndex = 0;
 
@@ -2781,7 +2790,7 @@ var _extend_DM_get_Index = (function() {
         if (key === indexKey) {
             DataManager.session.topGetter = self;
             DataManager.session.filterKey = "";
-            return self._index;
+            return parseInt(self._index);
         } else {
             return DM_proto.get.apply(self, arguments)
         }

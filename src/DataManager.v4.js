@@ -140,7 +140,10 @@ var DM_proto = DataManager.prototype = {
                 anchor = 0;
             if (result != $UNDEFINED && result !== $FALSE) { //null|undefined|false
                 var perkey = $.st(key, ".");
-                while (perkey&&result) {
+                while (perkey && result) {
+                    if (result[_DM_extends_object_constructor]) {
+                        result = result.value;
+                    }
                     result = result[perkey];
                     perkey = $.st(_split_laveStr, ".");
                 }
@@ -226,17 +229,23 @@ var DM_proto = DataManager.prototype = {
                     while (perkey) {
                         back_perkey = perkey;
                         cache_cache_n_Obj = cache_n_Obj;
+                        if (cache_n_Obj[_DM_extends_object_constructor]) {
+                            cache_n_Obj.set(self, key, nObj);
+                            break;
+                        }
                         cache_n_Obj = cache_n_Obj[perkey] || (cache_n_Obj[perkey] = {})
                         perkey = $.st(_split_laveStr, ".");
                     }
-                    if ((sObj = cache_n_Obj[_split_laveStr]) && sObj[_DM_extends_object_constructor] && !_dm_set_source) {
-                        sObj.set(self, key, nObj) //call ExtendsClass API
-                    } else if (cache_n_Obj instanceof Object) {
-                        cache_n_Obj[_split_laveStr] = nObj;
-                    } else if (cache_cache_n_Obj) {
-                        (cache_cache_n_Obj[back_perkey] = {})[_split_laveStr] = nObj
-                    } else { //arrKey.length === 0,and database instanceof no-Object
-                        (self._database = {})[_split_laveStr] = nObj
+                    if (!perkey) {
+                        if ((sObj = cache_n_Obj[_split_laveStr]) && sObj[_DM_extends_object_constructor] && !_dm_set_source) {
+                            sObj.set(self, key, nObj) //call ExtendsClass API
+                        } else if (cache_n_Obj instanceof Object) {
+                            cache_n_Obj[_split_laveStr] = nObj;
+                        } else if (cache_cache_n_Obj) {
+                            (cache_cache_n_Obj[back_perkey] = {})[_split_laveStr] = nObj
+                        } else { //arrKey.length === 0,and database instanceof no-Object
+                            (self._database = {})[_split_laveStr] = nObj
+                        }
                     }
                 } else if (!(nObj instanceof Object)) { //no any change, if instanceof Object and ==,just run touchOff
                     return;

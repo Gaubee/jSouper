@@ -17,7 +17,7 @@ var _extend_DM_get_Index = (function() {
         if (key === indexKey) {
             DataManager.session.topGetter = self;
             DataManager.session.filterKey = "";
-            return self._index;
+            return parseInt(self._index);
         } else {
             return DM_proto.get.apply(self, arguments)
         }

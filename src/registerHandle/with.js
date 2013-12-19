@@ -23,7 +23,7 @@ var _with_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManag
 V.rh("#with", function(handle, index, parentHandle) {
 	//The Nodes between #with and /with will be pulled out , and not to be rendered.
 	//which will be combined into new View module.
-	var _shadowBody = $.D.cl(shadowBody),
+	var _shadowBody = fragment(),//$.D.cl(shadowBody),
 		withModuleHandle = new ElementHandle(_shadowBody),
 		endIndex = 0;
 
