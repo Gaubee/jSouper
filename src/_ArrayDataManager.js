@@ -37,14 +37,16 @@ _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片�
                 $.ftE(nObj, function(nObj_item, i) {
                     var DM = DMs[i];
                     //针对remove的优化
-                    if (nObj_item !== DM._database) { //强制优化，但是$INDEX关键字要缓存判定更新
-                        DM._database = nObj_item;
-                        DM.touchOff("");
-                    } else if (DM.__cacheIndex !== DM._index) {
-                        DM.__cacheIndex = DM._index;
-                        DM.touchOff("DM_config.prefix.Index");
-                    } else { //确保子集更新
-                        DM.touchOff("");
+                    if (DM) {//TODO:WHY?
+                        if (nObj_item !== DM._database) { //强制优化，但是$INDEX关键字要缓存判定更新
+                            DM._database = nObj_item;
+                            DM.touchOff("");
+                        } else if (DM.__cacheIndex !== DM._index) {
+                            DM.__cacheIndex = DM._index;
+                            DM.touchOff("DM_config.prefix.Index");
+                        } else { //确保子集更新
+                            DM.touchOff("");
+                        }
                     }
                 }, _remove_index)
             }

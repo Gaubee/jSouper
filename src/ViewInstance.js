@@ -92,6 +92,7 @@ function ViewInstance(handleNodeTree, NodeList, triggerTable, dataManager) {
     self._AVI = {};
     self._ALVI = {};
     self._WVI = {};
+    self._teleporters = {};
     // self._arrayVI = $NULL;
     $.D.iB(el, self._open, el.childNodes[0]);
     $.D.ap(el, self._close);
@@ -99,14 +100,9 @@ function ViewInstance(handleNodeTree, NodeList, triggerTable, dataManager) {
     // self._triggers._u = [];//undefined key,update every time
     self.TEMP = {};
     $.fI(triggerTable, function(tiggerCollection, key) {
-        if ("".indexOf(key) !== 0) { //"" //||"."
-            $.p(self._triggers, key);
-        }
+        $.p(self._triggers, key);
         self._triggers._[key] = tiggerCollection;
     });
-    /*$.fE(triggerTable["."], function(tiggerFun) { //const value
-        tiggerFun.event(NodeList, dataManager);
-    });*/
 
     if (!(dataManager instanceof DataManager)) {
         dataManager = DataManager(dataManager);
@@ -115,7 +111,10 @@ function ViewInstance(handleNodeTree, NodeList, triggerTable, dataManager) {
 
     //bind viewInstance with DataManger
     dataManager.collect(self); //touchOff All triggers
-    //delete self._triggers._["."] //remove "."(const) key,just touch one time;
+
+    self.touchOff("."); //const value
+    delete self._triggers._["."] //remove "."(const) key,just touch one time;
+
 };
 var VI_session = ViewInstance.session = {
     touchHandleIdSet: $NULL,
@@ -301,6 +300,35 @@ var VI_proto = ViewInstance.prototype = {
             );
         $.p(smartTriggers, smartTrigger);
         topGetterTriggerKeys && smartTrigger.bind(topGetterTriggerKeys); // topGetterTriggerKeys.push(baseKey, smartTrigger);
+    },
+    teleporter: function(viewInstance, telporterName) {
+        var self = this;
+        (telporterName === $UNDEFINED) && (telporterName = "index");
+        var teleporter = self._teleporters[telporterName];
+        if (teleporter) {
+            if (teleporter.show_or_hidden !== $FALSE) {
+                //remove old
+                var old_viewInstance = teleporter.vi;
+                old_viewInstance && old_viewInstance.remove();
+
+                //insert new & save new
+                viewInstance.insert(teleporter.ph);
+            }
+            teleporter.vi = viewInstance
+        }
+        return self;
+    },
+    collect: function() {
+        var self = this;
+        var dataManager = self.dataManager;
+        dataManager.collect.apply(dataManager, arguments);
+        return self;
+    },
+    subset: function() {
+        var self = this;
+        var dataManager = self.dataManager;
+        dataManager.subset.apply(dataManager, arguments);
+        return self;
     }
 };
 /*var _allEventNames = ("blur focus focusin focusout load resize" +

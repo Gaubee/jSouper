@@ -46,7 +46,7 @@ var ViewParser = global.ViewParser = {
 				// console.error("App's name shouldn't the same of the DOM'ID");
 				console.warn("App's name will be set as " + appName);
 			}
-			global[appName] = template
+			return (global[appName] = template);
 		}
 	},
 	ready: (function() {

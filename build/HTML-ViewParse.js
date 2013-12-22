@@ -1310,14 +1310,16 @@ _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片�
                 $.ftE(nObj, function(nObj_item, i) {
                     var DM = DMs[i];
                     //针对remove的优化
-                    if (nObj_item !== DM._database) { //强制优化，但是$INDEX关键字要缓存判定更新
-                        DM._database = nObj_item;
-                        DM.touchOff("");
-                    } else if (DM.__cacheIndex !== DM._index) {
-                        DM.__cacheIndex = DM._index;
-                        DM.touchOff("DM_config.prefix.Index");
-                    } else { //确保子集更新
-                        DM.touchOff("");
+                    if (DM) {//TODO:WHY?
+                        if (nObj_item !== DM._database) { //强制优化，但是$INDEX关键字要缓存判定更新
+                            DM._database = nObj_item;
+                            DM.touchOff("");
+                        } else if (DM.__cacheIndex !== DM._index) {
+                            DM.__cacheIndex = DM._index;
+                            DM.touchOff("DM_config.prefix.Index");
+                        } else { //确保子集更新
+                            DM.touchOff("");
+                        }
                     }
                 }, _remove_index)
             }
@@ -2014,6 +2016,7 @@ function ViewInstance(handleNodeTree, NodeList, triggerTable, dataManager) {
     self._AVI = {};
     self._ALVI = {};
     self._WVI = {};
+    self._teleporters = {};
     // self._arrayVI = $NULL;
     $.D.iB(el, self._open, el.childNodes[0]);
     $.D.ap(el, self._close);
@@ -2021,14 +2024,9 @@ function ViewInstance(handleNodeTree, NodeList, triggerTable, dataManager) {
     // self._triggers._u = [];//undefined key,update every time
     self.TEMP = {};
     $.fI(triggerTable, function(tiggerCollection, key) {
-        if ("".indexOf(key) !== 0) { //"" //||"."
-            $.p(self._triggers, key);
-        }
+        $.p(self._triggers, key);
         self._triggers._[key] = tiggerCollection;
     });
-    /*$.fE(triggerTable["."], function(tiggerFun) { //const value
-        tiggerFun.event(NodeList, dataManager);
-    });*/
 
     if (!(dataManager instanceof DataManager)) {
         dataManager = DataManager(dataManager);
@@ -2037,7 +2035,10 @@ function ViewInstance(handleNodeTree, NodeList, triggerTable, dataManager) {
 
     //bind viewInstance with DataManger
     dataManager.collect(self); //touchOff All triggers
-    //delete self._triggers._["."] //remove "."(const) key,just touch one time;
+
+    self.touchOff("."); //const value
+    delete self._triggers._["."] //remove "."(const) key,just touch one time;
+
 };
 var VI_session = ViewInstance.session = {
     touchHandleIdSet: $NULL,
@@ -2223,6 +2224,35 @@ var VI_proto = ViewInstance.prototype = {
             );
         $.p(smartTriggers, smartTrigger);
         topGetterTriggerKeys && smartTrigger.bind(topGetterTriggerKeys); // topGetterTriggerKeys.push(baseKey, smartTrigger);
+    },
+    teleporter: function(viewInstance, telporterName) {
+        var self = this;
+        (telporterName === $UNDEFINED) && (telporterName = "index");
+        var teleporter = self._teleporters[telporterName];
+        if (teleporter) {
+            if (teleporter.show_or_hidden !== $FALSE) {
+                //remove old
+                var old_viewInstance = teleporter.vi;
+                old_viewInstance && old_viewInstance.remove();
+
+                //insert new & save new
+                viewInstance.insert(teleporter.ph);
+            }
+            teleporter.vi = viewInstance
+        }
+        return self;
+    },
+    collect: function() {
+        var self = this;
+        var dataManager = self.dataManager;
+        dataManager.collect.apply(dataManager, arguments);
+        return self;
+    },
+    subset: function() {
+        var self = this;
+        var dataManager = self.dataManager;
+        dataManager.subset.apply(dataManager, arguments);
+        return self;
     }
 };
 /*var _allEventNames = ("blur focus focusin focusout load resize" +
@@ -2654,6 +2684,42 @@ _operator_list = "+ - * / % == === != !== > < && || ^ >> << & |".split(" ");
 $.ftE(_operator_list, function(operator) {
 	V.rh(operator, _operator_handle)
 });
+function _teleporter_display(show_or_hidden, NodeList_of_ViewInstance, dataManager, /*triggerBy,*/ viewInstance_ID) {
+    var handle = this;
+    var placeholderHandle = $.lI(handle.childNodes);
+    var commentPlaceholderElement = NodeList_of_ViewInstance[placeholderHandle.id].currentNode;
+
+    console.log(NodeList_of_ViewInstance[handle.id])
+    var teleporterNameHandle = handle.childNodes[0];
+    if (placeholderHandle === teleporterNameHandle) { //no first argument;
+        var teleporterName = "index"
+    } else {
+        teleporterName = teleporterNameHandle.childNodes[0].node.data;
+        teleporterName = teleporterName.substr(1, teleporterName.length - 2);
+    }
+
+    var teleporter = V._instances[viewInstance_ID]._teleporters[teleporterName];
+    var teleporterViewInstance = teleporter.vi;
+
+    console.log(show_or_hidden ? "display:" : "remove:", teleporterViewInstance);
+
+    if (teleporterViewInstance) {
+        if (show_or_hidden) {
+            teleporterViewInstance.remove();
+            teleporterViewInstance.insert(commentPlaceholderElement);
+        } else {
+            teleporterViewInstance.remove()
+        }
+    }
+
+    //使用存储显示信息
+    teleporter.show_or_hidden = show_or_hidden;
+};
+V.rh("#teleporter", function(handle, index, parentHandle) {
+    handle.display = _teleporter_display; //Custom rendering function
+    _commentPlaceholder(handle, parentHandle);
+});
+
 var _unary_operator_list = "! ~ -".split(" ");// ++ --
 $.ftE(_unary_operator_list, function(operator) {
 	V.rh(operator, _operator_handle)
@@ -3287,6 +3353,33 @@ var _operator_handle_build_str = String(_operator_handle_builder),
 $.ftE(_operator_list, function(operator) {
 	V.rt(operator, _operator_handle_build_factory(operator))
 });
+V.rt("#teleporter", function(handle, index, parentHandle) {
+    var teleporterNameHandle = handle.childNodes[0];
+    var placeholderHandle = $.lI(handle.childNodes);
+    if (placeholderHandle === teleporterNameHandle) { //no first argument;
+        var teleporterName = "index"
+    } else {
+        teleporterName = teleporterNameHandle.childNodes[0].node.data;
+        teleporterName = teleporterName.substr(1, teleporterName.length - 2);
+    }
+    var trigger = {
+        key: ".",
+        event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
+            var viewInstance = V._instances[viewInstance_ID];
+            if (!viewInstance._teleporters[teleporterName]) {
+                viewInstance._teleporters[teleporterName] = {
+                	//placeholder comment node
+                    ph: NodeList_of_ViewInstance[placeholderHandle.id].currentNode
+                }
+            }
+            /*else{
+            	trigger.event = $.noop;
+            }*/
+        }
+    }
+    return trigger;
+});
+
 var _unary_operator_handle_builder = function(handle, index, parentHandle){
 	var firstParameter_id = handle.childNodes[0].id,
 		textHandle_id = handle.childNodes[0].childNodes[0].id,
@@ -4107,7 +4200,7 @@ var ViewParser = global.ViewParser = {
 				// console.error("App's name shouldn't the same of the DOM'ID");
 				console.warn("App's name will be set as " + appName);
 			}
-			global[appName] = template
+			return (global[appName] = template);
 		}
 	},
 	ready: (function() {
