@@ -11,6 +11,7 @@ V.rt("", function(handle, index, parentHandle) {
                 bubble: $TRUE,
                 event: function(NodeList_of_ViewInstance, dataManager) {
                     NodeList_of_ViewInstance[textHandleId].currentNode.data = key.substring(1, key.length - 1);
+                    trigger.event = $.noop;
                 }
             };
         } else { //String for databese by key
@@ -41,6 +42,7 @@ V.rt("", function(handle, index, parentHandle) {
                 bubble: $TRUE,
                 event: function(NodeList_of_ViewInstance, dataManager) {
                     NodeList_of_ViewInstance[this.handleId]._data = key.substr(1, key.length - 2);
+                    trigger.event = $.noop;
                 }
             };
         } else { //String for databese by key

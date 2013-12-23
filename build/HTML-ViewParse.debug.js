@@ -2059,8 +2059,6 @@ function ViewInstance(handleNodeTree, NodeList, triggerTable, dataManager) {
     dataManager.collect(self); //touchOff All triggers
 
     self.touchOff("."); //const value
-    delete self._triggers._["."] //remove "."(const) key,just touch one time;
-
 };
 var VI_session = ViewInstance.session = {
     touchHandleIdSet: $NULL,
@@ -3046,6 +3044,7 @@ V.rt("", function(handle, index, parentHandle) {
                 bubble: $TRUE,
                 event: function(NodeList_of_ViewInstance, dataManager) {
                     NodeList_of_ViewInstance[textHandleId].currentNode.data = key.substring(1, key.length - 1);
+                    trigger.event = $.noop;
                 }
             };
         } else { //String for databese by key
@@ -3076,6 +3075,7 @@ V.rt("", function(handle, index, parentHandle) {
                 bubble: $TRUE,
                 event: function(NodeList_of_ViewInstance, dataManager) {
                     NodeList_of_ViewInstance[this.handleId]._data = key.substr(1, key.length - 2);
+                    trigger.event = $.noop;
                 }
             };
         } else { //String for databese by key

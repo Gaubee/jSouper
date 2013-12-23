@@ -113,8 +113,6 @@ function ViewInstance(handleNodeTree, NodeList, triggerTable, dataManager) {
     dataManager.collect(self); //touchOff All triggers
 
     self.touchOff("."); //const value
-    delete self._triggers._["."] //remove "."(const) key,just touch one time;
-
 };
 var VI_session = ViewInstance.session = {
     touchHandleIdSet: $NULL,
