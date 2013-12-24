@@ -19,8 +19,9 @@ function _teleporter_display(show_or_hidden, NodeList_of_ViewInstance, dataManag
 
     if (teleporterViewInstance) {
         if (show_or_hidden) {
-            teleporterViewInstance.remove();
-            teleporterViewInstance.insert(commentPlaceholderElement);
+            if(!teleporterViewInstance._canRemoveAble){//can-insert-able
+                teleporterViewInstance.insert(commentPlaceholderElement);
+            }
         } else {
             teleporterViewInstance.remove()
         }
