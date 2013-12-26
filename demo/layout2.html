@@ -17,7 +17,8 @@
 </head>
 <body>
 	<div id="HVP">
-		{{#if man}}
+		<button status-ready="{{' sex => 'man'  '}}" status-click="{{' sex ?> 'man'  '}}">Change sex{{sex}}</button>
+		{{#if sex}}
 			{{#layout 'man','$THIS'}}
 		{{#else}}
 			{{#layout 'woman','$THIS'}}

@@ -10,12 +10,20 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
         trigger;
 
     trigger = {
+        // cache_tpl_name:$UNDEFINED,
         event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
             var AllLayoutViewInstance = V._instances[viewInstance_ID]._ALVI;
-            var layoutViewInstance = AllLayoutViewInstance[id];
-            if (!layoutViewInstance) {
+            var new_templateHandle_name = NodeList_of_ViewInstance[templateHandle_id]._data;
+            var self = this;
+            var templateHandle_name = self.cache_tpl_name;
+            // console.log(new_templateHandle_name,templateHandle_name)
+            if (new_templateHandle_name && (new_templateHandle_name !== templateHandle_name)) {
+                self.cache_tpl_name = new_templateHandle_name;
+                layoutViewInstance && layoutViewInstance.destory();
+                console.log(new_templateHandle_name,id);
                 var key = NodeList_of_ViewInstance[dataHandle_id]._data,
-                    layoutViewInstance = AllLayoutViewInstance[id] = V.modules[NodeList_of_ViewInstance[templateHandle_id]._data]().insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
+                    layoutViewInstance = AllLayoutViewInstance[id] = V.modules[new_templateHandle_name]().insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
+                    layoutViewInstance._layoutName = new_templateHandle_name;
                 dataManager.subset(layoutViewInstance, key);
             }
             return layoutViewInstance;
@@ -26,24 +34,19 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
             var isShow = $.trim(String(NodeList_of_ViewInstance[ifHandle_id]._data)).replace(_booleanFalseRegExp, ""),
                 AllLayoutViewInstance = V._instances[viewInstance_ID]._ALVI,
                 layoutViewInstance = AllLayoutViewInstance[id];
-            // console.log(ifHandle,":",NodeList_of_ViewInstance[ifHandle_id]._data)
             if (isShow) {
                 if (!layoutViewInstance) {
                     var key = NodeList_of_ViewInstance[dataHandle_id]._data;
                     if (dataManager.get(key)) {
-                        // console.log(key,":",dataManager.get(key))
                         layoutViewInstance = AllLayoutViewInstance[id] = V.modules[NodeList_of_ViewInstance[templateHandle_id]._data]();
                         dataManager.subset(layoutViewInstance, key);
                     }
                 }
                 if (layoutViewInstance && !layoutViewInstance._canRemoveAble) {
-                    // console.log("show",layoutViewInstance._id)
                     layoutViewInstance.insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
                 }
-                // console.log(isShow,layoutViewInstance.get())
             } else {
                 if (layoutViewInstance && layoutViewInstance._canRemoveAble) {
-                    // console.log("hidden",layoutViewInstance._id)
                     layoutViewInstance.remove();
                 }
             }

@@ -7,7 +7,6 @@ function _layout_display(show_or_hidden, NodeList_of_ViewInstance, dataManager, 
 	}
 	//get comment_endeach_id
 	var commentPlaceholderElement = NodeList_of_ViewInstance[$.lI(handle.childNodes).id].currentNode;
-	console.log(show_or_hidden,layoutViewInstance._canRemoveAble)
 	if (show_or_hidden) {
 		if(!layoutViewInstance._canRemoveAble){//can-insert-able
 			layoutViewInstance.insert(commentPlaceholderElement);

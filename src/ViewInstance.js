@@ -147,7 +147,9 @@ function _moveChild(self, el) {
     var AllEachViewInstance = self._AVI,
         AllLayoutViewInstance = self._ALVI,
         AllWithViewInstance = self._WVI;
-    _replaceTopHandleCurrent(self, el);
+
+    self.topNode(el);
+
     $.ftE(self.NodeList[self.handleNodeTree.id].childNodes, function(child_node) {
         var viewInstance,
             arrayViewInstances,
@@ -162,24 +164,29 @@ function _moveChild(self, el) {
     });
 };
 
-function _replaceTopHandleCurrent(self, el) {
-    self._canRemoveAble = $TRUE;
-    self.topNode(el);
-};
-
 var fr = doc.createDocumentFragment();
 
 var VI_proto = ViewInstance.prototype = {
+    destroy: function() {
+        var self = this;
+        //TODO:delete node
+        self.remove();
+        return null;
+    },
     append: function(el) {
         var self = this,
             currentTopNode = self.topNode();
 
+        if (self._id === 76) {
+            debugger
+        };
         $.fE(currentTopNode.childNodes, function(child_node) {
             $.D.ap(fr, child_node);
         });
         $.D.ap(el, fr);
 
         _moveChild(self, el);
+        self._canRemoveAble = $TRUE;
 
         return self;
     },
@@ -194,6 +201,7 @@ var VI_proto = ViewInstance.prototype = {
         $.D.iB(elParentNode, fr, el);
 
         _moveChild(self, elParentNode);
+        self._canRemoveAble = $TRUE;
 
         return self;
     },
@@ -219,7 +227,9 @@ var VI_proto = ViewInstance.prototype = {
                 }
                 currentNode = nextNode;
             }
-            _replaceTopHandleCurrent(self, el);
+
+            self.topNode(el);
+
             self._canRemoveAble = $FALSE; //Has being recovered into the _packingBag,can't no be remove again. --> it should be insert
             if (self._isEach) {
                 // 排队到队位作为备用
@@ -251,11 +261,20 @@ var VI_proto = ViewInstance.prototype = {
             result;
         if (newCurrentTopNode) {
             NodeList[handleNodeTree.id].currentNode = newCurrentTopNode
+        } else if (!self._canRemoveAble&&(result = self._packingBag)) {
+            console.warn("get _packingBag")
         } else {
-            result = NodeList[handleNodeTree.id].currentNode;
-            if (result.nodeType === 8) {
-                result = result.parentNode;
-            }
+            var HNT_cs = handleNodeTree.childNodes
+            var index = 0;
+            var len = HNT_cs.length;
+            var node;
+            var result;
+            do {
+                node = NodeList[HNT_cs[index++].id].currentNode;
+                if (node&&(node.nodeType === 1 || node.nodeType === 3)) {
+                    result = node.parentNode;
+                }
+            } while (!result&&index<len)
         }
         return result;
     },
