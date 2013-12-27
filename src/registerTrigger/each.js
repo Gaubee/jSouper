@@ -158,6 +158,7 @@ V.rt("#each", function(handle, index, parentHandle) {
                             });
 
                             _moveChild(viewInstance, elParentNode);
+                            viewInstance._canRemoveAble = $TRUE;
 
                         }, showed_vi_len );
 

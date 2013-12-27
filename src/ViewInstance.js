@@ -88,7 +88,19 @@ function ViewInstance(handleNodeTree, NodeList, triggerTable, dataManager) {
     V._instances[self._id = $.uid()] = self;
     self._open = $.D.C(self._id + " _open");
     self._close = $.D.C(self._id + " _close");
+
     self._canRemoveAble = $FALSE;
+    // var _canRemoveAble = $FALSE;
+    // self.__defineGetter__("_canRemoveAble", function() {
+    //     return _canRemoveAble;
+    // });
+    // self.__defineSetter__("_canRemoveAble", function(nObj) {
+    //     if (nObj === $FALSE) {
+    //         debugger
+    //     };
+    //     _canRemoveAble = nObj;
+    // })
+
     self._AVI = {};
     self._ALVI = {};
     self._WVI = {};
@@ -154,7 +166,7 @@ function _moveChild(self, el) {
         var viewInstance,
             arrayViewInstances,
             id = child_node.id;
-        if (viewInstance = AllLayoutViewInstance[child_node.id] || AllWithViewInstance[child_node.id]) {
+        if (viewInstance = (AllLayoutViewInstance[child_node.id] || AllWithViewInstance[child_node.id])) {
             _moveChild(viewInstance, el)
         } else if (arrayViewInstances = AllEachViewInstance[id]) {
             $.ftE(arrayViewInstances, function(viewInstance) {
@@ -261,20 +273,19 @@ var VI_proto = ViewInstance.prototype = {
             result;
         if (newCurrentTopNode) {
             NodeList[handleNodeTree.id].currentNode = newCurrentTopNode
-        } else if (!self._canRemoveAble&&(result = self._packingBag)) {
-            console.warn("get _packingBag")
+        } else if (!self._canRemoveAble && self._packingBag) {
+            result = self._packingBag;
         } else {
             var HNT_cs = handleNodeTree.childNodes
             var index = 0;
             var len = HNT_cs.length;
             var node;
-            var result;
             do {
                 node = NodeList[HNT_cs[index++].id].currentNode;
-                if (node&&(node.nodeType === 1 || node.nodeType === 3)) {
+                if (node && (node.nodeType === 1 || node.nodeType === 3)) {
                     result = node.parentNode;
                 }
-            } while (!result&&index<len)
+            } while (!result && index < len)
         }
         return result;
     },
