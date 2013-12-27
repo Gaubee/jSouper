@@ -57,12 +57,16 @@ V.rt("#include", function(handle, index, parentHandle) {
             _include_lock[_uid] = $TRUE;
             if (!V.modules[url]) {
                 _require_module(url, function(status, xhr) {
-                    V.modules[url] = ViewParser.parseStr(xhr.responseText)
+                    V.modules[url] = ViewParser.parseStr(xhr.responseText);
                     layoutViewInstance = _event.apply(trigger, args);
                     if (layoutViewInstance && !layoutViewInstance._runScripted) {
                         layoutViewInstance._runScripted = $TRUE;
                         _runScript(layoutViewInstance.handleNodeTree.node);
                         _include_lock[_uid] = $FALSE;
+                    }
+                    var _display_args = _include_display_arguments[handle.id];
+                    if (_display_args) {
+                        _include_display.apply(handle,_display_args);
                     }
                 })
             } else {

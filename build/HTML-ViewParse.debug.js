@@ -2704,11 +2704,29 @@ V.rh("@", function(handle, index, parentHandle) {
 	}
 });
 V.rh("/if", V.rh("#else", V.rh("#if", placeholderHandle)));
+var _include_display_arguments = {};
+function _include_display(show_or_hidden, NodeList_of_ViewInstance, dataManager, /*triggerBy,*/ viewInstance_ID) {
+	var handle = this,
+		id = handle.id,
+		includeViewInstance = V._instances[viewInstance_ID]._ALVI[id];
+	if (!includeViewInstance) {
+		_include_display_arguments[id] = arguments;
+		return;
+	}
+	//get comment_endeach_id
+	var commentPlaceholderElement = NodeList_of_ViewInstance[$.lI(handle.childNodes).id].currentNode;
+	if (show_or_hidden) {
+		if(!includeViewInstance._canRemoveAble){//can-insert-able
+			includeViewInstance.insert(commentPlaceholderElement);
+		}
+	} else {
+		includeViewInstance.remove();
+	}
+};
 V.rh("#include", function(handle, index, parentHandle) {
-	handle.display = _layout_display; //Custom rendering function
+	handle.display = _include_display; //Custom rendering function
 	_commentPlaceholder(handle, parentHandle);
 });
-//no var ,for #include to use
 function _layout_display(show_or_hidden, NodeList_of_ViewInstance, dataManager, /*triggerBy,*/ viewInstance_ID) {
 	var handle = this,
 		layoutViewInstance = V._instances[viewInstance_ID]._ALVI[handle.id];
@@ -3301,12 +3319,16 @@ V.rt("#include", function(handle, index, parentHandle) {
             _include_lock[_uid] = $TRUE;
             if (!V.modules[url]) {
                 _require_module(url, function(status, xhr) {
-                    V.modules[url] = ViewParser.parseStr(xhr.responseText)
+                    V.modules[url] = ViewParser.parseStr(xhr.responseText);
                     layoutViewInstance = _event.apply(trigger, args);
                     if (layoutViewInstance && !layoutViewInstance._runScripted) {
                         layoutViewInstance._runScripted = $TRUE;
                         _runScript(layoutViewInstance.handleNodeTree.node);
                         _include_lock[_uid] = $FALSE;
+                    }
+                    var _display_args = _include_display_arguments[handle.id];
+                    if (_display_args) {
+                        _include_display.apply(handle,_display_args);
                     }
                 })
             } else {
