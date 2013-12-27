@@ -20,14 +20,19 @@
 </head>
 <body id="HVP">
 	{{#include '_include.html','$THIS'}}
+	{{#layout 'self','$THIS'}}
 	<br>
 	<p>my child's infomation:</p>
 	{{#include "_include.html","child"}}
+	{{#layout 'self','child'}}
 	<hr>
 	<h4>out of include</h4>
 	{{name}} 's child is {{child.name}}
 	<hr>
 	{{child.name}} 's parent is {{name}}
 </body>
-
+<script type="text/template" name="self">
+	<a href="#{{name}}">{{name}}</a> is {{age}} years old.
+	<input type="text" bind-form="{{'name'}}" attr-value="{{name}}">
+</script>
 </html>

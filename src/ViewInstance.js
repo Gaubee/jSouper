@@ -230,8 +230,9 @@ var VI_proto = ViewInstance.prototype = {
 
             //TODO:fix Firefox Opera
             var currentNode = openNode;
+            var nextNode;
             while ($TRUE) {
-                var nextNode = currentNode.nextSibling;
+                nextNode = currentNode.nextSibling;
                 $.D.ap(el, currentNode);
                 if (nextNode === closeNode) {
                     $.D.ap(el, nextNode);

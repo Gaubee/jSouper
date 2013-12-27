@@ -12,7 +12,7 @@ var doc = document,
 	// shadowBody = fragment("body"),
 	shadowDIV = fragment(),
 	_placeholder = function(prefix) {
-		return prefix || "@" + Math.random().toString(36).substr(2)
+		return (prefix || "@") + Math.random().toString(36).substr(2)
 	},
 	//@jQuery
 	support = (function() {
@@ -2154,8 +2154,9 @@ var VI_proto = ViewInstance.prototype = {
 
             //TODO:fix Firefox Opera
             var currentNode = openNode;
+            var nextNode;
             while ($TRUE) {
-                var nextNode = currentNode.nextSibling;
+                nextNode = currentNode.nextSibling;
                 $.D.ap(el, currentNode);
                 if (nextNode === closeNode) {
                     $.D.ap(el, nextNode);
@@ -2323,7 +2324,7 @@ var _removeNodes = _isIE ? $.noop/*function() {//IE 不能回收节点，会导�
 					}
 					break;
 				case 1:
-					if (child_node.tagName.toLowerCase() === "span" && child_node.getAttribute("type") === "handle") {
+					if (child_node.getAttribute(_handle_type_argument_name) === "handle") {
 						var handleName = child_node.getAttribute("handle");
 						if (handleName !== $NULL) {
 							$.p(result, new TemplateHandle(handleName, child_node))
@@ -2456,7 +2457,9 @@ var placeholder = {
         "}": _Rg(placeholder["}"])
     }, _head = /\{([\w\W]*?)\(/g,
     _footer = /\)[\s]*\}/g,
+    _handle_type_argument_name = _placeholder("handle-"),
     parseRule = function(str) {
+        var _handle_type_tagName;
         var parseStr = str
             .replace(/</g, placeholder["<"])
             .replace(/>/g, placeholder[">"])
@@ -2464,8 +2467,14 @@ var placeholder = {
             .replace(placeholderReg["/("], placeholder["("])
             .replace(placeholderReg["/)"], placeholder[")"])
             .replace(placeholderReg["/}"], placeholder["}"])
-            .replace(_head, "<span type='handle' handle='$1'>")
-            .replace(_footer, "</span>")
+            // .replace(_head, "<span type='handle' handle='$1'>")
+            .replace(_head, function(match,handleName){
+                // console.log(arguments,"<span "+_handle_type_argument_name+"='handle' handle='"+handleName+"'>")
+                _handle_type_tagName = "span";
+                return "<span "+_handle_type_argument_name+"='handle' handle='"+handleName+"'>";
+            })
+            // .replace(_footer, "</span>")
+            .replace(_footer, "</"+_handle_type_tagName+">")
             .replace(placeholderReg["{"], "{")
             .replace(placeholderReg["("], "(")
             .replace(placeholderReg[")"], ")")
@@ -2482,7 +2491,9 @@ var placeholder = {
         namespace: "fix:",
         _nodeTree: function(htmlStr) {
             var _shadowBody = fragment( /*"body"*/ ); //$.D.cl(shadowBody);
+
             _shadowBody.innerHTML = htmlStr;
+            // console.log(htmlStr)
             var insertBefore = [];
             _traversal(_shadowBody, function(node, index, parentNode) {
                 if (node.nodeType === 1 && $.iO(ignoreTagName, node.tagName) !== -1) {
@@ -3235,7 +3246,7 @@ var _require_module = function(url, handleFun) {
         $.ajax(xhrConifg)
     }
 };
-var _runScripted = _placeholder("_");
+var _runScripted = _placeholder("run-");
 
 function _runScript(node) {
     var scriptNodeList = node.getElementsByTagName('script');
@@ -3250,6 +3261,7 @@ function _runScript(node) {
         }
     })
 }
+var _include_lock = {};
 V.rt("#include", function(handle, index, parentHandle) {
     var templateHandle_id = handle.childNodes[0].id;
 
@@ -3259,23 +3271,29 @@ V.rt("#include", function(handle, index, parentHandle) {
 
     // Ajax NodeList_of_ViewInstance[templateHandle_id]._data
     var _event = trigger.event;
+    var _uid = $.uid();
     trigger.event = function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
         var url = NodeList_of_ViewInstance[templateHandle_id]._data;
         var args = arguments
-        if (!V.modules[url]) {
-            _require_module(url, function(status, xhr) {
-                V.modules[url] = ViewParser.parseStr(xhr.responseText)
-                layoutViewInstance = _event.apply(this, args);
-                if (layoutViewInstance && !layoutViewInstance._runScripted) {
+        if (!_include_lock[_uid]) {
+            _include_lock[_uid] = $TRUE;
+            if (!V.modules[url]) {
+                _require_module(url, function(status, xhr) {
+                    V.modules[url] = ViewParser.parseStr(xhr.responseText)
+                    layoutViewInstance = _event.apply(trigger, args);
+                    if (layoutViewInstance && !layoutViewInstance._runScripted) {
+                        layoutViewInstance._runScripted = $TRUE;
+                        _runScript(layoutViewInstance.handleNodeTree.node);
+                        _include_lock[_uid] = $FALSE;
+                    }
+                })
+            } else {
+                layoutViewInstance = _event.apply(trigger, args);
+                if (!layoutViewInstance._runScripted) {
                     layoutViewInstance._runScripted = $TRUE;
                     _runScript(layoutViewInstance.topNode());
                 }
-            })
-        } else {
-            layoutViewInstance = _event.apply(this, args);
-            if (!layoutViewInstance._runScripted) {
-                layoutViewInstance._runScripted = $TRUE;
-                _runScript(layoutViewInstance.topNode());
+                _include_lock[_uid] = $FALSE;
             }
         }
     }
@@ -3295,6 +3313,7 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
 
     trigger = {
         // cache_tpl_name:$UNDEFINED,
+        key:".",
         event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
             var AllLayoutViewInstance = V._instances[viewInstance_ID]._ALVI;
             var new_templateHandle_name = NodeList_of_ViewInstance[templateHandle_id]._data;
@@ -3309,6 +3328,8 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
                     layoutViewInstance = AllLayoutViewInstance[id] = V.modules[new_templateHandle_name]().insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
                     layoutViewInstance._layoutName = new_templateHandle_name;
                 dataManager.subset(layoutViewInstance, key);
+            }else{
+                layoutViewInstance = AllLayoutViewInstance[id];
             }
             return layoutViewInstance;
         }

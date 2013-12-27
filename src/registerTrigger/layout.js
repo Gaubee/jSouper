@@ -11,6 +11,7 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
 
     trigger = {
         // cache_tpl_name:$UNDEFINED,
+        key:".",
         event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
             var AllLayoutViewInstance = V._instances[viewInstance_ID]._ALVI;
             var new_templateHandle_name = NodeList_of_ViewInstance[templateHandle_id]._data;
@@ -25,6 +26,8 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
                     layoutViewInstance = AllLayoutViewInstance[id] = V.modules[new_templateHandle_name]().insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
                     layoutViewInstance._layoutName = new_templateHandle_name;
                 dataManager.subset(layoutViewInstance, key);
+            }else{
+                layoutViewInstance = AllLayoutViewInstance[id];
             }
             return layoutViewInstance;
         }

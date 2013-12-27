@@ -28,7 +28,7 @@ var _removeNodes = _isIE ? $.noop/*function() {//IE 不能回收节点，会导�
 					}
 					break;
 				case 1:
-					if (child_node.tagName.toLowerCase() === "span" && child_node.getAttribute("type") === "handle") {
+					if (child_node.getAttribute(_handle_type_argument_name) === "handle") {
 						var handleName = child_node.getAttribute("handle");
 						if (handleName !== $NULL) {
 							$.p(result, new TemplateHandle(handleName, child_node))

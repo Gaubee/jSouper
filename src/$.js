@@ -10,7 +10,7 @@ var doc = document,
 	// shadowBody = fragment("body"),
 	shadowDIV = fragment(),
 	_placeholder = function(prefix) {
-		return prefix || "@" + Math.random().toString(36).substr(2)
+		return (prefix || "@") + Math.random().toString(36).substr(2)
 	},
 	//@jQuery
 	support = (function() {

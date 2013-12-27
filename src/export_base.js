@@ -25,7 +25,9 @@ var placeholder = {
         "}": _Rg(placeholder["}"])
     }, _head = /\{([\w\W]*?)\(/g,
     _footer = /\)[\s]*\}/g,
+    _handle_type_argument_name = _placeholder("handle-"),
     parseRule = function(str) {
+        var _handle_type_tagName;
         var parseStr = str
             .replace(/</g, placeholder["<"])
             .replace(/>/g, placeholder[">"])
@@ -33,8 +35,14 @@ var placeholder = {
             .replace(placeholderReg["/("], placeholder["("])
             .replace(placeholderReg["/)"], placeholder[")"])
             .replace(placeholderReg["/}"], placeholder["}"])
-            .replace(_head, "<span type='handle' handle='$1'>")
-            .replace(_footer, "</span>")
+            // .replace(_head, "<span type='handle' handle='$1'>")
+            .replace(_head, function(match,handleName){
+                // console.log(arguments,"<span "+_handle_type_argument_name+"='handle' handle='"+handleName+"'>")
+                _handle_type_tagName = "span";
+                return "<span "+_handle_type_argument_name+"='handle' handle='"+handleName+"'>";
+            })
+            // .replace(_footer, "</span>")
+            .replace(_footer, "</"+_handle_type_tagName+">")
             .replace(placeholderReg["{"], "{")
             .replace(placeholderReg["("], "(")
             .replace(placeholderReg[")"], ")")
@@ -51,7 +59,9 @@ var placeholder = {
         namespace: "fix:",
         _nodeTree: function(htmlStr) {
             var _shadowBody = fragment( /*"body"*/ ); //$.D.cl(shadowBody);
+
             _shadowBody.innerHTML = htmlStr;
+            // console.log(htmlStr)
             var insertBefore = [];
             _traversal(_shadowBody, function(node, index, parentNode) {
                 if (node.nodeType === 1 && $.iO(ignoreTagName, node.tagName) !== -1) {

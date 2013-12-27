@@ -24,7 +24,7 @@ var _require_module = function(url, handleFun) {
         $.ajax(xhrConifg)
     }
 };
-var _runScripted = _placeholder("_");
+var _runScripted = _placeholder("run-");
 
 function _runScript(node) {
     var scriptNodeList = node.getElementsByTagName('script');
@@ -39,6 +39,7 @@ function _runScript(node) {
         }
     })
 }
+var _include_lock = {};
 V.rt("#include", function(handle, index, parentHandle) {
     var templateHandle_id = handle.childNodes[0].id;
 
@@ -48,23 +49,29 @@ V.rt("#include", function(handle, index, parentHandle) {
 
     // Ajax NodeList_of_ViewInstance[templateHandle_id]._data
     var _event = trigger.event;
+    var _uid = $.uid();
     trigger.event = function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
         var url = NodeList_of_ViewInstance[templateHandle_id]._data;
         var args = arguments
-        if (!V.modules[url]) {
-            _require_module(url, function(status, xhr) {
-                V.modules[url] = ViewParser.parseStr(xhr.responseText)
-                layoutViewInstance = _event.apply(this, args);
-                if (layoutViewInstance && !layoutViewInstance._runScripted) {
+        if (!_include_lock[_uid]) {
+            _include_lock[_uid] = $TRUE;
+            if (!V.modules[url]) {
+                _require_module(url, function(status, xhr) {
+                    V.modules[url] = ViewParser.parseStr(xhr.responseText)
+                    layoutViewInstance = _event.apply(trigger, args);
+                    if (layoutViewInstance && !layoutViewInstance._runScripted) {
+                        layoutViewInstance._runScripted = $TRUE;
+                        _runScript(layoutViewInstance.handleNodeTree.node);
+                        _include_lock[_uid] = $FALSE;
+                    }
+                })
+            } else {
+                layoutViewInstance = _event.apply(trigger, args);
+                if (!layoutViewInstance._runScripted) {
                     layoutViewInstance._runScripted = $TRUE;
                     _runScript(layoutViewInstance.topNode());
                 }
-            })
-        } else {
-            layoutViewInstance = _event.apply(this, args);
-            if (!layoutViewInstance._runScripted) {
-                layoutViewInstance._runScripted = $TRUE;
-                _runScript(layoutViewInstance.topNode());
+                _include_lock[_uid] = $FALSE;
             }
         }
     }
