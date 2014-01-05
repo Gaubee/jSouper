@@ -72,6 +72,8 @@
     };
 }());
 
+var stopTriggerBubble; // = $FALSE;
+
 function ViewInstance(handleNodeTree, NodeList, triggerTable, dataManager) {
     if (!(this instanceof ViewInstance)) {
         return new ViewInstance(handleNodeTree, NodeList, triggerTable, dataManager);
@@ -106,6 +108,7 @@ function ViewInstance(handleNodeTree, NodeList, triggerTable, dataManager) {
     self._WVI = {};
     self._teleporters = {};
     // self._arrayVI = $NULL;
+
     $.D.iB(el, self._open, el.childNodes[0]);
     $.D.ap(el, self._close);
     (self._triggers = [])._ = {};
@@ -124,8 +127,13 @@ function ViewInstance(handleNodeTree, NodeList, triggerTable, dataManager) {
     //bind viewInstance with DataManger
     dataManager.collect(self); //touchOff All triggers
 
+    //console.group(self._id,"touchOff .")
+    stopTriggerBubble = $TRUE;
     self.touchOff("."); //const value
+    stopTriggerBubble = $FALSE;
+    //console.groupEnd(self._id,"touchOff .")
 };
+
 var VI_session = ViewInstance.session = {
     touchHandleIdSet: $NULL,
     touchStacks: $NULL
@@ -140,7 +148,7 @@ function _bubbleTrigger(tiggerCollection, NodeList, dataManager /*, eventTrigger
     $.fE(tiggerCollection, function(trigger) { //TODO:测试参数长度和效率的平衡点，减少参数传递的数量
         if (!touchHandleIdSet[trigger.handleId]) { //To prevent repeated collection
             $.p(eventStack, trigger) //collect trigger
-            if ( /*result !== $FALSE &&*/ trigger.bubble) {
+            if ( /*result !== $FALSE &&*/ trigger.bubble && !stopTriggerBubble) {
                 // Stop using the `return false` to prevent bubble triggered
                 // need to use `this. Mercifully = false` to control
                 var parentNode = NodeList[trigger.handleId].parentNode;
@@ -278,15 +286,20 @@ var VI_proto = ViewInstance.prototype = {
             result = self._packingBag;
         } else {
             var HNT_cs = handleNodeTree.childNodes
-            var index = 0;
-            var len = HNT_cs.length;
-            var node;
-            do {
-                node = NodeList[HNT_cs[index++].id].currentNode;
-                if (node && (node.nodeType === 1 || node.nodeType === 3)) {
-                    result = node.parentNode;
-                }
-            } while (!result && index < len)
+            if (HNT_cs.length) {
+                var index = 0;
+                var len = HNT_cs.length;
+                var node;
+                do {
+                    node = NodeList[HNT_cs[index++].id].currentNode;
+                    if (node && (node.nodeType === 1 || node.nodeType === 3)) {
+                        result = node.parentNode;
+                    }
+                } while (!result && index < len)
+            }
+        }
+        if (!result) {
+        	result = NodeList[handleNodeTree.id].currentNode;
         }
         return result;
     },

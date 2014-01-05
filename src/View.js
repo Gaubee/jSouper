@@ -2,14 +2,18 @@
  * View constructor
  */
 
-function View(arg) {
+function View(arg,vmName) {
     var self = this;
     if (!(self instanceof View)) {
-        return new View(arg);
+        return new View(arg,vmName);
     }
     self.handleNodeTree = arg;
     self._handles = [];
     self._triggerTable = {};
+    self.vmName = vmName;
+    self.id = $.uid();
+    // console.group(self.id);
+    // console.log(vmName)
     _buildHandler(self);
     _buildTrigger(self);
     return function(data, isAttribute) {
@@ -30,6 +34,14 @@ function View(arg) {
         //last layer,and run finallyRun
         !finallyRunStacks.length && finallyRun();
 
+        // console.log(self.id)
+        // console.groupEnd(self.id)
+        if (self.vmName) {
+            var viewInstance_init = V.modulesInit[self.vmName];
+            if (viewInstance_init) {
+                viewInstance_init(vi);
+            }
+        }
         return vi
     }
 };
@@ -81,7 +93,7 @@ function _buildHandler(self) {
         } else if (handle.type === "element") {
             handle.tag = node.tagName.toLowerCase().replace(V.namespace.toLowerCase(), "");
             if (_isHTMLUnknownElement(handle.tag)) {
-                console.log(handle.tag);
+                // console.log(handle.tag);
                 (handle._unEleAttr = [])._ = {};
                 //save attributes
                 $.ftE(node.attributes, function(attr) {
@@ -103,9 +115,17 @@ function _buildHandler(self) {
                     }
                 });
                 //save style
-                var cssText = node.style.getAttribute("cssText");
-                if (cssText) {
-                    handle._unEleAttr._["style"] = cssText;
+                if (node.style.getAttribute) {
+                    var cssText = node.style.getAttribute("cssText");
+                    if (cssText) {
+                        handle._unEleAttr._["style"] = cssText;
+                    }
+                } else {
+                    //unKnown Element
+                    cssText = node.style.cssText;
+                    if (cssText) {
+                        handle._unEleAttr._["style.cssText"] = cssText;
+                    }
                 }
             }
         }
@@ -181,9 +201,14 @@ function _create(self, data, isAttribute) { //data maybe basedata or dataManager
                     currentNode[attrName] = _unknownElementAttribute._[attrName];
                 })
                 //set Style
-                var cssText = _unknownElementAttribute._["cssText"];
+                var cssText = _unknownElementAttribute._["style"];
                 if (cssText) {
                     currentNode.style.setAttribute('cssText', cssText);
+                }
+                //set unKnownElementStyle
+                cssText = _unknownElementAttribute._["style.cssText"];
+                if (cssText) {
+                    currentNode.style.cssText = cssText;
                 }
             } else if ("nodeStr" in handle) {
                 if (handle.type === "text") {
@@ -238,5 +263,7 @@ function _create(self, data, isAttribute) { //data maybe basedata or dataManager
     $.fE(self._handles, function(handle) {
         handle.call(self, NodeList_of_ViewInstance);
     });
-    return new ViewInstance(self.handleNodeTree, NodeList_of_ViewInstance, self._triggerTable, data);
+    var result = new ViewInstance(self.handleNodeTree, NodeList_of_ViewInstance, self._triggerTable, data);
+    result.vmName = self.vmName;
+    return result;
 };

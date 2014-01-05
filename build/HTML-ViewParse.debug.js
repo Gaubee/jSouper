@@ -26,334 +26,336 @@
 var global = global || this /*strict model use "global" else than "this"*/ ;
 
 var doc = document,
-	_isIE = !global.dispatchEvent, //!+"\v1",
-	fragment = function(nodeTag) {
-		return (fragment.fg || (fragment.fg = doc.createDocumentFragment())).appendChild(doc.createElement(nodeTag || "div"))
-	},
-	_fg = fragment(),
-	// shadowBody = fragment("body"),
-	shadowDIV = fragment(),
-	_placeholder = function(prefix) {
-		return (prefix || "@") + Math.random().toString(36).substr(2)
-	},
-	//@jQuery
-	support = (function() {
-		var div = fragment("div");
-		// Setup
-		div.setAttribute("className", "t");
-		div.innerHTML = "  <link/><table></table><a href='/a'>a</a><input type='checkbox'/>";
-		return {
-			htmlSerialize: !! div.getElementsByTagName("link").length
-		}
-	}()),
-	rsingleTag = /^<(\w+)\s*\/?>(?:<\/\1>|)$/,
-	rxhtmlTag = /<(?!area|br|col|embed|hr|img|input|link|meta|param)(([\w:]+)[^>]*)\/>/gi,
-	rtagName = /<([\w:]+)/,
-	// We have to close these tags to support XHTML (#13200)
-	wrapMap = {
-		option: [1, "<select multiple='multiple'>", "</select>"],
-		legend: [1, "<fieldset>", "</fieldset>"],
-		area: [1, "<map>", "</map>"],
-		param: [1, "<object>", "</object>"],
-		thead: [1, "<table>", "</table>"],
-		tbody: [1, "<table>", "</table>"],
-		tr: [2, "<table><tbody>", "</tbody></table>"],
-		col: [2, "<table><tbody></tbody><colgroup>", "</colgroup></table>"],
-		td: [3, "<table><tbody><tr>", "</tr></tbody></table>"],
-		th: [3, "<table><tbody><tr>", "</tr></tbody></table>"],
+    _isIE = !global.dispatchEvent, //!+"\v1",
+    fragment = function(nodeTag) {
+        return (fragment.fg || (fragment.fg = doc.createDocumentFragment())).appendChild(doc.createElement(nodeTag || "div"))
+    },
+    _fg = fragment(),
+    // shadowBody = fragment("body"),
+    shadowDIV = fragment(),
+    _placeholder = function(prefix) {
+        return (prefix || "@") + Math.random().toString(36).substr(2)
+    },
+    //@jQuery
+    support = (function() {
+        var div = fragment("div");
+        // Setup
+        div.setAttribute("className", "t");
+        div.innerHTML = "  <link/><table></table><a href='/a'>a</a><input type='checkbox'/>";
+        return {
+            htmlSerialize: !! div.getElementsByTagName("link").length
+        }
+    }()),
+    rsingleTag = /^<(\w+)\s*\/?>(?:<\/\1>|)$/,
+    rxhtmlTag = /<(?!area|br|col|embed|hr|img|input|link|meta|param)(([\w:]+)[^>]*)\/>/gi,
+    rtagName = /<([\w:]+)/,
+    // We have to close these tags to support XHTML (#13200)
+    wrapMap = {
+        option: [1, "<select multiple='multiple'>", "</select>"],
+        legend: [1, "<fieldset>", "</fieldset>"],
+        area: [1, "<map>", "</map>"],
+        param: [1, "<object>", "</object>"],
+        thead: [1, "<table>", "</table>"],
+        tbody: [1, "<table>", "</table>"],
+        tr: [2, "<table><tbody>", "</tbody></table>"],
+        col: [2, "<table><tbody></tbody><colgroup>", "</colgroup></table>"],
+        td: [3, "<table><tbody><tr>", "</tr></tbody></table>"],
+        th: [3, "<table><tbody><tr>", "</tr></tbody></table>"],
 
-		// IE6-8 can't serialize link, script, style, or any html5 (NoScope) tags,
-		// unless wrapped in a div with non-breaking characters in front of it.
-		_default: support.htmlSerialize ? [0, "", ""] : [1, "X<div>", "</div>"]
-	},
-	_booleanFalseRegExp = /false|undefined|null|NaN/,
-	$NULL = null,
-	$UNDEFINED,
-	$TRUE = !$UNDEFINED,
-	$FALSE = !$TRUE,
-	_split_laveStr, //@split export argument
-	$ = {
-		id: 9,
-		uidAvator: _placeholder(),
-		hashCode: function(obj, prefix) {
-			var uidAvator = (prefix || "") + $.uidAvator,
-				codeID;
-			if (!(codeID = obj[uidAvator])) {
-				codeID = obj[uidAvator] = uidAvator + $.uid();
-			}
-			return codeID;
-		},
-		noop: function noop() {},
-		valueOf: function(Obj) {
-			if (Obj) {
-				Obj = Obj.valueOf()
-			}
-			return Obj
-		},
-		uid: function() {
-			return this.id = this.id + 1;
-		},
-		iS: function(str) {
-			return typeof str === "string"
-		},
-		isString: function(str) {
-			var start = str.charAt(0);
-			return (start === str.charAt(str.length - 1)) && "\'\"".indexOf(start) !== -1;
-		},
-		st: function(str, splitKey) { //split
-			var index = str.indexOf(splitKey);
-			_split_laveStr = str.substr(index + splitKey.length);
-			//false is undefined
-			return index !== -1 && str.substring(0, index);
-		},
-		lst: function(str, splitKey) { //last split
-			var index = str.lastIndexOf(splitKey);
-			_split_laveStr = str.substr(index + splitKey.length);
-			//false is undefined
-			return index !== -1 && str.substring(0, index);
-		},
-		trim: function(str) {
-			str = str.replace(/^\s\s*/, '')
-			var ws = /\s/,
-				i = str.length;
-			while (ws.test(str.charAt(--i)));
-			return str.slice(0, i + 1);
-		},
-		p: function(arr, item) { //push
-			var len = arr.length
-			arr[len] = item;
-			return len;
-		},
-		us: function(arr, item) { //unshift
-			arr.splice(0, 0, item);
-		},
-		un: function(array) { //unique
-			var a = array;
-			for (var i = 0; i < a.length; ++i) {
-				for (var j = i + 1; j < a.length; ++j) {
-					if (a[i] === a[j])
-						a.splice(j--, 1);
-				}
-			}
-			return a;
-		},
-		s: function(likeArr) { //slice
-			var array;
-			if ($.iS(likeArr)) {
-				return likeArr.split('');
-			}
-			try {
-				array = Array.prototype.slice.call(likeArr, 0); //non-IE and IE9+
-			} catch (ex) {
-				array = [];
-				for (var i = 0, len = likeArr.length; i < len; i++) {
-					array.push(likeArr[i]);
-				}
-			}
-			return array;
-		},
-		sp: Array.prototype.splice,
-		pI: function(arr, item) { //pushByID
-			arr[item.id] = item;
-			return item;
-		},
-		lI: function(arr) { //lastItem
-			return arr[arr.length - 1];
-		},
-		iA: function(arr, afterItem, item) { //insertAfter
-			for (var i = 0; i < arr.length; i += 1) {
-				if (arr[i] === afterItem) {
-					arr.splice(i + 1, 0, item);
-					break;
-				}
-			}
-			return i;
-		},
-		iO: function(arr, item) { //indexOf
-			for (var i = 0, len = arr.length; i < len; i += 1) {
-				if (arr[i] === item) {
-					return i;
-				}
-			}
-			return -1;
-		},
-		fI: function(obj, callback) { //forIn
-			for (var i in obj) {
-				callback(obj[i], i, obj);
-			}
-		},
-		ftE: function(arr, callback, index) { //fastEach
-			for (var i = index || 0, len = arr.length; i < len; i += 1) {
-				callback(arr[i], i);
-			}
-		},
-		fE: function(arr, callback, i) { //forEach
-			if (arr) {
-				arr = $.s(arr);
-				// return this._each($.s(arr), callback, i)
-				for (i = i || 0; i < arr.length; i += 1) {
-					if (callback(arr[i], i, arr) === $FALSE) break;
-				}
-			}
-		},
-		rm: function(arr, item) {
-			var index = $.iO(arr, item);
-			arr.splice(index, 1);
-			return arr;
-		},
-		// b: function(fun,scope){//Function.prototype.bind
-		// 	return function() {
-		// 		return fun.apply(scope, _s.call(arguments));
-		// 	}
-		// },
-		c: function(proto) { //quitter than Object.create , use same memory
-			_Object_create_noop.prototype = proto;
-			return new _Object_create_noop;
-		},
-		D: { //DOM
-			C: function(info) { //Comment
-				return doc.createComment(info)
-			},
-			cs: function(nodeHTML) { //createElement by Str
-				var result;
-				if (nodeHTML.charAt(0) === "<" && nodeHTML.charAt(nodeHTML.length - 1) === ">" && nodeHTML.length >= 3) {
-					var parse = rsingleTag.exec(nodeHTML);
-					if (parse) {
-						result = doc.createElement(parse[1])
-					} else {
-						//@jQuery
-						var tag = rtagName.exec(nodeHTML);
-						tag = tag ? tag[1] : "";
+        // IE6-8 can't serialize link, script, style, or any html5 (NoScope) tags,
+        // unless wrapped in a div with non-breaking characters in front of it.
+        _default: support.htmlSerialize ? [0, "", ""] : [1, "X<div>", "</div>"]
+    },
+    _booleanFalseRegExp = /false|undefined|null|NaN/,
+    $NULL = null,
+    $UNDEFINED,
+    $TRUE = !$UNDEFINED,
+    $FALSE = !$TRUE,
+    _split_laveStr, //@split export argument
+    $ = {
+        id: 9,
+        uidAvator: _placeholder(),
+        hashCode: function(obj, prefix) {
+            var uidAvator = (prefix || "") + $.uidAvator,
+                codeID;
+            if (!(codeID = obj[uidAvator])) {
+                codeID = obj[uidAvator] = uidAvator + $.uid();
+            }
+            return codeID;
+        },
+        noop: function noop() {},
+        valueOf: function(Obj) {
+            if (Obj) {
+                Obj = Obj.valueOf()
+            }
+            return Obj
+        },
+        uid: function() {
+            return this.id = this.id + 1;
+        },
+        iS: function(str) {
+            return typeof str === "string"
+        },
+        isString: function(str) {
+            var start = str.charAt(0);
+            return (start === str.charAt(str.length - 1)) && "\'\"".indexOf(start) !== -1;
+        },
+        st: function(str, splitKey) { //split
+            var index = str.indexOf(splitKey);
+            _split_laveStr = str.substr(index + splitKey.length);
+            //false is undefined
+            return index !== -1 && str.substring(0, index);
+        },
+        lst: function(str, splitKey) { //last split
+            var index = str.lastIndexOf(splitKey);
+            _split_laveStr = str.substr(index + splitKey.length);
+            //false is undefined
+            return index !== -1 && str.substring(0, index);
+        },
+        trim: function(str) {
+            str = str.replace(/^\s\s*/, '')
+            var ws = /\s/,
+                i = str.length;
+            while (ws.test(str.charAt(--i)));
+            return str.slice(0, i + 1);
+        },
+        p: function(arr, item) { //push
+            var len = arr.length
+            arr[len] = item;
+            return len;
+        },
+        us: function(arr, item) { //unshift
+            arr.splice(0, 0, item);
+        },
+        un: function(array) { //unique
+            var a = array;
+            for (var i = 0; i < a.length; ++i) {
+                for (var j = i + 1; j < a.length; ++j) {
+                    if (a[i] === a[j])
+                        a.splice(j--, 1);
+                }
+            }
+            return a;
+        },
+        s: function(likeArr) { //slice
+            var array;
+            if ($.iS(likeArr)) {
+                return likeArr.split('');
+            }
+            try {
+                array = Array.prototype.slice.call(likeArr, 0); //non-IE and IE9+
+            } catch (ex) {
+                array = [];
+                for (var i = 0, len = likeArr.length; i < len; i++) {
+                    array.push(likeArr[i]);
+                }
+            }
+            return array;
+        },
+        sp: Array.prototype.splice,
+        pI: function(arr, item) { //pushByID
+            arr[item.id] = item;
+            return item;
+        },
+        lI: function(arr) { //lastItem
+            return arr[arr.length - 1];
+        },
+        iA: function(arr, afterItem, item) { //insertAfter
+            for (var i = 0; i < arr.length; i += 1) {
+                if (arr[i] === afterItem) {
+                    arr.splice(i + 1, 0, item);
+                    break;
+                }
+            }
+            return i;
+        },
+        iO: function(arr, item) { //indexOf
+            for (var i = 0, len = arr.length; i < len; i += 1) {
+                if (arr[i] === item) {
+                    return i;
+                }
+            }
+            return -1;
+        },
+        fI: function(obj, callback) { //forIn
+            for (var i in obj) {
+                callback(obj[i], i, obj);
+            }
+        },
+        ftE: function(arr, callback, index) { //fastEach
+            for (var i = index || 0, len = arr.length; i < len; i += 1) {
+                callback(arr[i], i);
+            }
+        },
+        fE: function(arr, callback, i) { //forEach
+            if (arr) {
+                arr = $.s(arr);
+                // return this._each($.s(arr), callback, i)
+                for (i = i || 0; i < arr.length; i += 1) {
+                    if (callback(arr[i], i, arr) === $FALSE) break;
+                }
+            }
+        },
+        rm: function(arr, item) {
+            var index = $.iO(arr, item);
+            arr.splice(index, 1);
+            return arr;
+        },
+        // b: function(fun,scope){//Function.prototype.bind
+        // 	return function() {
+        // 		return fun.apply(scope, _s.call(arguments));
+        // 	}
+        // },
+        c: function(proto) { //quitter than Object.create , use same memory
+            _Object_create_noop.prototype = proto;
+            return new _Object_create_noop;
+        },
+        D: { //DOM
+            C: function(info) { //Comment
+                return doc.createComment(info)
+            },
+            cs: function(nodeHTML) { //createElement by Str
+                var result;
+                if (nodeHTML.charAt(0) === "<" && nodeHTML.charAt(nodeHTML.length - 1) === ">" && nodeHTML.length >= 3) {
+                    var parse = rsingleTag.exec(nodeHTML);
+                    if (parse) {
+                        result = doc.createElement(parse[1])
+                    } else {
+                        //@jQuery
+                        var tag = rtagName.exec(nodeHTML);
+                        tag = tag ? tag[1] : "";
 
-						var wrap = wrapMap[tag] || wrapMap._default;
+                        var wrap = wrapMap[tag] || wrapMap._default;
 
-						result = _fg;
-						result.innerHTML = wrap[1] + nodeHTML.replace(rxhtmlTag, "<$1></$2>") + wrap[2];
+                        result = _fg;
+                        result.innerHTML = wrap[1] + nodeHTML.replace(rxhtmlTag, "<$1></$2>") + wrap[2];
 
-						// Descend through wrappers to the right content
-						var j = wrap[0] + 1;
-						while (j--) {
-							result = result.lastChild;
-						}
-					}
-				} else {
-					result = doc.createTextNode(nodeHTML);
-				}
-				return result;
-			},
-			iB: function(parentNode, insertNode, beforNode) { //insertBefore
-				// try{
-				parentNode.insertBefore(insertNode, beforNode || $NULL);
-				// }catch(e){}
-			},
-			ap: function(parentNode, node) { //append
-				parentNode.appendChild(node);
-			},
-			cl: function(node, deep) { //clone,do not need detached clone
-				return node.cloneNode(deep);
-			},
-			rC: function(parentNode, node) { //removeChild
-				parentNode.removeChild(node)
-			},
-			re: function(parentNode, new_node, old_node) { //replace
-				try {
-					parentNode.replaceChild(new_node, old_node);
-				} catch (e) {}
-			},
-			rm: _isIE ? function() {
-				//@大城小胖 http://fins.iteye.com/blog/172263
-				var d = doc.createElement("div");
-				return function(n) {
-					if (n && n.tagName != 'BODY') {
-						d.appendChild(n);
-						d.innerHTML = '';
-					}
-				}
-			}() : function(n) {
-				if (n && n.parentNode && n.tagName != 'BODY') {
-					delete n.parentNode.removeChild(n);
-				}
-			}
-		},
-		ajax: function(config) {
-			var xhr = new(window.XMLHttpRequest || ActiveXObject)("Microsoft.XMLHTTP");
-			xhr.onreadystatechange = function() {
-				if (xhr.readyState === 4) {
-					var s = xhr.status
-					if (s >= 200 && s < 300 || s === 304 || s === 1223) {
-						(config.success || $.noop)(s, xhr)
-					} else {
-						(config.error || $.noop)(s, xhr)
-					}
-					(config.complete || $.noop)(s, xhr)
-				}
-			}
-			xhr.open(config.type || "GET", config.url, true)
-			// xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest")
-			xhr.send(null)
-			return xhr
-		}
-	},
-	_Object_create_noop = function proto() {},
-	_traversal = function(node, callback) {
-		for (var i = 0, child_node, childNodes = node.childNodes; child_node = childNodes[i]; i += 1) {
-			var result = callback(child_node, i, node);
-			if (child_node.nodeType === 1 && result !== $FALSE) {
-				_traversal(child_node, callback);
-			}
-		}
-	};
+                        // Descend through wrappers to the right content
+                        var j = wrap[0] + 1;
+                        while (j--) {
+                            result = result.lastChild;
+                        }
+                    }
+                } else {
+                    result = doc.createTextNode(nodeHTML);
+                }
+                return result;
+            },
+            iB: function(parentNode, insertNode, beforNode) { //insertBefore
+                // try{
+                parentNode.insertBefore(insertNode, beforNode || $NULL);
+                // }catch(e){}
+            },
+            ap: function(parentNode, node) { //append
+                parentNode.appendChild(node);
+            },
+            cl: function(node, deep) { //clone,do not need detached clone
+                return node.cloneNode(deep);
+            },
+            rC: function(parentNode, node) { //removeChild
+                parentNode.removeChild(node)
+            },
+            re: function(parentNode, new_node, old_node) { //replace
+                try {
+                    parentNode.replaceChild(new_node, old_node);
+                } catch (e) {}
+            },
+            rm: _isIE ? function() {
+                //@大城小胖 http://fins.iteye.com/blog/172263
+                var d = doc.createElement("div");
+                return function(n) {
+                    if (n && n.tagName != 'BODY') {
+                        d.appendChild(n);
+                        d.innerHTML = '';
+                    }
+                }
+            }() : function(n) {
+                if (n && n.parentNode && n.tagName != 'BODY') {
+                    delete n.parentNode.removeChild(n);
+                }
+            }
+        },
+        ajax: function(config) {
+            var xhr = new(window.XMLHttpRequest || ActiveXObject)("Microsoft.XMLHTTP");
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4) {
+                    var s = xhr.status
+                    if (s >= 200 && s < 300 || s === 304 || s === 1223) {
+                        (config.success || $.noop)(s, xhr)
+                    } else {
+                        (config.error || $.noop)(s, xhr)
+                    }
+                    (config.complete || $.noop)(s, xhr)
+                }
+            }
+            var async = (config.async === $FALSE) ? $FALSE : $TRUE;
+            xhr.open(config.type || "GET", config.url, async)
+            // xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest")
+            xhr.send(null)
+            return xhr
+        }
+    },
+    _Object_create_noop = function proto() {},
+    _traversal = function(node, callback) {
+        for (var i = 0, child_node, childNodes = node.childNodes; child_node = childNodes[i]; i += 1) {
+            var result = callback(child_node, i, node);
+            if (child_node.nodeType === 1 && result !== $FALSE) {
+                _traversal(child_node, callback);
+            }
+        }
+    };
 
 function ArraySet() {
-	var self = this;
-	self.keys = [];
-	self.store = {};
-	return self;
+    var self = this;
+    self.keys = [];
+    self.store = {};
+    return self;
 };
 ArraySet.prototype = {
-	set: function(key, value) {
-		var self = this,
-			keys = self.keys,
-			store = self.store;
-		key = String(key);
-		if (!(key in store)) {
-			$.p(keys, key)
-		}
-		store[key] = value;
-	},
-	get: function(key) {
-		return this.store[key];
-	},
-	forIn: function(callback) { //forEach ==> forIn
-		var self = this,
-			store = self.store;
-		return $.ftE(self.keys, function(key, index) {
-			callback(store[key], key, store);
-		})
-	},
-	has: function(key) {
-		return key in this.store;
-	}
+    set: function(key, value) {
+        var self = this,
+            keys = self.keys,
+            store = self.store;
+        key = String(key);
+        if (!(key in store)) {
+            $.p(keys, key)
+        }
+        store[key] = value;
+    },
+    get: function(key) {
+        return this.store[key];
+    },
+    forIn: function(callback) { //forEach ==> forIn
+        var self = this,
+            store = self.store;
+        return $.ftE(self.keys, function(key, index) {
+            callback(store[key], key, store);
+        })
+    },
+    has: function(key) {
+        return key in this.store;
+    }
 };
 
 function Try(tryFun, scope, errorCallback) {
-	errorCallback = errorCallback || function(e) {
-		if (console) {
-			console.error(e)
-		} else {
-			throw e
-		};
-	};
-	return function() {
-		var result;
-		try {
-			result = tryFun.apply(scope, arguments /*$.s(arguments)*/ );
-		} catch (e) {
-			errorCallback(e);
-		}
-		return result;
-	}
+    errorCallback = errorCallback || function(e) {
+        if (console) {
+            console.error(e)
+        } else {
+            throw e
+        };
+    };
+    return function() {
+        var result;
+        try {
+            result = tryFun.apply(scope, arguments /*$.s(arguments)*/ );
+        } catch (e) {
+            errorCallback(e);
+        }
+        return result;
+    }
 };
+
 var _event_cache = {},
 	_box,
 	_fixEvent = function(e) { //@Rybylouvre
@@ -1671,7 +1673,7 @@ draggable
 		attrKey = (_isIE && IEfix[attrKey]) || attrKey
 		// console.log(attrValue,":",_matchRule.test(attrValue)||_templateMatchRule.test(attrValue))
 		//if (/*_matchRule.test(attrValue)||*/_templateMatchRule.test(attrValue)) {
-			var attrViewInstance = (V.attrModules[handle.id + attrKey] = ViewParser.parse(attrValue))($UNDEFINED,$TRUE),
+			var attrViewInstance = (V.attrModules[handle.id + attrKey] = ViewParser.parse(attrValue,attrKey+"="+attrValue))($UNDEFINED,$TRUE),
 				_shadowDIV = fragment(),//$.D.cl(shadowDIV), //parserNode
 				_attributeHandle = _AttributeHandle(attrKey,node);
 			attrViewInstance.append(_shadowDIV);
@@ -1705,14 +1707,18 @@ draggable
  * View constructor
  */
 
-function View(arg) {
+function View(arg,vmName) {
     var self = this;
     if (!(self instanceof View)) {
-        return new View(arg);
+        return new View(arg,vmName);
     }
     self.handleNodeTree = arg;
     self._handles = [];
     self._triggerTable = {};
+    self.vmName = vmName;
+    self.id = $.uid();
+    // console.group(self.id);
+    // console.log(vmName)
     _buildHandler(self);
     _buildTrigger(self);
     return function(data, isAttribute) {
@@ -1733,6 +1739,14 @@ function View(arg) {
         //last layer,and run finallyRun
         !finallyRunStacks.length && finallyRun();
 
+        // console.log(self.id)
+        // console.groupEnd(self.id)
+        if (self.vmName) {
+            var viewInstance_init = V.modulesInit[self.vmName];
+            if (viewInstance_init) {
+                viewInstance_init(vi);
+            }
+        }
         return vi
     }
 };
@@ -1784,7 +1798,7 @@ function _buildHandler(self) {
         } else if (handle.type === "element") {
             handle.tag = node.tagName.toLowerCase().replace(V.namespace.toLowerCase(), "");
             if (_isHTMLUnknownElement(handle.tag)) {
-                console.log(handle.tag);
+                // console.log(handle.tag);
                 (handle._unEleAttr = [])._ = {};
                 //save attributes
                 $.ftE(node.attributes, function(attr) {
@@ -1806,9 +1820,17 @@ function _buildHandler(self) {
                     }
                 });
                 //save style
-                var cssText = node.style.getAttribute("cssText");
-                if (cssText) {
-                    handle._unEleAttr._["style"] = cssText;
+                if (node.style.getAttribute) {
+                    var cssText = node.style.getAttribute("cssText");
+                    if (cssText) {
+                        handle._unEleAttr._["style"] = cssText;
+                    }
+                } else {
+                    //unKnown Element
+                    cssText = node.style.cssText;
+                    if (cssText) {
+                        handle._unEleAttr._["style.cssText"] = cssText;
+                    }
                 }
             }
         }
@@ -1884,9 +1906,14 @@ function _create(self, data, isAttribute) { //data maybe basedata or dataManager
                     currentNode[attrName] = _unknownElementAttribute._[attrName];
                 })
                 //set Style
-                var cssText = _unknownElementAttribute._["cssText"];
+                var cssText = _unknownElementAttribute._["style"];
                 if (cssText) {
                     currentNode.style.setAttribute('cssText', cssText);
+                }
+                //set unKnownElementStyle
+                cssText = _unknownElementAttribute._["style.cssText"];
+                if (cssText) {
+                    currentNode.style.cssText = cssText;
                 }
             } else if ("nodeStr" in handle) {
                 if (handle.type === "text") {
@@ -1941,7 +1968,9 @@ function _create(self, data, isAttribute) { //data maybe basedata or dataManager
     $.fE(self._handles, function(handle) {
         handle.call(self, NodeList_of_ViewInstance);
     });
-    return new ViewInstance(self.handleNodeTree, NodeList_of_ViewInstance, self._triggerTable, data);
+    var result = new ViewInstance(self.handleNodeTree, NodeList_of_ViewInstance, self._triggerTable, data);
+    result.vmName = self.vmName;
+    return result;
 };
 
 /*
@@ -2018,6 +2047,8 @@ function _create(self, data, isAttribute) { //data maybe basedata or dataManager
     };
 }());
 
+var stopTriggerBubble; // = $FALSE;
+
 function ViewInstance(handleNodeTree, NodeList, triggerTable, dataManager) {
     if (!(this instanceof ViewInstance)) {
         return new ViewInstance(handleNodeTree, NodeList, triggerTable, dataManager);
@@ -2052,6 +2083,7 @@ function ViewInstance(handleNodeTree, NodeList, triggerTable, dataManager) {
     self._WVI = {};
     self._teleporters = {};
     // self._arrayVI = $NULL;
+
     $.D.iB(el, self._open, el.childNodes[0]);
     $.D.ap(el, self._close);
     (self._triggers = [])._ = {};
@@ -2070,8 +2102,13 @@ function ViewInstance(handleNodeTree, NodeList, triggerTable, dataManager) {
     //bind viewInstance with DataManger
     dataManager.collect(self); //touchOff All triggers
 
+    //console.group(self._id,"touchOff .")
+    stopTriggerBubble = $TRUE;
     self.touchOff("."); //const value
+    stopTriggerBubble = $FALSE;
+    //console.groupEnd(self._id,"touchOff .")
 };
+
 var VI_session = ViewInstance.session = {
     touchHandleIdSet: $NULL,
     touchStacks: $NULL
@@ -2086,7 +2123,7 @@ function _bubbleTrigger(tiggerCollection, NodeList, dataManager /*, eventTrigger
     $.fE(tiggerCollection, function(trigger) { //TODO:测试参数长度和效率的平衡点，减少参数传递的数量
         if (!touchHandleIdSet[trigger.handleId]) { //To prevent repeated collection
             $.p(eventStack, trigger) //collect trigger
-            if ( /*result !== $FALSE &&*/ trigger.bubble) {
+            if ( /*result !== $FALSE &&*/ trigger.bubble && !stopTriggerBubble) {
                 // Stop using the `return false` to prevent bubble triggered
                 // need to use `this. Mercifully = false` to control
                 var parentNode = NodeList[trigger.handleId].parentNode;
@@ -2224,15 +2261,20 @@ var VI_proto = ViewInstance.prototype = {
             result = self._packingBag;
         } else {
             var HNT_cs = handleNodeTree.childNodes
-            var index = 0;
-            var len = HNT_cs.length;
-            var node;
-            do {
-                node = NodeList[HNT_cs[index++].id].currentNode;
-                if (node && (node.nodeType === 1 || node.nodeType === 3)) {
-                    result = node.parentNode;
-                }
-            } while (!result && index < len)
+            if (HNT_cs.length) {
+                var index = 0;
+                var len = HNT_cs.length;
+                var node;
+                do {
+                    node = NodeList[HNT_cs[index++].id].currentNode;
+                    if (node && (node.nodeType === 1 || node.nodeType === 3)) {
+                        result = node.parentNode;
+                    }
+                } while (!result && index < len)
+            }
+        }
+        if (!result) {
+        	result = NodeList[handleNodeTree.id].currentNode;
         }
         return result;
     },
@@ -2489,14 +2531,14 @@ var placeholder = {
             .replace(placeholderReg["/("], placeholder["("])
             .replace(placeholderReg["/)"], placeholder[")"])
             .replace(placeholderReg["/}"], placeholder["}"])
-            // .replace(_head, "<span type='handle' handle='$1'>")
-            .replace(_head, function(match,handleName){
-                // console.log(arguments,"<span "+_handle_type_argument_name+"='handle' handle='"+handleName+"'>")
-                _handle_type_tagName = "span";
-                return "<span "+_handle_type_argument_name+"='handle' handle='"+handleName+"'>";
-            })
-            // .replace(_footer, "</span>")
-            .replace(_footer, "</"+_handle_type_tagName+">")
+        // .replace(_head, "<span type='handle' handle='$1'>")
+        .replace(_head, function(match, handleName) {
+            // console.log(arguments,"<span "+_handle_type_argument_name+"='handle' handle='"+handleName+"'>")
+            _handle_type_tagName = "span";
+            return "<span " + _handle_type_argument_name + "='handle' handle='" + handleName + "'>";
+        })
+        // .replace(_footer, "</span>")
+        .replace(_footer, "</" + _handle_type_tagName + ">")
             .replace(placeholderReg["{"], "{")
             .replace(placeholderReg["("], "(")
             .replace(placeholderReg[")"], ")")
@@ -2515,6 +2557,9 @@ var placeholder = {
             var _shadowBody = fragment( /*"body"*/ ); //$.D.cl(shadowBody);
 
             _shadowBody.innerHTML = htmlStr;
+
+            //递归过滤
+            ViewParser.scans(_shadowBody);
             // console.log(htmlStr)
             var insertBefore = [];
             _traversal(_shadowBody, function(node, index, parentNode) {
@@ -2545,8 +2590,8 @@ var placeholder = {
             //when re-rendering,select node's child will be filter by ``` _shadowBody.innerHTML = _shadowBody.innerHTML;```
             return new ElementHandle(_shadowBody);
         },
-        parse: function(htmlStr) {
-            return View(this._nodeTree(htmlStr));
+        parse: function(htmlStr, name) {
+            return View(this._nodeTree(htmlStr), name);
         },
         rt: function(handleName, triggerFactory) {
             return V.triggers[handleName] = triggerFactory;
@@ -2571,6 +2616,7 @@ var placeholder = {
         handles: {},
         attrHandles: [],
         modules: {},
+        modulesInit: {},
         attrModules: {},
         eachModules: {},
         withModules: {},
@@ -3103,7 +3149,7 @@ V.rt("", function(handle, index, parentHandle) {
                 bubble: $TRUE,
                 event: function(NodeList_of_ViewInstance, dataManager) {
                     NodeList_of_ViewInstance[textHandleId].currentNode.data = key.substring(1, key.length - 1);
-                    trigger.event = $.noop;
+                    //trigger.event = $.noop;
                 }
             };
         } else { //String for databese by key
@@ -3134,7 +3180,7 @@ V.rt("", function(handle, index, parentHandle) {
                 bubble: $TRUE,
                 event: function(NodeList_of_ViewInstance, dataManager) {
                     NodeList_of_ViewInstance[this.handleId]._data = key.substr(1, key.length - 2);
-                    trigger.event = $.noop;
+                    //trigger.event = $.noop;
                 }
             };
         } else { //String for databese by key
@@ -3292,9 +3338,12 @@ function _runScript(node) {
     var scriptNodeList = node.getElementsByTagName('script');
     $.ftE(scriptNodeList, function(scriptNode) {
         if ((!scriptNode.type || scriptNode.type === "text/javascript") && !scriptNode[_runScripted]) {
+            var scripttext =scriptNode.text;
+            // console.log("scripttext:",scripttext,scriptNode.src)
             var newScript = doc.createElement("script");
             //TODO:clone attribute;
-            newScript.text = scriptNode.text;
+            newScript.text = scripttext;
+            newScript.src = scriptNode.src;
             newScript[_runScripted] = $TRUE;
             // console.log(scriptNode)
             scriptNode.parentNode.replaceChild(newScript, scriptNode);
@@ -3354,25 +3403,31 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
         ifHandle_id = ifHandle.type === "handle" && ifHandle.id,
         comment_layout_id = parentHandle.childNodes[index + 1].id, //eachHandle --> eachComment --> endeachHandle --> endeachComment
         trigger;
-
+    var uuid = $.uid();
     trigger = {
         // cache_tpl_name:$UNDEFINED,
-        key:".",
+        key: ".",
         event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
             var AllLayoutViewInstance = V._instances[viewInstance_ID]._ALVI;
             var new_templateHandle_name = NodeList_of_ViewInstance[templateHandle_id]._data;
-            var self = this;
+            var self = V._instances[viewInstance_ID];
+            self = self.__layout || (self.__layout = {});
             var templateHandle_name = self.cache_tpl_name;
             // console.log(new_templateHandle_name,templateHandle_name)
+            var module = V.modules[new_templateHandle_name];
+            if (!module) {
+                return
+            }
             if (new_templateHandle_name && (new_templateHandle_name !== templateHandle_name)) {
+                // console.log(uuid, new_templateHandle_name, templateHandle_name, !! module)
                 self.cache_tpl_name = new_templateHandle_name;
                 layoutViewInstance && layoutViewInstance.destory();
-                console.log(new_templateHandle_name,id);
+                //console.log(new_templateHandle_name, id);
                 var key = NodeList_of_ViewInstance[dataHandle_id]._data,
-                    layoutViewInstance = AllLayoutViewInstance[id] = V.modules[new_templateHandle_name]().insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
-                    layoutViewInstance._layoutName = new_templateHandle_name;
+                    layoutViewInstance = AllLayoutViewInstance[id] = module().insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
+                layoutViewInstance._layoutName = new_templateHandle_name;
                 dataManager.subset(layoutViewInstance, key);
-            }else{
+            } else {
                 layoutViewInstance = AllLayoutViewInstance[id];
             }
             return layoutViewInstance;
@@ -3387,7 +3442,11 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
                 if (!layoutViewInstance) {
                     var key = NodeList_of_ViewInstance[dataHandle_id]._data;
                     if (dataManager.get(key)) {
-                        layoutViewInstance = AllLayoutViewInstance[id] = V.modules[NodeList_of_ViewInstance[templateHandle_id]._data]();
+                        var module = V.modules[NodeList_of_ViewInstance[templateHandle_id]._data];
+                        if (!module) {
+                            return
+                        }
+                        layoutViewInstance = AllLayoutViewInstance[id] = module();
                         dataManager.subset(layoutViewInstance, key);
                     }
                 }
@@ -3660,7 +3719,7 @@ V.ra(function(attrKey) {
 var _formCache = {},
 	__text = {
 		attributeName: "value",
-		eventNames: ["input"]
+		eventNames: ["input","change"]
 	},
 	_formKey = {
 		"input": function(node) { //需阻止默认事件，比如Checked需要被重写，否则数据没有变动而Checked因用户点击而变动，没有达到V->M的数据同步
@@ -3750,6 +3809,7 @@ var _formCache = {},
 	formListerAttribute = function(key, currentNode, parserNode, vi, /*dm_id,*/ handle, triggerTable) {
 		var attrOuter = _getAttrOuter(parserNode),
 			eventNameHashCode = $.hashCode(currentNode, "bind-form");
+			// console.log(attrOuter)
 		if (handle[eventNameHashCode] !== attrOuter) {
 			// console.log(handle[eventNameHashCode], attrOuter, arguments)
 			handle[eventNameHashCode] = attrOuter;
@@ -4254,100 +4314,144 @@ registerHandle("HTML",function () {
  * export
  */
 var ViewParser = global.ViewParser = {
-	scans: function() {
-		$.fE(doc.getElementsByTagName("script"), function(scriptNode) {
-			if (scriptNode.getAttribute("type") === "text/template") {
-				V.modules[scriptNode.getAttribute("name")] = ViewParser.parse(scriptNode.innerHTML);
-				$.D.rm(scriptNode)
-			}
-		});
-	},
-	parseStr: function(htmlStr) {
-		return V.parse(parse(htmlStr))
-	},
-	parseNode: function(htmlNode) {
-		return V.parse(parse(htmlNode.innerHTML))
-	},
-	parse: function(html) {
-		if (html instanceof Object) {
-			return this.parseNode(html)
-		}
-		return this.parseStr(html)
-	},
-	modules: V.modules,
-	config: {
-		Id: 'HVP',
-		Var: 'App',
-		Data: $NULL
-	},
-	registerHandle: registerHandle,
-	app: function(userConfig) {
-		ViewParser.scans();
-		var HVP_config = ViewParser.config;
-		userConfig = _mix(HVP_config, userConfig) || HVP_config;
-		var App = doc.getElementById(userConfig.Id); //configable
-		if (App) {
-			var appName = userConfig.Var;
-			var template = ViewParser.parseNode(App)(userConfig.Data); //App.getAttribute("template-data")//json or url or configable
-			// template.set(HVP_config.Data);
-			App.innerHTML = "";
-			template.append(App);
-			if ( /*!appName || */ appName == userConfig.Id || appName in global) {
-				//IE does not support the use and the DOM ID of the same variable names, so automatically add '_App' after the most.
-				appName = userConfig.Id + "_App";
-				// console.error("App's name shouldn't the same of the DOM'ID");
-				console.warn("App's name will be set as " + appName);
-			}
-			return (global[appName] = template);
-		}
-	},
-	ready: (function() {
-		var ready = "DOMContentLoaded", //_isIE ? "DOMContentLoaded" : "readystatechange",
-			ready_status = $FALSE,
-			callbackFunStacks = [];
+    scans: function(node) {
+        node || (node = doc);
+        $.fE(node.getElementsByTagName("script"), function(scriptNode) {
+            var type = scriptNode.getAttribute("type")
+            var name = scriptNode.getAttribute("name")
+            if (name) {
+                if (type === "text/template") {
+                    V.modules[name] = ViewParser.parseStr(scriptNode.text, name);
+                    $.D.rm(scriptNode);
+                } else if (type === "text/viewmodel") {
+                    V.modulesInit[name] = Function("return " + $.trim(scriptNode.text))();
+                    $.D.rm(scriptNode);
+                }
+            }
+        });
+        return node;
+    },
+    parseStr: function(htmlStr, name) {
+        return V.parse(parse(htmlStr), name)
+    },
+    parseNode: function(htmlNode, name) {
+        return V.parse(parse(htmlNode.innerHTML), name)
+    },
+    parse: function(html, name) {
+        if (html instanceof Object) {
+            return this.parseNode(html, name)
+        }
+        return this.parseStr(html, name)
+    },
+    modules: V.modules,
+    modulesInit: V.modulesInit,
+    _V:V,
+    config: {
+        Id: 'HVP',
+        Var: 'App',
+        // Url:"",//include
+        // HTML:"",//html string as template
+        Data: $NULL
+    },
+    registerHandle: registerHandle,
+    app: function(userConfig) {
+        // ViewParser.scans();
+        var HVP_config = ViewParser.config;
+        userConfig = _mix(HVP_config, userConfig) || HVP_config;
+        var App = doc.getElementById(userConfig.Id); //configable
+        if (App) {
+            var appName = userConfig.Var;
+            var template = ViewParser.parseNode(App,"App")(userConfig.Data); //App.getAttribute("template-data")//json or url or configable
+            // template.set(HVP_config.Data);
+            App.innerHTML = "";
+            template.append(App);
+            if ( /*!appName || */ appName == userConfig.Id || appName in global) {
+                //IE does not support the use and the DOM ID of the same variable names, so automatically add '_App' after the most.
+                appName = userConfig.Id + "_App";
+                // console.error("App's name shouldn't the same of the DOM'ID");
+                console.warn("App's name will be set as " + appName);
+            }
+            return (global[appName] = template);
+        }
+    },
+    build: function(userConfig) {
+        var HTML = userConfig.HTML;
+        var url = userConfig.Url;
+        var module = ViewParser.modules[url];
+        var vi;
+        if (!module) {
+            if (!HTML && url) {
+                $.ajax({
+                    url: url,
+                    //for return
+                    async: $FALSE,
+                    success: function(status, xhr) {
+                        HTML = xhr.responseText
+                    }
+                })
+            }
+            module = ViewParser.modules[url] = ViewParser.parseStr(HTML,url);
+        }
+        if (module) {
+            vi = module(userConfig.Data);
+            var appName = userConfig.Var;
+            if (appName) {
+                if (appName in global) {
+                    appName = appName + "_App";
+                    console.warn("App's name will be set as " + appName);
+                }
+                global[appName] = vi;
+            }
+        }
+        return vi;
+    },
+    ready: (function() {
+        var ready = "DOMContentLoaded", //_isIE ? "DOMContentLoaded" : "readystatechange",
+            ready_status = $FALSE,
+            callbackFunStacks = [];
 
-		function _load() {
-			var callbackObj;
-			while (callbackFunStacks.length) {
-				callbackObj = callbackFunStacks.shift(0, 1);
-				callbackObj.callback.call(callbackObj.scope || global)
-			}
-			ready_status = $TRUE;
-		}
-		_registerEvent(doc, (_isIE && IEfix[ready]) || ready, _load);
-		return function(callbackFun, scope) {
-			if (ready_status) {
-				callbackFun.call(scope || global);
-			} else {
-				$.p(callbackFunStacks, {
-					callback: callbackFun,
-					scope: scope
-				})
-				//complete ==> onload , interactive ==> DOMContentLoaded
-				//https://developer.mozilla.org/en-US/docs/Web/API/document.readyState
-				//seajs src/util-require.js
-				if (/complete|onload/.test(doc.readyState)) { //fix asyn load
-					_load()
-				}
-			}
-		}
-	}())
+        function _load() {
+            var callbackObj;
+            while (callbackFunStacks.length) {
+                callbackObj = callbackFunStacks.shift(0, 1);
+                callbackObj.callback.call(callbackObj.scope || global)
+            }
+            ready_status = $TRUE;
+        }
+        _registerEvent(doc, (_isIE && IEfix[ready]) || ready, _load);
+        return function(callbackFun, scope) {
+            if (ready_status) {
+                callbackFun.call(scope || global);
+            } else {
+                $.p(callbackFunStacks, {
+                    callback: callbackFun,
+                    scope: scope
+                })
+                //complete ==> onload , interactive ==> DOMContentLoaded
+                //https://developer.mozilla.org/en-US/docs/Web/API/document.readyState
+                //seajs src/util-require.js
+                if (/complete|onload/.test(doc.readyState)) { //fix asyn load
+                    _load()
+                }
+            }
+        }
+    }())
 };
 (function() {
-	var scriptTags = doc.getElementsByTagName("script"),
-		HVP_config = ViewParser.config,
-		userConfigStr = $.trim(scriptTags[scriptTags.length - 1].innerHTML);
-	ViewParser.ready(function() {
-		ViewParser.scans();
-		if (userConfigStr.charAt(0) === "{") {
-			try {
-				var userConfig = userConfigStr ? Function("return" + userConfigStr)() : {};
-			} catch (e) {
-				console.error("config error:" + e.message);
-			}
-			userConfig && ViewParser.app(userConfig)
-		}
-	});
+    var scriptTags = doc.getElementsByTagName("script"),
+        HVP_config = ViewParser.config,
+        userConfigStr = $.trim(scriptTags[scriptTags.length - 1].innerHTML);
+    ViewParser.ready(function() {
+        ViewParser.scans();
+        if (userConfigStr.charAt(0) === "{") {
+            try {
+                var userConfig = userConfigStr ? Function("return" + userConfigStr)() : {};
+            } catch (e) {
+                console.error("config error:" + e.message);
+            }
+            userConfig && ViewParser.app(userConfig)
+        }
+    });
 }());
 
 /*
@@ -4358,14 +4462,15 @@ var ViewParser = global.ViewParser = {
 //module !== null
 //fix IE 关键字
 if (typeof module === "object" && module && typeof module["export"] === "object") {
-	module["export"] = ViewParser
+    module["export"] = ViewParser
 } else {
-	if (typeof define === "function" && define.amd) {
-		define("jSoup", [], function() {
-			return ViewParser
-		})
-	}
+    if (typeof define === "function" && define.amd) {
+        define("jSoup", [], function() {
+            return ViewParser
+        })
+    }
 }
+
 ;
 (function() {
     function Observer(getFun, setFun, formFun) {
@@ -4425,7 +4530,7 @@ if (typeof module === "object" && module && typeof module["export"] === "object"
             $.p(_get_collect_stack, [])
 
             //运行原生get
-            var result = this._get.call(dm, key, value)
+            var result = this.value = this._get.call(dm, key, value)
 
             /*
              * dm normal get mode
@@ -4477,6 +4582,9 @@ if (typeof module === "object" && module && typeof module["export"] === "object"
         },
         form: function(dm, key, value) {
             return this._form.apply(dm, arguments)
+        },
+        toString: function() {
+            return this.value;
         }
     }
 
@@ -4490,7 +4598,7 @@ if (typeof module === "object" && module && typeof module["export"] === "object"
             var observerObjs = observerObjCollect[key];
             if (!observerObjs) {
                 while (!observerObjs) {
-                    key = $.lst(key,".");
+                    key = $.lst(key, ".");
                     if (key !== false) {
                         observerObjs = observerObjCollect[key];
                     } else {

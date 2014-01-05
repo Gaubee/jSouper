@@ -35,14 +35,14 @@ var placeholder = {
             .replace(placeholderReg["/("], placeholder["("])
             .replace(placeholderReg["/)"], placeholder[")"])
             .replace(placeholderReg["/}"], placeholder["}"])
-            // .replace(_head, "<span type='handle' handle='$1'>")
-            .replace(_head, function(match,handleName){
-                // console.log(arguments,"<span "+_handle_type_argument_name+"='handle' handle='"+handleName+"'>")
-                _handle_type_tagName = "span";
-                return "<span "+_handle_type_argument_name+"='handle' handle='"+handleName+"'>";
-            })
-            // .replace(_footer, "</span>")
-            .replace(_footer, "</"+_handle_type_tagName+">")
+        // .replace(_head, "<span type='handle' handle='$1'>")
+        .replace(_head, function(match, handleName) {
+            // console.log(arguments,"<span "+_handle_type_argument_name+"='handle' handle='"+handleName+"'>")
+            _handle_type_tagName = "span";
+            return "<span " + _handle_type_argument_name + "='handle' handle='" + handleName + "'>";
+        })
+        // .replace(_footer, "</span>")
+        .replace(_footer, "</" + _handle_type_tagName + ">")
             .replace(placeholderReg["{"], "{")
             .replace(placeholderReg["("], "(")
             .replace(placeholderReg[")"], ")")
@@ -61,6 +61,9 @@ var placeholder = {
             var _shadowBody = fragment( /*"body"*/ ); //$.D.cl(shadowBody);
 
             _shadowBody.innerHTML = htmlStr;
+
+            //递归过滤
+            ViewParser.scans(_shadowBody);
             // console.log(htmlStr)
             var insertBefore = [];
             _traversal(_shadowBody, function(node, index, parentNode) {
@@ -91,8 +94,8 @@ var placeholder = {
             //when re-rendering,select node's child will be filter by ``` _shadowBody.innerHTML = _shadowBody.innerHTML;```
             return new ElementHandle(_shadowBody);
         },
-        parse: function(htmlStr) {
-            return View(this._nodeTree(htmlStr));
+        parse: function(htmlStr, name) {
+            return View(this._nodeTree(htmlStr), name);
         },
         rt: function(handleName, triggerFactory) {
             return V.triggers[handleName] = triggerFactory;
@@ -117,6 +120,7 @@ var placeholder = {
         handles: {},
         attrHandles: [],
         modules: {},
+        modulesInit: {},
         attrModules: {},
         eachModules: {},
         withModules: {},

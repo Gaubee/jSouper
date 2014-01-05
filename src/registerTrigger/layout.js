@@ -8,25 +8,31 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
         ifHandle_id = ifHandle.type === "handle" && ifHandle.id,
         comment_layout_id = parentHandle.childNodes[index + 1].id, //eachHandle --> eachComment --> endeachHandle --> endeachComment
         trigger;
-
+    var uuid = $.uid();
     trigger = {
         // cache_tpl_name:$UNDEFINED,
-        key:".",
+        key: ".",
         event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
             var AllLayoutViewInstance = V._instances[viewInstance_ID]._ALVI;
             var new_templateHandle_name = NodeList_of_ViewInstance[templateHandle_id]._data;
-            var self = this;
+            var self = V._instances[viewInstance_ID];
+            self = self.__layout || (self.__layout = {});
             var templateHandle_name = self.cache_tpl_name;
             // console.log(new_templateHandle_name,templateHandle_name)
+            var module = V.modules[new_templateHandle_name];
+            if (!module) {
+                return
+            }
             if (new_templateHandle_name && (new_templateHandle_name !== templateHandle_name)) {
+                // console.log(uuid, new_templateHandle_name, templateHandle_name, !! module)
                 self.cache_tpl_name = new_templateHandle_name;
                 layoutViewInstance && layoutViewInstance.destory();
-                console.log(new_templateHandle_name,id);
+                //console.log(new_templateHandle_name, id);
                 var key = NodeList_of_ViewInstance[dataHandle_id]._data,
-                    layoutViewInstance = AllLayoutViewInstance[id] = V.modules[new_templateHandle_name]().insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
-                    layoutViewInstance._layoutName = new_templateHandle_name;
+                    layoutViewInstance = AllLayoutViewInstance[id] = module().insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
+                layoutViewInstance._layoutName = new_templateHandle_name;
                 dataManager.subset(layoutViewInstance, key);
-            }else{
+            } else {
                 layoutViewInstance = AllLayoutViewInstance[id];
             }
             return layoutViewInstance;
@@ -41,7 +47,11 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
                 if (!layoutViewInstance) {
                     var key = NodeList_of_ViewInstance[dataHandle_id]._data;
                     if (dataManager.get(key)) {
-                        layoutViewInstance = AllLayoutViewInstance[id] = V.modules[NodeList_of_ViewInstance[templateHandle_id]._data]();
+                        var module = V.modules[NodeList_of_ViewInstance[templateHandle_id]._data];
+                        if (!module) {
+                            return
+                        }
+                        layoutViewInstance = AllLayoutViewInstance[id] = module();
                         dataManager.subset(layoutViewInstance, key);
                     }
                 }

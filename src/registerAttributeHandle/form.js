@@ -4,7 +4,7 @@
 var _formCache = {},
 	__text = {
 		attributeName: "value",
-		eventNames: ["input"]
+		eventNames: ["input","change"]
 	},
 	_formKey = {
 		"input": function(node) { //需阻止默认事件，比如Checked需要被重写，否则数据没有变动而Checked因用户点击而变动，没有达到V->M的数据同步
@@ -94,6 +94,7 @@ var _formCache = {},
 	formListerAttribute = function(key, currentNode, parserNode, vi, /*dm_id,*/ handle, triggerTable) {
 		var attrOuter = _getAttrOuter(parserNode),
 			eventNameHashCode = $.hashCode(currentNode, "bind-form");
+			// console.log(attrOuter)
 		if (handle[eventNameHashCode] !== attrOuter) {
 			// console.log(handle[eventNameHashCode], attrOuter, arguments)
 			handle[eventNameHashCode] = attrOuter;

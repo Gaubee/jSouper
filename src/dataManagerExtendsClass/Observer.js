@@ -57,7 +57,7 @@
             $.p(_get_collect_stack, [])
 
             //运行原生get
-            var result = this._get.call(dm, key, value)
+            var result = this.value = this._get.call(dm, key, value)
 
             /*
              * dm normal get mode
@@ -109,6 +109,9 @@
         },
         form: function(dm, key, value) {
             return this._form.apply(dm, arguments)
+        },
+        toString: function() {
+            return this.value;
         }
     }
 
@@ -122,7 +125,7 @@
             var observerObjs = observerObjCollect[key];
             if (!observerObjs) {
                 while (!observerObjs) {
-                    key = $.lst(key,".");
+                    key = $.lst(key, ".");
                     if (key !== false) {
                         observerObjs = observerObjCollect[key];
                     } else {

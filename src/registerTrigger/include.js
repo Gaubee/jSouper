@@ -30,9 +30,12 @@ function _runScript(node) {
     var scriptNodeList = node.getElementsByTagName('script');
     $.ftE(scriptNodeList, function(scriptNode) {
         if ((!scriptNode.type || scriptNode.type === "text/javascript") && !scriptNode[_runScripted]) {
+            var scripttext =scriptNode.text;
+            // console.log("scripttext:",scripttext,scriptNode.src)
             var newScript = doc.createElement("script");
             //TODO:clone attribute;
-            newScript.text = scriptNode.text;
+            newScript.text = scripttext;
+            newScript.src = scriptNode.src;
             newScript[_runScripted] = $TRUE;
             // console.log(scriptNode)
             scriptNode.parentNode.replaceChild(newScript, scriptNode);
