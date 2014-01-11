@@ -13,7 +13,7 @@ V.rt("#if", function(handle, index, parentHandle) {
 		trigger,
 		deep = 0;
 
-	$.fE(parentHandle.childNodes, function(child_handle, i, childHandles) {
+	$.e(parentHandle.childNodes, function(child_handle, i, childHandles) {
 
 		if (child_handle.handleName === "#if") {
 			deep += 1
@@ -36,47 +36,47 @@ V.rt("#if", function(handle, index, parentHandle) {
 
 	trigger = {
 		// key:"",//default is ""
-		event: function(NodeList_of_ViewInstance, dataManager, /*triggerBy,*/ isAttr, viewInstance_ID) {
-			var conditionVal = !! NodeList_of_ViewInstance[conditionHandleId]._data,
-				parentNode = NodeList_of_ViewInstance[parentHandleId].currentNode,
+		event: function(NodeList_of_ViewModel, model, /*triggerBy,*/ isAttr, viewModel_ID) {
+			var conditionVal = !! NodeList_of_ViewModel[conditionHandleId]._data,
+				parentNode = NodeList_of_ViewModel[parentHandleId].currentNode,
 				markHandleId = comment_else_id, //if(true)
 				markHandle; //default is undefined --> insertBefore === appendChild
 			
-			if (NodeList_of_ViewInstance[this.handleId]._data !== conditionVal /*|| triggerBy*/) {
-				NodeList_of_ViewInstance[this.handleId]._data = conditionVal;
+			if (NodeList_of_ViewModel[this.handleId]._data !== conditionVal /*|| triggerBy*/) {
+				NodeList_of_ViewModel[this.handleId]._data = conditionVal;
 				if (!conditionVal) {
 					markHandleId = comment_endif_id;
 				}
 				if (markHandleId) {
-					markHandle = NodeList_of_ViewInstance[markHandleId].currentNode;
+					markHandle = NodeList_of_ViewModel[markHandleId].currentNode;
 				}
-				$.fE(conditionDOM[conditionVal], function(id) {
-					var currentHandle = NodeList_of_ViewInstance[id],
+				$.e(conditionDOM[conditionVal], function(id) {
+					var currentHandle = NodeList_of_ViewModel[id],
 						node = currentHandle.currentNode,
-						placeholderNode = (NodeList_of_ViewInstance[id].placeholderNode = NodeList_of_ViewInstance[id].placeholderNode || $.D.C(id)),
+						placeholderNode = (NodeList_of_ViewModel[id].placeholderNode = NodeList_of_ViewModel[id].placeholderNode || $.D.C(id)),
 						display = $TRUE;
 
-					$.fE(currentHandle._controllers, function(controller_id) {
+					$.e(currentHandle._controllers, function(controller_id) {
 						//Traverse all Logic Controller(if-else-endif) to determine whether each Controller are allowed to display it.
-						var controllerHandle = NodeList_of_ViewInstance[controller_id]
+						var controllerHandle = NodeList_of_ViewModel[controller_id]
 						return display = display && ($.iO(controllerHandle._controllers[controllerHandle._data ? $TRUE : $FALSE], currentHandle.id) !== -1);
 						//when display is false,abort traversing
 					});
 					if (display) {
 						if (currentHandle.display) { //Custom Display Function,default is false
-							currentHandle.display($TRUE, NodeList_of_ViewInstance, dataManager, /*triggerBy, */viewInstance_ID)
+							currentHandle.display($TRUE, NodeList_of_ViewModel, model, /*triggerBy, */viewModel_ID)
 						} else if (node) {
 							$.D.re(parentNode, node, placeholderNode)
 						}
 					}
 				});
-				$.fE(conditionDOM[!conditionVal], function(id) {
-					var currentHandle = NodeList_of_ViewInstance[id],
+				$.e(conditionDOM[!conditionVal], function(id) {
+					var currentHandle = NodeList_of_ViewModel[id],
 						node = currentHandle.currentNode,
 						placeholderNode = (currentHandle.placeholderNode = currentHandle.placeholderNode || $.D.C(id));
 
 					if (currentHandle.display) { //Custom Display Function,default is false
-						currentHandle.display($FALSE, NodeList_of_ViewInstance, dataManager, /*triggerBy,*/ viewInstance_ID)
+						currentHandle.display($FALSE, NodeList_of_ViewModel, model, /*triggerBy,*/ viewModel_ID)
 					} else if (node) {
 						$.D.re(parentNode, placeholderNode, node)
 					}

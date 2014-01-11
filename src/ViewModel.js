@@ -6,14 +6,14 @@
     var _rebuildTree = DM_proto.rebuildTree;
     DM_proto.rebuildTree = function() {
         var self = this,
-            DMSet = self._subsetDataManagers;
-        $.ftE(self._viewInstances, function(childViewInstance) {
-            $.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
+            DMSet = self._subsetModels;
+        $.E(self._viewModels, function(childViewModel) {
+            $.E(childViewModel._smartTriggers, function(smartTrigger) {
                 var TEMP = smartTrigger.TEMP;
-                TEMP.viewInstance.get(TEMP.sourceKey);
-                var topGetter = DataManager.session.topGetter,
-                    currentTopGetter = DataManager.get(TEMP.dm_id),
-                    matchKey = DataManager.session.filterKey || "";
+                TEMP.viewModel.get(TEMP.sourceKey);
+                var topGetter = Model.session.topGetter,
+                    currentTopGetter = Model.get(TEMP.dm_id),
+                    matchKey = Model.session.filterKey || "";
                 if (topGetter) {
                     if (topGetter !== currentTopGetter || matchKey !== smartTrigger.matchKey) {
                         TEMP.dm_id = topGetter.id;
@@ -25,47 +25,47 @@
                 }
             })
         })
-        $.ftE(self._subsetDataManagers, function(childDataManager) {
-            childDataManager.rebuildTree()
+        $.E(self._subsetModels, function(childModel) {
+            childModel.rebuildTree()
         })
         return _rebuildTree.call(self);
     }
     var _collect = DM_proto.collect;
-    DM_proto.collect = function(viewInstance) {
+    DM_proto.collect = function(viewModel) {
         var self = this;
-        if (viewInstance instanceof DataManager) {
-            _collect.call(self, viewInstance);
+        if (viewModel instanceof Model) {
+            _collect.call(self, viewModel);
             //TODO:release memory.
-        } else if (viewInstance instanceof ViewInstance) {
-            var vi_DM = viewInstance.dataManager;
+        } else if (viewModel instanceof ViewModel) {
+            var vi_DM = viewModel.model;
             if (!vi_DM) { // for VI init in constructor
-                vi_DM = viewInstance.dataManager = self;
-                var viewInstanceTriggers = viewInstance._triggers
-                $.ftE(viewInstanceTriggers, function(sKey) {
-                    viewInstance._buildSmart(sKey);
+                vi_DM = viewModel.model = self;
+                var viewModelTriggers = viewModel._triggers
+                $.E(viewModelTriggers, function(sKey) {
+                    viewModel._buildSmart(sKey);
                 });
             }
 
             //to rebuildTree => remark smartyKeys
-            $.p(self._viewInstances, viewInstance);
+            $.p(self._viewModels, viewModel);
 
             _collect.call(self, vi_DM) //self collect self will Forced triggered updates
         }
         return self;
     };
     var _subset = DM_proto.subset;
-    DM_proto.subset = function(viewInstance, prefix) {
+    DM_proto.subset = function(viewModel, prefix) {
         var self = this;
 
-        if (viewInstance instanceof DataManager) {
-            _subset.call(self, viewInstance, prefix);
+        if (viewModel instanceof Model) {
+            _subset.call(self, viewModel, prefix);
         } else {
 
-            var vi_DM = viewInstance.dataManager;
+            var vi_DM = viewModel.model;
             if (!vi_DM) {
-                vi_DM = DataManager();
+                vi_DM = Model();
                 //收集触发器
-                vi_DM.collect(viewInstance);
+                vi_DM.collect(viewModel);
             }
             _subset.call(self, vi_DM, prefix);
         }
@@ -74,14 +74,14 @@
 
 var stopTriggerBubble; // = $FALSE;
 
-function ViewInstance(handleNodeTree, NodeList, triggerTable, dataManager) {
-    if (!(this instanceof ViewInstance)) {
-        return new ViewInstance(handleNodeTree, NodeList, triggerTable, dataManager);
+function ViewModel(handleNodeTree, NodeList, triggerTable, model) {
+    if (!(this instanceof ViewModel)) {
+        return new ViewModel(handleNodeTree, NodeList, triggerTable, model);
     }
     var self = this;
     self._isAttr = $FALSE; //if no null --> Storage the attribute key and current.
     self._isEach = $FALSE; //if no null --> Storage the attribute key and current.
-    self.dataManager; //= dataManager;
+    self.model; //= model;
     self.handleNodeTree = handleNodeTree;
     self.DOMArr = $.s(handleNodeTree.childNodes);
     self.NodeList = NodeList;
@@ -119,13 +119,13 @@ function ViewInstance(handleNodeTree, NodeList, triggerTable, dataManager) {
         self._triggers._[key] = tiggerCollection;
     });
 
-    if (!(dataManager instanceof DataManager)) {
-        dataManager = DataManager(dataManager);
+    if (!(model instanceof Model)) {
+        model = Model(model);
     }
     self._smartTriggers = [];
 
-    //bind viewInstance with DataManger
-    dataManager.collect(self); //touchOff All triggers
+    //bind viewModel with DataManger
+    model.collect(self); //touchOff All triggers
 
     //console.group(self._id,"touchOff .")
     stopTriggerBubble = $TRUE;
@@ -134,25 +134,25 @@ function ViewInstance(handleNodeTree, NodeList, triggerTable, dataManager) {
     //console.groupEnd(self._id,"touchOff .")
 };
 
-var VI_session = ViewInstance.session = {
+var VI_session = ViewModel.session = {
     touchHandleIdSet: $NULL,
     touchStacks: $NULL
 };
 
-function _bubbleTrigger(tiggerCollection, NodeList, dataManager /*, eventTrigger*/ ) {
+function _bubbleTrigger(tiggerCollection, NodeList, model /*, eventTrigger*/ ) {
     var self = this, // result,
         eventStack = [],
         touchStacks = VI_session.touchStacks,
         touchHandleIdSet = VI_session.touchHandleIdSet;
     $.p(touchStacks, eventStack); //Add a new layer event collector
-    $.fE(tiggerCollection, function(trigger) { //TODO:测试参数长度和效率的平衡点，减少参数传递的数量
+    $.e(tiggerCollection, function(trigger) { //TODO:测试参数长度和效率的平衡点，减少参数传递的数量
         if (!touchHandleIdSet[trigger.handleId]) { //To prevent repeated collection
             $.p(eventStack, trigger) //collect trigger
             if ( /*result !== $FALSE &&*/ trigger.bubble && !stopTriggerBubble) {
                 // Stop using the `return false` to prevent bubble triggered
                 // need to use `this. Mercifully = false` to control
                 var parentNode = NodeList[trigger.handleId].parentNode;
-                parentNode && _bubbleTrigger.call(self, parentNode._triggers, NodeList, dataManager /*, trigger*/ );
+                parentNode && _bubbleTrigger.call(self, parentNode._triggers, NodeList, model /*, trigger*/ );
             }
             touchHandleIdSet[trigger.handleId] = $TRUE;
         }
@@ -164,21 +164,21 @@ function _bubbleTrigger(tiggerCollection, NodeList, dataManager /*, eventTrigger
 };
 
 function _moveChild(self, el) {
-    var AllEachViewInstance = self._AVI,
-        AllLayoutViewInstance = self._ALVI,
-        AllWithViewInstance = self._WVI;
+    var AllEachViewModel = self._AVI,
+        AllLayoutViewModel = self._ALVI,
+        AllWithViewModel = self._WVI;
 
     self.topNode(el);
 
-    $.ftE(self.NodeList[self.handleNodeTree.id].childNodes, function(child_node) {
-        var viewInstance,
-            arrayViewInstances,
+    $.E(self.NodeList[self.handleNodeTree.id].childNodes, function(child_node) {
+        var viewModel,
+            arrayViewModels,
             id = child_node.id;
-        if (viewInstance = (AllLayoutViewInstance[child_node.id] || AllWithViewInstance[child_node.id])) {
-            _moveChild(viewInstance, el)
-        } else if (arrayViewInstances = AllEachViewInstance[id]) {
-            $.ftE(arrayViewInstances, function(viewInstance) {
-                _moveChild(viewInstance, el);
+        if (viewModel = (AllLayoutViewModel[child_node.id] || AllWithViewModel[child_node.id])) {
+            _moveChild(viewModel, el)
+        } else if (arrayViewModels = AllEachViewModel[id]) {
+            $.E(arrayViewModels, function(viewModel) {
+                _moveChild(viewModel, el);
             })
         }
     });
@@ -186,7 +186,7 @@ function _moveChild(self, el) {
 
 var fr = doc.createDocumentFragment();
 
-var VI_proto = ViewInstance.prototype = {
+var VI_proto = ViewModel.prototype = {
     destroy: function() {
         var self = this;
         //TODO:delete node
@@ -200,7 +200,7 @@ var VI_proto = ViewInstance.prototype = {
         if (self._id === 76) {
             debugger
         };
-        $.fE(currentTopNode.childNodes, function(child_node) {
+        $.e(currentTopNode.childNodes, function(child_node) {
             $.D.ap(fr, child_node);
         });
         $.D.ap(el, fr);
@@ -215,7 +215,7 @@ var VI_proto = ViewInstance.prototype = {
             currentTopNode = self.topNode(),
             elParentNode = el.parentNode;
 
-        $.fE(currentTopNode.childNodes, function(child_node) {
+        $.e(currentTopNode.childNodes, function(child_node) {
             $.D.ap(fr, child_node);
         });
         $.D.iB(elParentNode, fr, el);
@@ -254,25 +254,25 @@ var VI_proto = ViewInstance.prototype = {
             self._canRemoveAble = $FALSE; //Has being recovered into the _packingBag,can't no be remove again. --> it should be insert
             if (self._isEach) {
                 // 排队到队位作为备用
-                self._arrayVI.splice(self.dataManager._index, 1)
+                self._arrayVI.splice(self.model._index, 1)
                 $.p(self._arrayVI, self);
 
                 //相应的DM以及数据也要做重新排队
-                self.dataManager.lineUp();
+                self.model.lineUp();
             }
         }
         return self;
     },
     get: function get() {
-        var dm = this.dataManager;
+        var dm = this.model;
         return dm.get.apply(dm, arguments /*$.s(arguments)*/ );
     },
     mix: function mix() {
-        var dm = this.dataManager;
+        var dm = this.model;
         return dm.mix.apply(dm, arguments /*$.s(arguments)*/ )
     },
     set: function set() {
-        var dm = this.dataManager;
+        var dm = this.model;
         return dm.set.apply(dm, arguments /*$.s(arguments)*/ )
     },
     topNode: function(newCurrentTopNode) {
@@ -305,7 +305,7 @@ var VI_proto = ViewInstance.prototype = {
     },
     touchOff: function(key) {
         var self = this,
-            dataManager = self.dataManager,
+            model = self.model,
             NodeList = self.NodeList;
         VI_session.touchHandleIdSet = {};
 
@@ -313,63 +313,63 @@ var VI_proto = ViewInstance.prototype = {
         VI_session.touchStacks = [];
 
         // if (key==="$PARENT.radio") {debugger};
-        _bubbleTrigger.call(self, self._triggers._[key], NodeList, dataManager)
+        _bubbleTrigger.call(self, self._triggers._[key], NodeList, model)
 
         // trigger trigger stack
-        $.ftE(VI_session.touchStacks, function(eventStack) {
-            $.ftE(eventStack, function(trigger) {
-                trigger.event(NodeList, dataManager, /*trigger,*/ self._isAttr, self._id)
+        $.E(VI_session.touchStacks, function(eventStack) {
+            $.E(eventStack, function(trigger) {
+                trigger.event(NodeList, model, /*trigger,*/ self._isAttr, self._id)
             })
         })
     },
     _buildSmart: function(sKey) {
         var self = this,
-            dataManager = self.dataManager,
+            model = self.model,
             smartTriggers = self._smartTriggers;
-        dataManager.get(sKey);
-        var baseKey = DataManager.session.filterKey,
-            topGetterTriggerKeys = DataManager.session.topGetter && DataManager.session.topGetter._triggerKeys,
+        model.get(sKey);
+        var baseKey = Model.session.filterKey,
+            topGetterTriggerKeys = Model.session.topGetter && Model.session.topGetter._triggerKeys,
             smartTrigger = new SmartTriggerHandle(
                 baseKey || (baseKey = ""), //match key
 
                 function(smartTriggerSet) {
                     self.touchOff(sKey);
                 }, { //TEMP data
-                    viewInstance: self,
-                    dm_id: dataManager.id,
+                    viewModel: self,
+                    dm_id: model.id,
                     sourceKey: sKey
                 }
             );
         $.p(smartTriggers, smartTrigger);
         topGetterTriggerKeys && smartTrigger.bind(topGetterTriggerKeys); // topGetterTriggerKeys.push(baseKey, smartTrigger);
     },
-    teleporter: function(viewInstance, telporterName) {
+    teleporter: function(viewModel, telporterName) {
         var self = this;
         (telporterName === $UNDEFINED) && (telporterName = "index");
         var teleporter = self._teleporters[telporterName];
         if (teleporter) {
             if (teleporter.show_or_hidden !== $FALSE) {
                 //remove old
-                var old_viewInstance = teleporter.vi;
-                old_viewInstance && old_viewInstance.remove();
+                var old_viewModel = teleporter.vi;
+                old_viewModel && old_viewModel.remove();
 
                 //insert new & save new
-                viewInstance.insert(teleporter.ph);
+                viewModel.insert(teleporter.ph);
             }
-            teleporter.vi = viewInstance
+            teleporter.vi = viewModel
         }
         return self;
     },
     collect: function() {
         var self = this;
-        var dataManager = self.dataManager;
-        dataManager.collect.apply(dataManager, arguments);
+        var model = self.model;
+        model.collect.apply(model, arguments);
         return self;
     },
     subset: function() {
         var self = this;
-        var dataManager = self.dataManager;
-        dataManager.subset.apply(dataManager, arguments);
+        var model = self.model;
+        model.subset.apply(model, arguments);
         return self;
     }
 };
@@ -377,7 +377,7 @@ var VI_proto = ViewInstance.prototype = {
     "scroll unload click dblclick mousedown mouseup mousemove" +
     "mouseover mouseout mouseenter mouseleave change select" +
     "submit keydown keypress keyup error contextmenu").split(" ");
-$.ftE(_allEventNames, function(eventName) {
+$.E(_allEventNames, function(eventName) {
     VI_proto[eventName] = function(fun) {
         return fun ? this.on(eventName, fun) : this.trigger(eventName);
     }

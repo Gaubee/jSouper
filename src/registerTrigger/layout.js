@@ -12,10 +12,10 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
     trigger = {
         // cache_tpl_name:$UNDEFINED,
         key: ".",
-        event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
-            var AllLayoutViewInstance = V._instances[viewInstance_ID]._ALVI;
-            var new_templateHandle_name = NodeList_of_ViewInstance[templateHandle_id]._data;
-            var self = V._instances[viewInstance_ID];
+        event: function(NodeList_of_ViewModel, model, /*eventTrigger,*/ isAttr, viewModel_ID) {
+            var AllLayoutViewModel = V._instances[viewModel_ID]._ALVI;
+            var new_templateHandle_name = NodeList_of_ViewModel[templateHandle_id]._data;
+            var self = V._instances[viewModel_ID];
             self = self.__layout || (self.__layout = {});
             var templateHandle_name = self.cache_tpl_name;
             // console.log(new_templateHandle_name,templateHandle_name)
@@ -26,44 +26,44 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
             if (new_templateHandle_name && (new_templateHandle_name !== templateHandle_name)) {
                 // console.log(uuid, new_templateHandle_name, templateHandle_name, !! module)
                 self.cache_tpl_name = new_templateHandle_name;
-                layoutViewInstance && layoutViewInstance.destory();
+                layoutViewModel && layoutViewModel.destory();
                 //console.log(new_templateHandle_name, id);
-                var key = NodeList_of_ViewInstance[dataHandle_id]._data,
-                    layoutViewInstance = AllLayoutViewInstance[id] = module().insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
-                layoutViewInstance._layoutName = new_templateHandle_name;
-                dataManager.subset(layoutViewInstance, key);
+                var key = NodeList_of_ViewModel[dataHandle_id]._data,
+                    layoutViewModel = AllLayoutViewModel[id] = module().insert(NodeList_of_ViewModel[comment_layout_id].currentNode);
+                layoutViewModel._layoutName = new_templateHandle_name;
+                model.subset(layoutViewModel, key);
             } else {
-                layoutViewInstance = AllLayoutViewInstance[id];
+                layoutViewModel = AllLayoutViewModel[id];
             }
-            return layoutViewInstance;
+            return layoutViewModel;
         }
     }
     if (ifHandle_id) {
-        trigger.event = function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
-            var isShow = $.trim(String(NodeList_of_ViewInstance[ifHandle_id]._data)).replace(_booleanFalseRegExp, ""),
-                AllLayoutViewInstance = V._instances[viewInstance_ID]._ALVI,
-                layoutViewInstance = AllLayoutViewInstance[id];
+        trigger.event = function(NodeList_of_ViewModel, model, /*eventTrigger,*/ isAttr, viewModel_ID) {
+            var isShow = _booleanFalseRegExp(NodeList_of_ViewModel[ifHandle_id]._data),
+                AllLayoutViewModel = V._instances[viewModel_ID]._ALVI,
+                layoutViewModel = AllLayoutViewModel[id];
             if (isShow) {
-                if (!layoutViewInstance) {
-                    var key = NodeList_of_ViewInstance[dataHandle_id]._data;
-                    if (dataManager.get(key)) {
-                        var module = V.modules[NodeList_of_ViewInstance[templateHandle_id]._data];
+                if (!layoutViewModel) {
+                    var key = NodeList_of_ViewModel[dataHandle_id]._data;
+                    if (model.get(key)) {
+                        var module = V.modules[NodeList_of_ViewModel[templateHandle_id]._data];
                         if (!module) {
                             return
                         }
-                        layoutViewInstance = AllLayoutViewInstance[id] = module();
-                        dataManager.subset(layoutViewInstance, key);
+                        layoutViewModel = AllLayoutViewModel[id] = module();
+                        model.subset(layoutViewModel, key);
                     }
                 }
-                if (layoutViewInstance && !layoutViewInstance._canRemoveAble) {
-                    layoutViewInstance.insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
+                if (layoutViewModel && !layoutViewModel._canRemoveAble) {
+                    layoutViewModel.insert(NodeList_of_ViewModel[comment_layout_id].currentNode);
                 }
             } else {
-                if (layoutViewInstance && layoutViewInstance._canRemoveAble) {
-                    layoutViewInstance.remove();
+                if (layoutViewModel && layoutViewModel._canRemoveAble) {
+                    layoutViewModel.remove();
                 }
             }
-            return layoutViewInstance;
+            return layoutViewModel;
         }
     }
     return trigger;

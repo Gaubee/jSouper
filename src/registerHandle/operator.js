@@ -8,6 +8,6 @@ var _operator_handle  = function(handle, index, parentHandle) {
 	}
 },
 _operator_list = "+ - * / % == === != !== > < && || ^ >> << & |".split(" ");
-$.ftE(_operator_list, function(operator) {
+$.E(_operator_list, function(operator) {
 	V.rh(operator, _operator_handle)
 });

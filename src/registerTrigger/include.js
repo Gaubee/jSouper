@@ -5,7 +5,7 @@ var _require_module = function(url, handleFun) {
         $.p(xhrConifg.success._, handleFun)
     } else {
         var handleQuene = function(status, xhr) {
-            $.ftE(handleQuene._, function(handleFun) {
+            $.E(handleQuene._, function(handleFun) {
                 handleFun(status, xhr);
             })
         }
@@ -28,7 +28,7 @@ var _runScripted = _placeholder("run-");
 
 function _runScript(node) {
     var scriptNodeList = node.getElementsByTagName('script');
-    $.ftE(scriptNodeList, function(scriptNode) {
+    $.E(scriptNodeList, function(scriptNode) {
         if ((!scriptNode.type || scriptNode.type === "text/javascript") && !scriptNode[_runScripted]) {
             var scripttext =scriptNode.text;
             // console.log("scripttext:",scripttext,scriptNode.src)
@@ -48,23 +48,23 @@ V.rt("#include", function(handle, index, parentHandle) {
 
     //base on layout
     var trigger = V.triggers["#layout"](handle, index, parentHandle);
-    var layoutViewInstance;
+    var layoutViewModel;
 
-    // Ajax NodeList_of_ViewInstance[templateHandle_id]._data
+    // Ajax NodeList_of_ViewModel[templateHandle_id]._data
     var _event = trigger.event;
     var _uid = $.uid();
-    trigger.event = function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
-        var url = NodeList_of_ViewInstance[templateHandle_id]._data;
+    trigger.event = function(NodeList_of_ViewModel, model, /*eventTrigger,*/ isAttr, viewModel_ID) {
+        var url = NodeList_of_ViewModel[templateHandle_id]._data;
         var args = arguments
         if (!_include_lock[_uid]) {
             _include_lock[_uid] = $TRUE;
             if (!V.modules[url]) {
                 _require_module(url, function(status, xhr) {
-                    V.modules[url] = ViewParser.parseStr(xhr.responseText);
-                    layoutViewInstance = _event.apply(trigger, args);
-                    if (layoutViewInstance && !layoutViewInstance._runScripted) {
-                        layoutViewInstance._runScripted = $TRUE;
-                        _runScript(layoutViewInstance.handleNodeTree.node);
+                    V.modules[url] = jSouper.parseStr(xhr.responseText);
+                    layoutViewModel = _event.apply(trigger, args);
+                    if (layoutViewModel && !layoutViewModel._runScripted) {
+                        layoutViewModel._runScripted = $TRUE;
+                        _runScript(layoutViewModel.handleNodeTree.node);
                         _include_lock[_uid] = $FALSE;
                     }
                     var _display_args = _include_display_arguments[handle.id];
@@ -73,10 +73,10 @@ V.rt("#include", function(handle, index, parentHandle) {
                     }
                 })
             } else {
-                layoutViewInstance = _event.apply(trigger, args);
-                if (!layoutViewInstance._runScripted) {
-                    layoutViewInstance._runScripted = $TRUE;
-                    _runScript(layoutViewInstance.topNode());
+                layoutViewModel = _event.apply(trigger, args);
+                if (!layoutViewModel._runScripted) {
+                    layoutViewModel._runScripted = $TRUE;
+                    _runScript(layoutViewModel.topNode());
                 }
                 _include_lock[_uid] = $FALSE;
             }

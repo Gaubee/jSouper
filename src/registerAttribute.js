@@ -74,7 +74,7 @@ draggable
 		var assign;
 		var attrHandles = V.attrHandles,
 			result;
-		$.fE(attrHandles, function(attrHandle) {
+		$.e(attrHandles, function(attrHandle) {
 			if (attrHandle.match(attrKey)) {
 				// if (element.type==="textarea") {debugger}
 				result = attrHandle.handle(attrKey,element);
@@ -89,31 +89,31 @@ draggable
 		attrKey = (_isIE && IEfix[attrKey]) || attrKey
 		// console.log(attrValue,":",_matchRule.test(attrValue)||_templateMatchRule.test(attrValue))
 		//if (/*_matchRule.test(attrValue)||*/_templateMatchRule.test(attrValue)) {
-			var attrViewInstance = (V.attrModules[handle.id + attrKey] = ViewParser.parse(attrValue,attrKey+"="+attrValue))($UNDEFINED,$TRUE),
+			var attrViewModel = (V.attrModules[handle.id + attrKey] = jSouper.parse(attrValue,attrKey+"="+attrValue))($UNDEFINED,$TRUE),
 				_shadowDIV = fragment(),//$.D.cl(shadowDIV), //parserNode
 				_attributeHandle = _AttributeHandle(attrKey,node);
-			attrViewInstance.append(_shadowDIV);
-			attrViewInstance._isAttr = {
+			attrViewModel.append(_shadowDIV);
+			attrViewModel._isAttr = {
 				key: attrKey
 			}
 			var attrTrigger = {
 				handleId:handle.id+attrKey,
 				key:attrKey,
 				type:"attributesTrigger",
-				event: function(NodeList, dataManager,/* eventTrigger,*/ isAttr, viewInstance_ID) { /*NodeList, dataManager, eventTrigger, self._isAttr, self._id*/
+				event: function(NodeList, model,/* eventTrigger,*/ isAttr, viewModel_ID) { /*NodeList, model, eventTrigger, self._isAttr, self._id*/
 					var currentNode = NodeList[handle.id].currentNode,
-						viewInstance = V._instances[viewInstance_ID];
+						viewModel = V._instances[viewModel_ID];
 					if (currentNode) {
-						attrViewInstance.dataManager = dataManager;
-						$.fE(attrViewInstance._triggers, function(key) {//touchoff all triggers
-							attrViewInstance.touchOff(key);
+						attrViewModel.model = model;
+						$.e(attrViewModel._triggers, function(key) {//touchoff all triggers
+							attrViewModel.touchOff(key);
 						});
-						_attributeHandle(attrKey, currentNode, _shadowDIV, viewInstance, /*dataManager.id,*/ handle, triggerTable);
-						// dataManager.remove(attrViewInstance); //?
+						_attributeHandle(attrKey, currentNode, _shadowDIV, viewModel, /*model.id,*/ handle, triggerTable);
+						// model.remove(attrViewModel); //?
 					}
 				}
 			}
-			$.fE(attrViewInstance._triggers, function(key) {
+			$.e(attrViewModel._triggers, function(key) {
 				$.us(triggerTable[key] || (triggerTable[key] = []), attrTrigger);
 			});
 			// node.removeAttribute(baseAttrKey);

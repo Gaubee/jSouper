@@ -63,7 +63,7 @@ var placeholder = {
             _shadowBody.innerHTML = htmlStr;
 
             //递归过滤
-            ViewParser.scans(_shadowBody);
+            jSouper.scans(_shadowBody);
             // console.log(htmlStr)
             var insertBefore = [];
             _traversal(_shadowBody, function(node, index, parentNode) {
@@ -78,7 +78,7 @@ var placeholder = {
                     });
                 }
             });
-            $.fE(insertBefore, function(item, i) {
+            $.e(insertBefore, function(item, i) {
                 var node = item.baseNode,
                     parentNode = item.parentNode,
                     insertNodesHTML = item.insertNodesHTML;
@@ -86,7 +86,7 @@ var placeholder = {
                 //Using innerHTML rendering is complete immediate operation DOM, 
                 //innerHTML otherwise covered again, the node if it is not, 
                 //then memory leaks, IE can not get to the full node.
-                $.fE(shadowDIV.childNodes, function(refNode) {
+                $.e(shadowDIV.childNodes, function(refNode) {
                     $.D.iB(parentNode, refNode, node)
                 })
                 $.D.rC(parentNode, node);
@@ -127,5 +127,5 @@ var placeholder = {
         _instances: {},
 
         // Proto: DynamicComputed /*Proto*/ ,
-        Model: DataManager
+        Model: Model
     };

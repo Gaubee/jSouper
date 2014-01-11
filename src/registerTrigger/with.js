@@ -6,15 +6,15 @@ V.rt("#with", function(handle, index, parentHandle) {
 		trigger;
 
 	trigger = {
-		event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
-			var key = NodeList_of_ViewInstance[dataHandle_id]._data,
-				AllLayoutViewInstance = V._instances[viewInstance_ID]._WVI,
-				withViewInstance = AllLayoutViewInstance[id], // || (AllLayoutViewInstance[id] = V.withModules[id](data).insert(NodeList_of_ViewInstance[comment_with_id].currentNode)),
+		event: function(NodeList_of_ViewModel, model, /*eventTrigger,*/ isAttr, viewModel_ID) {
+			var key = NodeList_of_ViewModel[dataHandle_id]._data,
+				AllLayoutViewModel = V._instances[viewModel_ID]._WVI,
+				withViewModel = AllLayoutViewModel[id], // || (AllLayoutViewModel[id] = V.withModules[id](data).insert(NodeList_of_ViewModel[comment_with_id].currentNode)),
 				inserNew;
-			if (!withViewInstance) {
-				withViewInstance = AllLayoutViewInstance[id] = V.withModules[id]();
-				dataManager.subset(withViewInstance,key);
-				withViewInstance.insert(NodeList_of_ViewInstance[comment_with_id].currentNode);
+			if (!withViewModel) {
+				withViewModel = AllLayoutViewModel[id] = V.withModules[id]();
+				model.subset(withViewModel,key);
+				withViewModel.insert(NodeList_of_ViewModel[comment_with_id].currentNode);
 			}
 		}
 	}

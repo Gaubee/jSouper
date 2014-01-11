@@ -1,20 +1,20 @@
 var _include_display_arguments = {};
-function _include_display(show_or_hidden, NodeList_of_ViewInstance, dataManager, /*triggerBy,*/ viewInstance_ID) {
+function _include_display(show_or_hidden, NodeList_of_ViewModel, model, /*triggerBy,*/ viewModel_ID) {
 	var handle = this,
 		id = handle.id,
-		includeViewInstance = V._instances[viewInstance_ID]._ALVI[id];
-	if (!includeViewInstance) {
+		includeViewModel = V._instances[viewModel_ID]._ALVI[id];
+	if (!includeViewModel) {
 		_include_display_arguments[id] = arguments;
 		return;
 	}
 	//get comment_endeach_id
-	var commentPlaceholderElement = NodeList_of_ViewInstance[$.lI(handle.childNodes).id].currentNode;
+	var commentPlaceholderElement = NodeList_of_ViewModel[$.lI(handle.childNodes).id].currentNode;
 	if (show_or_hidden) {
-		if(!includeViewInstance._canRemoveAble){//can-insert-able
-			includeViewInstance.insert(commentPlaceholderElement);
+		if(!includeViewModel._canRemoveAble){//can-insert-able
+			includeViewModel.insert(commentPlaceholderElement);
 		}
 	} else {
-		includeViewInstance.remove();
+		includeViewModel.remove();
 	}
 };
 V.rh("#include", function(handle, index, parentHandle) {

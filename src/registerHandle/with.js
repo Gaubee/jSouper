@@ -1,21 +1,21 @@
-var _with_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManager, triggerBy, viewInstance_ID) {
+var _with_display = function(show_or_hidden, NodeList_of_ViewModel, model, triggerBy, viewModel_ID) {
     var handle = this,
         parentHandle = handle.parentNode,
         comment_endwith_id,
-        AllLayoutViewInstance = V._instances[viewInstance_ID]._WVI,
-        withViewInstance = AllLayoutViewInstance[handle.id];
-    if (!withViewInstance) {
+        AllLayoutViewModel = V._instances[viewModel_ID]._WVI,
+        withViewModel = AllLayoutViewModel[handle.id];
+    if (!withViewModel) {
         return;
     }
     //get comment_endwith_id
-    var commentEndEachPlaceholderElement = NodeList_of_ViewInstance[NodeList_of_ViewInstance[handle.eh_id].childNodes[0].id].currentNode;
+    var commentEndEachPlaceholderElement = NodeList_of_ViewModel[NodeList_of_ViewModel[handle.eh_id].childNodes[0].id].currentNode;
 
     if (show_or_hidden) {
-        if (!withViewInstance._canRemoveAble) { //can-insert-able
-            withViewInstance.insert(commentEndEachPlaceholderElement)
+        if (!withViewModel._canRemoveAble) { //can-insert-able
+            withViewModel.insert(commentEndEachPlaceholderElement)
         }
     } else {
-        withViewInstance.remove();
+        withViewModel.remove();
     }
 };
 V.rh("#with", function(handle, index, parentHandle) {
@@ -25,9 +25,9 @@ V.rh("#with", function(handle, index, parentHandle) {
         withModuleHandle = new ElementHandle(_shadowBody),
         endIndex = 0;
 
-    // handle.arrViewInstances = [];//Should be at the same level with currentNode
+    // handle.arrViewModels = [];//Should be at the same level with currentNode
     var layer = 1;
-    $.fE(parentHandle.childNodes, function(childHandle, index) {
+    $.e(parentHandle.childNodes, function(childHandle, index) {
         endIndex = index;
         // console.log(childHandle,childHandle.handleName)
         if (childHandle.handleName === "#with") {

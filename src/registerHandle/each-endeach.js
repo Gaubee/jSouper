@@ -1,14 +1,14 @@
-var _each_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManager, /*triggerBy,*/ viewInstance_ID) {
+var _each_display = function(show_or_hidden, NodeList_of_ViewModel, model, /*triggerBy,*/ viewModel_ID) {
     var handle = this,
-        allArrViewInstances = V._instances[viewInstance_ID]._AVI,
-        arrViewInstances = allArrViewInstances[handle.id] || (allArrViewInstances[handle.id] = []);
+        allArrViewModels = V._instances[viewModel_ID]._AVI,
+        arrViewModels = allArrViewModels[handle.id] || (allArrViewModels[handle.id] = []);
 
     //get comment_endeach_id
-    var commentStartEachPlaceholderElement = NodeList_of_ViewInstance[$.lI(handle.childNodes).id].currentNode;
-    var commentEndEachPlaceholderElement = NodeList_of_ViewInstance[NodeList_of_ViewInstance[handle.eh_id].childNodes[0].id].currentNode;
+    var commentStartEachPlaceholderElement = NodeList_of_ViewModel[$.lI(handle.childNodes).id].currentNode;
+    var commentEndEachPlaceholderElement = NodeList_of_ViewModel[NodeList_of_ViewModel[handle.eh_id].childNodes[0].id].currentNode;
 
-    arrViewInstances.hidden = !show_or_hidden;
-    var fg = arrViewInstances.fragment || (arrViewInstances.fragment = doc.createDocumentFragment());
+    arrViewModels.hidden = !show_or_hidden;
+    var fg = arrViewModels.fragment || (arrViewModels.fragment = doc.createDocumentFragment());
 
     if (show_or_hidden) {
         var fgCs = fg.childNodes;
@@ -35,7 +35,7 @@ V.rh("#each", function(handle, index, parentHandle) {
         endIndex = 0;
 
     var layer = 1;
-    $.fE(parentHandle.childNodes, function(childHandle, index) {
+    $.e(parentHandle.childNodes, function(childHandle, index) {
         endIndex = index;
         if (childHandle.handleName === "#each") {
             layer += 1

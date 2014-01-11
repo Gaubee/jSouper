@@ -1,4 +1,4 @@
-DataManager.config.prefix.Get = "$GET";
+Model.config.prefix.Get = "$GET";
 var _statusEventCache = {},
 	_statusEvent = {
 		"=": function(vi, key, value) {
@@ -6,7 +6,7 @@ var _statusEventCache = {},
 		},
 		"+": function(vi, key, value) {
 			var oldvalue = vi.get(key) || "";
-			if ($.iS(oldvalue)) { //oldvalue is string ,not array or any type elses.
+			if ($.isS(oldvalue)) { //oldvalue is string ,not array or any type elses.
 				if (oldvalue.indexOf(value) === -1) {
 					vi.set(key, oldvalue + value)
 				}
@@ -14,7 +14,7 @@ var _statusEventCache = {},
 		},
 		"-": function(vi, key, value) {
 			var oldvalue = vi.get(key) || "";
-			if (oldvalue && $.iS(oldvalue)) { //oldvalue is string ,not array or any type elses.
+			if (oldvalue && $.isS(oldvalue)) { //oldvalue is string ,not array or any type elses.
 				if (oldvalue.indexOf(value) !== -1) {
 					vi.set(key, oldvalue.replace(value, ""));
 				}
@@ -22,7 +22,7 @@ var _statusEventCache = {},
 		},
 		"?": function(vi, key, value) {
 			var oldvalue = vi.get(key) || "";
-			if ($.iS(oldvalue)) { //oldvalue is string ,not array or any type elses.
+			if ($.isS(oldvalue)) { //oldvalue is string ,not array or any type elses.
 				if (oldvalue.indexOf(value) !== -1) {
 					vi.set(key, oldvalue.replace(value, ""));
 				} else {
@@ -39,7 +39,7 @@ var _statusEventCache = {},
 		return key;
 	},
 	_getStatusValue = function(vi, value) {
-		if ($.isString(value)) {
+		if ($.isSWrap(value)) {
 			value = value.substr(1, value.length - 2)
 		} else {
 			value = vi.get(value)
@@ -79,7 +79,7 @@ var _statusEventCache = {},
 					var statusKey = _getStatusKey(vi, wrapStatusFun.ke);
 					if (statusKey) {
 						var statusValue = _getStatusValue(vi, wrapStatusFun.va);
-						if ($.iS(statusValue)) {
+						if ($.isS(statusValue)) {
 							wrapStatusFun.ev(vi, statusKey, statusValue)
 						}
 					}

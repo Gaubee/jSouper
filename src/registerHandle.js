@@ -14,7 +14,7 @@ function registerHandle(handleName, handleFun) {
 			cacheNode = fragment(),//$.D.cl(shadowDIV),
 			trigger,
 			argumentsIdSet = [];
-		$.ftE(handleChilds, function(handle_arg) {
+		$.E(handleChilds, function(handle_arg) {
 			$.p(argumentsIdSet, handle_arg.id);
 		});
 		beginCommentId = argumentsIdSet[argumentsIdSet.length-1]
@@ -22,40 +22,40 @@ function registerHandle(handleName, handleFun) {
 		trigger = {
 			// key:"",//default key === ""
 			bubble: true,
-			event: function(NodeList_of_ViewInstance, dataManager, /*triggerBy,*/ isAttr, viewInstance_ID) {
-				var startCommentNode = NodeList_of_ViewInstance[beginCommentId].currentNode,
-					endCommentNode = NodeList_of_ViewInstance[endCommentId].currentNode,
+			event: function(NodeList_of_ViewModel, model, /*triggerBy,*/ isAttr, viewModel_ID) {
+				var startCommentNode = NodeList_of_ViewModel[beginCommentId].currentNode,
+					endCommentNode = NodeList_of_ViewModel[endCommentId].currentNode,
 					parentNode = endCommentNode.parentNode,
 					brotherNodes = parentNode.childNodes,
 					argumentsDataSet = [],
 					index = -1;
 
 				for (var i = 0, len = argumentsIdSet.length - 2, handle_arg_data, argumentsDataSet; i < len; i += 1) {
-					$.p(argumentsDataSet,NodeList_of_ViewInstance[argumentsIdSet[i]]._data)
+					$.p(argumentsDataSet,NodeList_of_ViewModel[argumentsIdSet[i]]._data)
 				};
-				$.fE(brotherNodes, function(node, i) {
+				$.e(brotherNodes, function(node, i) {
 					index = i;
 					if (node === startCommentNode) {
 						return $FALSE;
 					}
 				});
 				index = index + 1;
-				$.fE(brotherNodes, function(node, i) {
+				$.e(brotherNodes, function(node, i) {
 					if (node === endCommentNode) {
 						return $FALSE;
 					}
 					$.D.rC(parentNode, node); //remove
 				}, index);
 
-				cacheNode.innerHTML = handleFun.apply(V._instances[viewInstance_ID],argumentsDataSet)
-				$.fE(cacheNode.childNodes, function(node, i) {
+				cacheNode.innerHTML = handleFun.apply(V._instances[viewModel_ID],argumentsDataSet)
+				$.e(cacheNode.childNodes, function(node, i) {
 					$.D.iB(parentNode, node, endCommentNode);
 				});
 			}
 		}
 		return trigger;
 	});
-	return ViewParser;
+	return jSouper;
 }
 registerHandle("HTML",function () {
 	return Array.prototype.join.call(arguments,"");

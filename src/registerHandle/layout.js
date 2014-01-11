@@ -1,17 +1,17 @@
-function _layout_display(show_or_hidden, NodeList_of_ViewInstance, dataManager, /*triggerBy,*/ viewInstance_ID) {
+function _layout_display(show_or_hidden, NodeList_of_ViewModel, model, /*triggerBy,*/ viewModel_ID) {
 	var handle = this,
-		layoutViewInstance = V._instances[viewInstance_ID]._ALVI[handle.id];
-	if (!layoutViewInstance) {
+		layoutViewModel = V._instances[viewModel_ID]._ALVI[handle.id];
+	if (!layoutViewModel) {
 		return;
 	}
 	//get comment_endeach_id
-	var commentPlaceholderElement = NodeList_of_ViewInstance[$.lI(handle.childNodes).id].currentNode;
+	var commentPlaceholderElement = NodeList_of_ViewModel[$.lI(handle.childNodes).id].currentNode;
 	if (show_or_hidden) {
-		if(!layoutViewInstance._canRemoveAble){//can-insert-able
-			layoutViewInstance.insert(commentPlaceholderElement);
+		if(!layoutViewModel._canRemoveAble){//can-insert-able
+			layoutViewModel.insert(commentPlaceholderElement);
 		}
 	} else {
-		layoutViewInstance.remove();
+		layoutViewModel.remove();
 	}
 };
 V.rh("#>", V.rh("#layout", function(handle, index, parentHandle) {

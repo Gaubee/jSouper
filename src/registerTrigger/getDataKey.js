@@ -8,13 +8,13 @@ V.rt("@", function(handle, index, parentHandle) {
 		};
 
 	if (parentHandle.type !== "handle") { //as textHandle
-		trigger.event = function(NodeList_of_ViewInstance, dataManager) {
+		trigger.event = function(NodeList_of_ViewModel, model) {
 			//trigger but no bind data
-			NodeList_of_ViewInstance[textHandleId].currentNode.data = key;
+			NodeList_of_ViewModel[textHandleId].currentNode.data = key;
 		}
 	} else {
-		trigger.event = function(NodeList_of_ViewInstance, dataManager) {
-			NodeList_of_ViewInstance[this.handleId]._data = key;
+		trigger.event = function(NodeList_of_ViewModel, model) {
+			NodeList_of_ViewModel[this.handleId]._data = key;
 		}
 	}
 	return trigger;

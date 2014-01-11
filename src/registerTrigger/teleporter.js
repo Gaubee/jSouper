@@ -9,12 +9,12 @@ V.rt("#teleporter", function(handle, index, parentHandle) {
     }
     var trigger = {
         key: ".",
-        event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
-            var viewInstance = V._instances[viewInstance_ID];
-            if (!viewInstance._teleporters[teleporterName]) {
-                viewInstance._teleporters[teleporterName] = {
+        event: function(NodeList_of_ViewModel, model, /*eventTrigger,*/ isAttr, viewModel_ID) {
+            var viewModel = V._instances[viewModel_ID];
+            if (!viewModel._teleporters[teleporterName]) {
+                viewModel._teleporters[teleporterName] = {
                 	//placeholder comment node
-                    ph: NodeList_of_ViewInstance[placeholderHandle.id].currentNode
+                    ph: NodeList_of_ViewModel[placeholderHandle.id].currentNode
                 }
             }
             /*else{

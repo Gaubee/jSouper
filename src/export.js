@@ -1,15 +1,15 @@
 /*
  * export
  */
-var ViewParser = global.ViewParser = {
+var jSouper = global.jSouper = {
     scans: function(node) {
         node || (node = doc);
-        $.fE(node.getElementsByTagName("script"), function(scriptNode) {
+        $.e(node.getElementsByTagName("script"), function(scriptNode) {
             var type = scriptNode.getAttribute("type")
             var name = scriptNode.getAttribute("name")
             if (name) {
                 if (type === "text/template") {
-                    V.modules[name] = ViewParser.parseStr(scriptNode.text, name);
+                    V.modules[name] = jSouper.parseStr(scriptNode.text, name);
                     $.D.rm(scriptNode);
                 } else if (type === "text/viewmodel") {
                     V.modulesInit[name] = Function("return " + $.trim(scriptNode.text))();
@@ -26,14 +26,14 @@ var ViewParser = global.ViewParser = {
         return V.parse(parse(htmlNode.innerHTML), name)
     },
     parse: function(html, name) {
-        if (html instanceof Object) {
+        if ($.isO(html)) {
             return this.parseNode(html, name)
         }
         return this.parseStr(html, name)
     },
     modules: V.modules,
     modulesInit: V.modulesInit,
-    _V:V,
+    _V: V,
     config: {
         Id: 'HVP',
         Var: 'App',
@@ -43,13 +43,13 @@ var ViewParser = global.ViewParser = {
     },
     registerHandle: registerHandle,
     app: function(userConfig) {
-        // ViewParser.scans();
-        var HVP_config = ViewParser.config;
+        // jSouper.scans();
+        var HVP_config = jSouper.config;
         userConfig = _mix(HVP_config, userConfig) || HVP_config;
         var App = doc.getElementById(userConfig.Id); //configable
         if (App) {
             var appName = userConfig.Var;
-            var template = ViewParser.parseNode(App,"App")(userConfig.Data); //App.getAttribute("template-data")//json or url or configable
+            var template = jSouper.parseNode(App, "App")(userConfig.Data); //App.getAttribute("template-data")//json or url or configable
             // template.set(HVP_config.Data);
             App.innerHTML = "";
             template.append(App);
@@ -65,7 +65,7 @@ var ViewParser = global.ViewParser = {
     build: function(userConfig) {
         var HTML = userConfig.HTML;
         var url = userConfig.Url;
-        var module = ViewParser.modules[url];
+        var module = jSouper.modules[url];
         var vi;
         if (!module) {
             if (!HTML && url) {
@@ -78,7 +78,7 @@ var ViewParser = global.ViewParser = {
                     }
                 })
             }
-            module = ViewParser.modules[url] = ViewParser.parseStr(HTML,url);
+            module = jSouper.modules[url] = jSouper.parseStr(HTML, url);
         }
         if (module) {
             vi = module(userConfig.Data);
@@ -127,17 +127,17 @@ var ViewParser = global.ViewParser = {
 };
 (function() {
     var scriptTags = doc.getElementsByTagName("script"),
-        HVP_config = ViewParser.config,
+        HVP_config = jSouper.config,
         userConfigStr = $.trim(scriptTags[scriptTags.length - 1].innerHTML);
-    ViewParser.ready(function() {
-        ViewParser.scans();
+    jSouper.ready(function() {
+        jSouper.scans();
         if (userConfigStr.charAt(0) === "{") {
             try {
                 var userConfig = userConfigStr ? Function("return" + userConfigStr)() : {};
             } catch (e) {
                 console.error("config error:" + e.message);
             }
-            userConfig && ViewParser.app(userConfig)
+            userConfig && jSouper.app(userConfig)
         }
     });
 }());
@@ -149,12 +149,13 @@ var ViewParser = global.ViewParser = {
 //module is defined?
 //module !== null
 //fix IE 关键字
-if (typeof module === "object" && module && typeof module["export"] === "object") {
-    module["export"] = ViewParser
+
+if (typeof module === "object" && module && typeof module.exports === "object") {
+    module.exports = jSouper;
 } else {
     if (typeof define === "function" && define.amd) {
-        define("jSoup", [], function() {
-            return ViewParser
+        define("jSouper", [], function() {
+            return jSouper
         })
     }
 }

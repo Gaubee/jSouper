@@ -2,10 +2,10 @@
  * View constructor
  */
 
-function View(arg,vmName) {
+function View(arg, vmName) {
     var self = this;
     if (!(self instanceof View)) {
-        return new View(arg,vmName);
+        return new View(arg, vmName);
     }
     self.handleNodeTree = arg;
     self._handles = [];
@@ -18,7 +18,7 @@ function View(arg,vmName) {
     _buildTrigger(self);
     return function(data, isAttribute) {
         var id = $.uid();
-        var finallyRunStacks = DataManager.session.finallyRunStacks;
+        var finallyRunStacks = Model.session.finallyRunStacks;
 
         //push mark
         finallyRunStacks.push(id)
@@ -26,7 +26,7 @@ function View(arg,vmName) {
         var vi = _create(self, data, isAttribute);
 
         //TODO:create with callback then getTop.touchOff
-        vi.dataManager.getTop().touchOff();
+        vi.model.getTop().touchOff();
 
         //pop mark
         finallyRunStacks.pop();
@@ -37,9 +37,9 @@ function View(arg,vmName) {
         // console.log(self.id)
         // console.groupEnd(self.id)
         if (self.vmName) {
-            var viewInstance_init = V.modulesInit[self.vmName];
-            if (viewInstance_init) {
-                viewInstance_init(vi);
+            var viewModel_init = V.modulesInit[self.vmName];
+            if (viewModel_init) {
+                viewModel_init(vi);
             }
         }
         return vi
@@ -96,7 +96,7 @@ function _buildHandler(self) {
                 // console.log(handle.tag);
                 (handle._unEleAttr = [])._ = {};
                 //save attributes
-                $.ftE(node.attributes, function(attr) {
+                $.E(node.attributes, function(attr) {
                     //fix IE
                     var name = attr.name;
                     var value = node.getAttribute(name);
@@ -156,7 +156,7 @@ function _buildTrigger(self) {
             }
             var node = handle.node;
             // var attrs = nodeHTMLStr.match(_attrRegExp);
-            $.fE(node.attributes, function(attr, i) {
+            $.e(node.attributes, function(attr, i) {
                 var value = attr.value,
                     name = attr.name;
                 if (_templateMatchRule.test(value)) {
@@ -181,22 +181,28 @@ function _buildTrigger(self) {
     });
 };
 
-function _create(self, data, isAttribute) { //data maybe basedata or dataManager
+//
+function pushById(arr, item) {
+    arr[item.id] = item;
+    return item;
+};
+
+function _create(self, data, isAttribute) { //data maybe basedata or model
     //save newDOM  without the most top of parentNode -- change with append!!
-    var NodeList_of_ViewInstance = {},
+    var NodeList_of_ViewModel = {},
         topNode = $.c(self.handleNodeTree);
     topNode.currentNode = fragment("body");
-    $.pI(NodeList_of_ViewInstance, topNode);
+    pushById(NodeList_of_ViewModel, topNode);
 
     var catchNodes = [];
     var catchNodesStr = "";
     _traversal(topNode, function(handle, index, parentNode) {
-        handle = $.pI(NodeList_of_ViewInstance, $.c(handle));
+        handle = pushById(NodeList_of_ViewModel, $.c(handle));
         if (!handle.ignore) {
             var _unknownElementAttribute = handle._unEleAttr;
             if (_unknownElementAttribute) { //HTMLUnknownElement
                 currentNode = doc.createElement(handle.tag);
-                $.ftE(_unknownElementAttribute, function(attrName) {
+                $.E(_unknownElementAttribute, function(attrName) {
                     // console.log("setAttribute:", attrName, " : ", _unknownElementAttribute._[attrName])
                     currentNode[attrName] = _unknownElementAttribute._[attrName];
                 })
@@ -229,7 +235,7 @@ function _create(self, data, isAttribute) { //data maybe basedata or dataManager
             //ignore Node's childNodes will be ignored too.
             //just create an instance
             _traversal(handle, function(handle) {
-                $.pI(NodeList_of_ViewInstance, $.c(handle));
+                pushById(NodeList_of_ViewModel, $.c(handle));
             });
             return $FALSE
         }
@@ -238,10 +244,10 @@ function _create(self, data, isAttribute) { //data maybe basedata or dataManager
     //createNode
     var nodeCollections = $.D.cs("<div>" + catchNodesStr + "</div>")
 
-    $.ftE(catchNodes, function(nodeInfo) {
-        var parentHandle = NodeList_of_ViewInstance[nodeInfo.parentId];
+    $.E(catchNodes, function(nodeInfo) {
+        var parentHandle = NodeList_of_ViewModel[nodeInfo.parentId];
         var parentNode = parentHandle.currentNode;
-        var currentHandle = NodeList_of_ViewInstance[nodeInfo.currentId];
+        var currentHandle = NodeList_of_ViewModel[nodeInfo.currentId];
         var currentNode = currentHandle.currentNode;
         if (!currentNode) {
             currentNode = currentHandle.currentNode = nodeCollections.firstChild;
@@ -260,10 +266,10 @@ function _create(self, data, isAttribute) { //data maybe basedata or dataManager
         $.D.ap(parentNode, currentNode);
     })
 
-    $.fE(self._handles, function(handle) {
-        handle.call(self, NodeList_of_ViewInstance);
+    $.e(self._handles, function(handle) {
+        handle.call(self, NodeList_of_ViewModel);
     });
-    var result = new ViewInstance(self.handleNodeTree, NodeList_of_ViewInstance, self._triggerTable, data);
+    var result = new ViewModel(self.handleNodeTree, NodeList_of_ViewModel, self._triggerTable, data);
     result.vmName = self.vmName;
     return result;
 };

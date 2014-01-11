@@ -31,7 +31,7 @@
         _current_collect_layer && $.p(_current_collect_layer, {
             //rely object
             dm_id: self.id,
-            dm_key: DataManager.session.filterKey
+            dm_key: Model.session.filterKey
         })
         return result;
     }
@@ -40,7 +40,7 @@
     var _get_collect_stack = []
 
     // 委托 set\get\form
-    // this ==> dataManager but not Observer-instance
+    // this ==> model but not Observer-instance
     Observer.prototype = {
         set: function(dm, key, value) {
             return this._set.call(dm, key, value)
@@ -70,7 +70,7 @@
             var _oldObserverObj
             //舍弃上一次的依赖关系
             if (_oldObserverObj = _oldObserverObjects[key]) {
-                $.ftE(_oldObserverObj._parent, function(parent) {
+                $.E(_oldObserverObj._parent, function(parent) {
                     var abandon_index = $.iO(parent, _oldObserverObj);
                     $.sp.call(parent, abandon_index, 1)
                 })
@@ -89,7 +89,7 @@
             _oldObserverObjects[key] = _newObserverObj
 
             //将依赖关系你想逆向转换
-            $.ftE(_current_collect_layer, function(relyObj) {
+            $.E(_current_collect_layer, function(relyObj) {
                 var observerObjCollect = observerCache[relyObj.dm_id] || (observerCache[relyObj.dm_id] = {})
                 var observerObjs = observerObjCollect[relyObj.dm_key] || (observerObjCollect[relyObj.dm_key] = [])
 
@@ -133,13 +133,13 @@
                     }
                 }
             }
-            observerObjs && $.fE(observerObjs, function(observerObj, abandon_index) {
-                DataManager.get(observerObj.dm_id).touchOff(observerObj.dm_key)
+            observerObjs && $.e(observerObjs, function(observerObj, abandon_index) {
+                Model.get(observerObj.dm_id).touchOff(observerObj.dm_key)
             })
         }
         return result;
     }
 
-    //DataManager.extend
-    _dataManagerExtend("Observer", Observer)
+    //Model.extend
+    _modelExtend("Observer", Observer)
 }())

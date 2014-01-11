@@ -1,19 +1,30 @@
-!(function viewParse(global) {
+!(function jSoap(global) {
 
 'use strict';
-var global = global || this /*strict model use "global" else than "this"*/ ;
+//在压缩编译时，global会由外部引入，这里var声明为了在调试模式中能正常使用
+var global = global || this;
 
-var doc = document,
+var
+// 手动声明引用，提高压缩率
+doc = document,
+
+    //用于判断浏览器是否为支持W3C规范，这里主要针对IE系列
     _isIE = !global.dispatchEvent, //!+"\v1",
+
+    //生成一个DocumentFragment内的元素来提高DOM操作的效率
     fragment = function(nodeTag) {
         return (fragment.fg || (fragment.fg = doc.createDocumentFragment())).appendChild(doc.createElement(nodeTag || "div"))
     },
+
+    //一个共用的DocumentFragment内div
     _fg = fragment(),
+
     // shadowBody = fragment("body"),
     shadowDIV = fragment(),
     _placeholder = function(prefix) {
         return (prefix || "@") + Math.random().toString(36).substr(2)
     },
+
     //@jQuery
     support = (function() {
         var div = fragment("div");
@@ -44,15 +55,38 @@ var doc = document,
         // unless wrapped in a div with non-breaking characters in front of it.
         _default: support.htmlSerialize ? [0, "", ""] : [1, "X<div>", "</div>"]
     },
-    _booleanFalseRegExp = /false|undefined|null|NaN/,
+
+    //常值，使用引用提高压缩率
     $NULL = null,
     $UNDEFINED,
     $TRUE = !$UNDEFINED,
     $FALSE = !$TRUE,
+
+    // $EmptyString = "",
+
+    //在HTML解析时空对象输出的字符串值
+    ///false|undefined|null|NaN/
+    _booleanFalseRegExp = function(str) {
+        if (_emptyRegExp[String($.trim(str))]) {
+            return "";
+        }
+        return str;
+    },
+    _emptyRegExp = {
+        false: $TRUE,
+        undefined: $TRUE,
+        null: $TRUE,
+        NaN: $TRUE
+    },
+
     _split_laveStr, //@split export argument
     $ = {
         id: 9,
+
+        //全局唯一不定字符串，每次程序运行都不一样
         uidAvator: _placeholder(),
+
+        //获取一个对象所对应的key的hash
         hashCode: function(obj, prefix) {
             var uidAvator = (prefix || "") + $.uidAvator,
                 codeID;
@@ -61,35 +95,53 @@ var doc = document,
             }
             return codeID;
         },
-        noop: function noop() {},
-        valueOf: function(Obj) {
-            if (Obj) {
-                Obj = Obj.valueOf()
-            }
-            return Obj
-        },
+
+        //空函数
+        noop: function() {},
+
+        //获取唯一ID
         uid: function() {
             return this.id = this.id + 1;
         },
-        iS: function(str) {
+
+        //判断是否为字符串
+        isS: function(str) {
             return typeof str === "string"
         },
-        isString: function(str) {
+
+        //判断是否为数组
+        isA:function(obj){
+            return obj instanceof Array;
+        },
+
+        //判断是否为非primitives（原始值）
+        isO:function(obj){
+            return obj instanceof Object;
+        },
+
+        //判断是一个字符串是否用引号包裹
+        isSWrap: function(str) {
             var start = str.charAt(0);
             return (start === str.charAt(str.length - 1)) && "\'\"".indexOf(start) !== -1;
         },
+
+        //按字符串切割，返回切割后的字符串，所切割的字符串保存到临时变量_split_laveStr中，下一次切割会被覆盖
         st: function(str, splitKey) { //split
             var index = str.indexOf(splitKey);
             _split_laveStr = str.substr(index + splitKey.length);
             //false is undefined
             return index !== -1 && str.substring(0, index);
         },
+
+        //同$.st，但是从后往前进行切割
         lst: function(str, splitKey) { //last split
             var index = str.lastIndexOf(splitKey);
             _split_laveStr = str.substr(index + splitKey.length);
             //false is undefined
             return index !== -1 && str.substring(0, index);
         },
+
+        //清空两边字符串
         trim: function(str) {
             str = str.replace(/^\s\s*/, '')
             var ws = /\s/,
@@ -97,27 +149,23 @@ var doc = document,
             while (ws.test(str.charAt(--i)));
             return str.slice(0, i + 1);
         },
-        p: function(arr, item) { //push
+
+        //自定义常用原型方法将提高效率和压缩率
+        //Array.property.push
+        p: function(arr, item) {
             var len = arr.length
             arr[len] = item;
             return len;
         },
+        //Array.property.unshift
         us: function(arr, item) { //unshift
             arr.splice(0, 0, item);
         },
-        un: function(array) { //unique
-            var a = array;
-            for (var i = 0; i < a.length; ++i) {
-                for (var j = i + 1; j < a.length; ++j) {
-                    if (a[i] === a[j])
-                        a.splice(j--, 1);
-                }
-            }
-            return a;
-        },
+
+        //轻拷贝数组
         s: function(likeArr) { //slice
             var array;
-            if ($.iS(likeArr)) {
+            if ($.isS(likeArr)) {
                 return likeArr.split('');
             }
             try {
@@ -130,14 +178,15 @@ var doc = document,
             }
             return array;
         },
+
+        //ArrayLike没有splice函数，使用call
         sp: Array.prototype.splice,
-        pI: function(arr, item) { //pushByID
-            arr[item.id] = item;
-            return item;
-        },
+
+        //获取数组中的最后一个元素
         lI: function(arr) { //lastItem
             return arr[arr.length - 1];
         },
+        //将元素按索引插入其后
         iA: function(arr, afterItem, item) { //insertAfter
             for (var i = 0; i < arr.length; i += 1) {
                 if (arr[i] === afterItem) {
@@ -147,6 +196,7 @@ var doc = document,
             }
             return i;
         },
+        //同Array.property.indexOf，修复IE8-系列的不兼容
         iO: function(arr, item) { //indexOf
             for (var i = 0, len = arr.length; i < len; i += 1) {
                 if (arr[i] === item) {
@@ -155,17 +205,20 @@ var doc = document,
             }
             return -1;
         },
+        //for(in) 这种循环经常涉及到闭包，所以和forEach一样封装成一个工具函数
         fI: function(obj, callback) { //forIn
             for (var i in obj) {
                 callback(obj[i], i, obj);
             }
         },
-        ftE: function(arr, callback, index) { //fastEach
+        //最简单数组的遍历方式
+        E: function(arr, callback, index) { //fastEach
             for (var i = index || 0, len = arr.length; i < len; i += 1) {
                 callback(arr[i], i);
             }
         },
-        fE: function(arr, callback, i) { //forEach
+        //特殊的forEach，可中途打断，长度也是动态的，在内部节点遍历的操作中将经常使用
+        e: function(arr, callback, i) { //forEach
             if (arr) {
                 arr = $.s(arr);
                 // return this._each($.s(arr), callback, i)
@@ -174,24 +227,25 @@ var doc = document,
                 }
             }
         },
+        //从数组中移除索引所对应的元素
         rm: function(arr, item) {
             var index = $.iO(arr, item);
             arr.splice(index, 1);
             return arr;
         },
-        // b: function(fun,scope){//Function.prototype.bind
-        // 	return function() {
-        // 		return fun.apply(scope, _s.call(arguments));
-        // 	}
-        // },
+        //将对象绑定到一个新的对象的原型上，实现简单的继承
         c: function(proto) { //quitter than Object.create , use same memory
             _Object_create_noop.prototype = proto;
             return new _Object_create_noop;
         },
+
+        //DOM操作集合
         D: { //DOM
+            //创建一个注释
             C: function(info) { //Comment
                 return doc.createComment(info)
             },
+            //通过传入的字符串创建节点以及其子节点
             cs: function(nodeHTML) { //createElement by Str
                 var result;
                 if (nodeHTML.charAt(0) === "<" && nodeHTML.charAt(nodeHTML.length - 1) === ">" && nodeHTML.length >= 3) {
@@ -219,51 +273,51 @@ var doc = document,
                 }
                 return result;
             },
-            iB: function(parentNode, insertNode, beforNode) { //insertBefore
-                // try{
+            //insertBefore
+            iB: function(parentNode, insertNode, beforNode) {
                 parentNode.insertBefore(insertNode, beforNode || $NULL);
-                // }catch(e){}
             },
+            //往节点末尾推入节点集合
             ap: function(parentNode, node) { //append
                 parentNode.appendChild(node);
             },
+            //浅克隆节点
             cl: function(node, deep) { //clone,do not need detached clone
                 return node.cloneNode(deep);
             },
+            //移除子节点
             rC: function(parentNode, node) { //removeChild
                 parentNode.removeChild(node)
             },
+            //替换节点
             re: function(parentNode, new_node, old_node) { //replace
-                try {
-                    parentNode.replaceChild(new_node, old_node);
-                } catch (e) {}
+                parentNode.replaceChild(new_node, old_node);
             },
-            rm: _isIE ? function() {
+            //删除节点释放内存
+            rm: _isIE ? function(node) {
                 //@大城小胖 http://fins.iteye.com/blog/172263
-                var d = doc.createElement("div");
-                return function(n) {
-                    if (n && n.tagName != 'BODY') {
-                        d.appendChild(n);
-                        d.innerHTML = '';
-                    }
+                if (node && node.tagName != 'BODY') {
+                    _fg.appendChild(node);
+                    _fg.innerHTML = '';
                 }
-            }() : function(n) {
-                if (n && n.parentNode && n.tagName != 'BODY') {
-                    delete n.parentNode.removeChild(n);
+            } : function(node) {
+                if (node && node.parentNode && node.tagName != 'BODY') {
+                    delete node.parentNode.removeChild(node);
                 }
             }
         },
+        //简单的AJAX函数
         ajax: function(config) {
             var xhr = new(window.XMLHttpRequest || ActiveXObject)("Microsoft.XMLHTTP");
             xhr.onreadystatechange = function() {
                 if (xhr.readyState === 4) {
                     var s = xhr.status
                     if (s >= 200 && s < 300 || s === 304 || s === 1223) {
-                        (config.success || $.noop)(s, xhr)
+                        config.success && config.success(s, xhr)
                     } else {
-                        (config.error || $.noop)(s, xhr)
+                        config.error && config.error(s, xhr)
                     }
-                    (config.complete || $.noop)(s, xhr)
+                    config.complete && config.complete(s, xhr)
                 }
             }
             var async = (config.async === $FALSE) ? $FALSE : $TRUE;
@@ -273,7 +327,8 @@ var doc = document,
             return xhr
         }
     },
-    _Object_create_noop = function proto() {},
+    //空函数，用于绑定对象到该原型链上并生成返回子对象
+    _Object_create_noop = function () {},
     _traversal = function(node, callback) {
         for (var i = 0, child_node, childNodes = node.childNodes; child_node = childNodes[i]; i += 1) {
             var result = callback(child_node, i, node);
@@ -283,14 +338,471 @@ var doc = document,
         }
     };
 
-function ArraySet() {
+var
+//事件缓存区
+_event_cache = {},
+    _fixEvent = function(e) { //@Rybylouvre
+        // if (!e.target) {console.log(e)};
+        e.target || (e.target = e.srcElement);
+        e.which || (e.which = e.charCode || e.keyCode); //e.charCode != $NULL ? e.charCode : e.keyCode;
+        e.preventDefault || (e.preventDefault = function() { //for ie
+            e.returnValue = $FALSE
+        });
+        e.stopPropagation || (e.stopPropagation = function() { //for ie
+            e.cancelBubble = $TRUE
+        });
+    },
+
+    //修复浏览器兼容的鼠标坐标
+    _box,
+    _fixMouseEvent = function(event) {
+        _fixEvent(event);
+        if (!_box && _isIE) {
+            _box = event.target.ownerDocument || doc;
+            _box = "BackCompat" === _box.compatMode ? _box.body : _box.documentElement;
+        }
+        event.pageX || (event.pageX = event.clientX + ~~_box.scrollLeft - ~~_box.clientLeft);
+        event.pageY || (event.pageY = event.clientY + ~~_box.scrollTop - ~~_box.clientTop);
+    },
+
+    //修复浏览器兼容的滚轮事件缓存值
+    __lowestDelta, __lowestDeltaXY,
+
+    //事件对象修复
+    _extendEventRouter = function(e, _extend) {
+        //可以操作原型链的话直接使用原型链继承方式
+        if (e.__proto__) {
+            var result = (_extendEventRouter = function(e, _extend) {
+                var _e = {};
+                $.fI(_extend, function(value, key) {
+                    _e[key] = value;
+                })
+                _e.__proto__ = e;
+                return _e;
+            })(e, _extend);
+        } else {
+            //IE系列也是使用原型链，但是现代浏览器的属性操作会直接定位到原型链上
+            if (_isIE) {
+                result = (_extendEventRouter = function(e, _extend) {
+                    var _e;
+                    _e = $.c(e)
+                    $.fI(_extend, function(value, key) {
+                        _e[key] = value;
+                    })
+                    return _e;
+                })(e, _extend);
+            } else {
+                try {
+                    result = (_extendEventRouter = function(e, _extend) {
+                        $.fI(_extend, function(value, key) {
+                            delete e[key];
+                            e[key] = value;
+                        })
+                        return e;
+                    })(e, _extend);
+                } catch (ex) {}
+            }
+        }
+        return result;
+    },
+
+    //事件生成器中的路由匹配
+    _registerEventRouterMatch = {
+        ip: {
+            input: $TRUE
+        },
+        //右键
+        rc: {
+            contextmenu: $TRUE,
+            rclick: $TRUE,
+            rightclick: $TRUE
+        },
+        //模拟IE的mouseEnter、mouseLeave
+        el: {
+            mouseenter: "mouseover",
+            mouseleave: "mouseout"
+        },
+        //左键
+        lc: {
+            lclick: $TRUE,
+            leftclick: $TRUE
+        },
+        //中键
+        wc: {
+            wclick: $TRUE,
+            wheelclick: $TRUE
+        },
+        //滚轮事件
+        mw: {
+            mousewheel: $TRUE
+        },
+        //声明及执行事件，用于做初始化
+        rd: {
+            ready: $TRUE
+        }
+    },
+    //事件生成器
+    _registerEventBase = function(Element, eventName, eventFun, elementHash) {
+        var result = {
+            name: eventName,
+            fn: eventFun
+        };
+        var _fn = result.fn = (function(fixEvent) {
+            return function(e) {
+                fixEvent(e);
+                var _e = e;
+                e._extend && (_e = _extendEventRouter(e, e._extend));
+                var result = eventFun.call(Element, _e);
+                (result === $FALSE) && (e.preventDefault() || e.stopPropagation());
+                return result;
+            }
+        }(_isIE ? (/mouse|click|contextmenu/.test(eventName) ? _fixMouseEvent : _fixEvent) : $.noop));
+
+        if (_registerEventRouterMatch.ip[eventName] && !("oninput" in doc)) {
+            (function() {
+                result.name = ["keypress", /*"focus", */ "blur", "keyup", "paste", "propertychange", "cut"]
+                var _fixPropertychangeLock,
+                    _deleteOrChienseInput,
+                    _oldValue = Element.value,
+                    _TI;
+                // delete Element.value;
+                result.fn = function(e) { // @Gaubee github/blog/issues/44
+                    var result;
+                    if (e.type === "keyup") { //keyup // 3
+                        if (_deleteOrChienseInput) {
+                            _deleteOrChienseInput = $FALSE;
+                            _oldValue = Element.value;
+                            e._extend = {
+                                type: "input"
+                            }
+                            result = _fn(e);
+                        }
+                    } else if (e.type === "propertychange") { // 2
+                        if (_fixPropertychangeLock) {
+                            _fixPropertychangeLock = $FALSE;
+                            e._extend = {
+                                type: "input"
+                            }
+                            result = _fn(e);
+                        } else if ((e.keyCode === 8 /*backspace*/ || e.keyCode === 46 /*delete*/ ) || _oldValue !== Element.value) { //delete or chinese input
+                            _deleteOrChienseInput = $TRUE;
+                        }
+                    } else if (e.type === "blur") {
+                        Element.fireEvent("onkeyup")
+                        // clearInterval(_TI);
+                    } else { //paste cut keypress  // 1
+                        _fixPropertychangeLock = $TRUE;
+                        _deleteOrChienseInput = $FALSE;
+                    }
+                }
+            }());
+        } else if (_registerEventRouterMatch.rc[eventName] && _isIE) {
+            (function() {
+                result.name = ["mousedown", "contextmenu"];
+                var _result;
+                result.fn = function(e) {
+                    if (e.type === "contextmenu") {
+                        return _result;
+                    } else {
+                        if (e.button === 2) {
+                            e._extend = {
+                                type: "contextmenu"
+                            }
+                            _result = _fn(e)
+                        };
+                    }
+                }
+            }());
+        } else if (result._cacheName = _registerEventRouterMatch.el[eventName] && ("mouseenter" in doc)) {
+            (function() {
+                result.name = result._cacheName;
+                result.fn = function(e) {
+                    var topNode = e.relatedTarget,
+                        self = this;
+                    /*compareDocumentPosition
+						0 self == topNode ===> 
+						1 self in deffriend Document with topNode
+						2 topNode befor self
+						4 self befor topNode
+						8 topNode contains self
+						16 self contains topNode  ==>  
+						32 Brower private*/
+                    if (!topNode || (topNode !== self && !(self.compareDocumentPosition(topNode) & 16))) { //@Rubylouvre
+                        e._extend = {
+                            type: eventName
+                        }
+                        return _fn(e);
+                    }
+                }
+            }())
+        } else if (_registerEventRouterMatch.lc[eventName]) {
+            (function() {
+                result.name = "mousedown"
+                result.fn = _isIE ? function(e) {
+                    if (e.button === 1) {
+                        e._extend = {
+                            type: "leftclick"
+                        }
+                        return _fn(e);
+                    }
+                } : function(e) {
+                    if (e.button === 0) {
+                        e._extend = {
+                            type: "leftclick"
+                        }
+                        return _fn(e);
+                    }
+                }
+            }());
+        } else if (_registerEventRouterMatch.wc[eventName]) {
+            (function() {
+                result.name = "mousedown"
+                result.fn = _isIE ? function(e) {
+                    if (e.button === 4) {
+                        e._extend = {
+                            type: "wheelclick"
+                        }
+                        return _fn(e);
+                    }
+                } : function(e) {
+                    if (e.button === 1) {
+                        e._extend = {
+                            type: "wheelclick"
+                        }
+                        return _fn(e);
+                    }
+                }
+            }());
+        } else if (_registerEventRouterMatch.mw[eventName]) {
+            //@brandonaaron:jquery-mousewheel MIT License
+            (function() {
+                result.name = "onwheel" in doc || doc.documentMode >= 9 ? "wheel" : ["mousewheel", "DomMouseScroll", "MozMousePiexlScroll"];
+                result.fn = function(e) {
+                    var delta = 0, //增量
+                        deltaX = 0,
+                        deltaY = 0,
+                        absDelta = 0,
+                        absDeltaXY = 0,
+                        fn;
+
+                    // Old school scrollwheel delta
+                    if (e.wheelDelta /*px or undefined*/ ) {
+                        delta = e.wheelDelta;
+                    }
+                    if (e.detail /*0 or px*/ ) {
+                        delta = e.detail * -1;
+                    }
+                    // At a minimum, setup the deltaY to be delta
+                    deltaY = delta;
+
+                    // Firefox < 17 related to DOMMouseScroll event
+                    if (e.axis !== $UNDEFINED && e.axis === e.HORIZONTAL_AXIS) {
+                        deltaY = 0;
+                        deltaX = delta * -1;
+                    }
+
+                    // New school wheel delta (wheel event)
+                    if (e.deltaY) {
+                        deltaY = e.deltaY * -1;
+                        delta = deltaY;
+                    }
+                    if (e.deltaX) {
+                        deltaX = e.deltaX;
+                        delta = deltaX * -1;
+                    }
+                    // Webkit
+                    if (e.wheelDeltaY !== $UNDEFINED) {
+                        deltaY = e.wheelDeltaY;
+                    }
+                    if (e.wheelDeltaX !== $UNDEFINED) {
+                        deltaX = e.wheelDeltaX * -1;
+                    }
+
+                    // Look for lowest delta to normalize the delta values
+                    absDelta = Math.abs(delta);
+                    if (!__lowestDelta || absDelta < __lowestDelta) {
+                        __lowestDelta = absDelta;
+                    }
+                    absDeltaXY = Math.max(Math.abs(deltaY), Math.abs(deltaX));
+                    if (!__lowestDeltaXY || absDeltaXY < __lowestDeltaXY) {
+                        __lowestDeltaXY = absDeltaXY;
+                    }
+
+                    // Get a whole value for the deltas
+                    fn = delta > 0 ? 'floor' : 'ceil';
+                    delta = Math[fn](delta / __lowestDelta);
+                    deltaX = Math[fn](deltaX / __lowestDeltaXY);
+                    deltaY = Math[fn](deltaY / __lowestDeltaXY);
+                    e._extend = {
+                        type: 'mousewheel',
+                        wheelDelta: delta,
+                        wheelDeltaX: deltaX,
+                        wheelDeltaY: deltaY
+                    }
+                    _fn(e)
+                }
+            }());
+        } else if (_registerEventRouterMatch.rd[eventName]) {
+            finallyRun.register(elementHash, function() {
+                _fn({
+                    type: "ready"
+                });
+            })
+        }
+        _event_cache[elementHash + $.hashCode(eventFun)] = result;
+        return result;
+    },
+
+    //现代浏览器的事件监听
+    _addEventListener = function(Element, eventName, eventFun, elementHash) {
+        var eventConfig = _registerEventBase(Element, eventName, eventFun, elementHash)
+        if ($.isS(eventConfig.name)) {
+            Element.addEventListener(eventConfig.name, eventConfig.fn, $FALSE);
+        } else {
+            $.E(eventConfig.name, function(eventName) {
+                Element.addEventListener(eventName, eventConfig.fn, $FALSE);
+            })
+        }
+    },
+    //现代浏览器的事件移除
+    _removeEventListener = function(Element, eventName, eventFun, elementHash) {
+        var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
+        wrapEventFun && Element.removeEventListener(eventName, wrapEventFun, $FALSE);
+    },
+
+    //IE浏览器的时间监听
+    _attachEvent = function(Element, eventName, eventFun, elementHash) {
+        var eventConfig = _registerEventBase(Element, eventName, eventFun, elementHash)
+        if ($.isS(eventConfig.name)) {
+            Element.attachEvent("on" + eventConfig.name, eventConfig.fn);
+        } else {
+            $.E(eventConfig.name, function(eventName) {
+                Element.attachEvent("on" + eventName, eventConfig.fn);
+            })
+        }
+    },
+    //IE浏览器的事件移除
+    _detachEvent = function(Element, eventName, eventFun, elementHash) {
+        var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
+        wrapEventFun && Element.detachEvent("on" + eventName, wrapEventFun);
+    },
+    
+    //对外的接口
+    _registerEvent = _isIE ? _attachEvent : _addEventListener,
+    _cancelEvent = _isIE ? _detachEvent : _removeEventListener;
+
+/*
+ * SmartTriggerHandle constructor
+ * 用于View层中声明的绑定做包裹。
+ * 在每个ViewModel实例中都有着这些包裹过的SmartTriggerHandle实例对象的引用
+ * 在ViewModel实例的Model在数据集合中的位置发生相对变动时(subset/collect的操作引起的)，将回收这些SmartTriggerHandle实例对象并重新绑定
+ */
+
+function SmartTriggerHandle(key, triggerEvent, data) {
+    var self = this,
+        match = key;
+    self.matchKey = String(key);
+    self.TEMP = data;
+    self.event = triggerEvent instanceof Function ? triggerEvent : $.noop;
+
+    //根据key开判断是否需要在Model相对变动时你，进行重新绑定。
+    //现在默认都重新绑定。到后期再进行优化
+    self.moveAble = SmartTriggerHandle.moveAble(self);
+
+    //托管自己的SmartTriggerSet实例集合
+    self.STS_Collection = [];
+};
+SmartTriggerHandle.moveAble = function(smartTriggerHandle) {
+    return $TRUE;
+};
+SmartTriggerHandle.prototype = {
+    //托管到到一个SmartTriggerSet实例中
+    bind: function(smartTriggerSet, key) {
+        var self = this;
+        $.p(self.STS_Collection, smartTriggerSet);
+        //如果没有指定绑定关键字，则默认使用配置中的匹配关键字
+        smartTriggerSet.push(key === $UNDEFINED ? self.matchKey : key, self);
+        return self;
+    },
+    //解除SmartTriggerSet实例的托管
+    unbind: function(smartTriggerSet) {
+        var self = this,
+            STS_Collection = self.STS_Collection,
+            index = $.iO(STS_Collection, smartTriggerSet);
+        //托管方和被托管方双边都需要互相移除
+        if (index !== -1) {
+            smartTriggerSet.remove(self);
+            STS_Collection.splice(index, 1);
+        }
+        return self;
+    }
+};
+
+/*
+ * SmartTriggerSet constructor
+ * 用于管理SmartTriggerHandle的管理器
+ * 自定义数据类型，方便遍历操作
+ */
+
+function SmartTriggerSet(data) {
     var self = this;
     self.keys = [];
     self.store = {};
-    return self;
+    self.TEMP = data;
 };
-ArraySet.prototype = {
-    set: function(key, value) {
+
+SmartTriggerSet.prototype = {
+
+    //按关键字存储对象，如果对象是数组格式，则与当前集合进行合并
+    push: function(key, value) {
+        var self = this,
+            keys = self.keys,
+            store = self.store,
+            currentCollection;
+        key = String(key);
+        self.id = $.uid();
+        if (!(key in store)) {
+            $.p(keys, key);
+        }
+        //若集合为空，则立刻生成
+        currentCollection = store[key] || (store[key] = []);
+        if (value instanceof SmartTriggerHandle) {
+            $.p(currentCollection, value);
+        } else if ($.isA(value)) {
+            //数组类型，一个个存储，确保每一个对象都正确（instanceof SmartTriggerHandle）
+            $.E(value, function(smartTriggerHandle) {
+                self.push(key, smartTriggerHandle);
+            });
+        } else {
+            console.warn("type error,no SmartTriggerHandle instance!");
+        }
+        return currentCollection.length;
+    },
+    remove: function(smartTriggerHandle) {
+        var self = this,
+            key = smartTriggerHandle.matchKey,
+            store = self.store,
+            currentCollection = store[key];
+        if (currentCollection) {
+            var index = $.iO(currentCollection, smartTriggerHandle);
+            (index !== -1) && $.sp.call(currentCollection, index, 1);
+        }
+        return self;
+    },
+    //触发所有子集的事件
+    touchOff: function(key) {
+        var self = this;
+        $.E(self.get(key), function(smartTriggerHandle) {
+            smartTriggerHandle.event(self);
+        });
+        return self;
+    },
+
+    /*
+     * 不针对smartTriggerHandle的操作
+     */
+
+    set: function(key, value) { //TODO：使用率很低，考虑是否废弃
         var self = this,
             keys = self.keys,
             store = self.store;
@@ -300,524 +812,137 @@ ArraySet.prototype = {
         }
         store[key] = value;
     },
+    //返回所对应关键字的对象，这边都是数组类型
     get: function(key) {
         return this.store[key];
     },
-    forIn: function(callback) { //forEach ==> forIn
+    //遍历方法forEach ==> forIn
+    forIn: function(callback) { //TODO：使用率很低，考虑是否废弃
         var self = this,
             store = self.store;
-        return $.ftE(self.keys, function(key, index) {
+        return $.E(self.keys, function(key, index) {
             callback(store[key], key, store);
         })
     },
+    //判断是否存在所指定key的对象
     has: function(key) {
-        return key in this.store;
+        return this.store.hasOwnProperty(key);
     }
-};
-
-function Try(tryFun, scope, errorCallback) {
-    errorCallback = errorCallback || function(e) {
-        if (console) {
-            console.error(e)
-        } else {
-            throw e
-        };
-    };
-    return function() {
-        var result;
-        try {
-            result = tryFun.apply(scope, arguments /*$.s(arguments)*/ );
-        } catch (e) {
-            errorCallback(e);
-        }
-        return result;
-    }
-};
-
-var _event_cache = {},
-	_box,
-	_fixEvent = function(e) { //@Rybylouvre
-		// if (!e.target) {console.log(e)};
-		e.target || (e.target = e.srcElement);
-		e.which || (e.which = e.charCode || e.keyCode); //e.charCode != $NULL ? e.charCode : e.keyCode;
-		e.preventDefault || (e.preventDefault = function() { //for ie
-			e.returnValue = $FALSE
-		});
-		e.stopPropagation || (e.stopPropagation = function() { //for ie
-			e.cancelBubble = $TRUE
-		});
-	},
-	_fixMouseEvent = function(event) {
-		_fixEvent(event);
-		if (!_box && _isIE) {
-			_box = event.target.ownerDocument || doc;
-			_box = "BackCompat" === _box.compatMode ? _box.body : _box.documentElement;
-		}
-		event.pageX || (event.pageX = event.clientX + ~~_box.scrollLeft - ~~_box.clientLeft);
-		event.pageY || (event.pageY = event.clientY + ~~_box.scrollTop - ~~_box.clientTop);
-	},
-	__lowestDelta, __lowestDeltaXY,
-	_extendEventRouter = function(e, _extend) {
-		if (e.__proto__) {
-			var result = (_extendEventRouter = function(e, _extend) {
-				var _e = {};
-				$.fI(_extend, function(value, key) {
-					_e[key] = value;
-				})
-				_e.__proto__ = e;
-				return _e;
-			})(e, _extend);
-		} else {
-			// try {// 	delete e.type; // 	e.type = e._eventName; // } catch (e) {// 	_e = $.c(e) // 	_e.type = "leftclick"// }
-			if (_isIE) {
-				result = (_extendEventRouter = function(e, _extend) {
-					var _e;
-					_e = $.c(e)
-					$.fI(_extend, function(value, key) {
-						_e[key] = value;
-					})
-					return _e;
-				})(e, _extend);
-			} else {
-				result = (_extendEventRouter = function(e, _extend) {
-					$.fI(_extend, function(value, key) {
-						delete e[key];
-						e[key] = value;
-					})
-					return e;
-				})(e, _extend);
-			}
-		}
-		return result;
-	},
-	// _extendEventRouter_proto = function(e, _extend) {
-	// 	var _e = {};
-	// 	$.fI(_extend, function(value, key) {
-	// 		_e[key] = value;
-	// 	})
-	// 	_e.__proto__ = e;
-	// 	return _e;
-	// },
-	// _extendEventRouter_ie = function(e, _extend) {
-	// 	var _e;
-	// 	_e = $.c(e)
-	// 	$.fI(_extend, function(value, key) {
-	// 		_e[key] = value;
-	// 	})
-	// 	return _e;
-	// },
-	// _extendEventRouter_old = function(e, _extend) {
-	// 	$.fI(_extend, function(value, key) {
-	// 		delete e[key];
-	// 		e[key] = value;
-	// 	})
-	// 	return e;
-	// },
-	_registerEventBase = function(Element, eventName, eventFun, elementHash) {
-		var result = {
-			name: eventName,
-			fn: eventFun
-		};
-		var _fn = result.fn = (function(fixEvent) {
-			return function(e) {
-				fixEvent(e);
-				var _e = e;
-				e._extend && (_e = _extendEventRouter(e, e._extend));
-				var result = eventFun.call(Element, _e);
-				(result === $FALSE) && (e.preventDefault() || e.stopPropagation());
-				return result;
-			}
-		}(_isIE ? (/mouse|click|contextmenu/.test(eventName) ? _fixMouseEvent : _fixEvent) : $.noop));
-
-		if (eventName === "input" && !("oninput" in doc)) {
-			(function() {
-				result.name = ["keypress", /*"focus", */ "blur", "keyup", "paste", "propertychange", "cut"]
-				var _fixPropertychangeLock,
-					_deleteOrChienseInput,
-					_oldValue = Element.value,
-					_TI;
-				// delete Element.value;
-				result.fn = function(e) { // @Gaubee github/blog/issues/44
-					var result;
-					if (e.type === "keyup") { //keyup // 3
-						if (_deleteOrChienseInput) {
-							_deleteOrChienseInput = $FALSE;
-							_oldValue = Element.value;
-							e._extend = {
-								type: "input"
-							}
-							result = _fn(e);
-						}
-					} else if (e.type === "propertychange") { // 2
-						if (_fixPropertychangeLock) {
-							_fixPropertychangeLock = $FALSE;
-							e._extend = {
-								type: "input"
-							}
-							result = _fn(e);
-						} else if ((e.keyCode === 8 /*backspace*/ || e.keyCode === 46 /*delete*/ ) || _oldValue !== Element.value) { //delete or chinese input
-							_deleteOrChienseInput = $TRUE;
-						}
-					} else if (e.type === "blur") {
-						Element.fireEvent("onkeyup")
-						// clearInterval(_TI);
-					} else { //paste cut keypress  // 1
-						_fixPropertychangeLock = $TRUE;
-						_deleteOrChienseInput = $FALSE;
-					}
-				}
-				// function(b){"keydown"===b.type?8!==b.keyCode&&46!==b.keyCode||f===a.value||(f=a.value,z=G):"propertychange"===b.type?z&&(z=H,g(b)):z=G}
-			}());
-		} else if (/contextmenu|rclick|rightclick/.test(eventName) && _isIE) {
-			(function() {
-				result.name = ["mousedown", "contextmenu"];
-				var _result;
-				result.fn = function(e) {
-					if (e.type === "contextmenu") {
-						return _result;
-					} else {
-						if (e.button === 2) {
-							e._extend = {
-								type: "contextmenu"
-							}
-							_result = _fn(e)
-						};
-					}
-				}
-			}());
-		} else if (/mouseenter|mouseleave/.test(eventName) && !_isIE) {
-			(function() {
-				result.name = eventName[5] === "e" ? "mouseover" : "mouseout";
-				result.fn = function(e) {
-					var topNode = e.relatedTarget,
-						self = this;
-					/*compareDocumentPosition
-						0 self == topNode ===> 
-						1 self in deffriend Document with topNode
-						2 topNode befor self
-						4 self befor topNode
-						8 topNode contains self
-						16 self contains topNode  ==>  
-						32 Brower private*/
-					if (!topNode || (topNode !== self && !(self.compareDocumentPosition(topNode) & 16))) { //@Rubylouvre
-						e._extend = {
-							type: eventName
-						}
-						return _fn(e);
-					}
-					/*else{
-						return _fixMouseEnterAndLeave;//stop run 
-					}*/
-				}
-			}())
-		} else if (eventName === "lclick" || eventName === "leftclick") {
-			(function() {
-				result.name = "mousedown"
-				result.fn = _isIE ? function(e) {
-					if (e.button === 1) {
-						e._extend = {
-							type: "leftclick"
-						}
-						return _fn(e);
-					}
-				} : function(e) {
-					if (e.button === 0) {
-						e._extend = {
-							type: "leftclick"
-						}
-						return _fn(e);
-					}
-				}
-			}());
-		} else if (eventName === "wclick" || eventName === "wheelclick") {
-			(function() {
-				result.name = "mousedown"
-				result.fn = _isIE ? function(e) {
-					if (e.button === 4) {
-						e._extend = {
-							type: "wheelclick"
-						}
-						return _fn(e);
-					}
-				} : function(e) {
-					if (e.button === 1) {
-						e._extend = {
-							type: "wheelclick"
-						}
-						return _fn(e);
-					}
-				}
-			}());
-		} else if (eventName === "mousewheel") {
-			//@brandonaaron:jquery-mousewheel MIT License
-			(function() {
-				result.name = "onwheel" in doc || doc.documentMode >= 9 ? "wheel" : ["mousewheel", "DomMouseScroll", "MozMousePiexlScroll"];
-				result.fn = function(e) {
-					var delta = 0, //增量
-						deltaX = 0,
-						deltaY = 0,
-						absDelta = 0,
-						absDeltaXY = 0,
-						fn;
-
-					// Old school scrollwheel delta
-					if (e.wheelDelta /*px or undefined*/ ) {
-						delta = e.wheelDelta;
-					}
-					if (e.detail /*0 or px*/ ) {
-						delta = e.detail * -1;
-					}
-					// At a minimum, setup the deltaY to be delta
-					deltaY = delta;
-
-					// Firefox < 17 related to DOMMouseScroll event
-					if (e.axis !== $UNDEFINED && e.axis === e.HORIZONTAL_AXIS) {
-						deltaY = 0;
-						deltaX = delta * -1;
-					}
-
-					// New school wheel delta (wheel event)
-					if (e.deltaY) {
-						deltaY = e.deltaY * -1;
-						delta = deltaY;
-					}
-					if (e.deltaX) {
-						deltaX = e.deltaX;
-						delta = deltaX * -1;
-					}
-					// Webkit
-					if (e.wheelDeltaY !== $UNDEFINED) {
-						deltaY = e.wheelDeltaY;
-					}
-					if (e.wheelDeltaX !== $UNDEFINED) {
-						deltaX = e.wheelDeltaX * -1;
-					}
-
-					// Look for lowest delta to normalize the delta values
-					absDelta = Math.abs(delta);
-					if (!__lowestDelta || absDelta < __lowestDelta) {
-						__lowestDelta = absDelta;
-					}
-					absDeltaXY = Math.max(Math.abs(deltaY), Math.abs(deltaX));
-					if (!__lowestDeltaXY || absDeltaXY < __lowestDeltaXY) {
-						__lowestDeltaXY = absDeltaXY;
-					}
-
-					// Get a whole value for the deltas
-					fn = delta > 0 ? 'floor' : 'ceil';
-					delta = Math[fn](delta / __lowestDelta);
-					deltaX = Math[fn](deltaX / __lowestDeltaXY);
-					deltaY = Math[fn](deltaY / __lowestDeltaXY);
-					e._extend = {
-						type: 'mousewheel',
-						wheelDelta: delta,
-						wheelDeltaX: deltaX,
-						wheelDeltaY: deltaY
-					}
-					_fn(e)
-				}
-			}());
-		} else if (eventName === "ready"){
-			finallyRun.register(elementHash,function(){
-				_fn({type:"ready"});
-			})
-		}
-		_event_cache[elementHash + $.hashCode(eventFun)] = result;
-		return result;
-	},
-	_addEventListener = function(Element, eventName, eventFun, elementHash) {
-		var eventConfig = _registerEventBase(Element, eventName, eventFun, elementHash)
-		if ($.iS(eventConfig.name)) {
-			Element.addEventListener(eventConfig.name, eventConfig.fn, $FALSE);
-		} else {
-			$.ftE(eventConfig.name, function(eventName) {
-				Element.addEventListener(eventName, eventConfig.fn, $FALSE);
-			})
-		}
-	},
-	_removeEventListener = function(Element, eventName, eventFun, elementHash) {
-		var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
-		wrapEventFun && Element.removeEventListener(eventName, wrapEventFun, $FALSE);
-	},
-	_attachEvent = function(Element, eventName, eventFun, elementHash) {
-		var eventConfig = _registerEventBase(Element, eventName, eventFun, elementHash)
-		if ($.iS(eventConfig.name)) {
-			Element.attachEvent("on" + eventConfig.name, eventConfig.fn);
-		} else {
-			$.ftE(eventConfig.name, function(eventName) {
-				Element.attachEvent("on" + eventName, eventConfig.fn);
-			})
-		}
-	},
-	_detachEvent = function(Element, eventName, eventFun, elementHash) {
-		var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
-		wrapEventFun && Element.detachEvent("on" + eventName, wrapEventFun);
-	},
-	_registerEvent = _isIE ? _attachEvent : _addEventListener,
-	_cancelEvent = _isIE ? _detachEvent : _removeEventListener;
-/*
- * SmartTriggerSet constructor
- */
-
-function SmartTriggerSet(data) {
-	var self = this;
-	self.keys = [];
-	self.store = {};
-	self.TEMP = data;
-};
-(SmartTriggerSet.prototype = $.c(ArraySet.prototype)).push = function(key, value) {
-	var self = this,
-		keys = self.keys,
-		store = self.store,
-		currentCollection;
-	key = String(key);
-	self.id=$.uid();
-	if (!(key in store)) {
-		$.p(keys, key);
-	}
-	currentCollection = store[key] || (store[key] = []);
-	if (value instanceof Array) {
-		$.ftE(value, function(smartTriggerHandle) {
-			self.push(key, smartTriggerHandle);
-		})
-		// currentCollection.push.apply(currentCollection, value)
-	} else if (value instanceof SmartTriggerHandle) {
-		$.p(currentCollection, value)
-	} else {
-		console.warn("type error,no SmartTriggerHandle instance!");
-	}
-	return currentCollection.length;
-};
-SmartTriggerSet.prototype.touchOff = function(key) {
-	var self = this;
-	$.ftE(self.get(key), function(smartTriggerHandle) {
-		smartTriggerHandle.event(self);
-	});
-	return self;
-};
-SmartTriggerSet.prototype.remove = function(smartTriggerHandle) {
-	var self = this,
-		key = smartTriggerHandle.matchKey,
-		store = self.store,
-		currentCollection = store[key];
-	if (currentCollection) {
-		var index = $.iO(currentCollection, smartTriggerHandle);
-		$.sp.call(currentCollection,index,1);
-	}
-	return self;
 }
+
 /*
- * SmartTriggerHandle constructor
+ * Model constructor
+ * MVVM核心之一——Model层，，在浏览器端创建了一个小型的层次数据模型的数据库
+ * 为解决多ViewModel统一的数据来源问题而生
  */
 
-function SmartTriggerHandle(key, triggerEvent, data) {
-	var self = this,
-		match = key;
-	self.matchKey = String(key);
-	self.TEMP = data;
-	self.event = triggerEvent instanceof Function ? triggerEvent : $.noop;
-	self.moveAble = SmartTriggerHandle.moveAble(self);
-	self.STS_Collection = [];
-};
-SmartTriggerHandle.moveAble = function(smartTriggerHandle) {
-	return $TRUE;
-};
-SmartTriggerHandle.prototype = {
-	bind: function(smartTriggerSet, key) {
-		var self = this;
-		$.p(self.STS_Collection, smartTriggerSet);
-		smartTriggerSet.push(key === $UNDEFINED ? self.matchKey : key, self);
-		return self;
-	},
-	unbind: function(smartTriggerSet) {
-		var self = this,
-			STS_Collection = self.STS_Collection,
-			index = $.iO(STS_Collection, smartTriggerSet);
-		if (index !== -1) {
-			smartTriggerSet.remove(self);
-			STS_Collection.splice(index, 1);
-		}
-		return self;
-	}
-};
-/*
- * DataManager constructor
- */
-// var _hasOwn = Object.prototype.hasOwnProperty;
-
-function DataManager(baseData) {
+function Model(baseData) {
     var self = this;
-    if (!(self instanceof DataManager)) {
-        return new DataManager(baseData);
+    if (!(self instanceof Model)) {
+        return new Model(baseData);
     }
-    // baseData = baseData || {};
+
+    //生成唯一的标示符号
     self.id = $.uid();
 
+    //不对baseData做特殊处理，支持任意类型包括空类型的数据，且数据类型可任意更改
     self._database = baseData;
+
+    //用于缓存key所对应数组的长度，当数组长度发生改变，就需要向上缩减所要触发的key，确保所有集合的更新
     self.__arrayLen = {}; //cache array length with key
-    // self._cacheData = {};
-    self._viewInstances = []; //to touch off
-    self._parentDataManager // = $UNDEFINED; //to get data
+
+    //用于保存所绑定的所有ViewModel实例对象
+    self._viewModels = []; //to touch off
+
+    //父级Model
+    self._parentModel // = $UNDEFINED; //to get data
+
+    //相对于父级的前缀key，代表在父级中的位置
     self._prefix // = $NULL; //冒泡时需要加上的前缀
-    // self._smartSource // = $NULL; //store how to get parentDataManager
-    // self._smartDataManagers = [];//store smart dm which has prefix key 
 
-    self._siblingDataManagers = [];
-    self._subsetDataManagers = []; //to touch off
-    self._collectDataManagers = {};
+    //根据路（_prefix属性）径来动态寻找父级Model，在subset声明父子关系是会生成
+    // self._smartSource // = $NULL; //store how to get parentModel
+
+    //存储同步节点，通过collect model声明而来的节点，多者共享数据源
+    self._siblingModels = [];
+
+    //存储子model或者委托model（如array型的委托，
+    //array型由于都拥有同样的前缀与一个索引号，所以可以用委托定位速度更快，详见_ArrayModel）
+    self._subsetModels = []; //to touch off
+
+    //以hash的形式（这里用uid生成的唯一ID）存储_ArrayModel，方便新的array型model快速定位自己的受委托者，并进入队列中
+    self._collectModels = {};
+
+    //存储SmartTriggerHandled实例对象，并在set后对其进行更新，即更新View上的绑定。
     self._triggerKeys = new SmartTriggerSet({
-        dataManager: self
+        model: self
     });
-    DataManager._instances[self.id] = self;
-};
-(global.DataManager = DataManager)._instances = {};
 
+    //存储在全局集合中，方便跨Model访问，有些情况需要通过全局集合来获取
+    //因为Model可能因为多余而被销毁（replace），所以直接使用引用是不可靠的，用标实获取全局集合中对象才是最实时且正确的对象
+    Model._instances[self.id] = self;
+};
+
+//绑定到全局中
+//声明全局存储Model实例对象的区域，根据uid生成的唯一标示作为hash作为区分
+(global.Model = Model)._instances = {};
+
+//所有Model拓展对象都要有的属性，生存期同页面内存，在重新载入脚本后就会刷新，确保程序在极大部分情况下正常运行
 var _DM_extends_object_constructor = _placeholder();
 
-// get DataManager instance by id
-DataManager.get = function(id) {
-    return DataManager._instances[id];
+//根据唯一标示来获取一个Model实例对象
+// get Model instance by id
+Model.get = function(id) {
+    return Model._instances[id];
 }
 
-//set时使其进行强制更新
-DataManager.updateExtendObject = {};
-
-var $LENGTH = "length";
+//混合两个对象的属性并返回混合后的对象
 
 function _mix(sObj, nObj) {
     var obj_n,
         obj_s,
         i;
-    if (sObj instanceof Object && nObj instanceof Object) {
+    //新旧对象都是非primitives的情况下才能进行混合属性
+    if ($.isO(sObj) && $.isO(nObj)) {
         for (var i in nObj) {
             obj_n = nObj[i];
-            obj_s = sObj[i]; //||(sObj[i]={});
-            if (obj_s && obj_s[_DM_extends_object_constructor]) { //拓展的DM_Object对象，通过接口实现操作
+            obj_s = sObj[i];
+            //拓展的DM_Object对象，通过接口实现操作
+            if (obj_s && obj_s[_DM_extends_object_constructor]) {
                 obj_s.set(obj_n);
-            } else if (obj_s !== obj_n) { //避免循环 Avoid Circular
+            } else
+            //避免死循环 Avoid Circular
+            if (obj_s !== obj_n) {
+                //递归混合
                 sObj[i] = _mix(obj_s, obj_n);
             }
-            // DataManager.set(sObj, i, nObj);
         }
         return sObj;
     } else {
+        //否则直接返回新对象，覆盖旧对象
         return nObj;
     }
 };
 
-function _getAllSiblingDataManagers(self, result) {
+//获取所有的兄弟节点
+
+function _getAllSiblingModels(self, result) {
     $.p(result || (result = []), self)
-    var dmSublingDataManagers = self._siblingDataManagers;
-    $.ftE(dmSublingDataManagers, function(dm) {
+    var dmSublingModels = self._siblingModels;
+    $.E(dmSublingModels, function(dm) {
+        //因为兄弟节点的数量一般不会很多，所以直接用indexOf来做重复判断来得简单
+        //TODO:如果有特殊需求则有待提高其性能
         if ($.iO(result, dm) === -1) {
-            _getAllSiblingDataManagers(dm, result);
+            _getAllSiblingModels(dm, result);
         }
     });
     return result;
 };
 
-// smart-key config
-var DM_config = DataManager.config = {
+//全局关键字配置
+//TODO:暴露给API：.app(opction)进行配置
+var DM_config = Model.config = {
+    //特殊作用域的节点配置
     prefix: {
         This: "$THIS",
         Parent: "$PARENT",
@@ -825,88 +950,117 @@ var DM_config = DataManager.config = {
     }
 };
 
-// TEMP object
-DataManager.session = {
+//操作缓存区
+//这里实现思路类似$.st/lst，都是用一个外部静态缓存区进行缓存存储这些非return但是又很重要且频繁的过程变量，来避免重复计算。
+Model.session = {
+    //.get操作时，由于特殊作用域关键字导致寻址方向的改变，所以此缓存实际get所对的真实model
+    //如，model.get("$PARENT.key")，这里key实际上归宿与model.parentModel，所以topGetter存储model.parentModel
     topGetter: $NULL,
+    //同上，但是是针对set操作
     topSetter: $NULL,
+    //在上面的例子中，在过滤掉关键字后的实际key值
     filterKey: $NULL,
-    setStacks: [],
+
+    //用于保存数据更新引发的递归中的堆栈数，本质上是为了在最后一层调用结束后运行所收集的finallyRun，所收集的主要来自View层各种handle处理内部
     finallyRunStacks: []
 };
 
+//这里保存finallyRun的处理函数集合
 // to avoid `set` in setting 
-var _finallyQuene = DataManager._finallyQuene = [];
-_finallyQuene._ = {};
-var finallyRun = DataManager.finallyRun = function(fun) {
+var _finallyQuene = Model._finallyQuene = [];
+//一个hash存储区，确保不重复注册处理函数
+var _finallyQuene_hash = {};
+var finallyRun = Model.finallyRun = function(fun) {
     if (fun) {
+        //直接通过toString来注册
         finallyRun.register(fun, fun);
     } else {
+        //将事件队列完全推出直到运行结束，不用$.E(ach)因为队列可能动态增长
         while (_finallyQuene.length) {
             var funid = _finallyQuene.shift();
-            fun = _finallyQuene._[funid];
-            _finallyQuene._[funid] = $NULL;
+            fun = _finallyQuene_hash[funid];
+            _finallyQuene_hash[funid] = $NULL;
             fun && fun();
         }
     }
 }
+//使用唯一标示注册事件
 finallyRun.register = function(id, fun) {
-    if (!_finallyQuene._[id]) {
+    if (!_finallyQuene_hash[id]) {
         $.p(_finallyQuene, id);
     }
-    _finallyQuene._[id] = fun;
+    _finallyQuene_hash[id] = fun;
 }
 
+//在get、set时忽略Model拓展类型的get、set，直接返回Model拓展实例对象
 var _dm_get_source // =$FALSE //get Source ignore extend-Object
-var _dm_mix_source // =$FALSE //mix Source ignore extend-Object
 var _dm_set_source // =$FALSE //set Source ignore extend-Object
 
+//set时强制更新，不论是否相同，因为有事数据源的更新并非来自set本身，所以无法直接作出判断
 //TODO: replace `_dm_force_update` by setting stack
 var _dm_force_update //= $FALSE;  //ignore equal
 
-var DM_proto = DataManager.prototype = {
+var DM_proto = Model.prototype = {
     getSource: function() {
         _dm_get_source = $TRUE;
         var result = this.get.apply(this, arguments)
         _dm_get_source = $FALSE;
         return result;
     },
-    get: function(key) { //
-        var self = DataManager.session.topGetter = this,
+    get: function(key) {
+        //直接定义了topGetter，在保证正确的情况下尽可能早地定义
+        var self = Model.session.topGetter = this,
             result = self._database,
             filterKey;
+        //TODO:在终点直接默认filterKey的undefined为""，避免过多无用判断
         if (key === $UNDEFINED || key === "") {
             filterKey = "";
         } else {
-            if (result != $UNDEFINED && result !== $FALSE) { //null|undefined|false
+            //强制转换成字符串，避免错误。
+            // key = String(key);//这里占时不强制转换，好捕捉错误
+
+            //不直接非空判断（if(result)），确保约束，String、Bumber、Boolean还是有属性的
+            if (result != $UNDEFINED) { //null|undefined
+                //开始按"."做寻址分割分离key
                 var perkey = $.st(key, ".");
-                while (perkey && result) {
-                    if (result[_DM_extends_object_constructor]) {
-                        result = result.value;
+
+                //perkey出现异常（为空或者结束）或者result已经取不到有意义的值时才停止循环
+                while (perkey && result != $UNDEFINED) {
+                    //如果当前层是拓展类型层且不是取源操作，调用getter
+                    if (result[_DM_extends_object_constructor] && !_dm_get_source) {
+                        //拓展类型的getter，这点遵守使用和默认的defineGetter一样的原则，每一次取值都要运行getter函数，而不直接用缓存
+                        result = result.get(self, key, result.value);
                     }
+                    //获取下一层
                     result = result[perkey];
                     perkey = $.st(_split_laveStr, ".");
                 }
+                //最后一层，老式浏览器不支持String类型用下标索引，所以统一使用charAt搞定
                 //lastKey
-                result = $.iS(result) ? result.charAt(_split_laveStr) : (result && result[_split_laveStr]);
+                result = $.isS(result) ? result.charAt(_split_laveStr) : (result != $UNDEFINED ? result[_split_laveStr] : result);
             }
 
             filterKey = key;
         }
+        //如果最后一层是拓展类，且非取源操作，运行getter
         if (result && result[_DM_extends_object_constructor] && !_dm_get_source) {
             result = result.get(self, key, result.value);
         }
-        //filterKey应该在extends_object的get后定义，避免被覆盖
-        DataManager.session.filterKey = filterKey;
+        //filterKey应该在拓展类的getter运行后定义，避免被覆盖，因为其中可能有其它get函数
+        Model.session.filterKey = filterKey;
         return result;
     },
     mixSource: function() {
-        _dm_mix_source = $TRUE;
+        _dm_get_source = $TRUE;
+        _dm_set_source = $TRUE;
         var result = this.mix.apply(this, arguments)
-        _dm_mix_source = $FALSE;
+        _dm_get_source = $FALSE;
+        _dm_set_source = $FALSE;
         return result;
     },
     mix: function(key, nObj) {
         //mix Data 合并数据
+        //TODO:复合操作，直接移动到ViewModel层，Model层只提供最基本的get、set
         var self = this,
             result;
         if (arguments.length) {
@@ -923,7 +1077,7 @@ var DM_proto = DataManager.prototype = {
     },
     set: function(key, nObj) {
         //replace Data 取代原有对象数据
-        var self = DataManager.session.topSetter = this,
+        var self = Model.session.topSetter = this,
             lastKey,
             argumentLen = arguments.length;
         if (argumentLen === 0) {
@@ -933,16 +1087,16 @@ var DM_proto = DataManager.prototype = {
             key = "";
         }
 
-        var result = self.getTopDataManager(key), //Leader:find the dataManager matched by key
-            setStacks = DataManager.session.setStacks,
-            result_dm = result.dataManager,
+        var result = self.getTopModel(key), //Leader:find the model matched by key
+            finallyRunStacks = Model.session.finallyRunStacks,
+            result_dm = result.model,
             result_dm_id = result_dm.id;
-        if ($.iO(setStacks, result_dm_id) === -1) { //maybe have many fork by the ExtendsClass
-            $.p(setStacks, result_dm_id);
+        if ($.iO(finallyRunStacks, result_dm_id) === -1) { //maybe have many fork by the ExtendsClass
+            $.p(finallyRunStacks, result_dm_id);
             result = result_dm.set(result.key, nObj);
             // result = result_dm.touchOff(result.key)
-            setStacks.pop();
-            !setStacks.length && DataManager.finallyRun();
+            finallyRunStacks.pop();
+            !finallyRunStacks.length && Model.finallyRun();
         } else {
             if (!key) { //argumentLen === 1
 
@@ -951,7 +1105,7 @@ var DM_proto = DataManager.prototype = {
                     sObj.set(self, "", nObj);
                 } else if (sObj !== nObj || _dm_force_update) {
                     self._database = nObj;
-                } else if (!(nObj instanceof Object)) { //sObj === nObj && no-object
+                } else if (!$.isO(nObj)) { //sObj === nObj && no-object
                     return;
                 };
             } else { //argumentLen >= 1
@@ -978,7 +1132,7 @@ var DM_proto = DataManager.prototype = {
                     if (!perkey) {
                         if ((sObj = cache_n_Obj[_split_laveStr]) && sObj[_DM_extends_object_constructor] && !_dm_set_source) {
                             sObj.set(self, key, nObj) //call ExtendsClass API
-                        } else if (cache_n_Obj instanceof Object) {
+                        } else if ($.isO(cache_n_Obj)) {
                             cache_n_Obj[_split_laveStr] = nObj;
                         } else if (cache_cache_n_Obj) {
                             (cache_cache_n_Obj[back_perkey] = {})[_split_laveStr] = nObj
@@ -986,12 +1140,12 @@ var DM_proto = DataManager.prototype = {
                             (self._database = {})[_split_laveStr] = nObj
                         }
                     }
-                } else if (!(nObj instanceof Object)) { //no any change, if instanceof Object and ==,just run touchOff
+                } else if (!$.isO(nObj)) { //no any change, if instanceof Object and ==,just run touchOff
                     return;
                 }
             }
             //TODO:set中的filterKey已经在return中存在，无需再有
-            DataManager.session.filterKey = key;
+            Model.session.filterKey = key;
             // debugger
             result = self.touchOff(key);
         }
@@ -1021,18 +1175,18 @@ var DM_proto = DataManager.prototype = {
             triggerCollection = triggerKeys.get(key) || [];
         triggerCollection.splice(index, 1);
     },
-    getTopDataManager: function(key) {
+    getTopModel: function(key) {
         var self = this,
-            parent = self._parentDataManager,
+            parent = self._parentModel,
             result,
             prefix;
         if (parent) {
             prefix = self._prefix //||"" ,all prefix has been filter $scope key
             key ? (prefix && (key = prefix + "." + key) /*else key = key*/ ) : (prefix && (key = prefix) /*key=""*/ );
-            result = parent.getTopDataManager(key)
+            result = parent.getTopModel(key)
         } else {
             result = {
-                dataManager: self,
+                model: self,
                 key: key
             };
         }
@@ -1053,16 +1207,16 @@ var DM_proto = DataManager.prototype = {
                 lastKey = arrKey.pop();
 
             //寻找长度开始变动的那一层级的数据开始_touchOffSibling
-            arrKey && $.ftE(arrKey, function(maybeArrayKey) {
+            arrKey && $.E(arrKey, function(maybeArrayKey) {
                 linkKey = linkKey ? linkKey + "." + maybeArrayKey : maybeArrayKey;
-                if ((__arrayData = DM_proto.get.call(self, linkKey)) instanceof Array && __arrayLen[linkKey] !== __arrayData.length) {
+                if ($.isA(__arrayData = DM_proto.get.call(self, linkKey)) && __arrayLen[linkKey] !== __arrayData.length) {
                     // console.log(linkKey,__arrayData.length, __arrayLen[linkKey])
                     __arrayLen[linkKey] = __arrayData.length
                     result = self._touchOffSibling(linkKey)
                 }
             })
         }
-        if (!result && (__arrayData = self._database /*get()*/ ) instanceof Array && __arrayLen[""] !== __arrayData.length) {
+        if (!result && $.isA(__arrayData = self._database /*get()*/ ) && __arrayLen[""] !== __arrayData.length) {
             __arrayLen[""] = __arrayData.length
             key = "";
         }
@@ -1072,7 +1226,7 @@ var DM_proto = DataManager.prototype = {
     _touchOffSibling: function(key) { //always touchoff from toppest dm
         var self = this,
             database = self._database;
-        $.ftE($.s(_getAllSiblingDataManagers(self)), function(dm) {
+        $.E($.s(_getAllSiblingModels(self)), function(dm) {
             dm._database = database; //maybe on-obj
             dm._touchOff(key)
         })
@@ -1087,27 +1241,27 @@ var DM_proto = DataManager.prototype = {
         triggerKeys.forIn(function(triggerCollection, triggerKey) {
             //!triggerKey==true;
             if (!key || !triggerKey || key === triggerKey || triggerKey.indexOf(key + ".") === 0 || key.indexOf(triggerKey + ".") === 0) {
-                $.ftE(triggerCollection, function(smartTriggerHandle) {
+                $.E(triggerCollection, function(smartTriggerHandle) {
                     smartTriggerHandle.event(triggerKeys);
                 })
             }
         });
         //child
-        $.ftE(self._subsetDataManagers, function(childDataManager) {
+        $.E(self._subsetModels, function(childModel) {
             // debugger
-            var prefix = childDataManager._prefix,
+            var prefix = childModel._prefix,
                 childResult; // || "";
             _dm_force_update = $TRUE; //TODO: use Stack 
             if (!key) { //key === "",touchoff all
-                childResult = childDataManager.set(self.get(prefix))
+                childResult = childModel.set(self.get(prefix))
             } else if (!prefix) { //prefix==="" equal to $THIS
-                childResult = childDataManager.set(key, self.get(key))
+                childResult = childModel.set(key, self.get(key))
             } else if (key === prefix || prefix.indexOf(key + ".") === 0) { //prefix is a part of key,just maybe had been changed
-                // childDataManager.touchOff(prefix.replace(key + ".", ""));
-                childResult = childDataManager.set(self.get(prefix))
+                // childModel.touchOff(prefix.replace(key + ".", ""));
+                childResult = childModel.set(self.get(prefix))
             } else if (key.indexOf(prefix + ".") === 0) { //key is a part of prefix,must had be changed
                 prefix = key.replace(prefix + ".", "")
-                childResult = childDataManager.set(prefix, self.get(key))
+                childResult = childModel.set(prefix, self.get(key))
             }
             _dm_force_update = $FALSE;
             //如果不进行锁定，当数组因为其子对象被修改，
@@ -1120,123 +1274,123 @@ var DM_proto = DataManager.prototype = {
     getTop: function() { //get DM tree top
         var self = this,
             next;
-        while (next = self._parentDataManager) {
+        while (next = self._parentModel) {
             self = next;
         }
         return self;
     },
-    _pushToSubSetDM: function(dataManager, prefixKey) {
-        dataManager._parentDataManager = this;
-        dataManager._prefix = prefixKey
-        return $.p(this._subsetDataManagers, dataManager);
+    _pushToSubSetDM: function(model, prefixKey) {
+        model._parentModel = this;
+        model._prefix = prefixKey
+        return $.p(this._subsetModels, model);
     },
-    _pushToCollectDM: function(dataManager, pprefixKey, id) {
+    _pushToCollectDM: function(model, pprefixKey, id) {
         var self = this,
-            collectDataManagers = self._collectDataManagers;
+            collectModels = self._collectModels;
         var hash = pprefixKey + id;
-        var collectDataManager = collectDataManagers[hash];
-        if (!collectDataManager) {
-            collectDataManager = collectDataManagers[hash] = new _ArrayDataManager(pprefixKey);
-            self._pushToSubSetDM(collectDataManager, pprefixKey)
+        var collectModel = collectModels[hash];
+        if (!collectModel) {
+            collectModel = collectModels[hash] = new _ArrayModel(pprefixKey);
+            self._pushToSubSetDM(collectModel, pprefixKey)
         }
-        collectDataManager.push(dataManager)
+        collectModel.push(model)
     },
-    collect: function(dataManager) {
+    collect: function(model) {
         // debugger
         var self = this;
-        var finallyRunStacks = DataManager.session.finallyRunStacks;
+        var finallyRunStacks = Model.session.finallyRunStacks;
 
         finallyRunStacks.push(self.id);
-        if (self !== dataManager) {
-            if ($.iO(self._siblingDataManagers, dataManager) === -1) {
-                $.p(self._siblingDataManagers, dataManager);
-                $.p(dataManager._siblingDataManagers, self);
+        if (self !== model) {
+            if ($.iO(self._siblingModels, model) === -1) {
+                $.p(self._siblingModels, model);
+                $.p(model._siblingModels, self);
                 self.rebuildTree()
-                dataManager._database = self._database;
+                model._database = self._database;
             } else {
-                dataManager = $NULL;
+                model = $NULL;
             }
         }
         finallyRunStacks.pop();
-        if (dataManager && !finallyRunStacks.length) {
-            //self === dataManager || finallyRunStacks === 0
+        if (model && !finallyRunStacks.length) {
+            //self === model || finallyRunStacks === 0
             self.getTop().touchOff();
-            DataManager.finallyRun();
+            Model.finallyRun();
         }
         return self;
     },
-    subset: function(dataManager, prefixKey) {
+    subset: function(model, prefixKey) {
         var self = this,
-            finallyRunStacks = DataManager.session.finallyRunStacks;
-        dataManager.remove();
-        if (dataManager._isEach) {
-            self._pushToCollectDM(dataManager,
+            finallyRunStacks = Model.session.finallyRunStacks;
+        model.remove();
+        if (model._isEach) {
+            self._pushToCollectDM(model,
                 //prefixkey === "[0-9]+?" ==> $THIS.0 ==> return ""; 
                 //else return prefixkey.split(".").pop().join(".")
                 $.lst(prefixKey, ".") || "",
                 // in dif handle
-                dataManager._isEach.eachId)
+                model._isEach.eachId)
         } else {
-            self._pushToSubSetDM(dataManager, prefixKey)
+            self._pushToSubSetDM(model, prefixKey)
         }
-        dataManager.rebuildTree()
+        model.rebuildTree()
 
         //注意：each会置空touchOff使其无效，导致each运行时页面数据无法更新，
         //所以each对象内部的数据自身获取临时数据进行更新完成后，再移除touchOff
-        dataManager._database = self.get(prefixKey);
+        model._database = self.get(prefixKey);
         finallyRunStacks.push(self.id)
         self.getTop().touchOff("");
         finallyRunStacks.pop();
-        !finallyRunStacks.length && DataManager.finallyRun();
+        !finallyRunStacks.length && Model.finallyRun();
         return self;
     },
-    remove: function(dataManager) {
+    remove: function(model) {
         var self = this;
-        if (dataManager) {
-            if (dataManager._isEach) {
-                arrayDataManager = dataManager._arrayDataManager;
-                arrayDataManager && arrayDataManager.remove(dataManager)
+        if (model) {
+            if (model._isEach) {
+                arrayModel = model._arrayModel;
+                arrayModel && arrayModel.remove(model)
             } else {
-                var subsetDataManagers = self._subsetDataManagers,
-                    index = $.iO(subsetDataManagers, dataManager);
-                subsetDataManagers.splice(index, 1);
-                dataManager._parentDataManager = $UNDEFINED;
+                var subsetModels = self._subsetModels,
+                    index = $.iO(subsetModels, model);
+                subsetModels.splice(index, 1);
+                model._parentModel = $UNDEFINED;
             }
         } else {
-            dataManager = self._parentDataManager;
-            if (dataManager) {
-                dataManager.remove(self);
+            model = self._parentModel;
+            if (model) {
+                model.remove(self);
             }
         }
         return self;
     },
-    replaceAs: function(dataManager) {
+    replaceAs: function(model) {
         var self = this;
-        $.ftE(self._subsetDataManagers, function(subsetDM) {
-            subsetDM._parentDataManager = dataManager;
-            $.p(dataManager._subsetDataManagers, subsetDM)
+        $.E(self._subsetModels, function(subsetDM) {
+            subsetDM._parentModel = model;
+            $.p(model._subsetModels, subsetDM)
         });
-        var new_siblingDataManagers = dataManager._siblingDataManagers;
-        $.ftE(_getAllSiblingDataManagers(self), function(sublingDM) {
-            var siblingDataManagers = sublingDM._siblingDataManagers;
-            $.rm(siblingDataManagers, self)
-            if ($.iO(new_siblingDataManagers, sublingDM) === -1) {
-                $.p(new_siblingDataManagers, sublingDM)
+        var new_siblingModels = model._siblingModels;
+        $.E(_getAllSiblingModels(self), function(sublingDM) {
+            var siblingModels = sublingDM._siblingModels;
+            $.rm(siblingModels, self)
+            if ($.iO(new_siblingModels, sublingDM) === -1) {
+                $.p(new_siblingModels, sublingDM)
             }
-            if ($.iO(siblingDataManagers, dataManager) === -1) {
-                $.p(siblingDataManagers, dataManager)
+            if ($.iO(siblingModels, model) === -1) {
+                $.p(siblingModels, model)
             }
         });
-        $.rm(new_siblingDataManagers, self)
-        $.ftE(self._viewInstances, function(viewInstance) {
-            viewInstance.dataManager = dataManager;
-            $.p(dataManager._viewInstances, viewInstance)
+        $.rm(new_siblingModels, self)
+        $.E(self._viewModels, function(viewModel) {
+            viewModel.model = model;
+            $.p(model._viewModels, viewModel)
         });
         self._triggerKeys.forIn(function(smartTriggerSet, key) {
-            dataManager._triggerKeys.push(key, smartTriggerSet)
+            model._triggerKeys.push(key, smartTriggerSet)
         })
-        dataManager.set(dataManager._database);
-        DataManager._instances[self.id] = dataManager;
+        model.set(model._database);
+        Model._instances[self.id] = model;
         self.destroy()
         return $NULL;
     },
@@ -1250,41 +1404,41 @@ var DM_proto = DataManager.prototype = {
     buildSetter: function(key) {}*/
 };
 
-// make an Object-Constructor to DataManager-Extend-Object-Constructor
-var _dataManagerExtend = DataManager.extend = function(extendsName, extendsObjConstructor) {
-	if (_dataManagerExtend.hasOwnProperty(extendsName)) {
+// make an Object-Constructor to Model-Extend-Object-Constructor
+var _modelExtend = Model.extend = function(extendsName, extendsObjConstructor) {
+	if (_modelExtend.hasOwnProperty(extendsName)) {
 		throw Error(extendsName + " is defined!");
 	}
 	var exObjProto = extendsObjConstructor.prototype
 	exObjProto[_DM_extends_object_constructor] = $TRUE;
-	_dataManagerExtend.set(exObjProto)
-	_dataManagerExtend.get(exObjProto)
-	DataManager[extendsName] = extendsObjConstructor
+	_modelExtend.set(exObjProto)
+	_modelExtend.get(exObjProto)
+	Model[extendsName] = extendsObjConstructor
 };
-_dataManagerExtend.set = function(exObjProto) {
+_modelExtend.set = function(exObjProto) {
 	var _set = exObjProto.set;
 	exObjProto.set = function(dm, key, value) {
 		return (this.value = _set.call(this, dm, key, value))
 	}
 }
-_dataManagerExtend.get = function(exObjProto) {
+_modelExtend.get = function(exObjProto) {
 	var _get = exObjProto.get;
 	exObjProto.get = function(dm, key, value) {
 		return (this.value = _get.call(this, dm, key, value))
 	}
 }
 /*
- * _ArrayDataManager constructor
- * to mamage #each datamanager
+ * _ArrayModel constructor
+ * to mamage #each model
  */
 
-function _ArrayDataManager(perfix, id) {
+function _ArrayModel(perfix, id) {
     var self = this;
     self._id = id;
     self._prefix = perfix;
     self._DMs = [];
 }
-var _ArrDM_proto = _ArrayDataManager.prototype;
+var _ArrDM_proto = _ArrayModel.prototype;
 
 //用于优化抽离的vi运行remove引发的$INDEX大变动的问题
 var _remove_index; // = 0;
@@ -1292,8 +1446,8 @@ var _remove_index; // = 0;
 $.fI(DM_proto, function(fun, funName) {
     _ArrDM_proto[funName] = function() {
         var args = arguments;
-        $.ftE(this._DMs, function(_each_dataManager) {
-            _each_dataManager[funName].apply(_each_dataManager, args)
+        $.E(this._DMs, function(_each_model) {
+            _each_model[funName].apply(_each_model, args)
         })
     }
 })
@@ -1307,9 +1461,9 @@ _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片�
             return;
         case 1:
             if (key) {
-                nObj = key instanceof Array ? key : $.s(key);
+                nObj = $.isA(key) ? key : $.s(key);
                 // self.length(nObj.length);
-                $.ftE(nObj, function(nObj_item, i) {
+                $.E(nObj, function(nObj_item, i) {
                     var DM = DMs[i];
                     //针对remove的优化
                     if (DM) {//TODO:WHY?
@@ -1330,58 +1484,65 @@ _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片�
             //TODO: don't create Array to save memory
             var arrKeys = key.split(".");
             var index = arrKeys.shift();
-            var datamanager = DMs[index];
-            if (!datamanager) {
+            var model = DMs[index];
+            if (!model) {
                 return
             }
             if (arrKeys.length) {
-                result = datamanager.set(arrKeys.join("."), nObj)
+                result = model.set(arrKeys.join("."), nObj)
             } else {
-                result = datamanager.set(nObj)
+                result = model.set(nObj)
             }
     }
     return result;
 }
-_ArrDM_proto.push = function(datamanager) {
+_ArrDM_proto.push = function(model) {
     var self = this,
         pperfix = self._prefix;
     var DMs = this._DMs;
-    var index = String(datamanager._index = DMs.length)
-    datamanager._prefix = pperfix ? pperfix + "." + index : index;
-    $.p(DMs, datamanager)
-    datamanager._arrayDataManager = self;
-    datamanager._parentDataManager = self._parentDataManager;
+    var index = String(model._index = DMs.length)
+    model._prefix = pperfix ? pperfix + "." + index : index;
+    $.p(DMs, model)
+    model._arrayModel = self;
+    model._parentModel = self._parentModel;
 }
-_ArrDM_proto.remove = function(datamanager) {
-    var index = datamanager._index
+_ArrDM_proto.remove = function(model) {
+    var index = model._index
     var self = this;
     var pperfix = self._prefix;
     var DMs = self._DMs;
     $.sp.call(DMs, index, 1);
     // DMs.splice(index, 1);
-    $.ftE(DMs, function(datamanager, i) {
-        var index = String(datamanager._index -= 1);
-        datamanager._prefix = pperfix ? pperfix + "." + index : index;
+    $.E(DMs, function(model, i) {
+        var index = String(model._index -= 1);
+        model._prefix = pperfix ? pperfix + "." + index : index;
     }, index)
-    var parentDataManager = datamanager._parentDataManager
-    var oldData = pperfix ? parentDataManager.get(pperfix) : parentDataManager._database /*get()*/ ;
+    var parentModel = model._parentModel
+    var oldData = pperfix ? parentModel.get(pperfix) : parentModel._database /*get()*/ ;
     if (oldData) {
         // 对象的数据可能是空值，导致DM实际长度与数据长度不一致，直接splice会错位，所以需要纠正
         $.sp.call(oldData, index, 1)
         _remove_index = index;
-        parentDataManager.set(pperfix, oldData);
+        parentModel.set(pperfix, oldData);
         _remove_index = 0;
-        datamanager._arrayDataManager = datamanager._parentDataManager = $UNDEFINED;
+        model._arrayModel = model._parentModel = $UNDEFINED;
     }
 }
-_ArrDM_proto.lineUp = function(datamanager) {
-    this.remove(datamanager);
-    this.push(datamanager);
+_ArrDM_proto.lineUp = function(model) {
+    this.remove(model);
+    this.push(model);
 }
 DM_proto.lineUp = function() {
-    this._arrayDataManager && this._arrayDataManager.lineUp(this)
+    this._arrayModel && this._arrayModel.lineUp(this)
 }
 
+/*
+ * 为Model拓展出智能作用域寻址的功能
+ * 目前有三种作用域寻址：
+ * 1. $THIS 当前作用域寻址
+ * 2. $PARENT 父级作用域寻址
+ * 3. $TOP 顶级作用域寻址
+ */
 ;
 (function() {
 	var _get = DM_proto.get,
@@ -1395,7 +1556,7 @@ DM_proto.lineUp = function() {
 				result;
 			if (args.length > 1) {
 				if (key.indexOf(prefix.Parent) === 0) { //$parent
-					if (self = self._parentDataManager) {
+					if (self = self._parentModel) {
 						if (key === prefix.Parent) {
 							// args.splice(0, 1);
 							$.sp.call(args, 0, 1)
@@ -1404,8 +1565,8 @@ DM_proto.lineUp = function() {
 						}
 						result = set.apply(self, args);
 					} else {
-						DataManager.session.filterKey = $UNDEFINED;
-						DataManager.session.topSetter = $UNDEFINED;
+						Model.session.filterKey = $UNDEFINED;
+						Model.session.topSetter = $UNDEFINED;
 						key = ""
 					}
 				} else if (key.indexOf(prefix.This) === 0) { //$this
@@ -1418,7 +1579,7 @@ DM_proto.lineUp = function() {
 					result = set.apply(self, args);
 				} else if (key.indexOf(prefix.Top) === 0) {
 					var next;
-					while (next = self._parentDataManager) {
+					while (next = self._parentModel) {
 						self = next;
 					}
 					if (key === prefix.Top) {
@@ -1443,7 +1604,7 @@ DM_proto.lineUp = function() {
 			});
 
 			//更新调用堆栈层数，如果是0,则意味着冒泡到顶层的调用即将结束，是最后一层set
-			result.stacks = DataManager.session.setStacks.length
+			result.stacks = Model.session.finallyRunStacks.length
 			return result
 		},
 		get = DM_proto.get = function(key) {
@@ -1452,7 +1613,7 @@ DM_proto.lineUp = function() {
 				result;
 			if (args.length > 0) {
 				if (key.indexOf(prefix.Parent) === 0) { //$parent
-					if (self = self._parentDataManager) {
+					if (self = self._parentModel) {
 						if (key === prefix.Parent) {
 							// args.splice(0, 1);
 							$.sp.call(args, 0, 1)
@@ -1461,8 +1622,8 @@ DM_proto.lineUp = function() {
 						}
 						result = get.apply(self, args);
 					} else {
-						DataManager.session.filterKey = $UNDEFINED;
-						DataManager.session.topGetter = $UNDEFINED;
+						Model.session.filterKey = $UNDEFINED;
+						Model.session.topGetter = $UNDEFINED;
 						key = ""
 					}
 				} else if (key.indexOf(prefix.This) === 0) { //$this
@@ -1475,7 +1636,7 @@ DM_proto.lineUp = function() {
 					result = get.apply(self, args);
 				} else if (key.indexOf(prefix.Top) === 0) {
 					var next;
-					while (next = self._parentDataManager) {
+					while (next = self._parentModel) {
 						self = next;
 					}
 					if (key === prefix.Top) {
@@ -1494,13 +1655,13 @@ DM_proto.lineUp = function() {
 			return result;
 		};
 
-	function _getAllSmartDataManagers(self, result) {
+	function _getAllSmartModels(self, result) {
 		result ? $.p(result, self) : (result = []);
-		var dmSmartDataManagers = self._smartDMs_id;
-		dmSmartDataManagers && $.ftE(dmSmartDataManagers, function(dm) {
-			dm = DataManager.get(dm);
+		var dmSmartModels = self._smartDMs_id;
+		dmSmartModels && $.E(dmSmartModels, function(dm) {
+			dm = Model.get(dm);
 			if ($.iO(result, dm) === -1) {
-				_getAllSmartDataManagers(dm, result);
+				_getAllSmartModels(dm, result);
 			}
 		});
 		// console.table(result)
@@ -1509,48 +1670,48 @@ DM_proto.lineUp = function() {
 	DM_proto.rebuildTree = function() {
 		var self = this,
 			smartSource;
-		$.ftE(_getAllSmartDataManagers(self), function(dm) {
+		$.E(_getAllSmartModels(self), function(dm) {
 			if (smartSource = dm._smartSource) {
 				var smart_prefix = smartSource.prefix,
-					smart_dataManager = DataManager.get(smartSource.dm_id);
+					smart_model = Model.get(smartSource.dm_id);
 				// console.log(smart_prefix)
 				if (smart_prefix.indexOf(prefix.Parent) === 0 || smart_prefix.indexOf(prefix.Top) === 0) {
-					var data = smart_dataManager.get(smart_prefix);
-					var topGetter = DataManager.session.topGetter
+					var data = smart_model.get(smart_prefix);
+					var topGetter = Model.session.topGetter
 					if (topGetter !== smartSource.topGetter && (smartSource.topGetter = topGetter)) {
-						smart_dataManager.subset(dm, smart_prefix);
+						smart_model.subset(dm, smart_prefix);
 					}
 				}
 			}
 		})
 		return _rebuildTree.call(self);
 	};
-	DM_proto.subset = function(dataManager, prefixKey) {
+	DM_proto.subset = function(model, prefixKey) {
 		var self = this,
 			data = self.get(prefixKey),
 			result,
-			topGetter = DataManager.session.topGetter,
-			filterKey = DataManager.session.filterKey || "";
+			topGetter = Model.session.topGetter,
+			filterKey = Model.session.filterKey || "";
 		if (filterKey !== prefixKey) { //is smart key
 
 			if (prefixKey.indexOf(prefix.This) === 0) {
 				if (filterKey) {
-					_subset.call(self, dataManager, filterKey)
+					_subset.call(self, model, filterKey)
 				} else { //prefixKey === "$THIS"
-					dataManager.replaceAs(self);
+					model.replaceAs(self);
 				}
 			} else {
-				dataManager._smartSource = {
+				model._smartSource = {
 					topGetter: topGetter, // current coordinate
 					dm_id: self.id,
 					prefix: prefixKey
 				};
-				$.p(self._smartDMs_id || (self._smartDMs_id = []), dataManager.id);
+				$.p(self._smartDMs_id || (self._smartDMs_id = []), model.id);
 				if (topGetter) { // smart dm maybe change coodition
 					if (filterKey) {
-						_subset.call(topGetter, dataManager, filterKey)
+						_subset.call(topGetter, model, filterKey)
 					} else {
-						topGetter.collect(dataManager);
+						topGetter.collect(model);
 					}
 				}
 			}
@@ -1636,7 +1797,7 @@ draggable
 		var assign;
 		var attrHandles = V.attrHandles,
 			result;
-		$.fE(attrHandles, function(attrHandle) {
+		$.e(attrHandles, function(attrHandle) {
 			if (attrHandle.match(attrKey)) {
 				// if (element.type==="textarea") {debugger}
 				result = attrHandle.handle(attrKey,element);
@@ -1651,31 +1812,31 @@ draggable
 		attrKey = (_isIE && IEfix[attrKey]) || attrKey
 		// console.log(attrValue,":",_matchRule.test(attrValue)||_templateMatchRule.test(attrValue))
 		//if (/*_matchRule.test(attrValue)||*/_templateMatchRule.test(attrValue)) {
-			var attrViewInstance = (V.attrModules[handle.id + attrKey] = ViewParser.parse(attrValue,attrKey+"="+attrValue))($UNDEFINED,$TRUE),
+			var attrViewModel = (V.attrModules[handle.id + attrKey] = jSouper.parse(attrValue,attrKey+"="+attrValue))($UNDEFINED,$TRUE),
 				_shadowDIV = fragment(),//$.D.cl(shadowDIV), //parserNode
 				_attributeHandle = _AttributeHandle(attrKey,node);
-			attrViewInstance.append(_shadowDIV);
-			attrViewInstance._isAttr = {
+			attrViewModel.append(_shadowDIV);
+			attrViewModel._isAttr = {
 				key: attrKey
 			}
 			var attrTrigger = {
 				handleId:handle.id+attrKey,
 				key:attrKey,
 				type:"attributesTrigger",
-				event: function(NodeList, dataManager,/* eventTrigger,*/ isAttr, viewInstance_ID) { /*NodeList, dataManager, eventTrigger, self._isAttr, self._id*/
+				event: function(NodeList, model,/* eventTrigger,*/ isAttr, viewModel_ID) { /*NodeList, model, eventTrigger, self._isAttr, self._id*/
 					var currentNode = NodeList[handle.id].currentNode,
-						viewInstance = V._instances[viewInstance_ID];
+						viewModel = V._instances[viewModel_ID];
 					if (currentNode) {
-						attrViewInstance.dataManager = dataManager;
-						$.fE(attrViewInstance._triggers, function(key) {//touchoff all triggers
-							attrViewInstance.touchOff(key);
+						attrViewModel.model = model;
+						$.e(attrViewModel._triggers, function(key) {//touchoff all triggers
+							attrViewModel.touchOff(key);
 						});
-						_attributeHandle(attrKey, currentNode, _shadowDIV, viewInstance, /*dataManager.id,*/ handle, triggerTable);
-						// dataManager.remove(attrViewInstance); //?
+						_attributeHandle(attrKey, currentNode, _shadowDIV, viewModel, /*model.id,*/ handle, triggerTable);
+						// model.remove(attrViewModel); //?
 					}
 				}
 			}
-			$.fE(attrViewInstance._triggers, function(key) {
+			$.e(attrViewModel._triggers, function(key) {
 				$.us(triggerTable[key] || (triggerTable[key] = []), attrTrigger);
 			});
 			// node.removeAttribute(baseAttrKey);
@@ -1685,10 +1846,10 @@ draggable
  * View constructor
  */
 
-function View(arg,vmName) {
+function View(arg, vmName) {
     var self = this;
     if (!(self instanceof View)) {
-        return new View(arg,vmName);
+        return new View(arg, vmName);
     }
     self.handleNodeTree = arg;
     self._handles = [];
@@ -1701,7 +1862,7 @@ function View(arg,vmName) {
     _buildTrigger(self);
     return function(data, isAttribute) {
         var id = $.uid();
-        var finallyRunStacks = DataManager.session.finallyRunStacks;
+        var finallyRunStacks = Model.session.finallyRunStacks;
 
         //push mark
         finallyRunStacks.push(id)
@@ -1709,7 +1870,7 @@ function View(arg,vmName) {
         var vi = _create(self, data, isAttribute);
 
         //TODO:create with callback then getTop.touchOff
-        vi.dataManager.getTop().touchOff();
+        vi.model.getTop().touchOff();
 
         //pop mark
         finallyRunStacks.pop();
@@ -1720,9 +1881,9 @@ function View(arg,vmName) {
         // console.log(self.id)
         // console.groupEnd(self.id)
         if (self.vmName) {
-            var viewInstance_init = V.modulesInit[self.vmName];
-            if (viewInstance_init) {
-                viewInstance_init(vi);
+            var viewModel_init = V.modulesInit[self.vmName];
+            if (viewModel_init) {
+                viewModel_init(vi);
             }
         }
         return vi
@@ -1779,7 +1940,7 @@ function _buildHandler(self) {
                 // console.log(handle.tag);
                 (handle._unEleAttr = [])._ = {};
                 //save attributes
-                $.ftE(node.attributes, function(attr) {
+                $.E(node.attributes, function(attr) {
                     //fix IE
                     var name = attr.name;
                     var value = node.getAttribute(name);
@@ -1839,7 +2000,7 @@ function _buildTrigger(self) {
             }
             var node = handle.node;
             // var attrs = nodeHTMLStr.match(_attrRegExp);
-            $.fE(node.attributes, function(attr, i) {
+            $.e(node.attributes, function(attr, i) {
                 var value = attr.value,
                     name = attr.name;
                 if (_templateMatchRule.test(value)) {
@@ -1864,22 +2025,28 @@ function _buildTrigger(self) {
     });
 };
 
-function _create(self, data, isAttribute) { //data maybe basedata or dataManager
+//
+function pushById(arr, item) {
+    arr[item.id] = item;
+    return item;
+};
+
+function _create(self, data, isAttribute) { //data maybe basedata or model
     //save newDOM  without the most top of parentNode -- change with append!!
-    var NodeList_of_ViewInstance = {},
+    var NodeList_of_ViewModel = {},
         topNode = $.c(self.handleNodeTree);
     topNode.currentNode = fragment("body");
-    $.pI(NodeList_of_ViewInstance, topNode);
+    pushById(NodeList_of_ViewModel, topNode);
 
     var catchNodes = [];
     var catchNodesStr = "";
     _traversal(topNode, function(handle, index, parentNode) {
-        handle = $.pI(NodeList_of_ViewInstance, $.c(handle));
+        handle = pushById(NodeList_of_ViewModel, $.c(handle));
         if (!handle.ignore) {
             var _unknownElementAttribute = handle._unEleAttr;
             if (_unknownElementAttribute) { //HTMLUnknownElement
                 currentNode = doc.createElement(handle.tag);
-                $.ftE(_unknownElementAttribute, function(attrName) {
+                $.E(_unknownElementAttribute, function(attrName) {
                     // console.log("setAttribute:", attrName, " : ", _unknownElementAttribute._[attrName])
                     currentNode[attrName] = _unknownElementAttribute._[attrName];
                 })
@@ -1912,7 +2079,7 @@ function _create(self, data, isAttribute) { //data maybe basedata or dataManager
             //ignore Node's childNodes will be ignored too.
             //just create an instance
             _traversal(handle, function(handle) {
-                $.pI(NodeList_of_ViewInstance, $.c(handle));
+                pushById(NodeList_of_ViewModel, $.c(handle));
             });
             return $FALSE
         }
@@ -1921,10 +2088,10 @@ function _create(self, data, isAttribute) { //data maybe basedata or dataManager
     //createNode
     var nodeCollections = $.D.cs("<div>" + catchNodesStr + "</div>")
 
-    $.ftE(catchNodes, function(nodeInfo) {
-        var parentHandle = NodeList_of_ViewInstance[nodeInfo.parentId];
+    $.E(catchNodes, function(nodeInfo) {
+        var parentHandle = NodeList_of_ViewModel[nodeInfo.parentId];
         var parentNode = parentHandle.currentNode;
-        var currentHandle = NodeList_of_ViewInstance[nodeInfo.currentId];
+        var currentHandle = NodeList_of_ViewModel[nodeInfo.currentId];
         var currentNode = currentHandle.currentNode;
         if (!currentNode) {
             currentNode = currentHandle.currentNode = nodeCollections.firstChild;
@@ -1943,10 +2110,10 @@ function _create(self, data, isAttribute) { //data maybe basedata or dataManager
         $.D.ap(parentNode, currentNode);
     })
 
-    $.fE(self._handles, function(handle) {
-        handle.call(self, NodeList_of_ViewInstance);
+    $.e(self._handles, function(handle) {
+        handle.call(self, NodeList_of_ViewModel);
     });
-    var result = new ViewInstance(self.handleNodeTree, NodeList_of_ViewInstance, self._triggerTable, data);
+    var result = new ViewModel(self.handleNodeTree, NodeList_of_ViewModel, self._triggerTable, data);
     result.vmName = self.vmName;
     return result;
 };
@@ -1959,14 +2126,14 @@ function _create(self, data, isAttribute) { //data maybe basedata or dataManager
     var _rebuildTree = DM_proto.rebuildTree;
     DM_proto.rebuildTree = function() {
         var self = this,
-            DMSet = self._subsetDataManagers;
-        $.ftE(self._viewInstances, function(childViewInstance) {
-            $.ftE(childViewInstance._smartTriggers, function(smartTrigger) {
+            DMSet = self._subsetModels;
+        $.E(self._viewModels, function(childViewModel) {
+            $.E(childViewModel._smartTriggers, function(smartTrigger) {
                 var TEMP = smartTrigger.TEMP;
-                TEMP.viewInstance.get(TEMP.sourceKey);
-                var topGetter = DataManager.session.topGetter,
-                    currentTopGetter = DataManager.get(TEMP.dm_id),
-                    matchKey = DataManager.session.filterKey || "";
+                TEMP.viewModel.get(TEMP.sourceKey);
+                var topGetter = Model.session.topGetter,
+                    currentTopGetter = Model.get(TEMP.dm_id),
+                    matchKey = Model.session.filterKey || "";
                 if (topGetter) {
                     if (topGetter !== currentTopGetter || matchKey !== smartTrigger.matchKey) {
                         TEMP.dm_id = topGetter.id;
@@ -1978,47 +2145,47 @@ function _create(self, data, isAttribute) { //data maybe basedata or dataManager
                 }
             })
         })
-        $.ftE(self._subsetDataManagers, function(childDataManager) {
-            childDataManager.rebuildTree()
+        $.E(self._subsetModels, function(childModel) {
+            childModel.rebuildTree()
         })
         return _rebuildTree.call(self);
     }
     var _collect = DM_proto.collect;
-    DM_proto.collect = function(viewInstance) {
+    DM_proto.collect = function(viewModel) {
         var self = this;
-        if (viewInstance instanceof DataManager) {
-            _collect.call(self, viewInstance);
+        if (viewModel instanceof Model) {
+            _collect.call(self, viewModel);
             //TODO:release memory.
-        } else if (viewInstance instanceof ViewInstance) {
-            var vi_DM = viewInstance.dataManager;
+        } else if (viewModel instanceof ViewModel) {
+            var vi_DM = viewModel.model;
             if (!vi_DM) { // for VI init in constructor
-                vi_DM = viewInstance.dataManager = self;
-                var viewInstanceTriggers = viewInstance._triggers
-                $.ftE(viewInstanceTriggers, function(sKey) {
-                    viewInstance._buildSmart(sKey);
+                vi_DM = viewModel.model = self;
+                var viewModelTriggers = viewModel._triggers
+                $.E(viewModelTriggers, function(sKey) {
+                    viewModel._buildSmart(sKey);
                 });
             }
 
             //to rebuildTree => remark smartyKeys
-            $.p(self._viewInstances, viewInstance);
+            $.p(self._viewModels, viewModel);
 
             _collect.call(self, vi_DM) //self collect self will Forced triggered updates
         }
         return self;
     };
     var _subset = DM_proto.subset;
-    DM_proto.subset = function(viewInstance, prefix) {
+    DM_proto.subset = function(viewModel, prefix) {
         var self = this;
 
-        if (viewInstance instanceof DataManager) {
-            _subset.call(self, viewInstance, prefix);
+        if (viewModel instanceof Model) {
+            _subset.call(self, viewModel, prefix);
         } else {
 
-            var vi_DM = viewInstance.dataManager;
+            var vi_DM = viewModel.model;
             if (!vi_DM) {
-                vi_DM = DataManager();
+                vi_DM = Model();
                 //收集触发器
-                vi_DM.collect(viewInstance);
+                vi_DM.collect(viewModel);
             }
             _subset.call(self, vi_DM, prefix);
         }
@@ -2027,14 +2194,14 @@ function _create(self, data, isAttribute) { //data maybe basedata or dataManager
 
 var stopTriggerBubble; // = $FALSE;
 
-function ViewInstance(handleNodeTree, NodeList, triggerTable, dataManager) {
-    if (!(this instanceof ViewInstance)) {
-        return new ViewInstance(handleNodeTree, NodeList, triggerTable, dataManager);
+function ViewModel(handleNodeTree, NodeList, triggerTable, model) {
+    if (!(this instanceof ViewModel)) {
+        return new ViewModel(handleNodeTree, NodeList, triggerTable, model);
     }
     var self = this;
     self._isAttr = $FALSE; //if no null --> Storage the attribute key and current.
     self._isEach = $FALSE; //if no null --> Storage the attribute key and current.
-    self.dataManager; //= dataManager;
+    self.model; //= model;
     self.handleNodeTree = handleNodeTree;
     self.DOMArr = $.s(handleNodeTree.childNodes);
     self.NodeList = NodeList;
@@ -2072,13 +2239,13 @@ function ViewInstance(handleNodeTree, NodeList, triggerTable, dataManager) {
         self._triggers._[key] = tiggerCollection;
     });
 
-    if (!(dataManager instanceof DataManager)) {
-        dataManager = DataManager(dataManager);
+    if (!(model instanceof Model)) {
+        model = Model(model);
     }
     self._smartTriggers = [];
 
-    //bind viewInstance with DataManger
-    dataManager.collect(self); //touchOff All triggers
+    //bind viewModel with DataManger
+    model.collect(self); //touchOff All triggers
 
     //console.group(self._id,"touchOff .")
     stopTriggerBubble = $TRUE;
@@ -2087,25 +2254,25 @@ function ViewInstance(handleNodeTree, NodeList, triggerTable, dataManager) {
     //console.groupEnd(self._id,"touchOff .")
 };
 
-var VI_session = ViewInstance.session = {
+var VI_session = ViewModel.session = {
     touchHandleIdSet: $NULL,
     touchStacks: $NULL
 };
 
-function _bubbleTrigger(tiggerCollection, NodeList, dataManager /*, eventTrigger*/ ) {
+function _bubbleTrigger(tiggerCollection, NodeList, model /*, eventTrigger*/ ) {
     var self = this, // result,
         eventStack = [],
         touchStacks = VI_session.touchStacks,
         touchHandleIdSet = VI_session.touchHandleIdSet;
     $.p(touchStacks, eventStack); //Add a new layer event collector
-    $.fE(tiggerCollection, function(trigger) { //TODO:测试参数长度和效率的平衡点，减少参数传递的数量
+    $.e(tiggerCollection, function(trigger) { //TODO:测试参数长度和效率的平衡点，减少参数传递的数量
         if (!touchHandleIdSet[trigger.handleId]) { //To prevent repeated collection
             $.p(eventStack, trigger) //collect trigger
             if ( /*result !== $FALSE &&*/ trigger.bubble && !stopTriggerBubble) {
                 // Stop using the `return false` to prevent bubble triggered
                 // need to use `this. Mercifully = false` to control
                 var parentNode = NodeList[trigger.handleId].parentNode;
-                parentNode && _bubbleTrigger.call(self, parentNode._triggers, NodeList, dataManager /*, trigger*/ );
+                parentNode && _bubbleTrigger.call(self, parentNode._triggers, NodeList, model /*, trigger*/ );
             }
             touchHandleIdSet[trigger.handleId] = $TRUE;
         }
@@ -2117,21 +2284,21 @@ function _bubbleTrigger(tiggerCollection, NodeList, dataManager /*, eventTrigger
 };
 
 function _moveChild(self, el) {
-    var AllEachViewInstance = self._AVI,
-        AllLayoutViewInstance = self._ALVI,
-        AllWithViewInstance = self._WVI;
+    var AllEachViewModel = self._AVI,
+        AllLayoutViewModel = self._ALVI,
+        AllWithViewModel = self._WVI;
 
     self.topNode(el);
 
-    $.ftE(self.NodeList[self.handleNodeTree.id].childNodes, function(child_node) {
-        var viewInstance,
-            arrayViewInstances,
+    $.E(self.NodeList[self.handleNodeTree.id].childNodes, function(child_node) {
+        var viewModel,
+            arrayViewModels,
             id = child_node.id;
-        if (viewInstance = (AllLayoutViewInstance[child_node.id] || AllWithViewInstance[child_node.id])) {
-            _moveChild(viewInstance, el)
-        } else if (arrayViewInstances = AllEachViewInstance[id]) {
-            $.ftE(arrayViewInstances, function(viewInstance) {
-                _moveChild(viewInstance, el);
+        if (viewModel = (AllLayoutViewModel[child_node.id] || AllWithViewModel[child_node.id])) {
+            _moveChild(viewModel, el)
+        } else if (arrayViewModels = AllEachViewModel[id]) {
+            $.E(arrayViewModels, function(viewModel) {
+                _moveChild(viewModel, el);
             })
         }
     });
@@ -2139,7 +2306,7 @@ function _moveChild(self, el) {
 
 var fr = doc.createDocumentFragment();
 
-var VI_proto = ViewInstance.prototype = {
+var VI_proto = ViewModel.prototype = {
     destroy: function() {
         var self = this;
         //TODO:delete node
@@ -2153,7 +2320,7 @@ var VI_proto = ViewInstance.prototype = {
         if (self._id === 76) {
             debugger
         };
-        $.fE(currentTopNode.childNodes, function(child_node) {
+        $.e(currentTopNode.childNodes, function(child_node) {
             $.D.ap(fr, child_node);
         });
         $.D.ap(el, fr);
@@ -2168,7 +2335,7 @@ var VI_proto = ViewInstance.prototype = {
             currentTopNode = self.topNode(),
             elParentNode = el.parentNode;
 
-        $.fE(currentTopNode.childNodes, function(child_node) {
+        $.e(currentTopNode.childNodes, function(child_node) {
             $.D.ap(fr, child_node);
         });
         $.D.iB(elParentNode, fr, el);
@@ -2207,25 +2374,25 @@ var VI_proto = ViewInstance.prototype = {
             self._canRemoveAble = $FALSE; //Has being recovered into the _packingBag,can't no be remove again. --> it should be insert
             if (self._isEach) {
                 // 排队到队位作为备用
-                self._arrayVI.splice(self.dataManager._index, 1)
+                self._arrayVI.splice(self.model._index, 1)
                 $.p(self._arrayVI, self);
 
                 //相应的DM以及数据也要做重新排队
-                self.dataManager.lineUp();
+                self.model.lineUp();
             }
         }
         return self;
     },
     get: function get() {
-        var dm = this.dataManager;
+        var dm = this.model;
         return dm.get.apply(dm, arguments /*$.s(arguments)*/ );
     },
     mix: function mix() {
-        var dm = this.dataManager;
+        var dm = this.model;
         return dm.mix.apply(dm, arguments /*$.s(arguments)*/ )
     },
     set: function set() {
-        var dm = this.dataManager;
+        var dm = this.model;
         return dm.set.apply(dm, arguments /*$.s(arguments)*/ )
     },
     topNode: function(newCurrentTopNode) {
@@ -2258,7 +2425,7 @@ var VI_proto = ViewInstance.prototype = {
     },
     touchOff: function(key) {
         var self = this,
-            dataManager = self.dataManager,
+            model = self.model,
             NodeList = self.NodeList;
         VI_session.touchHandleIdSet = {};
 
@@ -2266,63 +2433,63 @@ var VI_proto = ViewInstance.prototype = {
         VI_session.touchStacks = [];
 
         // if (key==="$PARENT.radio") {debugger};
-        _bubbleTrigger.call(self, self._triggers._[key], NodeList, dataManager)
+        _bubbleTrigger.call(self, self._triggers._[key], NodeList, model)
 
         // trigger trigger stack
-        $.ftE(VI_session.touchStacks, function(eventStack) {
-            $.ftE(eventStack, function(trigger) {
-                trigger.event(NodeList, dataManager, /*trigger,*/ self._isAttr, self._id)
+        $.E(VI_session.touchStacks, function(eventStack) {
+            $.E(eventStack, function(trigger) {
+                trigger.event(NodeList, model, /*trigger,*/ self._isAttr, self._id)
             })
         })
     },
     _buildSmart: function(sKey) {
         var self = this,
-            dataManager = self.dataManager,
+            model = self.model,
             smartTriggers = self._smartTriggers;
-        dataManager.get(sKey);
-        var baseKey = DataManager.session.filterKey,
-            topGetterTriggerKeys = DataManager.session.topGetter && DataManager.session.topGetter._triggerKeys,
+        model.get(sKey);
+        var baseKey = Model.session.filterKey,
+            topGetterTriggerKeys = Model.session.topGetter && Model.session.topGetter._triggerKeys,
             smartTrigger = new SmartTriggerHandle(
                 baseKey || (baseKey = ""), //match key
 
                 function(smartTriggerSet) {
                     self.touchOff(sKey);
                 }, { //TEMP data
-                    viewInstance: self,
-                    dm_id: dataManager.id,
+                    viewModel: self,
+                    dm_id: model.id,
                     sourceKey: sKey
                 }
             );
         $.p(smartTriggers, smartTrigger);
         topGetterTriggerKeys && smartTrigger.bind(topGetterTriggerKeys); // topGetterTriggerKeys.push(baseKey, smartTrigger);
     },
-    teleporter: function(viewInstance, telporterName) {
+    teleporter: function(viewModel, telporterName) {
         var self = this;
         (telporterName === $UNDEFINED) && (telporterName = "index");
         var teleporter = self._teleporters[telporterName];
         if (teleporter) {
             if (teleporter.show_or_hidden !== $FALSE) {
                 //remove old
-                var old_viewInstance = teleporter.vi;
-                old_viewInstance && old_viewInstance.remove();
+                var old_viewModel = teleporter.vi;
+                old_viewModel && old_viewModel.remove();
 
                 //insert new & save new
-                viewInstance.insert(teleporter.ph);
+                viewModel.insert(teleporter.ph);
             }
-            teleporter.vi = viewInstance
+            teleporter.vi = viewModel
         }
         return self;
     },
     collect: function() {
         var self = this;
-        var dataManager = self.dataManager;
-        dataManager.collect.apply(dataManager, arguments);
+        var model = self.model;
+        model.collect.apply(model, arguments);
         return self;
     },
     subset: function() {
         var self = this;
-        var dataManager = self.dataManager;
-        dataManager.subset.apply(dataManager, arguments);
+        var model = self.model;
+        model.subset.apply(model, arguments);
         return self;
     }
 };
@@ -2330,7 +2497,7 @@ var VI_proto = ViewInstance.prototype = {
     "scroll unload click dblclick mousedown mouseup mousemove" +
     "mouseover mouseout mouseenter mouseleave change select" +
     "submit keydown keypress keyup error contextmenu").split(" ");
-$.ftE(_allEventNames, function(eventName) {
+$.E(_allEventNames, function(eventName) {
     VI_proto[eventName] = function(fun) {
         return fun ? this.on(eventName, fun) : this.trigger(eventName);
     }
@@ -2350,7 +2517,7 @@ var _removeNodes = _isIE ? $.noop/*function() {//IE 不能回收节点，会导�
 		}
 	}() */: function(n) {
 		// if (n && n.parentNode && n.tagName != 'BODY') {
-			$.ftE(n, function(nodeToDelete){
+			$.E(n, function(nodeToDelete){
 				delete nodeToDelete.parentNode.removeChild(nodeToDelete);
 			})
 		// }
@@ -2379,7 +2546,7 @@ var _removeNodes = _isIE ? $.noop/*function() {//IE 不能回收节点，会导�
 					break;
 			}
 		}
-		// $.ftE(GC_node, _removeNode)
+		// $.E(GC_node, _removeNode)
 		_removeNodes(GC_node);
 		return result;
 	};
@@ -2537,7 +2704,7 @@ var placeholder = {
             _shadowBody.innerHTML = htmlStr;
 
             //递归过滤
-            ViewParser.scans(_shadowBody);
+            jSouper.scans(_shadowBody);
             // console.log(htmlStr)
             var insertBefore = [];
             _traversal(_shadowBody, function(node, index, parentNode) {
@@ -2552,7 +2719,7 @@ var placeholder = {
                     });
                 }
             });
-            $.fE(insertBefore, function(item, i) {
+            $.e(insertBefore, function(item, i) {
                 var node = item.baseNode,
                     parentNode = item.parentNode,
                     insertNodesHTML = item.insertNodesHTML;
@@ -2560,7 +2727,7 @@ var placeholder = {
                 //Using innerHTML rendering is complete immediate operation DOM, 
                 //innerHTML otherwise covered again, the node if it is not, 
                 //then memory leaks, IE can not get to the full node.
-                $.fE(shadowDIV.childNodes, function(refNode) {
+                $.e(shadowDIV.childNodes, function(refNode) {
                     $.D.iB(parentNode, refNode, node)
                 })
                 $.D.rC(parentNode, node);
@@ -2601,7 +2768,7 @@ var placeholder = {
         _instances: {},
 
         // Proto: DynamicComputed /*Proto*/ ,
-        Model: DataManager
+        Model: Model
     };
 
 var _commentPlaceholder = function(handle, parentHandle, commentText) {
@@ -2625,17 +2792,17 @@ V.rh("define", function(handle, index, parentHandle) {
 		return $.noop
 	}
 });
-var _each_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManager, /*triggerBy,*/ viewInstance_ID) {
+var _each_display = function(show_or_hidden, NodeList_of_ViewModel, model, /*triggerBy,*/ viewModel_ID) {
     var handle = this,
-        allArrViewInstances = V._instances[viewInstance_ID]._AVI,
-        arrViewInstances = allArrViewInstances[handle.id] || (allArrViewInstances[handle.id] = []);
+        allArrViewModels = V._instances[viewModel_ID]._AVI,
+        arrViewModels = allArrViewModels[handle.id] || (allArrViewModels[handle.id] = []);
 
     //get comment_endeach_id
-    var commentStartEachPlaceholderElement = NodeList_of_ViewInstance[$.lI(handle.childNodes).id].currentNode;
-    var commentEndEachPlaceholderElement = NodeList_of_ViewInstance[NodeList_of_ViewInstance[handle.eh_id].childNodes[0].id].currentNode;
+    var commentStartEachPlaceholderElement = NodeList_of_ViewModel[$.lI(handle.childNodes).id].currentNode;
+    var commentEndEachPlaceholderElement = NodeList_of_ViewModel[NodeList_of_ViewModel[handle.eh_id].childNodes[0].id].currentNode;
 
-    arrViewInstances.hidden = !show_or_hidden;
-    var fg = arrViewInstances.fragment || (arrViewInstances.fragment = doc.createDocumentFragment());
+    arrViewModels.hidden = !show_or_hidden;
+    var fg = arrViewModels.fragment || (arrViewModels.fragment = doc.createDocumentFragment());
 
     if (show_or_hidden) {
         var fgCs = fg.childNodes;
@@ -2662,7 +2829,7 @@ V.rh("#each", function(handle, index, parentHandle) {
         endIndex = 0;
 
     var layer = 1;
-    $.fE(parentHandle.childNodes, function(childHandle, index) {
+    $.e(parentHandle.childNodes, function(childHandle, index) {
         endIndex = index;
         if (childHandle.handleName === "#each") {
             layer += 1
@@ -2719,52 +2886,52 @@ V.rh("@", function(handle, index, parentHandle) {
 		//Node position calibration
 		//no "$.insert" Avoid sequence error
 
-		return function(NodeList_of_ViewInstance) {
-			var nextNodeInstance = nextHandle && NodeList_of_ViewInstance[nextHandle.id].currentNode,
-				textNodeInstance = NodeList_of_ViewInstance[textHandle.id].currentNode,
-				parentNodeInstance = NodeList_of_ViewInstance[parentHandle.id].currentNode
+		return function(NodeList_of_ViewModel) {
+			var nextNodeInstance = nextHandle && NodeList_of_ViewModel[nextHandle.id].currentNode,
+				textNodeInstance = NodeList_of_ViewModel[textHandle.id].currentNode,
+				parentNodeInstance = NodeList_of_ViewModel[parentHandle.id].currentNode
 				parentNodeInstance&&$.D.iB(parentNodeInstance, textNodeInstance, nextNodeInstance); //Manually insert node
 		}
 	}
 });
 V.rh("/if", V.rh("#else", V.rh("#if", placeholderHandle)));
 var _include_display_arguments = {};
-function _include_display(show_or_hidden, NodeList_of_ViewInstance, dataManager, /*triggerBy,*/ viewInstance_ID) {
+function _include_display(show_or_hidden, NodeList_of_ViewModel, model, /*triggerBy,*/ viewModel_ID) {
 	var handle = this,
 		id = handle.id,
-		includeViewInstance = V._instances[viewInstance_ID]._ALVI[id];
-	if (!includeViewInstance) {
+		includeViewModel = V._instances[viewModel_ID]._ALVI[id];
+	if (!includeViewModel) {
 		_include_display_arguments[id] = arguments;
 		return;
 	}
 	//get comment_endeach_id
-	var commentPlaceholderElement = NodeList_of_ViewInstance[$.lI(handle.childNodes).id].currentNode;
+	var commentPlaceholderElement = NodeList_of_ViewModel[$.lI(handle.childNodes).id].currentNode;
 	if (show_or_hidden) {
-		if(!includeViewInstance._canRemoveAble){//can-insert-able
-			includeViewInstance.insert(commentPlaceholderElement);
+		if(!includeViewModel._canRemoveAble){//can-insert-able
+			includeViewModel.insert(commentPlaceholderElement);
 		}
 	} else {
-		includeViewInstance.remove();
+		includeViewModel.remove();
 	}
 };
 V.rh("#include", function(handle, index, parentHandle) {
 	handle.display = _include_display; //Custom rendering function
 	_commentPlaceholder(handle, parentHandle);
 });
-function _layout_display(show_or_hidden, NodeList_of_ViewInstance, dataManager, /*triggerBy,*/ viewInstance_ID) {
+function _layout_display(show_or_hidden, NodeList_of_ViewModel, model, /*triggerBy,*/ viewModel_ID) {
 	var handle = this,
-		layoutViewInstance = V._instances[viewInstance_ID]._ALVI[handle.id];
-	if (!layoutViewInstance) {
+		layoutViewModel = V._instances[viewModel_ID]._ALVI[handle.id];
+	if (!layoutViewModel) {
 		return;
 	}
 	//get comment_endeach_id
-	var commentPlaceholderElement = NodeList_of_ViewInstance[$.lI(handle.childNodes).id].currentNode;
+	var commentPlaceholderElement = NodeList_of_ViewModel[$.lI(handle.childNodes).id].currentNode;
 	if (show_or_hidden) {
-		if(!layoutViewInstance._canRemoveAble){//can-insert-able
-			layoutViewInstance.insert(commentPlaceholderElement);
+		if(!layoutViewModel._canRemoveAble){//can-insert-able
+			layoutViewModel.insert(commentPlaceholderElement);
 		}
 	} else {
-		layoutViewInstance.remove();
+		layoutViewModel.remove();
 	}
 };
 V.rh("#>", V.rh("#layout", function(handle, index, parentHandle) {
@@ -2781,15 +2948,15 @@ var _operator_handle  = function(handle, index, parentHandle) {
 	}
 },
 _operator_list = "+ - * / % == === != !== > < && || ^ >> << & |".split(" ");
-$.ftE(_operator_list, function(operator) {
+$.E(_operator_list, function(operator) {
 	V.rh(operator, _operator_handle)
 });
-function _teleporter_display(show_or_hidden, NodeList_of_ViewInstance, dataManager, /*triggerBy,*/ viewInstance_ID) {
+function _teleporter_display(show_or_hidden, NodeList_of_ViewModel, model, /*triggerBy,*/ viewModel_ID) {
     var handle = this;
     var placeholderHandle = $.lI(handle.childNodes);
-    var commentPlaceholderElement = NodeList_of_ViewInstance[placeholderHandle.id].currentNode;
+    var commentPlaceholderElement = NodeList_of_ViewModel[placeholderHandle.id].currentNode;
 
-    console.log(NodeList_of_ViewInstance[handle.id])
+    console.log(NodeList_of_ViewModel[handle.id])
     var teleporterNameHandle = handle.childNodes[0];
     if (placeholderHandle === teleporterNameHandle) { //no first argument;
         var teleporterName = "index"
@@ -2798,18 +2965,18 @@ function _teleporter_display(show_or_hidden, NodeList_of_ViewInstance, dataManag
         teleporterName = teleporterName.substr(1, teleporterName.length - 2);
     }
 
-    var teleporter = V._instances[viewInstance_ID]._teleporters[teleporterName];
-    var teleporterViewInstance = teleporter.vi;
+    var teleporter = V._instances[viewModel_ID]._teleporters[teleporterName];
+    var teleporterViewModel = teleporter.vi;
 
-    console.log(show_or_hidden ? "display:" : "remove:", teleporterViewInstance);
+    console.log(show_or_hidden ? "display:" : "remove:", teleporterViewModel);
 
-    if (teleporterViewInstance) {
+    if (teleporterViewModel) {
         if (show_or_hidden) {
-            if(!teleporterViewInstance._canRemoveAble){//can-insert-able
-                teleporterViewInstance.insert(commentPlaceholderElement);
+            if(!teleporterViewModel._canRemoveAble){//can-insert-able
+                teleporterViewModel.insert(commentPlaceholderElement);
             }
         } else {
-            teleporterViewInstance.remove()
+            teleporterViewModel.remove()
         }
     }
 
@@ -2822,27 +2989,27 @@ V.rh("#teleporter", function(handle, index, parentHandle) {
 });
 
 var _unary_operator_list = "! ~ -".split(" ");// ++ --
-$.ftE(_unary_operator_list, function(operator) {
+$.E(_unary_operator_list, function(operator) {
 	V.rh(operator, _operator_handle)
 });
-var _with_display = function(show_or_hidden, NodeList_of_ViewInstance, dataManager, triggerBy, viewInstance_ID) {
+var _with_display = function(show_or_hidden, NodeList_of_ViewModel, model, triggerBy, viewModel_ID) {
     var handle = this,
         parentHandle = handle.parentNode,
         comment_endwith_id,
-        AllLayoutViewInstance = V._instances[viewInstance_ID]._WVI,
-        withViewInstance = AllLayoutViewInstance[handle.id];
-    if (!withViewInstance) {
+        AllLayoutViewModel = V._instances[viewModel_ID]._WVI,
+        withViewModel = AllLayoutViewModel[handle.id];
+    if (!withViewModel) {
         return;
     }
     //get comment_endwith_id
-    var commentEndEachPlaceholderElement = NodeList_of_ViewInstance[NodeList_of_ViewInstance[handle.eh_id].childNodes[0].id].currentNode;
+    var commentEndEachPlaceholderElement = NodeList_of_ViewModel[NodeList_of_ViewModel[handle.eh_id].childNodes[0].id].currentNode;
 
     if (show_or_hidden) {
-        if (!withViewInstance._canRemoveAble) { //can-insert-able
-            withViewInstance.insert(commentEndEachPlaceholderElement)
+        if (!withViewModel._canRemoveAble) { //can-insert-able
+            withViewModel.insert(commentEndEachPlaceholderElement)
         }
     } else {
-        withViewInstance.remove();
+        withViewModel.remove();
     }
 };
 V.rh("#with", function(handle, index, parentHandle) {
@@ -2852,9 +3019,9 @@ V.rh("#with", function(handle, index, parentHandle) {
         withModuleHandle = new ElementHandle(_shadowBody),
         endIndex = 0;
 
-    // handle.arrViewInstances = [];//Should be at the same level with currentNode
+    // handle.arrViewModels = [];//Should be at the same level with currentNode
     var layer = 1;
-    $.fE(parentHandle.childNodes, function(childHandle, index) {
+    $.e(parentHandle.childNodes, function(childHandle, index) {
         endIndex = index;
         // console.log(childHandle,childHandle.handleName)
         if (childHandle.handleName === "#with") {
@@ -2891,27 +3058,27 @@ V.rt("define", function(handle, index, parentHandle) {
 	// console.log(handle.childNodes[0].parentNode, handle.parentNode)
 
 	if (parentHandle.type !== "handle") { //as textHandle
-		trigger.event = function(NodeList_of_ViewInstance, dataManager /*, triggerBy*/ , isAttr, viewInstance_ID) { //call by ViewInstance's Node
-			var key = NodeList_of_ViewInstance[statusKeyHandleId]._data,
-				result = NodeList_of_ViewInstance[valueHandleId]._data,
-				currentNode = NodeList_of_ViewInstance[textHandle_id].currentNode,
-				uid_hash = viewInstance_ID + key,
-				viewInstance = V._instances[viewInstance_ID],
+		trigger.event = function(NodeList_of_ViewModel, model /*, triggerBy*/ , isAttr, viewModel_ID) { //call by ViewModel's Node
+			var key = NodeList_of_ViewModel[statusKeyHandleId]._data,
+				result = NodeList_of_ViewModel[valueHandleId]._data,
+				currentNode = NodeList_of_ViewModel[textHandle_id].currentNode,
+				uid_hash = viewModel_ID + key,
+				viewModel = V._instances[viewModel_ID],
 				finallyRun;
-			// console.log(key,":",result,viewInstance.id);
+			// console.log(key,":",result,viewModel.id);
 			if (key !== $UNDEFINED) {
-				if (!(finallyRun = DataManager.finallyRun[uid_hash])) {
-					DataManager.finallyRun(DataManager.finallyRun[uid_hash] = finallyRun = function() {
-						viewInstance = finallyRun.viewInstance
+				if (!(finallyRun = Model.finallyRun[uid_hash])) {
+					Model.finallyRun(Model.finallyRun[uid_hash] = finallyRun = function() {
+						viewModel = finallyRun.viewModel
 						// if (finallyRun.key==="dd") {debugger};
 						//已经被remove的VI，就不应该触发define
-						if (viewInstance._canRemoveAble) {
-							viewInstance.set(finallyRun.key, finallyRun.result)
+						if (viewModel._canRemoveAble) {
+							viewModel.set(finallyRun.key, finallyRun.result)
 						}
-						DataManager.finallyRun[uid_hash] = $FALSE; //can push into finally quene
+						Model.finallyRun[uid_hash] = $FALSE; //can push into finally quene
 					})
 				}
-				finallyRun.viewInstance = viewInstance
+				finallyRun.viewModel = viewModel
 				finallyRun.key = key
 				finallyRun.result = result
 			}
@@ -2922,15 +3089,15 @@ V.rt("define", function(handle, index, parentHandle) {
 			}
 		}
 	} else {
-		trigger.event = function(NodeList_of_ViewInstance, dataManager /*, triggerBy*/ , isAttr, viewInstance_ID) { //call by ViewInstance's Node
-			var key = NodeList_of_ViewInstance[statusKeyHandleId]._data,
-				result = NodeList_of_ViewInstance[valueHandleId]._data;
+		trigger.event = function(NodeList_of_ViewModel, model /*, triggerBy*/ , isAttr, viewModel_ID) { //call by ViewModel's Node
+			var key = NodeList_of_ViewModel[statusKeyHandleId]._data,
+				result = NodeList_of_ViewModel[valueHandleId]._data;
 
-			DataManager.finallyRun(function() {
+			Model.finallyRun(function() {
 				console.log(key, result)
-				//key!==$UNDEFINED&&dataManager.set(key,result)
+				//key!==$UNDEFINED&&model.set(key,result)
 			}, 0)
-			NodeList_of_ViewInstance[this.handleId]._data = result;
+			NodeList_of_ViewModel[this.handleId]._data = result;
 		}
 	}
 
@@ -2942,8 +3109,8 @@ var _extend_DM_get_Index = (function() {
         var self = this;
         var indexKey = DM_config.prefix.Index;
         if (key === indexKey) {
-            DataManager.session.topSetter = self;
-            DataManager.session.filterKey = "";
+            Model.session.topSetter = self;
+            Model.session.filterKey = "";
             throw Error(indexKey + " is read only.")
         } else {
             return DM_proto.set.apply(self, arguments)
@@ -2953,18 +3120,18 @@ var _extend_DM_get_Index = (function() {
         var self = this;
         var indexKey = DM_config.prefix.Index;
         if (key === indexKey) {
-            DataManager.session.topGetter = self;
-            DataManager.session.filterKey = "";
+            Model.session.topGetter = self;
+            Model.session.filterKey = "";
             return parseInt(self._index);
         } else {
             return DM_proto.get.apply(self, arguments)
         }
     };
 
-    function _extend_DM_get_Index(dataManager) {
-        // if(dataManager._isEach)
-        dataManager.set = $Index_set
-        dataManager.get = $Index_get
+    function _extend_DM_get_Index(model) {
+        // if(model._isEach)
+        model.set = $Index_set
+        model.get = $Index_get
     };
     return _extend_DM_get_Index;
 }());
@@ -2988,21 +3155,21 @@ V.rt("#each", function(handle, index, parentHandle) {
     trigger = {
         // smartTrigger:$NULL,
         // key:$NULL,
-        event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
-            var data = NodeList_of_ViewInstance[arrDataHandle_id]._data,
+        event: function(NodeList_of_ViewModel, model, /*eventTrigger,*/ isAttr, viewModel_ID) {
+            var data = NodeList_of_ViewModel[arrDataHandle_id]._data,
                 // arrTriggerKey = arrDataHandle_Key + ".length",
-                viewInstance = V._instances[viewInstance_ID],
-                allArrViewInstances = viewInstance._AVI,
-                arrViewInstances = allArrViewInstances[id] || (allArrViewInstances[id] = []),
-                showed_vi_len = arrViewInstances.len,
+                viewModel = V._instances[viewModel_ID],
+                allArrViewModels = viewModel._AVI,
+                arrViewModels = allArrViewModels[id] || (allArrViewModels[id] = []),
+                showed_vi_len = arrViewModels.len,
                 new_data_len = data ? data.length : 0,
                 eachModuleConstructor = V.eachModules[id],
                 inserNew,
-                comment_endeach_node = NodeList_of_ViewInstance[comment_endeach_id].currentNode;
+                comment_endeach_node = NodeList_of_ViewModel[comment_endeach_id].currentNode;
 
             /*+ Sort*/
             if (arrDataHandle_sort_id && data) {
-                var sort_handle = NodeList_of_ViewInstance[arrDataHandle_sort_id]._data
+                var sort_handle = NodeList_of_ViewModel[arrDataHandle_sort_id]._data
                 var type = typeof sort_handle
                 if (/function|string/.test(type)) {
                     var old_sort = $.s(data);
@@ -3028,7 +3195,7 @@ V.rt("#each", function(handle, index, parentHandle) {
                     } catch (e) {
                         throw TypeError("#each-data's type error.")
                     }
-                    $.ftE(old_sort, function(value, index) {
+                    $.E(old_sort, function(value, index) {
                         if (data[index] !== value) {
                             var setSort = finallyRun[id];
                             if (!setSort) {
@@ -3038,7 +3205,7 @@ V.rt("#each", function(handle, index, parentHandle) {
                                 }
                                 finallyRun(setSort)
                             }
-                            setSort.vi = viewInstance
+                            setSort.vi = viewModel
                         }
                     })
                 }
@@ -3046,14 +3213,14 @@ V.rt("#each", function(handle, index, parentHandle) {
             /*- Sort*/
 
             if (showed_vi_len !== new_data_len) {
-                arrViewInstances.len = new_data_len; //change immediately,to avoid the `subset` trigger the `rebuildTree`,and than trigger each-trigger again.
+                arrViewModels.len = new_data_len; //change immediately,to avoid the `subset` trigger the `rebuildTree`,and than trigger each-trigger again.
 
                 //沉默相关多余操作的API，提升效率
                 DM_proto.rebuildTree = $.noop //doesn't need rebuild every subset
                 DM_proto.touchOff = $.noop; //subset的touchOff会遍历整个子链，会造成爆炸性增长。
 
                 if (showed_vi_len > new_data_len) {
-                    $.fE(arrViewInstances, function(eachItemHandle) {
+                    $.e(arrViewModels, function(eachItemHandle) {
                         var isEach = eachItemHandle._isEach
                         //移除each标志避免排队
                         eachItemHandle._isEach = $FALSE;
@@ -3067,36 +3234,36 @@ V.rt("#each", function(handle, index, parentHandle) {
                         var fragment = $.D.cl(fr);
                         var elParentNode = comment_endeach_node.parentNode;
 
-                        $.ftE($.s(data), function(eachItemData, index) {
+                        $.E($.s(data), function(eachItemData, index) {
                             //TODO:if too mush vi will be create, maybe asyn
-                            var viewInstance = arrViewInstances[index];
-                            if (!viewInstance) {
-                                viewInstance = arrViewInstances[index] = eachModuleConstructor(eachItemData);
+                            var viewModel = arrViewModels[index];
+                            if (!viewModel) {
+                                viewModel = arrViewModels[index] = eachModuleConstructor(eachItemData);
 
-                                viewInstance._arrayVI = arrViewInstances;
-                                var viDM = viewInstance.dataManager
-                                viDM._isEach = viewInstance._isEach = {
+                                viewModel._arrayVI = arrViewModels;
+                                var viDM = viewModel.model
+                                viDM._isEach = viewModel._isEach = {
                                     //_index在push到Array_DM时才进行真正定义，由于remove会重新更正_index，所以这个参数完全交给Array_DM管理
                                     // _index: index,
                                     eachId: id,
-                                    eachVIs: arrViewInstances
+                                    eachVIs: arrViewModels
                                 }
-                                dataManager.subset(viDM, arrDataHandle_Key + "." + index); //+"."+index //reset arrViewInstance's dataManager
+                                model.subset(viDM, arrDataHandle_Key + "." + index); //+"."+index //reset arrViewModel's model
                                 _extend_DM_get_Index(viDM)
                                 //强制刷新，保证这个对象的内部渲染正确，在subset后刷新，保证smartkey的渲染正确
                                 _touchOff.call(viDM, "");
                                 viDM.__cacheIndex = viDM._index;
                             }
                             //自带的inser，针对each做特殊优化
-                            // viewInstance.insert(comment_endeach_node)
-                            var currentTopNode = viewInstance.topNode();
+                            // viewModel.insert(comment_endeach_node)
+                            var currentTopNode = viewModel.topNode();
 
-                            $.fE(currentTopNode.childNodes, function(child_node) {
+                            $.e(currentTopNode.childNodes, function(child_node) {
                                 $.D.ap(fragment, child_node);
                             });
 
-                            _moveChild(viewInstance, elParentNode);
-                            viewInstance._canRemoveAble = $TRUE;
+                            _moveChild(viewModel, elParentNode);
+                            viewModel._canRemoveAble = $TRUE;
 
                         }, showed_vi_len );
 
@@ -3106,8 +3273,8 @@ V.rt("#each", function(handle, index, parentHandle) {
                     }
                 }
                 //回滚沉默的功能
-                DM_proto.touchOff = _touchOff; //.call(dataManager);
-                (DM_proto.rebuildTree = _rebuildTree).call(dataManager);
+                DM_proto.touchOff = _touchOff; //.call(model);
+                (DM_proto.rebuildTree = _rebuildTree).call(model);
             }
         }
     }
@@ -3121,21 +3288,21 @@ V.rt("", function(handle, index, parentHandle) {
         trigger;
 
     if (parentHandle.type !== "handle") { //as textHandle
-        if ($.isString(key)) { // single String
+        if ($.isSWrap(key)) { // single String
             trigger = { //const 
                 key: ".", //const trigger
                 bubble: $TRUE,
-                event: function(NodeList_of_ViewInstance, dataManager) {
-                    NodeList_of_ViewInstance[textHandleId].currentNode.data = key.substring(1, key.length - 1);
+                event: function(NodeList_of_ViewModel, model) {
+                    NodeList_of_ViewModel[textHandleId].currentNode.data = key.substring(1, key.length - 1);
                     //trigger.event = $.noop;
                 }
             };
         } else { //String for databese by key
             trigger = {
                 key: key,
-                event: function(NodeList_of_ViewInstance, dataManager, /* triggerBy,*/ isAttr /*, vi*/ ) { //call by ViewInstance's Node
-                    var data = dataManager.get(key),
-                        nodeHandle = NodeList_of_ViewInstance[textHandleId],
+                event: function(NodeList_of_ViewModel, model, /* triggerBy,*/ isAttr /*, vi*/ ) { //call by ViewModel's Node
+                    var data = model.get(key),
+                        nodeHandle = NodeList_of_ViewModel[textHandleId],
                         currentNode = nodeHandle.currentNode;
                     if (isAttr) {
                         //IE浏览器直接编译，故不需要转义，其他浏览器需要以字符串绑定到属性中。需要转义，否则会出现引号冲突
@@ -3152,12 +3319,12 @@ V.rt("", function(handle, index, parentHandle) {
             }
         }
     } else { //as stringHandle
-        if ($.isString(key)) { // single String
+        if ($.isSWrap(key)) { // single String
             trigger = { //const 
                 key: ".", //const trigger
                 bubble: $TRUE,
-                event: function(NodeList_of_ViewInstance, dataManager) {
-                    NodeList_of_ViewInstance[this.handleId]._data = key.substr(1, key.length - 2);
+                event: function(NodeList_of_ViewModel, model) {
+                    NodeList_of_ViewModel[this.handleId]._data = key.substr(1, key.length - 2);
                     //trigger.event = $.noop;
                 }
             };
@@ -3165,8 +3332,8 @@ V.rt("", function(handle, index, parentHandle) {
             trigger = {
                 key: key,
                 bubble: $TRUE,
-                event: function(NodeList_of_ViewInstance, dataManager) {
-                    NodeList_of_ViewInstance[this.handleId]._data = dataManager.get(key);
+                event: function(NodeList_of_ViewModel, model) {
+                    NodeList_of_ViewModel[this.handleId]._data = model.get(key);
                 }
             };
         }
@@ -3184,13 +3351,13 @@ V.rt("@", function(handle, index, parentHandle) {
 		};
 
 	if (parentHandle.type !== "handle") { //as textHandle
-		trigger.event = function(NodeList_of_ViewInstance, dataManager) {
+		trigger.event = function(NodeList_of_ViewModel, model) {
 			//trigger but no bind data
-			NodeList_of_ViewInstance[textHandleId].currentNode.data = key;
+			NodeList_of_ViewModel[textHandleId].currentNode.data = key;
 		}
 	} else {
-		trigger.event = function(NodeList_of_ViewInstance, dataManager) {
-			NodeList_of_ViewInstance[this.handleId]._data = key;
+		trigger.event = function(NodeList_of_ViewModel, model) {
+			NodeList_of_ViewModel[this.handleId]._data = key;
 		}
 	}
 	return trigger;
@@ -3210,7 +3377,7 @@ V.rt("#if", function(handle, index, parentHandle) {
 		trigger,
 		deep = 0;
 
-	$.fE(parentHandle.childNodes, function(child_handle, i, childHandles) {
+	$.e(parentHandle.childNodes, function(child_handle, i, childHandles) {
 
 		if (child_handle.handleName === "#if") {
 			deep += 1
@@ -3233,47 +3400,47 @@ V.rt("#if", function(handle, index, parentHandle) {
 
 	trigger = {
 		// key:"",//default is ""
-		event: function(NodeList_of_ViewInstance, dataManager, /*triggerBy,*/ isAttr, viewInstance_ID) {
-			var conditionVal = !! NodeList_of_ViewInstance[conditionHandleId]._data,
-				parentNode = NodeList_of_ViewInstance[parentHandleId].currentNode,
+		event: function(NodeList_of_ViewModel, model, /*triggerBy,*/ isAttr, viewModel_ID) {
+			var conditionVal = !! NodeList_of_ViewModel[conditionHandleId]._data,
+				parentNode = NodeList_of_ViewModel[parentHandleId].currentNode,
 				markHandleId = comment_else_id, //if(true)
 				markHandle; //default is undefined --> insertBefore === appendChild
 			
-			if (NodeList_of_ViewInstance[this.handleId]._data !== conditionVal /*|| triggerBy*/) {
-				NodeList_of_ViewInstance[this.handleId]._data = conditionVal;
+			if (NodeList_of_ViewModel[this.handleId]._data !== conditionVal /*|| triggerBy*/) {
+				NodeList_of_ViewModel[this.handleId]._data = conditionVal;
 				if (!conditionVal) {
 					markHandleId = comment_endif_id;
 				}
 				if (markHandleId) {
-					markHandle = NodeList_of_ViewInstance[markHandleId].currentNode;
+					markHandle = NodeList_of_ViewModel[markHandleId].currentNode;
 				}
-				$.fE(conditionDOM[conditionVal], function(id) {
-					var currentHandle = NodeList_of_ViewInstance[id],
+				$.e(conditionDOM[conditionVal], function(id) {
+					var currentHandle = NodeList_of_ViewModel[id],
 						node = currentHandle.currentNode,
-						placeholderNode = (NodeList_of_ViewInstance[id].placeholderNode = NodeList_of_ViewInstance[id].placeholderNode || $.D.C(id)),
+						placeholderNode = (NodeList_of_ViewModel[id].placeholderNode = NodeList_of_ViewModel[id].placeholderNode || $.D.C(id)),
 						display = $TRUE;
 
-					$.fE(currentHandle._controllers, function(controller_id) {
+					$.e(currentHandle._controllers, function(controller_id) {
 						//Traverse all Logic Controller(if-else-endif) to determine whether each Controller are allowed to display it.
-						var controllerHandle = NodeList_of_ViewInstance[controller_id]
+						var controllerHandle = NodeList_of_ViewModel[controller_id]
 						return display = display && ($.iO(controllerHandle._controllers[controllerHandle._data ? $TRUE : $FALSE], currentHandle.id) !== -1);
 						//when display is false,abort traversing
 					});
 					if (display) {
 						if (currentHandle.display) { //Custom Display Function,default is false
-							currentHandle.display($TRUE, NodeList_of_ViewInstance, dataManager, /*triggerBy, */viewInstance_ID)
+							currentHandle.display($TRUE, NodeList_of_ViewModel, model, /*triggerBy, */viewModel_ID)
 						} else if (node) {
 							$.D.re(parentNode, node, placeholderNode)
 						}
 					}
 				});
-				$.fE(conditionDOM[!conditionVal], function(id) {
-					var currentHandle = NodeList_of_ViewInstance[id],
+				$.e(conditionDOM[!conditionVal], function(id) {
+					var currentHandle = NodeList_of_ViewModel[id],
 						node = currentHandle.currentNode,
 						placeholderNode = (currentHandle.placeholderNode = currentHandle.placeholderNode || $.D.C(id));
 
 					if (currentHandle.display) { //Custom Display Function,default is false
-						currentHandle.display($FALSE, NodeList_of_ViewInstance, dataManager, /*triggerBy,*/ viewInstance_ID)
+						currentHandle.display($FALSE, NodeList_of_ViewModel, model, /*triggerBy,*/ viewModel_ID)
 					} else if (node) {
 						$.D.re(parentNode, placeholderNode, node)
 					}
@@ -3291,7 +3458,7 @@ var _require_module = function(url, handleFun) {
         $.p(xhrConifg.success._, handleFun)
     } else {
         var handleQuene = function(status, xhr) {
-            $.ftE(handleQuene._, function(handleFun) {
+            $.E(handleQuene._, function(handleFun) {
                 handleFun(status, xhr);
             })
         }
@@ -3314,7 +3481,7 @@ var _runScripted = _placeholder("run-");
 
 function _runScript(node) {
     var scriptNodeList = node.getElementsByTagName('script');
-    $.ftE(scriptNodeList, function(scriptNode) {
+    $.E(scriptNodeList, function(scriptNode) {
         if ((!scriptNode.type || scriptNode.type === "text/javascript") && !scriptNode[_runScripted]) {
             var scripttext =scriptNode.text;
             // console.log("scripttext:",scripttext,scriptNode.src)
@@ -3334,23 +3501,23 @@ V.rt("#include", function(handle, index, parentHandle) {
 
     //base on layout
     var trigger = V.triggers["#layout"](handle, index, parentHandle);
-    var layoutViewInstance;
+    var layoutViewModel;
 
-    // Ajax NodeList_of_ViewInstance[templateHandle_id]._data
+    // Ajax NodeList_of_ViewModel[templateHandle_id]._data
     var _event = trigger.event;
     var _uid = $.uid();
-    trigger.event = function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
-        var url = NodeList_of_ViewInstance[templateHandle_id]._data;
+    trigger.event = function(NodeList_of_ViewModel, model, /*eventTrigger,*/ isAttr, viewModel_ID) {
+        var url = NodeList_of_ViewModel[templateHandle_id]._data;
         var args = arguments
         if (!_include_lock[_uid]) {
             _include_lock[_uid] = $TRUE;
             if (!V.modules[url]) {
                 _require_module(url, function(status, xhr) {
-                    V.modules[url] = ViewParser.parseStr(xhr.responseText);
-                    layoutViewInstance = _event.apply(trigger, args);
-                    if (layoutViewInstance && !layoutViewInstance._runScripted) {
-                        layoutViewInstance._runScripted = $TRUE;
-                        _runScript(layoutViewInstance.handleNodeTree.node);
+                    V.modules[url] = jSouper.parseStr(xhr.responseText);
+                    layoutViewModel = _event.apply(trigger, args);
+                    if (layoutViewModel && !layoutViewModel._runScripted) {
+                        layoutViewModel._runScripted = $TRUE;
+                        _runScript(layoutViewModel.handleNodeTree.node);
                         _include_lock[_uid] = $FALSE;
                     }
                     var _display_args = _include_display_arguments[handle.id];
@@ -3359,10 +3526,10 @@ V.rt("#include", function(handle, index, parentHandle) {
                     }
                 })
             } else {
-                layoutViewInstance = _event.apply(trigger, args);
-                if (!layoutViewInstance._runScripted) {
-                    layoutViewInstance._runScripted = $TRUE;
-                    _runScript(layoutViewInstance.topNode());
+                layoutViewModel = _event.apply(trigger, args);
+                if (!layoutViewModel._runScripted) {
+                    layoutViewModel._runScripted = $TRUE;
+                    _runScript(layoutViewModel.topNode());
                 }
                 _include_lock[_uid] = $FALSE;
             }
@@ -3385,10 +3552,10 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
     trigger = {
         // cache_tpl_name:$UNDEFINED,
         key: ".",
-        event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
-            var AllLayoutViewInstance = V._instances[viewInstance_ID]._ALVI;
-            var new_templateHandle_name = NodeList_of_ViewInstance[templateHandle_id]._data;
-            var self = V._instances[viewInstance_ID];
+        event: function(NodeList_of_ViewModel, model, /*eventTrigger,*/ isAttr, viewModel_ID) {
+            var AllLayoutViewModel = V._instances[viewModel_ID]._ALVI;
+            var new_templateHandle_name = NodeList_of_ViewModel[templateHandle_id]._data;
+            var self = V._instances[viewModel_ID];
             self = self.__layout || (self.__layout = {});
             var templateHandle_name = self.cache_tpl_name;
             // console.log(new_templateHandle_name,templateHandle_name)
@@ -3399,44 +3566,44 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
             if (new_templateHandle_name && (new_templateHandle_name !== templateHandle_name)) {
                 // console.log(uuid, new_templateHandle_name, templateHandle_name, !! module)
                 self.cache_tpl_name = new_templateHandle_name;
-                layoutViewInstance && layoutViewInstance.destory();
+                layoutViewModel && layoutViewModel.destory();
                 //console.log(new_templateHandle_name, id);
-                var key = NodeList_of_ViewInstance[dataHandle_id]._data,
-                    layoutViewInstance = AllLayoutViewInstance[id] = module().insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
-                layoutViewInstance._layoutName = new_templateHandle_name;
-                dataManager.subset(layoutViewInstance, key);
+                var key = NodeList_of_ViewModel[dataHandle_id]._data,
+                    layoutViewModel = AllLayoutViewModel[id] = module().insert(NodeList_of_ViewModel[comment_layout_id].currentNode);
+                layoutViewModel._layoutName = new_templateHandle_name;
+                model.subset(layoutViewModel, key);
             } else {
-                layoutViewInstance = AllLayoutViewInstance[id];
+                layoutViewModel = AllLayoutViewModel[id];
             }
-            return layoutViewInstance;
+            return layoutViewModel;
         }
     }
     if (ifHandle_id) {
-        trigger.event = function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
-            var isShow = $.trim(String(NodeList_of_ViewInstance[ifHandle_id]._data)).replace(_booleanFalseRegExp, ""),
-                AllLayoutViewInstance = V._instances[viewInstance_ID]._ALVI,
-                layoutViewInstance = AllLayoutViewInstance[id];
+        trigger.event = function(NodeList_of_ViewModel, model, /*eventTrigger,*/ isAttr, viewModel_ID) {
+            var isShow = _booleanFalseRegExp(NodeList_of_ViewModel[ifHandle_id]._data),
+                AllLayoutViewModel = V._instances[viewModel_ID]._ALVI,
+                layoutViewModel = AllLayoutViewModel[id];
             if (isShow) {
-                if (!layoutViewInstance) {
-                    var key = NodeList_of_ViewInstance[dataHandle_id]._data;
-                    if (dataManager.get(key)) {
-                        var module = V.modules[NodeList_of_ViewInstance[templateHandle_id]._data];
+                if (!layoutViewModel) {
+                    var key = NodeList_of_ViewModel[dataHandle_id]._data;
+                    if (model.get(key)) {
+                        var module = V.modules[NodeList_of_ViewModel[templateHandle_id]._data];
                         if (!module) {
                             return
                         }
-                        layoutViewInstance = AllLayoutViewInstance[id] = module();
-                        dataManager.subset(layoutViewInstance, key);
+                        layoutViewModel = AllLayoutViewModel[id] = module();
+                        model.subset(layoutViewModel, key);
                     }
                 }
-                if (layoutViewInstance && !layoutViewInstance._canRemoveAble) {
-                    layoutViewInstance.insert(NodeList_of_ViewInstance[comment_layout_id].currentNode);
+                if (layoutViewModel && !layoutViewModel._canRemoveAble) {
+                    layoutViewModel.insert(NodeList_of_ViewModel[comment_layout_id].currentNode);
                 }
             } else {
-                if (layoutViewInstance && layoutViewInstance._canRemoveAble) {
-                    layoutViewInstance.remove();
+                if (layoutViewModel && layoutViewModel._canRemoveAble) {
+                    layoutViewModel.remove();
                 }
             }
-            return layoutViewInstance;
+            return layoutViewModel;
         }
     }
     return trigger;
@@ -3448,8 +3615,8 @@ V.rt("!", V.rt("nega", function(handle, index, parentHandle) { //Negate
 	trigger = {
 		// key:"",//default key === ""
 		bubble: $TRUE,
-		event: function(NodeList_of_ViewInstance, dataManager) {
-			NodeList_of_ViewInstance[this.handleId]._data = !NodeList_of_ViewInstance[nageteHandlesId]._data; //first value
+		event: function(NodeList_of_ViewModel, model) {
+			NodeList_of_ViewModel[this.handleId]._data = !NodeList_of_ViewModel[nageteHandlesId]._data; //first value
 		}
 	}
 	return trigger;
@@ -3464,15 +3631,15 @@ var _operator_handle_builder = function(handle, index, parentHandle){
 	// console.log(handle.childNodes[0].parentNode, handle.parentNode)
 
 	if (parentHandle.type !== "handle") { //as textHandle
-		trigger.event = function(NodeList_of_ViewInstance /*, dataManager, triggerBy, isAttr, vi*/ ) { //call by ViewInstance's Node
-			var result =  NodeList_of_ViewInstance[firstParameter_id]._data+(secondParameter ? NodeList_of_ViewInstance[secondParameter.id]._data : 0) ,
-				currentNode = NodeList_of_ViewInstance[textHandle_id].currentNode;
+		trigger.event = function(NodeList_of_ViewModel /*, model, triggerBy, isAttr, vi*/ ) { //call by ViewModel's Node
+			var result =  NodeList_of_ViewModel[firstParameter_id]._data+(secondParameter ? NodeList_of_ViewModel[secondParameter.id]._data : 0) ,
+				currentNode = NodeList_of_ViewModel[textHandle_id].currentNode;
 			currentNode.data = result;
 		}
 	} else {
-		trigger.event = function(NodeList_of_ViewInstance /*, dataManager, triggerBy, isAttr, vi*/ ) { //call by ViewInstance's Node
-			var result =  NodeList_of_ViewInstance[firstParameter_id]._data+(secondParameter ? NodeList_of_ViewInstance[secondParameter.id]._data : 0) ;
-			NodeList_of_ViewInstance[this.handleId]._data = result;
+		trigger.event = function(NodeList_of_ViewModel /*, model, triggerBy, isAttr, vi*/ ) { //call by ViewModel's Node
+			var result =  NodeList_of_ViewModel[firstParameter_id]._data+(secondParameter ? NodeList_of_ViewModel[secondParameter.id]._data : 0) ;
+			NodeList_of_ViewModel[this.handleId]._data = result;
 		}
 	}
 
@@ -3485,7 +3652,7 @@ var _operator_handle_build_str = String(_operator_handle_builder),
 		var result= Function(_operator_handle_build_arguments, _operator_handle_build_str.replace(/\+/g, operator))
 		return result
 	};
-$.ftE(_operator_list, function(operator) {
+$.E(_operator_list, function(operator) {
 	V.rt(operator, _operator_handle_build_factory(operator))
 });
 V.rt("#teleporter", function(handle, index, parentHandle) {
@@ -3499,12 +3666,12 @@ V.rt("#teleporter", function(handle, index, parentHandle) {
     }
     var trigger = {
         key: ".",
-        event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
-            var viewInstance = V._instances[viewInstance_ID];
-            if (!viewInstance._teleporters[teleporterName]) {
-                viewInstance._teleporters[teleporterName] = {
+        event: function(NodeList_of_ViewModel, model, /*eventTrigger,*/ isAttr, viewModel_ID) {
+            var viewModel = V._instances[viewModel_ID];
+            if (!viewModel._teleporters[teleporterName]) {
+                viewModel._teleporters[teleporterName] = {
                 	//placeholder comment node
-                    ph: NodeList_of_ViewInstance[placeholderHandle.id].currentNode
+                    ph: NodeList_of_ViewModel[placeholderHandle.id].currentNode
                 }
             }
             /*else{
@@ -3523,15 +3690,15 @@ var _unary_operator_handle_builder = function(handle, index, parentHandle){
 		};
 
 	if (parentHandle.type !== "handle") { //as textHandle
-		trigger.event = function(NodeList_of_ViewInstance /*, dataManager, triggerBy, isAttr, vi*/ ) { //call by ViewInstance's Node
-			var result =  +NodeList_of_ViewInstance[firstParameter_id]._data,
-				currentNode = NodeList_of_ViewInstance[textHandle_id].currentNode;
+		trigger.event = function(NodeList_of_ViewModel /*, model, triggerBy, isAttr, vi*/ ) { //call by ViewModel's Node
+			var result =  +NodeList_of_ViewModel[firstParameter_id]._data,
+				currentNode = NodeList_of_ViewModel[textHandle_id].currentNode;
 			currentNode.data = result;
 		}
 	} else {
-		trigger.event = function(NodeList_of_ViewInstance /*, dataManager, triggerBy, isAttr, vi*/ ) { //call by ViewInstance's Node
-			var result =  +NodeList_of_ViewInstance[firstParameter_id]._data;
-			NodeList_of_ViewInstance[this.handleId]._data = result;
+		trigger.event = function(NodeList_of_ViewModel /*, model, triggerBy, isAttr, vi*/ ) { //call by ViewModel's Node
+			var result =  +NodeList_of_ViewModel[firstParameter_id]._data;
+			NodeList_of_ViewModel[this.handleId]._data = result;
 		}
 	}
 
@@ -3544,7 +3711,7 @@ var _unary_operator_handle_build_str = String(_unary_operator_handle_builder),
 		var result= Function(_unary_operator_handle_build_arguments, _unary_operator_handle_build_str.replace(/\+/g, operator))
 		return result
 	};
-$.ftE(_unary_operator_list, function(operator) {
+$.E(_unary_operator_list, function(operator) {
 	V.rt(operator, _unary_operator_handle_build_factory(operator))
 });
 V.rt("#with", function(handle, index, parentHandle) {
@@ -3555,15 +3722,15 @@ V.rt("#with", function(handle, index, parentHandle) {
 		trigger;
 
 	trigger = {
-		event: function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
-			var key = NodeList_of_ViewInstance[dataHandle_id]._data,
-				AllLayoutViewInstance = V._instances[viewInstance_ID]._WVI,
-				withViewInstance = AllLayoutViewInstance[id], // || (AllLayoutViewInstance[id] = V.withModules[id](data).insert(NodeList_of_ViewInstance[comment_with_id].currentNode)),
+		event: function(NodeList_of_ViewModel, model, /*eventTrigger,*/ isAttr, viewModel_ID) {
+			var key = NodeList_of_ViewModel[dataHandle_id]._data,
+				AllLayoutViewModel = V._instances[viewModel_ID]._WVI,
+				withViewModel = AllLayoutViewModel[id], // || (AllLayoutViewModel[id] = V.withModules[id](data).insert(NodeList_of_ViewModel[comment_with_id].currentNode)),
 				inserNew;
-			if (!withViewInstance) {
-				withViewInstance = AllLayoutViewInstance[id] = V.withModules[id]();
-				dataManager.subset(withViewInstance,key);
-				withViewInstance.insert(NodeList_of_ViewInstance[comment_with_id].currentNode);
+			if (!withViewModel) {
+				withViewModel = AllLayoutViewModel[id] = V.withModules[id]();
+				model.subset(withViewModel,key);
+				withViewModel.insert(NodeList_of_ViewModel[comment_with_id].currentNode);
 			}
 		}
 	}
@@ -3599,7 +3766,7 @@ var _AttributeHandleEvent = {
 		}
 	},
 	bool: function(key, currentNode, parserNode) {
-		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
+		var attrOuter = _booleanFalseRegExp(_getAttrOuter(parserNode));
 		if (attrOuter) { // currentNode.setAttribute(key, key);
 			currentNode[key] = key;
 		} else { // currentNode.removeAttribute(key);
@@ -3618,7 +3785,7 @@ var __bool = _AttributeHandleEvent.checked = _AttributeHandleEvent.bool;
 if (_isIE) {
 	var __radio = _AttributeHandleEvent.radio;
 	_AttributeHandleEvent.radio = function(key, currentNode, parserNode) {
-		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
+		var attrOuter = _booleanFalseRegExp(_getAttrOuter(parserNode));
 		if (attrOuter === currentNode.value) {
 			currentNode.defaultChecked = attrOuter;
 		} else {
@@ -3627,7 +3794,7 @@ if (_isIE) {
 		(this._attributeHandle = __radio)(key, currentNode, parserNode);
 	}
 	_AttributeHandleEvent.checked = function(key, currentNode, parserNode) {
-		var attrOuter = $.trim(_getAttrOuter(parserNode).replace(_booleanFalseRegExp, ""));
+		var attrOuter = _booleanFalseRegExp(_getAttrOuter(parserNode));
 		if (attrOuter) {
 			currentNode.defaultChecked = attrOuter;
 		} else {
@@ -3728,7 +3895,7 @@ var _formCache = {},
 			init: function(currentNode, vi, attrOuter) {
 				//---init value
 				var _init_hashCode = $.hashCode(currentNode, "init"),
-					DM_finallyRun = DataManager.finallyRun;
+					DM_finallyRun = Model.finallyRun;
 				if (!DM_finallyRun[_init_hashCode]) {
 					var _init_finallyRun = DM_finallyRun[_init_hashCode] = function() {
 						var options = currentNode.options
@@ -3737,7 +3904,7 @@ var _formCache = {},
 							//并确保只运行一次。
 							DM_finallyRun[_init_hashCode] = $FALSE;
 							var value = [];
-							$.ftE(options,function(optionNode){
+							$.E(options,function(optionNode){
 								if(optionNode.selected&&optionNode.value){
 									$.p(value,optionNode.value)
 								}
@@ -3765,7 +3932,7 @@ var _formCache = {},
 
 				if (ele.multiple) {
 					value = [];
-					$.ftE(ele.options, function(option) {
+					$.E(ele.options, function(option) {
 						if (option.selected && option.value) {
 							$.p(value, option.value);
 						}
@@ -3815,7 +3982,7 @@ var _formCache = {},
 						}
 					};
 				}
-				$.ftE(eventNames, function(eventName) {
+				$.E(eventNames, function(eventName) {
 					eventConfig.key = attrOuter;
 					eventConfig.vi = vi;
 					if (!(outerFormHandle = formCollection[eventName])) {
@@ -3848,7 +4015,7 @@ var _event_by_fun = (function() {
 		attrKey = "onclick";
 
 	_testDIV.setAttribute(attrKey, testEvent);
-	if ($.iS(_testDIV.getAttribute(attrKey))) {
+	if ($.isS(_testDIV.getAttribute(attrKey))) {
 		return $FALSE;
 	}
 	return $TRUE;
@@ -3865,20 +4032,20 @@ _AttributeHandleEvent.select = function(key, currentNode, parserNode, vi) { //se
 		options = currentNode.options;
 	currentNode[selectHashCode] = attrOuter;
 	// console.log(attrOuter, selectHashCode)
-	if (data instanceof Array) {
+	if ($.isA(data)) {
 		if (currentNode.multiple) {
-			$.ftE(options, function(optionNode) {
+			$.E(options, function(optionNode) {
 				optionNode.selected = ($.iO(data, optionNode.value) !== -1)
 			})
 		}else{
-			$.fE(options, function(optionNode) {
+			$.e(options, function(optionNode) {
 				if(optionNode.selected = ($.iO(data, optionNode.value) !== -1)){
 					return $FALSE
 				}
 			})
 		}
 	} else {
-		$.ftE(options, function(optionNode) {
+		$.E(options, function(optionNode) {
 			optionNode.selected = (data === optionNode.value)
 		})
 	}
@@ -3891,9 +4058,9 @@ V.rt("#each", function(handle, index, parentHandle) {
 			//IE需要强制触发相关于option的属性来强制使其渲染更新DOM
 			//使用clone的节点问题？是否和clone出来的HTML5节点的问题一样？
 			var _ieFix_triggerEvent = trigger.event;
-			trigger.event = function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
+			trigger.event = function(NodeList_of_ViewModel, model, /*eventTrigger,*/ isAttr, viewModel_ID) {
 				var result = _ieFix_triggerEvent.apply(this, arguments);
-				var currentNode_options = NodeList_of_ViewInstance[parentHandle.id].currentNode.options;
+				var currentNode_options = NodeList_of_ViewModel[parentHandle.id].currentNode.options;
 				currentNode_options.length += 1;
 				currentNode_options.length -= 1;
 				return result;
@@ -3901,22 +4068,22 @@ V.rt("#each", function(handle, index, parentHandle) {
 		}
 		//数组的赋值与绑定相关联，实时更新绑定值。
 		var _triggerEvent = trigger.event;
-		trigger.event = function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
+		trigger.event = function(NodeList_of_ViewModel, model, /*eventTrigger,*/ isAttr, viewModel_ID) {
 			var result = _triggerEvent.apply(this, arguments);
-			var currentNode = NodeList_of_ViewInstance[parentHandle.id].currentNode,
+			var currentNode = NodeList_of_ViewModel[parentHandle.id].currentNode,
 				selectHashCode = $.hashCode(currentNode, "selected"),
 				touchKey = currentNode[selectHashCode],
-				DM_finallyRun = DataManager.finallyRun;
+				DM_finallyRun = Model.finallyRun;
 			// console.log(touchKey);
 			if (touchKey) { //value-map
 				var finallyRun;
 				if (!(finallyRun = DM_finallyRun[selectHashCode])) {
 					DM_finallyRun(DM_finallyRun[selectHashCode] = finallyRun = function() {
-						finallyRun.dataManager.touchOff(finallyRun.touchKey)
+						finallyRun.model.touchOff(finallyRun.touchKey)
 						DM_finallyRun[selectHashCode] = $FALSE;
 					})
 				}
-				finallyRun.dataManager = dataManager;
+				finallyRun.model = model;
 				finallyRun.touchKey = touchKey;
 			}else{
 				//如果没有指定绑定的selected值，那么为bind-from配置默认选中值
@@ -3932,7 +4099,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 	}
 	return trigger;
 })
-DataManager.config.prefix.Get = "$GET";
+Model.config.prefix.Get = "$GET";
 var _statusEventCache = {},
 	_statusEvent = {
 		"=": function(vi, key, value) {
@@ -3940,7 +4107,7 @@ var _statusEventCache = {},
 		},
 		"+": function(vi, key, value) {
 			var oldvalue = vi.get(key) || "";
-			if ($.iS(oldvalue)) { //oldvalue is string ,not array or any type elses.
+			if ($.isS(oldvalue)) { //oldvalue is string ,not array or any type elses.
 				if (oldvalue.indexOf(value) === -1) {
 					vi.set(key, oldvalue + value)
 				}
@@ -3948,7 +4115,7 @@ var _statusEventCache = {},
 		},
 		"-": function(vi, key, value) {
 			var oldvalue = vi.get(key) || "";
-			if (oldvalue && $.iS(oldvalue)) { //oldvalue is string ,not array or any type elses.
+			if (oldvalue && $.isS(oldvalue)) { //oldvalue is string ,not array or any type elses.
 				if (oldvalue.indexOf(value) !== -1) {
 					vi.set(key, oldvalue.replace(value, ""));
 				}
@@ -3956,7 +4123,7 @@ var _statusEventCache = {},
 		},
 		"?": function(vi, key, value) {
 			var oldvalue = vi.get(key) || "";
-			if ($.iS(oldvalue)) { //oldvalue is string ,not array or any type elses.
+			if ($.isS(oldvalue)) { //oldvalue is string ,not array or any type elses.
 				if (oldvalue.indexOf(value) !== -1) {
 					vi.set(key, oldvalue.replace(value, ""));
 				} else {
@@ -3973,7 +4140,7 @@ var _statusEventCache = {},
 		return key;
 	},
 	_getStatusValue = function(vi, value) {
-		if ($.isString(value)) {
+		if ($.isSWrap(value)) {
 			value = value.substr(1, value.length - 2)
 		} else {
 			value = vi.get(value)
@@ -4013,7 +4180,7 @@ var _statusEventCache = {},
 					var statusKey = _getStatusKey(vi, wrapStatusFun.ke);
 					if (statusKey) {
 						var statusValue = _getStatusValue(vi, wrapStatusFun.va);
-						if ($.iS(statusValue)) {
+						if ($.isS(statusValue)) {
 							wrapStatusFun.ev(vi, statusKey, statusValue)
 						}
 					}
@@ -4088,10 +4255,10 @@ var templateOperatorNum = {
 	// , ">>": 2
 	// , "<<": 2
 }
-$.ftE(_operator_list, function(operator) {
+$.E(_operator_list, function(operator) {
 	templateOperatorNum[operator] = 2;
 });
-$.ftE(_unary_operator_list, function(operator) {
+$.E(_unary_operator_list, function(operator) {
 	templateOperatorNum[operator] = 1;
 });
 var parse = function(str) {
@@ -4113,7 +4280,7 @@ var parse = function(str) {
 					if (templateHandles[fun_name]) {
 						var args = innerStr.replace(fun_name, "").split(","),
 							result = "{" + fun_name + "(";
-						$.ftE(args, function(arg) {
+						$.E(args, function(arg) {
 							if (arg = $.trim(arg)) {
 								result += parseIte(parseArg(arg));
 							}
@@ -4189,7 +4356,7 @@ var parse = function(str) {
 	},
 	parseIte = function(arr) {
 		var result = "";
-		$.ftE(arr, function(block, index) {
+		$.E(arr, function(block, index) {
 			if (block.type === "arg") {
 				!block.parse && (block.parse = "{(" + block.value + ")}");
 			}
@@ -4197,7 +4364,7 @@ var parse = function(str) {
 				block.ignore = $TRUE;
 			}
 		});
-		$.ftE(arr, function(block, index) {
+		$.E(arr, function(block, index) {
 			if (block.type === "ope") {
 				var prev = arr[index - 1],
 					next = arr[index + 1];
@@ -4218,7 +4385,7 @@ var parse = function(str) {
 				}
 			}
 		});
-		$.ftE(arr, function(block) {
+		$.E(arr, function(block) {
 			if (!block.ignore) {
 				result += block.parse;
 			}
@@ -4241,7 +4408,7 @@ function registerHandle(handleName, handleFun) {
 			cacheNode = fragment(),//$.D.cl(shadowDIV),
 			trigger,
 			argumentsIdSet = [];
-		$.ftE(handleChilds, function(handle_arg) {
+		$.E(handleChilds, function(handle_arg) {
 			$.p(argumentsIdSet, handle_arg.id);
 		});
 		beginCommentId = argumentsIdSet[argumentsIdSet.length-1]
@@ -4249,40 +4416,40 @@ function registerHandle(handleName, handleFun) {
 		trigger = {
 			// key:"",//default key === ""
 			bubble: true,
-			event: function(NodeList_of_ViewInstance, dataManager, /*triggerBy,*/ isAttr, viewInstance_ID) {
-				var startCommentNode = NodeList_of_ViewInstance[beginCommentId].currentNode,
-					endCommentNode = NodeList_of_ViewInstance[endCommentId].currentNode,
+			event: function(NodeList_of_ViewModel, model, /*triggerBy,*/ isAttr, viewModel_ID) {
+				var startCommentNode = NodeList_of_ViewModel[beginCommentId].currentNode,
+					endCommentNode = NodeList_of_ViewModel[endCommentId].currentNode,
 					parentNode = endCommentNode.parentNode,
 					brotherNodes = parentNode.childNodes,
 					argumentsDataSet = [],
 					index = -1;
 
 				for (var i = 0, len = argumentsIdSet.length - 2, handle_arg_data, argumentsDataSet; i < len; i += 1) {
-					$.p(argumentsDataSet,NodeList_of_ViewInstance[argumentsIdSet[i]]._data)
+					$.p(argumentsDataSet,NodeList_of_ViewModel[argumentsIdSet[i]]._data)
 				};
-				$.fE(brotherNodes, function(node, i) {
+				$.e(brotherNodes, function(node, i) {
 					index = i;
 					if (node === startCommentNode) {
 						return $FALSE;
 					}
 				});
 				index = index + 1;
-				$.fE(brotherNodes, function(node, i) {
+				$.e(brotherNodes, function(node, i) {
 					if (node === endCommentNode) {
 						return $FALSE;
 					}
 					$.D.rC(parentNode, node); //remove
 				}, index);
 
-				cacheNode.innerHTML = handleFun.apply(V._instances[viewInstance_ID],argumentsDataSet)
-				$.fE(cacheNode.childNodes, function(node, i) {
+				cacheNode.innerHTML = handleFun.apply(V._instances[viewModel_ID],argumentsDataSet)
+				$.e(cacheNode.childNodes, function(node, i) {
 					$.D.iB(parentNode, node, endCommentNode);
 				});
 			}
 		}
 		return trigger;
 	});
-	return ViewParser;
+	return jSouper;
 }
 registerHandle("HTML",function () {
 	return Array.prototype.join.call(arguments,"");
@@ -4291,15 +4458,15 @@ registerHandle("HTML",function () {
 /*
  * export
  */
-var ViewParser = global.ViewParser = {
+var jSouper = global.jSouper = {
     scans: function(node) {
         node || (node = doc);
-        $.fE(node.getElementsByTagName("script"), function(scriptNode) {
+        $.e(node.getElementsByTagName("script"), function(scriptNode) {
             var type = scriptNode.getAttribute("type")
             var name = scriptNode.getAttribute("name")
             if (name) {
                 if (type === "text/template") {
-                    V.modules[name] = ViewParser.parseStr(scriptNode.text, name);
+                    V.modules[name] = jSouper.parseStr(scriptNode.text, name);
                     $.D.rm(scriptNode);
                 } else if (type === "text/viewmodel") {
                     V.modulesInit[name] = Function("return " + $.trim(scriptNode.text))();
@@ -4316,7 +4483,7 @@ var ViewParser = global.ViewParser = {
         return V.parse(parse(htmlNode.innerHTML), name)
     },
     parse: function(html, name) {
-        if (html instanceof Object) {
+        if ($.isO(html)) {
             return this.parseNode(html, name)
         }
         return this.parseStr(html, name)
@@ -4333,13 +4500,13 @@ var ViewParser = global.ViewParser = {
     },
     registerHandle: registerHandle,
     app: function(userConfig) {
-        // ViewParser.scans();
-        var HVP_config = ViewParser.config;
+        // jSouper.scans();
+        var HVP_config = jSouper.config;
         userConfig = _mix(HVP_config, userConfig) || HVP_config;
         var App = doc.getElementById(userConfig.Id); //configable
         if (App) {
             var appName = userConfig.Var;
-            var template = ViewParser.parseNode(App,"App")(userConfig.Data); //App.getAttribute("template-data")//json or url or configable
+            var template = jSouper.parseNode(App,"App")(userConfig.Data); //App.getAttribute("template-data")//json or url or configable
             // template.set(HVP_config.Data);
             App.innerHTML = "";
             template.append(App);
@@ -4355,7 +4522,7 @@ var ViewParser = global.ViewParser = {
     build: function(userConfig) {
         var HTML = userConfig.HTML;
         var url = userConfig.Url;
-        var module = ViewParser.modules[url];
+        var module = jSouper.modules[url];
         var vi;
         if (!module) {
             if (!HTML && url) {
@@ -4368,7 +4535,7 @@ var ViewParser = global.ViewParser = {
                     }
                 })
             }
-            module = ViewParser.modules[url] = ViewParser.parseStr(HTML,url);
+            module = jSouper.modules[url] = jSouper.parseStr(HTML,url);
         }
         if (module) {
             vi = module(userConfig.Data);
@@ -4417,17 +4584,17 @@ var ViewParser = global.ViewParser = {
 };
 (function() {
     var scriptTags = doc.getElementsByTagName("script"),
-        HVP_config = ViewParser.config,
+        HVP_config = jSouper.config,
         userConfigStr = $.trim(scriptTags[scriptTags.length - 1].innerHTML);
-    ViewParser.ready(function() {
-        ViewParser.scans();
+    jSouper.ready(function() {
+        jSouper.scans();
         if (userConfigStr.charAt(0) === "{") {
             try {
                 var userConfig = userConfigStr ? Function("return" + userConfigStr)() : {};
             } catch (e) {
                 console.error("config error:" + e.message);
             }
-            userConfig && ViewParser.app(userConfig)
+            userConfig && jSouper.app(userConfig)
         }
     });
 }());
@@ -4440,11 +4607,11 @@ var ViewParser = global.ViewParser = {
 //module !== null
 //fix IE 关键字
 if (typeof module === "object" && module && typeof module["export"] === "object") {
-    module["export"] = ViewParser
+    module["export"] = jSouper
 } else {
     if (typeof define === "function" && define.amd) {
-        define("jSoup", [], function() {
-            return ViewParser
+        define("jSouper", [], function() {
+            return jSouper
         })
     }
 }
@@ -4482,7 +4649,7 @@ if (typeof module === "object" && module && typeof module["export"] === "object"
         _current_collect_layer && $.p(_current_collect_layer, {
             //rely object
             dm_id: self.id,
-            dm_key: DataManager.session.filterKey
+            dm_key: Model.session.filterKey
         })
         return result;
     }
@@ -4491,7 +4658,7 @@ if (typeof module === "object" && module && typeof module["export"] === "object"
     var _get_collect_stack = []
 
     // 委托 set\get\form
-    // this ==> dataManager but not Observer-instance
+    // this ==> model but not Observer-instance
     Observer.prototype = {
         set: function(dm, key, value) {
             return this._set.call(dm, key, value)
@@ -4521,7 +4688,7 @@ if (typeof module === "object" && module && typeof module["export"] === "object"
             var _oldObserverObj
             //舍弃上一次的依赖关系
             if (_oldObserverObj = _oldObserverObjects[key]) {
-                $.ftE(_oldObserverObj._parent, function(parent) {
+                $.E(_oldObserverObj._parent, function(parent) {
                     var abandon_index = $.iO(parent, _oldObserverObj);
                     $.sp.call(parent, abandon_index, 1)
                 })
@@ -4540,7 +4707,7 @@ if (typeof module === "object" && module && typeof module["export"] === "object"
             _oldObserverObjects[key] = _newObserverObj
 
             //将依赖关系你想逆向转换
-            $.ftE(_current_collect_layer, function(relyObj) {
+            $.E(_current_collect_layer, function(relyObj) {
                 var observerObjCollect = observerCache[relyObj.dm_id] || (observerCache[relyObj.dm_id] = {})
                 var observerObjs = observerObjCollect[relyObj.dm_key] || (observerObjCollect[relyObj.dm_key] = [])
 
@@ -4584,15 +4751,15 @@ if (typeof module === "object" && module && typeof module["export"] === "object"
                     }
                 }
             }
-            observerObjs && $.fE(observerObjs, function(observerObj, abandon_index) {
-                DataManager.get(observerObj.dm_id).touchOff(observerObj.dm_key)
+            observerObjs && $.e(observerObjs, function(observerObj, abandon_index) {
+                Model.get(observerObj.dm_id).touchOff(observerObj.dm_key)
             })
         }
         return result;
     }
 
-    //DataManager.extend
-    _dataManagerExtend("Observer", Observer)
+    //Model.extend
+    _modelExtend("Observer", Observer)
 }())
 
 

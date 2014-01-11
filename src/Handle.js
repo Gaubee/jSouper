@@ -12,7 +12,7 @@ var _removeNodes = _isIE ? $.noop/*function() {//IE 不能回收节点，会导�
 		}
 	}() */: function(n) {
 		// if (n && n.parentNode && n.tagName != 'BODY') {
-			$.ftE(n, function(nodeToDelete){
+			$.E(n, function(nodeToDelete){
 				delete nodeToDelete.parentNode.removeChild(nodeToDelete);
 			})
 		// }
@@ -41,7 +41,7 @@ var _removeNodes = _isIE ? $.noop/*function() {//IE 不能回收节点，会导�
 					break;
 			}
 		}
-		// $.ftE(GC_node, _removeNode)
+		// $.E(GC_node, _removeNode)
 		_removeNodes(GC_node);
 		return result;
 	};

@@ -1,161 +1,185 @@
-var _event_cache = {},
-	_box,
-	_fixEvent = function(e) { //@Rybylouvre
-		// if (!e.target) {console.log(e)};
-		e.target || (e.target = e.srcElement);
-		e.which || (e.which = e.charCode || e.keyCode); //e.charCode != $NULL ? e.charCode : e.keyCode;
-		e.preventDefault || (e.preventDefault = function() { //for ie
-			e.returnValue = $FALSE
-		});
-		e.stopPropagation || (e.stopPropagation = function() { //for ie
-			e.cancelBubble = $TRUE
-		});
-	},
-	_fixMouseEvent = function(event) {
-		_fixEvent(event);
-		if (!_box && _isIE) {
-			_box = event.target.ownerDocument || doc;
-			_box = "BackCompat" === _box.compatMode ? _box.body : _box.documentElement;
-		}
-		event.pageX || (event.pageX = event.clientX + ~~_box.scrollLeft - ~~_box.clientLeft);
-		event.pageY || (event.pageY = event.clientY + ~~_box.scrollTop - ~~_box.clientTop);
-	},
-	__lowestDelta, __lowestDeltaXY,
-	_extendEventRouter = function(e, _extend) {
-		if (e.__proto__) {
-			var result = (_extendEventRouter = function(e, _extend) {
-				var _e = {};
-				$.fI(_extend, function(value, key) {
-					_e[key] = value;
-				})
-				_e.__proto__ = e;
-				return _e;
-			})(e, _extend);
-		} else {
-			// try {// 	delete e.type; // 	e.type = e._eventName; // } catch (e) {// 	_e = $.c(e) // 	_e.type = "leftclick"// }
-			if (_isIE) {
-				result = (_extendEventRouter = function(e, _extend) {
-					var _e;
-					_e = $.c(e)
-					$.fI(_extend, function(value, key) {
-						_e[key] = value;
-					})
-					return _e;
-				})(e, _extend);
-			} else {
-				result = (_extendEventRouter = function(e, _extend) {
-					$.fI(_extend, function(value, key) {
-						delete e[key];
-						e[key] = value;
-					})
-					return e;
-				})(e, _extend);
-			}
-		}
-		return result;
-	},
-	// _extendEventRouter_proto = function(e, _extend) {
-	// 	var _e = {};
-	// 	$.fI(_extend, function(value, key) {
-	// 		_e[key] = value;
-	// 	})
-	// 	_e.__proto__ = e;
-	// 	return _e;
-	// },
-	// _extendEventRouter_ie = function(e, _extend) {
-	// 	var _e;
-	// 	_e = $.c(e)
-	// 	$.fI(_extend, function(value, key) {
-	// 		_e[key] = value;
-	// 	})
-	// 	return _e;
-	// },
-	// _extendEventRouter_old = function(e, _extend) {
-	// 	$.fI(_extend, function(value, key) {
-	// 		delete e[key];
-	// 		e[key] = value;
-	// 	})
-	// 	return e;
-	// },
-	_registerEventBase = function(Element, eventName, eventFun, elementHash) {
-		var result = {
-			name: eventName,
-			fn: eventFun
-		};
-		var _fn = result.fn = (function(fixEvent) {
-			return function(e) {
-				fixEvent(e);
-				var _e = e;
-				e._extend && (_e = _extendEventRouter(e, e._extend));
-				var result = eventFun.call(Element, _e);
-				(result === $FALSE) && (e.preventDefault() || e.stopPropagation());
-				return result;
-			}
-		}(_isIE ? (/mouse|click|contextmenu/.test(eventName) ? _fixMouseEvent : _fixEvent) : $.noop));
+var
+//事件缓存区
+_event_cache = {},
+    _fixEvent = function(e) { //@Rybylouvre
+        // if (!e.target) {console.log(e)};
+        e.target || (e.target = e.srcElement);
+        e.which || (e.which = e.charCode || e.keyCode); //e.charCode != $NULL ? e.charCode : e.keyCode;
+        e.preventDefault || (e.preventDefault = function() { //for ie
+            e.returnValue = $FALSE
+        });
+        e.stopPropagation || (e.stopPropagation = function() { //for ie
+            e.cancelBubble = $TRUE
+        });
+    },
 
-		if (eventName === "input" && !("oninput" in doc)) {
-			(function() {
-				result.name = ["keypress", /*"focus", */ "blur", "keyup", "paste", "propertychange", "cut"]
-				var _fixPropertychangeLock,
-					_deleteOrChienseInput,
-					_oldValue = Element.value,
-					_TI;
-				// delete Element.value;
-				result.fn = function(e) { // @Gaubee github/blog/issues/44
-					var result;
-					if (e.type === "keyup") { //keyup // 3
-						if (_deleteOrChienseInput) {
-							_deleteOrChienseInput = $FALSE;
-							_oldValue = Element.value;
-							e._extend = {
-								type: "input"
-							}
-							result = _fn(e);
-						}
-					} else if (e.type === "propertychange") { // 2
-						if (_fixPropertychangeLock) {
-							_fixPropertychangeLock = $FALSE;
-							e._extend = {
-								type: "input"
-							}
-							result = _fn(e);
-						} else if ((e.keyCode === 8 /*backspace*/ || e.keyCode === 46 /*delete*/ ) || _oldValue !== Element.value) { //delete or chinese input
-							_deleteOrChienseInput = $TRUE;
-						}
-					} else if (e.type === "blur") {
-						Element.fireEvent("onkeyup")
-						// clearInterval(_TI);
-					} else { //paste cut keypress  // 1
-						_fixPropertychangeLock = $TRUE;
-						_deleteOrChienseInput = $FALSE;
-					}
-				}
-				// function(b){"keydown"===b.type?8!==b.keyCode&&46!==b.keyCode||f===a.value||(f=a.value,z=G):"propertychange"===b.type?z&&(z=H,g(b)):z=G}
-			}());
-		} else if (/contextmenu|rclick|rightclick/.test(eventName) && _isIE) {
-			(function() {
-				result.name = ["mousedown", "contextmenu"];
-				var _result;
-				result.fn = function(e) {
-					if (e.type === "contextmenu") {
-						return _result;
-					} else {
-						if (e.button === 2) {
-							e._extend = {
-								type: "contextmenu"
-							}
-							_result = _fn(e)
-						};
-					}
-				}
-			}());
-		} else if (/mouseenter|mouseleave/.test(eventName) && !_isIE) {
-			(function() {
-				result.name = eventName[5] === "e" ? "mouseover" : "mouseout";
-				result.fn = function(e) {
-					var topNode = e.relatedTarget,
-						self = this;
-					/*compareDocumentPosition
+    //修复浏览器兼容的鼠标坐标
+    _box,
+    _fixMouseEvent = function(event) {
+        _fixEvent(event);
+        if (!_box && _isIE) {
+            _box = event.target.ownerDocument || doc;
+            _box = "BackCompat" === _box.compatMode ? _box.body : _box.documentElement;
+        }
+        event.pageX || (event.pageX = event.clientX + ~~_box.scrollLeft - ~~_box.clientLeft);
+        event.pageY || (event.pageY = event.clientY + ~~_box.scrollTop - ~~_box.clientTop);
+    },
+
+    //修复浏览器兼容的滚轮事件缓存值
+    __lowestDelta, __lowestDeltaXY,
+
+    //事件对象修复
+    _extendEventRouter = function(e, _extend) {
+        //可以操作原型链的话直接使用原型链继承方式
+        if (e.__proto__) {
+            var result = (_extendEventRouter = function(e, _extend) {
+                var _e = {};
+                $.fI(_extend, function(value, key) {
+                    _e[key] = value;
+                })
+                _e.__proto__ = e;
+                return _e;
+            })(e, _extend);
+        } else {
+            //IE系列也是使用原型链，但是现代浏览器的属性操作会直接定位到原型链上
+            if (_isIE) {
+                result = (_extendEventRouter = function(e, _extend) {
+                    var _e;
+                    _e = $.c(e)
+                    $.fI(_extend, function(value, key) {
+                        _e[key] = value;
+                    })
+                    return _e;
+                })(e, _extend);
+            } else {
+                try {
+                    result = (_extendEventRouter = function(e, _extend) {
+                        $.fI(_extend, function(value, key) {
+                            delete e[key];
+                            e[key] = value;
+                        })
+                        return e;
+                    })(e, _extend);
+                } catch (ex) {}
+            }
+        }
+        return result;
+    },
+
+    //事件生成器中的路由匹配
+    _registerEventRouterMatch = {
+        ip: {
+            input: $TRUE
+        },
+        //右键
+        rc: {
+            contextmenu: $TRUE,
+            rclick: $TRUE,
+            rightclick: $TRUE
+        },
+        //模拟IE的mouseEnter、mouseLeave
+        el: {
+            mouseenter: "mouseover",
+            mouseleave: "mouseout"
+        },
+        //左键
+        lc: {
+            lclick: $TRUE,
+            leftclick: $TRUE
+        },
+        //中键
+        wc: {
+            wclick: $TRUE,
+            wheelclick: $TRUE
+        },
+        //滚轮事件
+        mw: {
+            mousewheel: $TRUE
+        },
+        //声明及执行事件，用于做初始化
+        rd: {
+            ready: $TRUE
+        }
+    },
+    //事件生成器
+    _registerEventBase = function(Element, eventName, eventFun, elementHash) {
+        var result = {
+            name: eventName,
+            fn: eventFun
+        };
+        var _fn = result.fn = (function(fixEvent) {
+            return function(e) {
+                fixEvent(e);
+                var _e = e;
+                e._extend && (_e = _extendEventRouter(e, e._extend));
+                var result = eventFun.call(Element, _e);
+                (result === $FALSE) && (e.preventDefault() || e.stopPropagation());
+                return result;
+            }
+        }(_isIE ? (/mouse|click|contextmenu/.test(eventName) ? _fixMouseEvent : _fixEvent) : $.noop));
+
+        if (_registerEventRouterMatch.ip[eventName] && !("oninput" in doc)) {
+            (function() {
+                result.name = ["keypress", /*"focus", */ "blur", "keyup", "paste", "propertychange", "cut"]
+                var _fixPropertychangeLock,
+                    _deleteOrChienseInput,
+                    _oldValue = Element.value,
+                    _TI;
+                // delete Element.value;
+                result.fn = function(e) { // @Gaubee github/blog/issues/44
+                    var result;
+                    if (e.type === "keyup") { //keyup // 3
+                        if (_deleteOrChienseInput) {
+                            _deleteOrChienseInput = $FALSE;
+                            _oldValue = Element.value;
+                            e._extend = {
+                                type: "input"
+                            }
+                            result = _fn(e);
+                        }
+                    } else if (e.type === "propertychange") { // 2
+                        if (_fixPropertychangeLock) {
+                            _fixPropertychangeLock = $FALSE;
+                            e._extend = {
+                                type: "input"
+                            }
+                            result = _fn(e);
+                        } else if ((e.keyCode === 8 /*backspace*/ || e.keyCode === 46 /*delete*/ ) || _oldValue !== Element.value) { //delete or chinese input
+                            _deleteOrChienseInput = $TRUE;
+                        }
+                    } else if (e.type === "blur") {
+                        Element.fireEvent("onkeyup")
+                        // clearInterval(_TI);
+                    } else { //paste cut keypress  // 1
+                        _fixPropertychangeLock = $TRUE;
+                        _deleteOrChienseInput = $FALSE;
+                    }
+                }
+            }());
+        } else if (_registerEventRouterMatch.rc[eventName] && _isIE) {
+            (function() {
+                result.name = ["mousedown", "contextmenu"];
+                var _result;
+                result.fn = function(e) {
+                    if (e.type === "contextmenu") {
+                        return _result;
+                    } else {
+                        if (e.button === 2) {
+                            e._extend = {
+                                type: "contextmenu"
+                            }
+                            _result = _fn(e)
+                        };
+                    }
+                }
+            }());
+        } else if (result._cacheName = _registerEventRouterMatch.el[eventName] && ("mouseenter" in doc)) {
+            (function() {
+                result.name = result._cacheName;
+                result.fn = function(e) {
+                    var topNode = e.relatedTarget,
+                        self = this;
+                    /*compareDocumentPosition
 						0 self == topNode ===> 
 						1 self in deffriend Document with topNode
 						2 topNode befor self
@@ -163,159 +187,166 @@ var _event_cache = {},
 						8 topNode contains self
 						16 self contains topNode  ==>  
 						32 Brower private*/
-					if (!topNode || (topNode !== self && !(self.compareDocumentPosition(topNode) & 16))) { //@Rubylouvre
-						e._extend = {
-							type: eventName
-						}
-						return _fn(e);
-					}
-					/*else{
-						return _fixMouseEnterAndLeave;//stop run 
-					}*/
-				}
-			}())
-		} else if (eventName === "lclick" || eventName === "leftclick") {
-			(function() {
-				result.name = "mousedown"
-				result.fn = _isIE ? function(e) {
-					if (e.button === 1) {
-						e._extend = {
-							type: "leftclick"
-						}
-						return _fn(e);
-					}
-				} : function(e) {
-					if (e.button === 0) {
-						e._extend = {
-							type: "leftclick"
-						}
-						return _fn(e);
-					}
-				}
-			}());
-		} else if (eventName === "wclick" || eventName === "wheelclick") {
-			(function() {
-				result.name = "mousedown"
-				result.fn = _isIE ? function(e) {
-					if (e.button === 4) {
-						e._extend = {
-							type: "wheelclick"
-						}
-						return _fn(e);
-					}
-				} : function(e) {
-					if (e.button === 1) {
-						e._extend = {
-							type: "wheelclick"
-						}
-						return _fn(e);
-					}
-				}
-			}());
-		} else if (eventName === "mousewheel") {
-			//@brandonaaron:jquery-mousewheel MIT License
-			(function() {
-				result.name = "onwheel" in doc || doc.documentMode >= 9 ? "wheel" : ["mousewheel", "DomMouseScroll", "MozMousePiexlScroll"];
-				result.fn = function(e) {
-					var delta = 0, //增量
-						deltaX = 0,
-						deltaY = 0,
-						absDelta = 0,
-						absDeltaXY = 0,
-						fn;
+                    if (!topNode || (topNode !== self && !(self.compareDocumentPosition(topNode) & 16))) { //@Rubylouvre
+                        e._extend = {
+                            type: eventName
+                        }
+                        return _fn(e);
+                    }
+                }
+            }())
+        } else if (_registerEventRouterMatch.lc[eventName]) {
+            (function() {
+                result.name = "mousedown"
+                result.fn = _isIE ? function(e) {
+                    if (e.button === 1) {
+                        e._extend = {
+                            type: "leftclick"
+                        }
+                        return _fn(e);
+                    }
+                } : function(e) {
+                    if (e.button === 0) {
+                        e._extend = {
+                            type: "leftclick"
+                        }
+                        return _fn(e);
+                    }
+                }
+            }());
+        } else if (_registerEventRouterMatch.wc[eventName]) {
+            (function() {
+                result.name = "mousedown"
+                result.fn = _isIE ? function(e) {
+                    if (e.button === 4) {
+                        e._extend = {
+                            type: "wheelclick"
+                        }
+                        return _fn(e);
+                    }
+                } : function(e) {
+                    if (e.button === 1) {
+                        e._extend = {
+                            type: "wheelclick"
+                        }
+                        return _fn(e);
+                    }
+                }
+            }());
+        } else if (_registerEventRouterMatch.mw[eventName]) {
+            //@brandonaaron:jquery-mousewheel MIT License
+            (function() {
+                result.name = "onwheel" in doc || doc.documentMode >= 9 ? "wheel" : ["mousewheel", "DomMouseScroll", "MozMousePiexlScroll"];
+                result.fn = function(e) {
+                    var delta = 0, //增量
+                        deltaX = 0,
+                        deltaY = 0,
+                        absDelta = 0,
+                        absDeltaXY = 0,
+                        fn;
 
-					// Old school scrollwheel delta
-					if (e.wheelDelta /*px or undefined*/ ) {
-						delta = e.wheelDelta;
-					}
-					if (e.detail /*0 or px*/ ) {
-						delta = e.detail * -1;
-					}
-					// At a minimum, setup the deltaY to be delta
-					deltaY = delta;
+                    // Old school scrollwheel delta
+                    if (e.wheelDelta /*px or undefined*/ ) {
+                        delta = e.wheelDelta;
+                    }
+                    if (e.detail /*0 or px*/ ) {
+                        delta = e.detail * -1;
+                    }
+                    // At a minimum, setup the deltaY to be delta
+                    deltaY = delta;
 
-					// Firefox < 17 related to DOMMouseScroll event
-					if (e.axis !== $UNDEFINED && e.axis === e.HORIZONTAL_AXIS) {
-						deltaY = 0;
-						deltaX = delta * -1;
-					}
+                    // Firefox < 17 related to DOMMouseScroll event
+                    if (e.axis !== $UNDEFINED && e.axis === e.HORIZONTAL_AXIS) {
+                        deltaY = 0;
+                        deltaX = delta * -1;
+                    }
 
-					// New school wheel delta (wheel event)
-					if (e.deltaY) {
-						deltaY = e.deltaY * -1;
-						delta = deltaY;
-					}
-					if (e.deltaX) {
-						deltaX = e.deltaX;
-						delta = deltaX * -1;
-					}
-					// Webkit
-					if (e.wheelDeltaY !== $UNDEFINED) {
-						deltaY = e.wheelDeltaY;
-					}
-					if (e.wheelDeltaX !== $UNDEFINED) {
-						deltaX = e.wheelDeltaX * -1;
-					}
+                    // New school wheel delta (wheel event)
+                    if (e.deltaY) {
+                        deltaY = e.deltaY * -1;
+                        delta = deltaY;
+                    }
+                    if (e.deltaX) {
+                        deltaX = e.deltaX;
+                        delta = deltaX * -1;
+                    }
+                    // Webkit
+                    if (e.wheelDeltaY !== $UNDEFINED) {
+                        deltaY = e.wheelDeltaY;
+                    }
+                    if (e.wheelDeltaX !== $UNDEFINED) {
+                        deltaX = e.wheelDeltaX * -1;
+                    }
 
-					// Look for lowest delta to normalize the delta values
-					absDelta = Math.abs(delta);
-					if (!__lowestDelta || absDelta < __lowestDelta) {
-						__lowestDelta = absDelta;
-					}
-					absDeltaXY = Math.max(Math.abs(deltaY), Math.abs(deltaX));
-					if (!__lowestDeltaXY || absDeltaXY < __lowestDeltaXY) {
-						__lowestDeltaXY = absDeltaXY;
-					}
+                    // Look for lowest delta to normalize the delta values
+                    absDelta = Math.abs(delta);
+                    if (!__lowestDelta || absDelta < __lowestDelta) {
+                        __lowestDelta = absDelta;
+                    }
+                    absDeltaXY = Math.max(Math.abs(deltaY), Math.abs(deltaX));
+                    if (!__lowestDeltaXY || absDeltaXY < __lowestDeltaXY) {
+                        __lowestDeltaXY = absDeltaXY;
+                    }
 
-					// Get a whole value for the deltas
-					fn = delta > 0 ? 'floor' : 'ceil';
-					delta = Math[fn](delta / __lowestDelta);
-					deltaX = Math[fn](deltaX / __lowestDeltaXY);
-					deltaY = Math[fn](deltaY / __lowestDeltaXY);
-					e._extend = {
-						type: 'mousewheel',
-						wheelDelta: delta,
-						wheelDeltaX: deltaX,
-						wheelDeltaY: deltaY
-					}
-					_fn(e)
-				}
-			}());
-		} else if (eventName === "ready"){
-			finallyRun.register(elementHash,function(){
-				_fn({type:"ready"});
-			})
-		}
-		_event_cache[elementHash + $.hashCode(eventFun)] = result;
-		return result;
-	},
-	_addEventListener = function(Element, eventName, eventFun, elementHash) {
-		var eventConfig = _registerEventBase(Element, eventName, eventFun, elementHash)
-		if ($.iS(eventConfig.name)) {
-			Element.addEventListener(eventConfig.name, eventConfig.fn, $FALSE);
-		} else {
-			$.ftE(eventConfig.name, function(eventName) {
-				Element.addEventListener(eventName, eventConfig.fn, $FALSE);
-			})
-		}
-	},
-	_removeEventListener = function(Element, eventName, eventFun, elementHash) {
-		var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
-		wrapEventFun && Element.removeEventListener(eventName, wrapEventFun, $FALSE);
-	},
-	_attachEvent = function(Element, eventName, eventFun, elementHash) {
-		var eventConfig = _registerEventBase(Element, eventName, eventFun, elementHash)
-		if ($.iS(eventConfig.name)) {
-			Element.attachEvent("on" + eventConfig.name, eventConfig.fn);
-		} else {
-			$.ftE(eventConfig.name, function(eventName) {
-				Element.attachEvent("on" + eventName, eventConfig.fn);
-			})
-		}
-	},
-	_detachEvent = function(Element, eventName, eventFun, elementHash) {
-		var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
-		wrapEventFun && Element.detachEvent("on" + eventName, wrapEventFun);
-	},
-	_registerEvent = _isIE ? _attachEvent : _addEventListener,
-	_cancelEvent = _isIE ? _detachEvent : _removeEventListener;
+                    // Get a whole value for the deltas
+                    fn = delta > 0 ? 'floor' : 'ceil';
+                    delta = Math[fn](delta / __lowestDelta);
+                    deltaX = Math[fn](deltaX / __lowestDeltaXY);
+                    deltaY = Math[fn](deltaY / __lowestDeltaXY);
+                    e._extend = {
+                        type: 'mousewheel',
+                        wheelDelta: delta,
+                        wheelDeltaX: deltaX,
+                        wheelDeltaY: deltaY
+                    }
+                    _fn(e)
+                }
+            }());
+        } else if (_registerEventRouterMatch.rd[eventName]) {
+            finallyRun.register(elementHash, function() {
+                _fn({
+                    type: "ready"
+                });
+            })
+        }
+        _event_cache[elementHash + $.hashCode(eventFun)] = result;
+        return result;
+    },
+
+    //现代浏览器的事件监听
+    _addEventListener = function(Element, eventName, eventFun, elementHash) {
+        var eventConfig = _registerEventBase(Element, eventName, eventFun, elementHash)
+        if ($.isS(eventConfig.name)) {
+            Element.addEventListener(eventConfig.name, eventConfig.fn, $FALSE);
+        } else {
+            $.E(eventConfig.name, function(eventName) {
+                Element.addEventListener(eventName, eventConfig.fn, $FALSE);
+            })
+        }
+    },
+    //现代浏览器的事件移除
+    _removeEventListener = function(Element, eventName, eventFun, elementHash) {
+        var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
+        wrapEventFun && Element.removeEventListener(eventName, wrapEventFun, $FALSE);
+    },
+
+    //IE浏览器的时间监听
+    _attachEvent = function(Element, eventName, eventFun, elementHash) {
+        var eventConfig = _registerEventBase(Element, eventName, eventFun, elementHash)
+        if ($.isS(eventConfig.name)) {
+            Element.attachEvent("on" + eventConfig.name, eventConfig.fn);
+        } else {
+            $.E(eventConfig.name, function(eventName) {
+                Element.attachEvent("on" + eventName, eventConfig.fn);
+            })
+        }
+    },
+    //IE浏览器的事件移除
+    _detachEvent = function(Element, eventName, eventFun, elementHash) {
+        var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
+        wrapEventFun && Element.detachEvent("on" + eventName, wrapEventFun);
+    },
+    
+    //对外的接口
+    _registerEvent = _isIE ? _attachEvent : _addEventListener,
+    _cancelEvent = _isIE ? _detachEvent : _removeEventListener;

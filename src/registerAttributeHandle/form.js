@@ -35,7 +35,7 @@ var _formCache = {},
 			init: function(currentNode, vi, attrOuter) {
 				//---init value
 				var _init_hashCode = $.hashCode(currentNode, "init"),
-					DM_finallyRun = DataManager.finallyRun;
+					DM_finallyRun = Model.finallyRun;
 				if (!DM_finallyRun[_init_hashCode]) {
 					var _init_finallyRun = DM_finallyRun[_init_hashCode] = function() {
 						var options = currentNode.options
@@ -44,7 +44,7 @@ var _formCache = {},
 							//并确保只运行一次。
 							DM_finallyRun[_init_hashCode] = $FALSE;
 							var value = [];
-							$.ftE(options,function(optionNode){
+							$.E(options,function(optionNode){
 								if(optionNode.selected&&optionNode.value){
 									$.p(value,optionNode.value)
 								}
@@ -72,7 +72,7 @@ var _formCache = {},
 
 				if (ele.multiple) {
 					value = [];
-					$.ftE(ele.options, function(option) {
+					$.E(ele.options, function(option) {
 						if (option.selected && option.value) {
 							$.p(value, option.value);
 						}
@@ -122,7 +122,7 @@ var _formCache = {},
 						}
 					};
 				}
-				$.ftE(eventNames, function(eventName) {
+				$.E(eventNames, function(eventName) {
 					eventConfig.key = attrOuter;
 					eventConfig.vi = vi;
 					if (!(outerFormHandle = formCollection[eventName])) {

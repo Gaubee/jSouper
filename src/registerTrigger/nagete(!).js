@@ -4,8 +4,8 @@ V.rt("!", V.rt("nega", function(handle, index, parentHandle) { //Negate
 	trigger = {
 		// key:"",//default key === ""
 		bubble: $TRUE,
-		event: function(NodeList_of_ViewInstance, dataManager) {
-			NodeList_of_ViewInstance[this.handleId]._data = !NodeList_of_ViewInstance[nageteHandlesId]._data; //first value
+		event: function(NodeList_of_ViewModel, model) {
+			NodeList_of_ViewModel[this.handleId]._data = !NodeList_of_ViewModel[nageteHandlesId]._data; //first value
 		}
 	}
 	return trigger;

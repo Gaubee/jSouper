@@ -1,9 +1,9 @@
-function _teleporter_display(show_or_hidden, NodeList_of_ViewInstance, dataManager, /*triggerBy,*/ viewInstance_ID) {
+function _teleporter_display(show_or_hidden, NodeList_of_ViewModel, model, /*triggerBy,*/ viewModel_ID) {
     var handle = this;
     var placeholderHandle = $.lI(handle.childNodes);
-    var commentPlaceholderElement = NodeList_of_ViewInstance[placeholderHandle.id].currentNode;
+    var commentPlaceholderElement = NodeList_of_ViewModel[placeholderHandle.id].currentNode;
 
-    console.log(NodeList_of_ViewInstance[handle.id])
+    console.log(NodeList_of_ViewModel[handle.id])
     var teleporterNameHandle = handle.childNodes[0];
     if (placeholderHandle === teleporterNameHandle) { //no first argument;
         var teleporterName = "index"
@@ -12,18 +12,18 @@ function _teleporter_display(show_or_hidden, NodeList_of_ViewInstance, dataManag
         teleporterName = teleporterName.substr(1, teleporterName.length - 2);
     }
 
-    var teleporter = V._instances[viewInstance_ID]._teleporters[teleporterName];
-    var teleporterViewInstance = teleporter.vi;
+    var teleporter = V._instances[viewModel_ID]._teleporters[teleporterName];
+    var teleporterViewModel = teleporter.vi;
 
-    console.log(show_or_hidden ? "display:" : "remove:", teleporterViewInstance);
+    console.log(show_or_hidden ? "display:" : "remove:", teleporterViewModel);
 
-    if (teleporterViewInstance) {
+    if (teleporterViewModel) {
         if (show_or_hidden) {
-            if(!teleporterViewInstance._canRemoveAble){//can-insert-able
-                teleporterViewInstance.insert(commentPlaceholderElement);
+            if(!teleporterViewModel._canRemoveAble){//can-insert-able
+                teleporterViewModel.insert(commentPlaceholderElement);
             }
         } else {
-            teleporterViewInstance.remove()
+            teleporterViewModel.remove()
         }
     }
 

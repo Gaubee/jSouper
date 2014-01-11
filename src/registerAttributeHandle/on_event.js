@@ -3,7 +3,7 @@ var _event_by_fun = (function() {
 		attrKey = "onclick";
 
 	_testDIV.setAttribute(attrKey, testEvent);
-	if ($.iS(_testDIV.getAttribute(attrKey))) {
+	if ($.isS(_testDIV.getAttribute(attrKey))) {
 		return $FALSE;
 	}
 	return $TRUE;

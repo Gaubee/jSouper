@@ -5,20 +5,20 @@ _AttributeHandleEvent.select = function(key, currentNode, parserNode, vi) { //se
 		options = currentNode.options;
 	currentNode[selectHashCode] = attrOuter;
 	// console.log(attrOuter, selectHashCode)
-	if (data instanceof Array) {
+	if ($.isA(data)) {
 		if (currentNode.multiple) {
-			$.ftE(options, function(optionNode) {
+			$.E(options, function(optionNode) {
 				optionNode.selected = ($.iO(data, optionNode.value) !== -1)
 			})
 		}else{
-			$.fE(options, function(optionNode) {
+			$.e(options, function(optionNode) {
 				if(optionNode.selected = ($.iO(data, optionNode.value) !== -1)){
 					return $FALSE
 				}
 			})
 		}
 	} else {
-		$.ftE(options, function(optionNode) {
+		$.E(options, function(optionNode) {
 			optionNode.selected = (data === optionNode.value)
 		})
 	}
@@ -31,9 +31,9 @@ V.rt("#each", function(handle, index, parentHandle) {
 			//IE需要强制触发相关于option的属性来强制使其渲染更新DOM
 			//使用clone的节点问题？是否和clone出来的HTML5节点的问题一样？
 			var _ieFix_triggerEvent = trigger.event;
-			trigger.event = function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
+			trigger.event = function(NodeList_of_ViewModel, model, /*eventTrigger,*/ isAttr, viewModel_ID) {
 				var result = _ieFix_triggerEvent.apply(this, arguments);
-				var currentNode_options = NodeList_of_ViewInstance[parentHandle.id].currentNode.options;
+				var currentNode_options = NodeList_of_ViewModel[parentHandle.id].currentNode.options;
 				currentNode_options.length += 1;
 				currentNode_options.length -= 1;
 				return result;
@@ -41,22 +41,22 @@ V.rt("#each", function(handle, index, parentHandle) {
 		}
 		//数组的赋值与绑定相关联，实时更新绑定值。
 		var _triggerEvent = trigger.event;
-		trigger.event = function(NodeList_of_ViewInstance, dataManager, /*eventTrigger,*/ isAttr, viewInstance_ID) {
+		trigger.event = function(NodeList_of_ViewModel, model, /*eventTrigger,*/ isAttr, viewModel_ID) {
 			var result = _triggerEvent.apply(this, arguments);
-			var currentNode = NodeList_of_ViewInstance[parentHandle.id].currentNode,
+			var currentNode = NodeList_of_ViewModel[parentHandle.id].currentNode,
 				selectHashCode = $.hashCode(currentNode, "selected"),
 				touchKey = currentNode[selectHashCode],
-				DM_finallyRun = DataManager.finallyRun;
+				DM_finallyRun = Model.finallyRun;
 			// console.log(touchKey);
 			if (touchKey) { //value-map
 				var finallyRun;
 				if (!(finallyRun = DM_finallyRun[selectHashCode])) {
 					DM_finallyRun(DM_finallyRun[selectHashCode] = finallyRun = function() {
-						finallyRun.dataManager.touchOff(finallyRun.touchKey)
+						finallyRun.model.touchOff(finallyRun.touchKey)
 						DM_finallyRun[selectHashCode] = $FALSE;
 					})
 				}
-				finallyRun.dataManager = dataManager;
+				finallyRun.model = model;
 				finallyRun.touchKey = touchKey;
 			}else{
 				//如果没有指定绑定的selected值，那么为bind-from配置默认选中值

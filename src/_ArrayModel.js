@@ -1,15 +1,15 @@
 /*
- * _ArrayDataManager constructor
- * to mamage #each datamanager
+ * _ArrayModel constructor
+ * to mamage #each model
  */
 
-function _ArrayDataManager(perfix, id) {
+function _ArrayModel(perfix, id) {
     var self = this;
     self._id = id;
     self._prefix = perfix;
     self._DMs = [];
 }
-var _ArrDM_proto = _ArrayDataManager.prototype;
+var _ArrDM_proto = _ArrayModel.prototype;
 
 //用于优化抽离的vi运行remove引发的$INDEX大变动的问题
 var _remove_index; // = 0;
@@ -17,8 +17,8 @@ var _remove_index; // = 0;
 $.fI(DM_proto, function(fun, funName) {
     _ArrDM_proto[funName] = function() {
         var args = arguments;
-        $.ftE(this._DMs, function(_each_dataManager) {
-            _each_dataManager[funName].apply(_each_dataManager, args)
+        $.E(this._DMs, function(_each_model) {
+            _each_model[funName].apply(_each_model, args)
         })
     }
 })
@@ -32,9 +32,9 @@ _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片�
             return;
         case 1:
             if (key) {
-                nObj = key instanceof Array ? key : $.s(key);
+                nObj = $.isA(key) ? key : $.s(key);
                 // self.length(nObj.length);
-                $.ftE(nObj, function(nObj_item, i) {
+                $.E(nObj, function(nObj_item, i) {
                     var DM = DMs[i];
                     //针对remove的优化
                     if (DM) {//TODO:WHY?
@@ -55,54 +55,54 @@ _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片�
             //TODO: don't create Array to save memory
             var arrKeys = key.split(".");
             var index = arrKeys.shift();
-            var datamanager = DMs[index];
-            if (!datamanager) {
+            var model = DMs[index];
+            if (!model) {
                 return
             }
             if (arrKeys.length) {
-                result = datamanager.set(arrKeys.join("."), nObj)
+                result = model.set(arrKeys.join("."), nObj)
             } else {
-                result = datamanager.set(nObj)
+                result = model.set(nObj)
             }
     }
     return result;
 }
-_ArrDM_proto.push = function(datamanager) {
+_ArrDM_proto.push = function(model) {
     var self = this,
         pperfix = self._prefix;
     var DMs = this._DMs;
-    var index = String(datamanager._index = DMs.length)
-    datamanager._prefix = pperfix ? pperfix + "." + index : index;
-    $.p(DMs, datamanager)
-    datamanager._arrayDataManager = self;
-    datamanager._parentDataManager = self._parentDataManager;
+    var index = String(model._index = DMs.length)
+    model._prefix = pperfix ? pperfix + "." + index : index;
+    $.p(DMs, model)
+    model._arrayModel = self;
+    model._parentModel = self._parentModel;
 }
-_ArrDM_proto.remove = function(datamanager) {
-    var index = datamanager._index
+_ArrDM_proto.remove = function(model) {
+    var index = model._index
     var self = this;
     var pperfix = self._prefix;
     var DMs = self._DMs;
     $.sp.call(DMs, index, 1);
     // DMs.splice(index, 1);
-    $.ftE(DMs, function(datamanager, i) {
-        var index = String(datamanager._index -= 1);
-        datamanager._prefix = pperfix ? pperfix + "." + index : index;
+    $.E(DMs, function(model, i) {
+        var index = String(model._index -= 1);
+        model._prefix = pperfix ? pperfix + "." + index : index;
     }, index)
-    var parentDataManager = datamanager._parentDataManager
-    var oldData = pperfix ? parentDataManager.get(pperfix) : parentDataManager._database /*get()*/ ;
+    var parentModel = model._parentModel
+    var oldData = pperfix ? parentModel.get(pperfix) : parentModel._database /*get()*/ ;
     if (oldData) {
         // 对象的数据可能是空值，导致DM实际长度与数据长度不一致，直接splice会错位，所以需要纠正
         $.sp.call(oldData, index, 1)
         _remove_index = index;
-        parentDataManager.set(pperfix, oldData);
+        parentModel.set(pperfix, oldData);
         _remove_index = 0;
-        datamanager._arrayDataManager = datamanager._parentDataManager = $UNDEFINED;
+        model._arrayModel = model._parentModel = $UNDEFINED;
     }
 }
-_ArrDM_proto.lineUp = function(datamanager) {
-    this.remove(datamanager);
-    this.push(datamanager);
+_ArrDM_proto.lineUp = function(model) {
+    this.remove(model);
+    this.push(model);
 }
 DM_proto.lineUp = function() {
-    this._arrayDataManager && this._arrayDataManager.lineUp(this)
+    this._arrayModel && this._arrayModel.lineUp(this)
 }

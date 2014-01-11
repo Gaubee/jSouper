@@ -51,10 +51,10 @@ var templateOperatorNum = {
 	// , ">>": 2
 	// , "<<": 2
 }
-$.ftE(_operator_list, function(operator) {
+$.E(_operator_list, function(operator) {
 	templateOperatorNum[operator] = 2;
 });
-$.ftE(_unary_operator_list, function(operator) {
+$.E(_unary_operator_list, function(operator) {
 	templateOperatorNum[operator] = 1;
 });
 var parse = function(str) {
@@ -76,7 +76,7 @@ var parse = function(str) {
 					if (templateHandles[fun_name]) {
 						var args = innerStr.replace(fun_name, "").split(","),
 							result = "{" + fun_name + "(";
-						$.ftE(args, function(arg) {
+						$.E(args, function(arg) {
 							if (arg = $.trim(arg)) {
 								result += parseIte(parseArg(arg));
 							}
@@ -152,7 +152,7 @@ var parse = function(str) {
 	},
 	parseIte = function(arr) {
 		var result = "";
-		$.ftE(arr, function(block, index) {
+		$.E(arr, function(block, index) {
 			if (block.type === "arg") {
 				!block.parse && (block.parse = "{(" + block.value + ")}");
 			}
@@ -160,7 +160,7 @@ var parse = function(str) {
 				block.ignore = $TRUE;
 			}
 		});
-		$.ftE(arr, function(block, index) {
+		$.E(arr, function(block, index) {
 			if (block.type === "ope") {
 				var prev = arr[index - 1],
 					next = arr[index + 1];
@@ -181,7 +181,7 @@ var parse = function(str) {
 				}
 			}
 		});
-		$.ftE(arr, function(block) {
+		$.E(arr, function(block) {
 			if (!block.ignore) {
 				result += block.parse;
 			}
