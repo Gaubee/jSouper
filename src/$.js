@@ -123,6 +123,12 @@ doc = document,
             return (start === str.charAt(str.length - 1)) && "\'\"".indexOf(start) !== -1;
         },
 
+        //判断字符串能否完全转换成数字
+        isStoN:function  (str) {
+            //NaN != NaN
+            return parseFloat(str) == str;
+        },
+        
         //按字符串切割，返回切割后的字符串，所切割的字符串保存到临时变量_split_laveStr中，下一次切割会被覆盖
         st: function(str, splitKey) { //split
             var index = str.indexOf(splitKey);

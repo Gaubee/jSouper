@@ -147,6 +147,12 @@ doc = document,
             return (start === str.charAt(str.length - 1)) && "\'\"".indexOf(start) !== -1;
         },
 
+        //判断字符串能否完全转换成数字
+        isStoN:function  (str) {
+            //NaN != NaN
+            return parseFloat(str) == str;
+        },
+        
         //按字符串切割，返回切割后的字符串，所切割的字符串保存到临时变量_split_laveStr中，下一次切割会被覆盖
         st: function(str, splitKey) { //split
             var index = str.indexOf(splitKey);
@@ -1118,6 +1124,7 @@ var DM_proto = Model.prototype = {
             key = "";
         }
 
+        //获取数据的最高层存储区，由上向下更新
         var result = self.getTopModel(key), //Leader:find the model matched by key
             finallyRunStacks = Model.session.finallyRunStacks,
             result_dm = result.model,
@@ -2762,7 +2769,8 @@ var placeholder = {
                 })
                 //为无命名空间的标签加上前缀
                 .replace(/<[\/]{0,1}([\w:]+)/g, function(html, tag) {
-                    if (tag.indexOf(":") === -1) {
+                    //排除：带命名空间、独立标签
+                    if (tag.indexOf(":") === -1 && "|area|br|col|embed|hr|img|input|link|meta|param|".indexOf("|" + tag.toLowerCase() + "|") === -1) {
                         html = (html.charAt(1) === "/" ? end_ns : start_ns) + tag;
                     }
                     return html;
@@ -2773,7 +2781,8 @@ var placeholder = {
                 }).replace(RegExp(Placeholder, "g"), function(p) {
                     return quotedString.shift();
                 });
-            console.log(htmlStr);
+
+            //使用浏览器默认解析力解析标签树，保证HTML的松语意
             _shadowBody.innerHTML = htmlStr;
 
             //递归过滤
@@ -2801,6 +2810,10 @@ var placeholder = {
                 //innerHTML otherwise covered again, the node if it is not, 
                 //then memory leaks, IE can not get to the full node.
                 $.e(shadowDIV.childNodes, function(refNode) {
+                    //现代浏览器XMP标签中，空格和回车总是不过滤的显示，和浏览器默认效果不一致，手动格式化
+                    if (refNode.nodeType === 3) {
+                        refNode.data = refNode.data.replace(/^[\n\t\s]*/, ' ');
+                    }
                     $.D.iB(parentNode, refNode, node)
                 })
                 $.D.rC(parentNode, node);
@@ -3020,10 +3033,13 @@ var _operator_handle  = function(handle, index, parentHandle) {
 		}
 	}
 },
-_operator_list = "+ - * / % == === != !== > < && || ^ >> << & |".split(" ");
+_operator_list = "+ - * / % == === != !== > < >= <= && || ^ >> << & |".split(" ");
 $.E(_operator_list, function(operator) {
 	V.rh(operator, _operator_handle)
 });
+V.rh("&lt;",V.handles["<"]);
+V.rh("&gt;",V.handles[">"]);
+
 function _teleporter_display(show_or_hidden, NodeList_of_ViewModel, model, /*triggerBy,*/ viewModel_ID) {
     var handle = this;
     var placeholderHandle = $.lI(handle.childNodes);
@@ -3358,39 +3374,42 @@ V.rt("", function(handle, index, parentHandle) {
     var textHandle = handle.childNodes[0],
         textHandleId = textHandle.id,
         key = textHandle.node.data,
-        trigger;
-
+        trigger = {
+            key: ".", //const trigger
+            bubble: $TRUE,
+        };
+    //作为一个textNode节点来显示字符串
     if (parentHandle.type !== "handle") { //as textHandle
         if ($.isSWrap(key)) { // single String
-            trigger = { //const 
-                key: ".", //const trigger
-                bubble: $TRUE,
-                event: function(NodeList_of_ViewModel, model) {
-                    NodeList_of_ViewModel[textHandleId].currentNode.data = key.substring(1, key.length - 1);
-                    //trigger.event = $.noop;
-                }
+            trigger.event = function(NodeList_of_ViewModel, model) {
+                NodeList_of_ViewModel[textHandleId].currentNode.data = key.substring(1, key.length - 1);
+                //trigger.event = $.noop;
+            };
+        } else if ($.isStoN(key)) { // single Number
+            trigger.event = function(NodeList_of_ViewModel, model) {
+                NodeList_of_ViewModel[textHandleId].currentNode.data = parseFloat(key);
+                //trigger.event = $.noop;
             };
         } else { //String for databese by key
-            trigger = {
-                key: key,
-                event: function(NodeList_of_ViewModel, model, /* triggerBy,*/ isAttr /*, vi*/ ) { //call by ViewModel's Node
-                    var data = model.get(key),
-                        nodeHandle = NodeList_of_ViewModel[textHandleId],
-                        currentNode = nodeHandle.currentNode;
-                    if (isAttr) {
-                        //IE浏览器直接编译，故不需要转义，其他浏览器需要以字符串绑定到属性中。需要转义，否则会出现引号冲突
-                        if (isAttr.key.indexOf("on") === 0 && !_isIE) {
-                            data = String(data).replace(/"/g, '\\"').replace(/'/g, "\\'");
-                        }
+            trigger.key = key;
+            trigger.event = function(NodeList_of_ViewModel, model, /* triggerBy,*/ isAttr /*, vi*/ ) { //call by ViewModel's Node
+                var data = model.get(key),
+                    nodeHandle = NodeList_of_ViewModel[textHandleId],
+                    currentNode = nodeHandle.currentNode;
+                if (isAttr) {
+                    //IE浏览器直接编译，故不需要转义，其他浏览器需要以字符串绑定到属性中。需要转义，否则会出现引号冲突
+                    if (isAttr.key.indexOf("on") === 0 && !_isIE) {
+                        data = String(data).replace(/"/g, '\\"').replace(/'/g, "\\'");
                     }
-                    // data = String(data);
-                    if (nodeHandle._data !== data) {
-                        nodeHandle._data = data;
-                        currentNode.data = data === $UNDEFINED ? "" : data;
-                    }
+                }
+                // data = String(data);
+                if (nodeHandle._data !== data) {
+                    nodeHandle._data = data;
+                    currentNode.data = data === $UNDEFINED ? "" : data;
                 }
             }
         }
+        //作为一个handle的参数
     } else { //as stringHandle
         if ($.isSWrap(key)) { // single String
             trigger = { //const 
@@ -3400,6 +3419,11 @@ V.rt("", function(handle, index, parentHandle) {
                     NodeList_of_ViewModel[this.handleId]._data = key.substr(1, key.length - 2);
                     //trigger.event = $.noop;
                 }
+            };
+        } else if ($.isStoN(key)) { // single Number
+            trigger.event = function(NodeList_of_ViewModel, model) {
+                NodeList_of_ViewModel[this.handleId]._data = parseFloat(key);
+                //trigger.event = $.noop;
             };
         } else { //String for databese by key
             trigger = {
@@ -3711,40 +3735,42 @@ V.rt("!", V.rt("nega", function(handle, index, parentHandle) { //Negate
 	}
 	return trigger;
 }));
-var _operator_handle_builder = function(handle, index, parentHandle){
-	var firstParameter_id = handle.childNodes[0].id,
-		textHandle_id = handle.childNodes[0].childNodes[0].id,
-		secondParameter = handle.childNodes[1],
-		trigger = {
-			bubble: true//build in global,can't use $TRUE
-		};
-	// console.log(handle.childNodes[0].parentNode, handle.parentNode)
+var _operator_handle_builder = function(handle, index, parentHandle) {
+    var firstParameter_id = handle.childNodes[0].id,
+        textHandle_id = handle.childNodes[0].childNodes[0].id,
+        secondParameter = handle.childNodes[1],
+        trigger = {
+            bubble: true //build in global,can't use $TRUE
+        };
+    // console.log(handle.childNodes[0].parentNode, handle.parentNode)
+    if (parentHandle.type !== "handle") { //as textHandle
+        trigger.event = function(NodeList_of_ViewModel /*, model, triggerBy, isAttr, vi*/ ) { //call by ViewModel's Node
+            var result = parseFloat(NodeList_of_ViewModel[firstParameter_id]._data) + parseFloat(secondParameter ? NodeList_of_ViewModel[secondParameter.id]._data : 0),
+                currentNode = NodeList_of_ViewModel[textHandle_id].currentNode;
+            currentNode.data = result;
+        }
+    } else {
+        trigger.event = function(NodeList_of_ViewModel /*, model, triggerBy, isAttr, vi*/ ) { //call by ViewModel's Node
+            var result = parseFloat(NodeList_of_ViewModel[firstParameter_id]._data) + parseFloat(secondParameter ? NodeList_of_ViewModel[secondParameter.id]._data : 0);
+            NodeList_of_ViewModel[this.handleId]._data = result;
+        }
+    }
 
-	if (parentHandle.type !== "handle") { //as textHandle
-		trigger.event = function(NodeList_of_ViewModel /*, model, triggerBy, isAttr, vi*/ ) { //call by ViewModel's Node
-			var result =  NodeList_of_ViewModel[firstParameter_id]._data+(secondParameter ? NodeList_of_ViewModel[secondParameter.id]._data : 0) ,
-				currentNode = NodeList_of_ViewModel[textHandle_id].currentNode;
-			currentNode.data = result;
-		}
-	} else {
-		trigger.event = function(NodeList_of_ViewModel /*, model, triggerBy, isAttr, vi*/ ) { //call by ViewModel's Node
-			var result =  NodeList_of_ViewModel[firstParameter_id]._data+(secondParameter ? NodeList_of_ViewModel[secondParameter.id]._data : 0) ;
-			NodeList_of_ViewModel[this.handleId]._data = result;
-		}
-	}
-
-	return trigger;
+    return trigger;
 }
 var _operator_handle_build_str = String(_operator_handle_builder),
-	_operator_handle_build_arguments = _operator_handle_build_str.match(/\(([\w\W]+?)\)/)[1],
-	_operator_handle_build_str = _operator_handle_build_str.substring(_operator_handle_build_str.indexOf("{")+1,_operator_handle_build_str.length-1),
-	_operator_handle_build_factory = function(operator) {
-		var result= Function(_operator_handle_build_arguments, _operator_handle_build_str.replace(/\+/g, operator))
-		return result
-	};
+    _operator_handle_build_arguments = _operator_handle_build_str.match(/\(([\w\W]+?)\)/)[1],
+    _operator_handle_build_str = _operator_handle_build_str.substring(_operator_handle_build_str.indexOf("{") + 1, _operator_handle_build_str.length - 1),
+    _operator_handle_build_factory = function(operator) {
+        var result = Function(_operator_handle_build_arguments, _operator_handle_build_str.replace(/\+/g, operator))
+        return result
+    };
 $.E(_operator_list, function(operator) {
-	V.rt(operator, _operator_handle_build_factory(operator))
+    V.rt(operator, _operator_handle_build_factory(operator))
 });
+V.rt("&lt;", V.triggers["<"]);
+V.rt("&gt;", V.triggers[">"]);
+
 V.rt("#teleporter", function(handle, index, parentHandle) {
     var teleporterNameHandle = handle.childNodes[0];
     var placeholderHandle = $.lI(handle.childNodes);
@@ -4676,6 +4702,7 @@ var jSouper = global.jSouper = {
     var scriptTags = doc.getElementsByTagName("script"),
         HVP_config = jSouper.config,
         userConfigStr = $.trim(scriptTags[scriptTags.length - 1].innerHTML);
+    //TODO:append style:xmp{display:none}
     jSouper.ready(function() {
         jSouper.scans();
         if (userConfigStr.charAt(0) === "{") {

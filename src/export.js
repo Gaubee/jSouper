@@ -129,6 +129,7 @@ var jSouper = global.jSouper = {
     var scriptTags = doc.getElementsByTagName("script"),
         HVP_config = jSouper.config,
         userConfigStr = $.trim(scriptTags[scriptTags.length - 1].innerHTML);
+    //TODO:append style:xmp{display:none}
     jSouper.ready(function() {
         jSouper.scans();
         if (userConfigStr.charAt(0) === "{") {

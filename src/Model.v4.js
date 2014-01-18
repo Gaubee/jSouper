@@ -264,6 +264,7 @@ var DM_proto = Model.prototype = {
             key = "";
         }
 
+        //获取数据的最高层存储区，由上向下更新
         var result = self.getTopModel(key), //Leader:find the model matched by key
             finallyRunStacks = Model.session.finallyRunStacks,
             result_dm = result.model,

@@ -81,7 +81,8 @@ var placeholder = {
                 })
                 //为无命名空间的标签加上前缀
                 .replace(/<[\/]{0,1}([\w:]+)/g, function(html, tag) {
-                    if (tag.indexOf(":") === -1) {
+                    //排除：带命名空间、独立标签
+                    if (tag.indexOf(":") === -1 && "|area|br|col|embed|hr|img|input|link|meta|param|".indexOf("|" + tag.toLowerCase() + "|") === -1) {
                         html = (html.charAt(1) === "/" ? end_ns : start_ns) + tag;
                     }
                     return html;
@@ -92,7 +93,8 @@ var placeholder = {
                 }).replace(RegExp(Placeholder, "g"), function(p) {
                     return quotedString.shift();
                 });
-            console.log(htmlStr);
+
+            //使用浏览器默认解析力解析标签树，保证HTML的松语意
             _shadowBody.innerHTML = htmlStr;
 
             //递归过滤
@@ -120,6 +122,10 @@ var placeholder = {
                 //innerHTML otherwise covered again, the node if it is not, 
                 //then memory leaks, IE can not get to the full node.
                 $.e(shadowDIV.childNodes, function(refNode) {
+                    //现代浏览器XMP标签中，空格和回车总是不过滤的显示，和浏览器默认效果不一致，手动格式化
+                    if (refNode.nodeType === 3) {
+                        refNode.data = refNode.data.replace(/^[\n\t\s]*/, ' ');
+                    }
                     $.D.iB(parentNode, refNode, node)
                 })
                 $.D.rC(parentNode, node);

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>了解View层的基础逻辑语句 - jSouper</title>
+	<script type="text/javascript" src="../build/jSouper.debug.js">
+	{
+		Id:"jSouperApp",
+		Data:{
+			num_one:10,
+			num_two:20
+		}
+	}
+	</script>
+</head>
+<body>
+	<xmp id="jSouperApp">
+		<fieldset>
+			<legend>表单双向绑定</legend>
+			<input placeholder="Enter a number" bind-form="{{'num_one'}}" value="{{num_one}}">
+			<input placeholder="Enter a number" bind-form="{{'num_two'}}" value="{{num_two}}">
+		</fieldset>
+		<fieldset>
+			<legend>条件语句</legend>
+			{{#if num_one&&num_two}}
+				{{#if num_one >= num_two}}
+					{{num_one}} is greater than or equal to {{num_two}}.
+				{{#else}}
+					{{num_one}} is smaller than {{num_two}}.
+				{{/if}}
+			{{/if}}
+		</fieldset>
+	</xmp>
+</body>
+</html>
