@@ -1,5 +1,6 @@
 /*
  * parse rule
+ * 底层解析器，类Lisp语法规则，易于解析
  */
 var placeholder = {
     "<": "&lt;",
@@ -60,6 +61,38 @@ var placeholder = {
         _nodeTree: function(htmlStr) {
             var _shadowBody = fragment( /*"body"*/ ); //$.D.cl(shadowBody);
 
+            /*
+             * 将所有HTML标签加上命名空间，不让浏览器解析默认语言
+             */
+            //将可能误导解析的元素全部排除
+            //字符串、script标签
+            var quotedString = [];
+            var scriptNodeString = [];
+            var start_ns = "<" + V.namespace;
+            var end_ns = "</" + V.namespace;
+            var Placeholder = "_" + Math.random(),
+                ScriptPlaceholder = "_" + Math.random(),
+                htmlStr = htmlStr.replace(QuotedString, function(qs) {
+                    quotedString.push(qs)
+                    return Placeholder;
+                }).replace(ScriptNodeString, function(sns) {
+                    scriptNodeString.push(sns);
+                    return ScriptPlaceholder;
+                })
+                //为无命名空间的标签加上前缀
+                .replace(/<[\/]{0,1}([\w:]+)/g, function(html, tag) {
+                    if (tag.indexOf(":") === -1) {
+                        html = (html.charAt(1) === "/" ? end_ns : start_ns) + tag;
+                    }
+                    return html;
+                })
+                //回滚字符串与script标签
+                .replace(RegExp(ScriptPlaceholder, "g"), function(p) {
+                    return scriptNodeString.shift();
+                }).replace(RegExp(Placeholder, "g"), function(p) {
+                    return quotedString.shift();
+                });
+            console.log(htmlStr);
             _shadowBody.innerHTML = htmlStr;
 
             //递归过滤

@@ -71,10 +71,10 @@ doc = document,
         return str;
     },
     _emptyRegExp = {
-        false: $TRUE,
-        undefined: $TRUE,
-        null: $TRUE,
-        NaN: $TRUE
+        "false": $TRUE,
+        "undefined": $TRUE,
+        "null": $TRUE,
+        "NaN": $TRUE
     },
 
     _split_laveStr, //@split export argument

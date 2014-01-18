@@ -5,8 +5,8 @@ var jSouper = global.jSouper = {
     scans: function(node) {
         node || (node = doc);
         $.e(node.getElementsByTagName("script"), function(scriptNode) {
-            var type = scriptNode.getAttribute("type")
-            var name = scriptNode.getAttribute("name")
+            var type = scriptNode.getAttribute("type");
+            var name = scriptNode.getAttribute("name");
             if (name) {
                 if (type === "text/template") {
                     V.modules[name] = jSouper.parseStr(scriptNode.text, name);

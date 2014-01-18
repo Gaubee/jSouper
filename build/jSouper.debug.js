@@ -95,10 +95,10 @@ doc = document,
         return str;
     },
     _emptyRegExp = {
-        false: $TRUE,
-        undefined: $TRUE,
-        null: $TRUE,
-        NaN: $TRUE
+        "false": $TRUE,
+        "undefined": $TRUE,
+        "null": $TRUE,
+        "NaN": $TRUE
     },
 
     _split_laveStr, //@split export argument
@@ -947,7 +947,6 @@ function _mix(sObj, nObj) {
 };
 
 //获取所有的兄弟节点
-
 function _getAllSiblingModels(self, result) {
     $.p(result || (result = []), self)
     var dmSublingModels = self._siblingModels;
@@ -1097,14 +1096,24 @@ var DM_proto = Model.prototype = {
         _dm_set_source = $FALSE;
         return result;
     },
+
+    /*
+     *操作数据源并触发更新
+     * (String, Object) String：所要更新的数据源路由点；Object：所要替换的数据
+     * (Object) 同.set("$THIS"/"",Object)，更新整个数据源
+     * 注意，如果所被更新的是Model拓展类，会强制调用setter方法
+     */
     set: function(key, nObj) {
         //replace Data 取代原有对象数据
         var self = Model.session.topSetter = this,
             lastKey,
             argumentLen = arguments.length;
+
+        //参数长度检查
         if (argumentLen === 0) {
             return;
         } else if (argumentLen === 1) {
+            //调整参数指向
             nObj = key;
             key = "";
         }
@@ -2089,7 +2098,16 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
                     catchNodesStr += handle.nodeStr
                 }
             } else { // ignored tagName 
-                currentNode = $.D.cl(handle.node);
+                // if (handle.node.tagName === "SCRIPT") {
+                //     currentNode = doc.createElement("script");
+                //     //TODO:clone attribute;
+                //     currentNode.text = handle.node.text;
+                //     currentNode.src = handle.node.src;
+                //     // console.log(scriptNode)
+                //     handle.node.parentNode.replaceChild(currentNode, handle.node);
+                // }else{
+                    currentNode = $.D.cl(handle.node);
+                // }
             }
             handle.currentNode = currentNode;
 
@@ -2663,6 +2681,7 @@ CommentHandle.prototype = Handle("comment", {
 })
 /*
  * parse rule
+ * 底层解析器，类Lisp语法规则，易于解析
  */
 var placeholder = {
     "<": "&lt;",
@@ -2723,6 +2742,38 @@ var placeholder = {
         _nodeTree: function(htmlStr) {
             var _shadowBody = fragment( /*"body"*/ ); //$.D.cl(shadowBody);
 
+            /*
+             * 将所有HTML标签加上命名空间，不让浏览器解析默认语言
+             */
+            //将可能误导解析的元素全部排除
+            //字符串、script标签
+            var quotedString = [];
+            var scriptNodeString = [];
+            var start_ns = "<" + V.namespace;
+            var end_ns = "</" + V.namespace;
+            var Placeholder = "_" + Math.random(),
+                ScriptPlaceholder = "_" + Math.random(),
+                htmlStr = htmlStr.replace(QuotedString, function(qs) {
+                    quotedString.push(qs)
+                    return Placeholder;
+                }).replace(ScriptNodeString, function(sns) {
+                    scriptNodeString.push(sns);
+                    return ScriptPlaceholder;
+                })
+                //为无命名空间的标签加上前缀
+                .replace(/<[\/]{0,1}([\w:]+)/g, function(html, tag) {
+                    if (tag.indexOf(":") === -1) {
+                        html = (html.charAt(1) === "/" ? end_ns : start_ns) + tag;
+                    }
+                    return html;
+                })
+                //回滚字符串与script标签
+                .replace(RegExp(ScriptPlaceholder, "g"), function(p) {
+                    return scriptNodeString.shift();
+                }).replace(RegExp(Placeholder, "g"), function(p) {
+                    return quotedString.shift();
+                });
+            console.log(htmlStr);
             _shadowBody.innerHTML = htmlStr;
 
             //递归过滤
@@ -3385,94 +3436,104 @@ V.rt("@", function(handle, index, parentHandle) {
 	return trigger;
 });
 V.rt("#if", function(handle, index, parentHandle) {
-	// console.log(handle)
-	var id = handle.id,
-		ignoreHandleType = /handle|comment/,
-		conditionHandleId = handle.childNodes[0].id,
-		parentHandleId = parentHandle.id,
+    // console.log(handle)
+    var id = handle.id,
+        ignoreHandleType = /handle|comment/,
+        conditionHandleId = handle.childNodes[0].id,
+        parentHandleId = parentHandle.id,
 
-		comment_else_id, //#if inserBefore #else
-		comment_endif_id, //#else inserBefore /if
+        comment_else_id, //#if inserBefore #else
+        comment_endif_id, //#else inserBefore /if
 
-		conditionDOM = handle._controllers,
-		conditionStatus = $TRUE, //the #if block scope
-		trigger,
-		deep = 0;
+        conditionDOM = handle._controllers,
+        conditionStatus = $TRUE, //the #if block scope
+        trigger,
+        deep = 0;
 
-	$.e(parentHandle.childNodes, function(child_handle, i, childHandles) {
+    $.e(parentHandle.childNodes, function(child_handle, i, childHandles) {
+        if (child_handle.handleName === "#if") {
+            deep += 1
+        } else if (child_handle.handleName === "#else") {
+            if (deep === 1) {
+                conditionStatus = !conditionStatus;
+                comment_else_id = $.lI(child_handle.childNodes).id;
+            }
+        } else if (child_handle.handleName === "/if") {
+            deep -= 1
+            if (!deep) {
+                comment_endif_id = $.lI(child_handle.childNodes).id;
+                return $FALSE;
+            }
+        } else if (child_handle.type !== "comment") {
+            //保存这个节点的控制器，可能有多个if-else嵌套
+            $.p(child_handle._controllers, id);
+            $.p(conditionDOM[conditionStatus], child_handle.id);
+        }
+    }, index); // no (index + 1):scan itself:deep === 0 --> conditionStatus = !conditionStatus;
 
-		if (child_handle.handleName === "#if") {
-			deep += 1
-		} else if (child_handle.handleName === "#else") {
-			if (deep === 1) {
-				conditionStatus = !conditionStatus;
-				comment_else_id = $.lI(child_handle.childNodes).id;
-			}
-		} else if (child_handle.handleName === "/if") {
-			deep -= 1
-			if (!deep) {
-				comment_endif_id = $.lI(child_handle.childNodes).id;
-				return $FALSE;
-			}
-		} else if (child_handle.type !== "comment") {
-			$.p(child_handle._controllers, id);
-			$.p(conditionDOM[conditionStatus], child_handle.id);
-		}
-	}, index); // no (index + 1):scan itself:deep === 0 --> conditionStatus = !conditionStatus;
+    trigger = {
+        // key:"",//default is ""
+        event: function(NodeList_of_ViewModel, model, /*triggerBy,*/ isAttr, viewModel_ID) {
+            //要显示的类型，true为if-else，false为else-endif
+            var conditionVal = !! NodeList_of_ViewModel[conditionHandleId]._data,
+                parentNode = NodeList_of_ViewModel[parentHandleId].currentNode,
+                markHandleId = comment_else_id, //if(true)
+                markHandle; //default is undefined --> insertBefore === appendChild
 
-	trigger = {
-		// key:"",//default is ""
-		event: function(NodeList_of_ViewModel, model, /*triggerBy,*/ isAttr, viewModel_ID) {
-			var conditionVal = !! NodeList_of_ViewModel[conditionHandleId]._data,
-				parentNode = NodeList_of_ViewModel[parentHandleId].currentNode,
-				markHandleId = comment_else_id, //if(true)
-				markHandle; //default is undefined --> insertBefore === appendChild
-			
-			if (NodeList_of_ViewModel[this.handleId]._data !== conditionVal /*|| triggerBy*/) {
-				NodeList_of_ViewModel[this.handleId]._data = conditionVal;
-				if (!conditionVal) {
-					markHandleId = comment_endif_id;
-				}
-				if (markHandleId) {
-					markHandle = NodeList_of_ViewModel[markHandleId].currentNode;
-				}
-				$.e(conditionDOM[conditionVal], function(id) {
-					var currentHandle = NodeList_of_ViewModel[id],
-						node = currentHandle.currentNode,
-						placeholderNode = (NodeList_of_ViewModel[id].placeholderNode = NodeList_of_ViewModel[id].placeholderNode || $.D.C(id)),
-						display = $TRUE;
+            if (NodeList_of_ViewModel[this.handleId]._data !== conditionVal /*|| triggerBy*/ ) {
+                NodeList_of_ViewModel[this.handleId]._data = conditionVal;
+                if (!conditionVal) {
+                    markHandleId = comment_endif_id;
+                }
+                if (markHandleId) {
+                    markHandle = NodeList_of_ViewModel[markHandleId].currentNode;
+                }
 
-					$.e(currentHandle._controllers, function(controller_id) {
-						//Traverse all Logic Controller(if-else-endif) to determine whether each Controller are allowed to display it.
-						var controllerHandle = NodeList_of_ViewModel[controller_id]
-						return display = display && ($.iO(controllerHandle._controllers[controllerHandle._data ? $TRUE : $FALSE], currentHandle.id) !== -1);
-						//when display is false,abort traversing
-					});
-					if (display) {
-						if (currentHandle.display) { //Custom Display Function,default is false
-							currentHandle.display($TRUE, NodeList_of_ViewModel, model, /*triggerBy, */viewModel_ID)
-						} else if (node) {
-							$.D.re(parentNode, node, placeholderNode)
-						}
-					}
-				});
-				$.e(conditionDOM[!conditionVal], function(id) {
-					var currentHandle = NodeList_of_ViewModel[id],
-						node = currentHandle.currentNode,
-						placeholderNode = (currentHandle.placeholderNode = currentHandle.placeholderNode || $.D.C(id));
+                //显示
+                $.e(conditionDOM[conditionVal], function(id) {
+                    var currentHandle = NodeList_of_ViewModel[id],
+                        node = currentHandle.currentNode,
+                        placeholderNode = NodeList_of_ViewModel[id].placeholderNode || (NodeList_of_ViewModel[id].placeholderNode = $.D.C(id)),
+                        display = $TRUE;
 
-					if (currentHandle.display) { //Custom Display Function,default is false
-						currentHandle.display($FALSE, NodeList_of_ViewModel, model, /*triggerBy,*/ viewModel_ID)
-					} else if (node) {
-						$.D.re(parentNode, placeholderNode, node)
-					}
-				})
-			}
-		}
-	}
+                    //遍历所有逻辑控制器（if-else语句-ENDIF）来确定每个控制器是否允许显示它。
+                    $.e(currentHandle._controllers, function(controller_id) {
+                        //Traverse all Logic Controller(if-else-endif) to determine whether each Controller are allowed to display it.
+                        var controllerHandle = NodeList_of_ViewModel[controller_id]
+                        //控制器中的显示时候包含当前元素
+                        return display = display && ($.iO(controllerHandle._controllers[!!controllerHandle._data], currentHandle.id) !== -1);
+                        //when display is false,abort traversing
+                    });
+                    if (display) {
+                        if (currentHandle.display) { //Custom Display Function,default is false
+                            currentHandle.display($TRUE, NodeList_of_ViewModel, model, /*triggerBy, */ viewModel_ID)
+                        } else if (node && placeholderNode.parentNode === parentNode) {
+                            //parentNode.replaceChild(node/*new*/, placeholderNode/*old*/)
+                            $.D.re(parentNode, node, placeholderNode)
+                        }
+                    }
+                });
 
-	return trigger;
+                //隐藏
+                $.e(conditionDOM[!conditionVal], function(id) {
+                    var currentHandle = NodeList_of_ViewModel[id],
+                        node = currentHandle.currentNode,
+                        placeholderNode = (currentHandle.placeholderNode = currentHandle.placeholderNode || $.D.C(id));
+
+                    if (currentHandle.display) { //Custom Display Function,default is false
+                        currentHandle.display($FALSE, NodeList_of_ViewModel, model, /*triggerBy,*/ viewModel_ID)
+                    } else if (node && node.parentNode === parentNode) {
+                        //parentNode.replaceChild(placeholderNode/*new*/, node/*old*/)
+                        $.D.re(parentNode, placeholderNode, node)
+                    }
+                })
+            }
+        }
+    }
+
+    return trigger;
 });
+
 var _cache_xhrConifg = {};
 var _require_module = function(url, handleFun) {
     var xhrConifg = _cache_xhrConifg.hasOwnProperty(url) && _cache_xhrConifg[url]
@@ -3501,19 +3562,25 @@ var _require_module = function(url, handleFun) {
 };
 var _runScripted = _placeholder("run-");
 
+var _runScriptCache = {};
+
 function _runScript(node) {
     var scriptNodeList = node.getElementsByTagName('script');
     $.E(scriptNodeList, function(scriptNode) {
-        if ((!scriptNode.type || scriptNode.type === "text/javascript") && !scriptNode[_runScripted]) {
-            var scripttext =scriptNode.text;
-            // console.log("scripttext:",scripttext,scriptNode.src)
-            var newScript = doc.createElement("script");
-            //TODO:clone attribute;
-            newScript.text = scripttext;
-            newScript.src = scriptNode.src;
-            newScript[_runScripted] = $TRUE;
-            // console.log(scriptNode)
-            scriptNode.parentNode.replaceChild(newScript, scriptNode);
+        if ((!scriptNode.type || scriptNode.type === "text/javascript")) {
+            if (!scriptNode[_runScripted]) {
+                var scripttext = scriptNode.text;
+                var id = $.uid();
+                scriptNode[_runScripted] = id;
+                _runScriptCache[id] = Function(scripttext);
+                // var newScript = doc.createElement("script");
+                //TODO:clone attribute;
+                // newScript.text = scripttext;
+                // newScript.src = scriptNode.src;
+                // newScript[_runScripted] = $TRUE;
+                // scriptNode.parentNode.replaceChild(newScript, scriptNode);
+            }
+            _runScriptCache[scriptNode[_runScripted]]();
         }
     })
 }
@@ -3544,7 +3611,7 @@ V.rt("#include", function(handle, index, parentHandle) {
                     }
                     var _display_args = _include_display_arguments[handle.id];
                     if (_display_args) {
-                        _include_display.apply(handle,_display_args);
+                        _include_display.apply(handle, _display_args);
                     }
                 })
             } else {
@@ -3579,15 +3646,16 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
             var new_templateHandle_name = NodeList_of_ViewModel[templateHandle_id]._data;
             var self = V._instances[viewModel_ID];
             self = self.__layout || (self.__layout = {});
-            var templateHandle_name = self.cache_tpl_name;
+            var templateHandle_name = self[id];
             // console.log(new_templateHandle_name,templateHandle_name)
             var module = V.modules[new_templateHandle_name];
             if (!module) {
                 return
             }
+            console.log(new_templateHandle_name , templateHandle_name,id);
             if (new_templateHandle_name && (new_templateHandle_name !== templateHandle_name)) {
                 // console.log(uuid, new_templateHandle_name, templateHandle_name, !! module)
-                self.cache_tpl_name = new_templateHandle_name;
+                self[id] = new_templateHandle_name;
                 layoutViewModel && layoutViewModel.destory();
                 //console.log(new_templateHandle_name, id);
                 var key = NodeList_of_ViewModel[dataHandle_id]._data,
@@ -4484,8 +4552,8 @@ var jSouper = global.jSouper = {
     scans: function(node) {
         node || (node = doc);
         $.e(node.getElementsByTagName("script"), function(scriptNode) {
-            var type = scriptNode.getAttribute("type")
-            var name = scriptNode.getAttribute("name")
+            var type = scriptNode.getAttribute("type");
+            var name = scriptNode.getAttribute("name");
             if (name) {
                 if (type === "text/template") {
                     V.modules[name] = jSouper.parseStr(scriptNode.text, name);
@@ -4512,7 +4580,7 @@ var jSouper = global.jSouper = {
     },
     modules: V.modules,
     modulesInit: V.modulesInit,
-    _V:V,
+    _V: V,
     config: {
         Id: 'HVP',
         Var: 'App',
@@ -4528,7 +4596,7 @@ var jSouper = global.jSouper = {
         var App = doc.getElementById(userConfig.Id); //configable
         if (App) {
             var appName = userConfig.Var;
-            var template = jSouper.parseNode(App,"App")(userConfig.Data); //App.getAttribute("template-data")//json or url or configable
+            var template = jSouper.parseNode(App, "App")(userConfig.Data); //App.getAttribute("template-data")//json or url or configable
             // template.set(HVP_config.Data);
             App.innerHTML = "";
             template.append(App);
@@ -4557,7 +4625,7 @@ var jSouper = global.jSouper = {
                     }
                 })
             }
-            module = jSouper.modules[url] = jSouper.parseStr(HTML,url);
+            module = jSouper.modules[url] = jSouper.parseStr(HTML, url);
         }
         if (module) {
             vi = module(userConfig.Data);
@@ -4628,8 +4696,9 @@ var jSouper = global.jSouper = {
 //module is defined?
 //module !== null
 //fix IE 关键字
-if (typeof module === "object" && module && typeof module["export"] === "object") {
-    module["export"] = jSouper
+
+if (typeof module === "object" && module && typeof module.exports === "object") {
+    module.exports = jSouper;
 } else {
     if (typeof define === "function" && define.amd) {
         define("jSouper", [], function() {

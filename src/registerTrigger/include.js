@@ -26,19 +26,25 @@ var _require_module = function(url, handleFun) {
 };
 var _runScripted = _placeholder("run-");
 
+var _runScriptCache = {};
+
 function _runScript(node) {
     var scriptNodeList = node.getElementsByTagName('script');
     $.E(scriptNodeList, function(scriptNode) {
-        if ((!scriptNode.type || scriptNode.type === "text/javascript") && !scriptNode[_runScripted]) {
-            var scripttext =scriptNode.text;
-            // console.log("scripttext:",scripttext,scriptNode.src)
-            var newScript = doc.createElement("script");
-            //TODO:clone attribute;
-            newScript.text = scripttext;
-            newScript.src = scriptNode.src;
-            newScript[_runScripted] = $TRUE;
-            // console.log(scriptNode)
-            scriptNode.parentNode.replaceChild(newScript, scriptNode);
+        if ((!scriptNode.type || scriptNode.type === "text/javascript")) {
+            if (!scriptNode[_runScripted]) {
+                var scripttext = scriptNode.text;
+                var id = $.uid();
+                scriptNode[_runScripted] = id;
+                _runScriptCache[id] = Function(scripttext);
+                // var newScript = doc.createElement("script");
+                //TODO:clone attribute;
+                // newScript.text = scripttext;
+                // newScript.src = scriptNode.src;
+                // newScript[_runScripted] = $TRUE;
+                // scriptNode.parentNode.replaceChild(newScript, scriptNode);
+            }
+            _runScriptCache[scriptNode[_runScripted]]();
         }
     })
 }
@@ -69,7 +75,7 @@ V.rt("#include", function(handle, index, parentHandle) {
                     }
                     var _display_args = _include_display_arguments[handle.id];
                     if (_display_args) {
-                        _include_display.apply(handle,_display_args);
+                        _include_display.apply(handle, _display_args);
                     }
                 })
             } else {

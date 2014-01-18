@@ -47,21 +47,21 @@ module.exports = function(grunt) {
         	//调试版本，
             debug: {
                 src: debugFile,
-                dest: 'build/HTML-ViewParse.debug.js'
+                dest: 'build/jSouper.debug.js'
             },
             //无压缩发布版本
             common: {
                 src: baseFile,
-                dest: 'build/HTML-ViewParse.js'
+                dest: 'build/jSouper.js'
             }
         },
         wrap: {
         	//大闭包包裹
             basic: {
-                src: ['build/HTML-ViewParse.js'],
-                dest: 'build/HTML-ViewParse.js',
+                src: ['build/jSouper.js'],
+                dest: 'build/jSouper.js',
                 options: {
-                    wrapper: ['!(function jSoap(global) {\n', '\n}(this));']
+                    wrapper: ['!(function jSouper(global) {\n', '\n}(this));']
                 }
             }
         },
@@ -71,7 +71,7 @@ module.exports = function(grunt) {
             },
             my_target: {
                 files: {
-                    'build/HTML-ViewParse.min.js': ['build/HTML-ViewParse.js']
+                    'build/jSouper.min.js': ['build/jSouper.js']
                 }
             }
         },
@@ -104,8 +104,8 @@ module.exports = function(grunt) {
             options: {
                 livereload: 35729
             },
-            demo: {
-                files: ['demo/**']
+            doc: {
+                files: ['doc/**']
             },
             js: {
                 files: ['src/*.js', 'src/**/*.js'],

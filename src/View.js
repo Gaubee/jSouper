@@ -223,7 +223,16 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
                     catchNodesStr += handle.nodeStr
                 }
             } else { // ignored tagName 
-                currentNode = $.D.cl(handle.node);
+                // if (handle.node.tagName === "SCRIPT") {
+                //     currentNode = doc.createElement("script");
+                //     //TODO:clone attribute;
+                //     currentNode.text = handle.node.text;
+                //     currentNode.src = handle.node.src;
+                //     // console.log(scriptNode)
+                //     handle.node.parentNode.replaceChild(currentNode, handle.node);
+                // }else{
+                    currentNode = $.D.cl(handle.node);
+                // }
             }
             handle.currentNode = currentNode;
 

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<head>
+	<title>app - jSouper</title>
+	<script type="text/javascript" src="../build/jSouper.debug.js">
+	{
+		Id:"jSouperApp",
+		Data:{
+			header:"让IE系列可以兼容自定义标签，包括H5标签",
+			nav:"浏览器兼容列表",
+			how_begin:"使用jSouper.app来初始化应用程序时，可以进行简写，将配置参数直接放入引入jSouper的脚本标签中。",
+			browsers:[{
+				name:"IE6"
+			},{
+				name:"IE7"
+			},{
+				name:"IE8"
+			},{
+				name:"IE9"
+			},{
+				name:"IE10"
+			},{
+				name:"IE11"
+			},{
+				name:"Opera",
+				notice:"未做全面的事件兼容测试；未做全面的节点操作测试"
+			},{
+				name:"Firefox",
+				notice:"未做全面的节点操作测试"
+			},{
+				name:"Chrome"
+			},{
+				name:"Safari"
+			}]
+		}
+	}
+	</script>
+	<style type="text/css">
+	header{
+		font-weight: bold;
+		font-size: 32px;
+		font-family: "微软雅黑";
+		color:#B81B1B;
+	}
+	.first{
+		display: block;
+	}
+	nav{
+		font-size: 18px;
+		color:#999;
+
+	}
+	</style>
+</head>
+<body>
+	<xmp id="jSouperApp">
+		<header class="first">{{header}}</header>
+		<p>{{how_begin}}</p>
+		<nav>{{nav}}</nav>
+		<table>
+			<thead>
+			<tr><td>浏览器名</td><td>注意事项</td></tr>
+			</thead>
+			<tbody>
+			{{#each browsers}}
+				<tr><td>{{name}}</td>
+				<td>
+					{{#if notice}}
+						{{notice}}
+					{{#else}}
+						无
+					{{/if}}
+				</td></tr>
+			{{/each}}
+			</tbody>
+		</table>
+	</xmp>
+</body>
+</html>

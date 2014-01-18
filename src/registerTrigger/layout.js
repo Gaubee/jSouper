@@ -17,15 +17,16 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
             var new_templateHandle_name = NodeList_of_ViewModel[templateHandle_id]._data;
             var self = V._instances[viewModel_ID];
             self = self.__layout || (self.__layout = {});
-            var templateHandle_name = self.cache_tpl_name;
+            var templateHandle_name = self[id];
             // console.log(new_templateHandle_name,templateHandle_name)
             var module = V.modules[new_templateHandle_name];
             if (!module) {
                 return
             }
+            console.log(new_templateHandle_name , templateHandle_name,id);
             if (new_templateHandle_name && (new_templateHandle_name !== templateHandle_name)) {
                 // console.log(uuid, new_templateHandle_name, templateHandle_name, !! module)
-                self.cache_tpl_name = new_templateHandle_name;
+                self[id] = new_templateHandle_name;
                 layoutViewModel && layoutViewModel.destory();
                 //console.log(new_templateHandle_name, id);
                 var key = NodeList_of_ViewModel[dataHandle_id]._data,
