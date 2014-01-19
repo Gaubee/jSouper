@@ -56,7 +56,7 @@ var placeholder = {
      */
 
     V = {
-        prefix: "attr-",
+        prefix: "bind-",
         namespace: "fix:",
         _nodeTree: function(htmlStr) {
             var _shadowBody = fragment( /*"body"*/ ); //$.D.cl(shadowBody);
@@ -124,7 +124,7 @@ var placeholder = {
                 $.e(shadowDIV.childNodes, function(refNode) {
                     //现代浏览器XMP标签中，空格和回车总是不过滤的显示，和浏览器默认效果不一致，手动格式化
                     if (refNode.nodeType === 3) {
-                        refNode.data = refNode.data.replace(/^[\n\t\s]*/, ' ');
+                        refNode.data = refNode.data.replace(/^[\s\n]\s*/, ' ');
                     }
                     $.D.iB(parentNode, refNode, node)
                 })

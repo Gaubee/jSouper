@@ -1,3 +1,9 @@
+var _tryToNumber = function(str) {
+    if ($.isStoN(str)) {
+        str = parseFloat(str);
+    }
+    return str
+}
 var _operator_handle_builder = function(handle, index, parentHandle) {
     var firstParameter_id = handle.childNodes[0].id,
         textHandle_id = handle.childNodes[0].childNodes[0].id,
@@ -8,13 +14,13 @@ var _operator_handle_builder = function(handle, index, parentHandle) {
     // console.log(handle.childNodes[0].parentNode, handle.parentNode)
     if (parentHandle.type !== "handle") { //as textHandle
         trigger.event = function(NodeList_of_ViewModel /*, model, triggerBy, isAttr, vi*/ ) { //call by ViewModel's Node
-            var result = parseFloat(NodeList_of_ViewModel[firstParameter_id]._data) + parseFloat(secondParameter ? NodeList_of_ViewModel[secondParameter.id]._data : 0),
+            var result = _tryToNumber(NodeList_of_ViewModel[firstParameter_id]._data) + _tryToNumber(secondParameter ? NodeList_of_ViewModel[secondParameter.id]._data : 0),
                 currentNode = NodeList_of_ViewModel[textHandle_id].currentNode;
             currentNode.data = result;
         }
     } else {
         trigger.event = function(NodeList_of_ViewModel /*, model, triggerBy, isAttr, vi*/ ) { //call by ViewModel's Node
-            var result = parseFloat(NodeList_of_ViewModel[firstParameter_id]._data) + parseFloat(secondParameter ? NodeList_of_ViewModel[secondParameter.id]._data : 0);
+            var result = _tryToNumber(NodeList_of_ViewModel[firstParameter_id]._data) + _tryToNumber(secondParameter ? NodeList_of_ViewModel[secondParameter.id]._data : 0);
             NodeList_of_ViewModel[this.handleId]._data = result;
         }
     }

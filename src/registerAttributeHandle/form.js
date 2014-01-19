@@ -147,6 +147,6 @@ var _formCache = {},
 			}
 		}
 	};
-V.ra("bind-form", function(attrKey) {
+V.ra("form", function(attrKey) {
 	return formListerAttribute;
 });

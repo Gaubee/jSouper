@@ -197,9 +197,6 @@ var VI_proto = ViewModel.prototype = {
         var self = this,
             currentTopNode = self.topNode();
 
-        if (self._id === 76) {
-            debugger
-        };
         $.e(currentTopNode.childNodes, function(child_node) {
             $.D.ap(fr, child_node);
         });

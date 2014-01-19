@@ -112,6 +112,8 @@ V.rt("#each", function(handle, index, parentHandle) {
 
                 //沉默相关多余操作的API，提升效率
                 DM_proto.rebuildTree = $.noop //doesn't need rebuild every subset
+
+                //关闭touchOff会影响关于smartKey
                 DM_proto.touchOff = $.noop; //subset的touchOff会遍历整个子链，会造成爆炸性增长。
 
                 if (showed_vi_len > new_data_len) {
@@ -132,6 +134,7 @@ V.rt("#each", function(handle, index, parentHandle) {
                         $.E($.s(data), function(eachItemData, index) {
                             //TODO:if too mush vi will be create, maybe asyn
                             var viewModel = arrViewModels[index];
+                            //VM不存在，新建
                             if (!viewModel) {
                                 viewModel = arrViewModels[index] = eachModuleConstructor(eachItemData);
 
@@ -168,8 +171,8 @@ V.rt("#each", function(handle, index, parentHandle) {
                     }
                 }
                 //回滚沉默的功能
-                DM_proto.touchOff = _touchOff; //.call(model);
                 (DM_proto.rebuildTree = _rebuildTree).call(model);
+                (DM_proto.touchOff = _touchOff).call(model);
             }
         }
     }

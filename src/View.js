@@ -182,6 +182,7 @@ function _buildTrigger(self) {
 };
 
 //
+
 function pushById(arr, item) {
     arr[item.id] = item;
     return item;
@@ -231,7 +232,7 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
                 //     // console.log(scriptNode)
                 //     handle.node.parentNode.replaceChild(currentNode, handle.node);
                 // }else{
-                    currentNode = $.D.cl(handle.node);
+                currentNode = $.D.cl(handle.node);
                 // }
             }
             handle.currentNode = currentNode;

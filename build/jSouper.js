@@ -2042,6 +2042,7 @@ function _buildTrigger(self) {
 };
 
 //
+
 function pushById(arr, item) {
     arr[item.id] = item;
     return item;
@@ -2091,7 +2092,7 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
                 //     // console.log(scriptNode)
                 //     handle.node.parentNode.replaceChild(currentNode, handle.node);
                 // }else{
-                    currentNode = $.D.cl(handle.node);
+                currentNode = $.D.cl(handle.node);
                 // }
             }
             handle.currentNode = currentNode;
@@ -2342,9 +2343,6 @@ var VI_proto = ViewModel.prototype = {
         var self = this,
             currentTopNode = self.topNode();
 
-        if (self._id === 76) {
-            debugger
-        };
         $.e(currentTopNode.childNodes, function(child_node) {
             $.D.ap(fr, child_node);
         });
@@ -2722,7 +2720,7 @@ var placeholder = {
      */
 
     V = {
-        prefix: "attr-",
+        prefix: "bind-",
         namespace: "fix:",
         _nodeTree: function(htmlStr) {
             var _shadowBody = fragment( /*"body"*/ ); //$.D.cl(shadowBody);
@@ -2790,7 +2788,7 @@ var placeholder = {
                 $.e(shadowDIV.childNodes, function(refNode) {
                     //现代浏览器XMP标签中，空格和回车总是不过滤的显示，和浏览器默认效果不一致，手动格式化
                     if (refNode.nodeType === 3) {
-                        refNode.data = refNode.data.replace(/^[\n\t\s]*/, ' ');
+                        refNode.data = refNode.data.replace(/^[\s\n]\s*/, ' ');
                     }
                     $.D.iB(parentNode, refNode, node)
                 })
@@ -3284,6 +3282,8 @@ V.rt("#each", function(handle, index, parentHandle) {
 
                 //沉默相关多余操作的API，提升效率
                 DM_proto.rebuildTree = $.noop //doesn't need rebuild every subset
+
+                //关闭touchOff会影响关于smartKey
                 DM_proto.touchOff = $.noop; //subset的touchOff会遍历整个子链，会造成爆炸性增长。
 
                 if (showed_vi_len > new_data_len) {
@@ -3304,6 +3304,7 @@ V.rt("#each", function(handle, index, parentHandle) {
                         $.E($.s(data), function(eachItemData, index) {
                             //TODO:if too mush vi will be create, maybe asyn
                             var viewModel = arrViewModels[index];
+                            //VM不存在，新建
                             if (!viewModel) {
                                 viewModel = arrViewModels[index] = eachModuleConstructor(eachItemData);
 
@@ -3340,8 +3341,8 @@ V.rt("#each", function(handle, index, parentHandle) {
                     }
                 }
                 //回滚沉默的功能
-                DM_proto.touchOff = _touchOff; //.call(model);
                 (DM_proto.rebuildTree = _rebuildTree).call(model);
+                (DM_proto.touchOff = _touchOff).call(model);
             }
         }
     }
@@ -3713,6 +3714,12 @@ V.rt("!", V.rt("nega", function(handle, index, parentHandle) { //Negate
 	}
 	return trigger;
 }));
+var _tryToNumber = function(str) {
+    if ($.isStoN(str)) {
+        str = parseFloat(str);
+    }
+    return str
+}
 var _operator_handle_builder = function(handle, index, parentHandle) {
     var firstParameter_id = handle.childNodes[0].id,
         textHandle_id = handle.childNodes[0].childNodes[0].id,
@@ -3723,13 +3730,13 @@ var _operator_handle_builder = function(handle, index, parentHandle) {
     // console.log(handle.childNodes[0].parentNode, handle.parentNode)
     if (parentHandle.type !== "handle") { //as textHandle
         trigger.event = function(NodeList_of_ViewModel /*, model, triggerBy, isAttr, vi*/ ) { //call by ViewModel's Node
-            var result = parseFloat(NodeList_of_ViewModel[firstParameter_id]._data) + parseFloat(secondParameter ? NodeList_of_ViewModel[secondParameter.id]._data : 0),
+            var result = _tryToNumber(NodeList_of_ViewModel[firstParameter_id]._data) + _tryToNumber(secondParameter ? NodeList_of_ViewModel[secondParameter.id]._data : 0),
                 currentNode = NodeList_of_ViewModel[textHandle_id].currentNode;
             currentNode.data = result;
         }
     } else {
         trigger.event = function(NodeList_of_ViewModel /*, model, triggerBy, isAttr, vi*/ ) { //call by ViewModel's Node
-            var result = parseFloat(NodeList_of_ViewModel[firstParameter_id]._data) + parseFloat(secondParameter ? NodeList_of_ViewModel[secondParameter.id]._data : 0);
+            var result = _tryToNumber(NodeList_of_ViewModel[firstParameter_id]._data) + _tryToNumber(secondParameter ? NodeList_of_ViewModel[secondParameter.id]._data : 0);
             NodeList_of_ViewModel[this.handleId]._data = result;
         }
     }
@@ -4101,7 +4108,7 @@ var _formCache = {},
 			}
 		}
 	};
-V.ra("bind-form", function(attrKey) {
+V.ra("form", function(attrKey) {
 	return formListerAttribute;
 });
 var _event_by_fun = (function() {
