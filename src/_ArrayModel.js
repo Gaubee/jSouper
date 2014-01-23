@@ -37,7 +37,7 @@ _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片�
                 $.E(nObj, function(nObj_item, i) {
                     var DM = DMs[i];
                     //针对remove的优化
-                    if (DM) {//TODO:WHY?
+                    if (DM) { //TODO:WHY?
                         if (nObj_item !== DM._database) { //强制优化，但是$INDEX关键字要缓存判定更新
                             DM._database = nObj_item;
                             DM.touchOff("");
@@ -72,7 +72,6 @@ _ArrDM_proto.push = function(model) {
         pperfix = self._prefix;
     var DMs = this._DMs;
     var index = String(model._index = DMs.length)
-    model._prefix = pperfix ? pperfix + "." + index : index;
     $.p(DMs, model)
     model._arrayModel = self;
     model._parentModel = self._parentModel;
@@ -83,6 +82,8 @@ _ArrDM_proto.remove = function(model) {
     var pperfix = self._prefix;
     var DMs = self._DMs;
     $.sp.call(DMs, index, 1);
+    model._prefix = pperfix ? pperfix + "." + index : index;
+
     // DMs.splice(index, 1);
     $.E(DMs, function(model, i) {
         var index = String(model._index -= 1);
@@ -98,6 +99,13 @@ _ArrDM_proto.remove = function(model) {
         _remove_index = 0;
         model._arrayModel = model._parentModel = $UNDEFINED;
     }
+}
+_ArrDM_proto.queryElement = function(matchFun) {
+    var result = [];
+    $.E(this._DMs, function(_each_model) {
+        result.push.apply(result, _each_model.queryElement(matchFun));
+    });
+    return result;
 }
 _ArrDM_proto.lineUp = function(model) {
     this.remove(model);

@@ -16,14 +16,15 @@ function View(arg, vmName) {
     // console.log(vmName)
     _buildHandler(self);
     _buildTrigger(self);
-    return function(data, isAttribute) {
+    return function(data, opction) {
         var id = $.uid();
         var finallyRunStacks = Model.session.finallyRunStacks;
+        opction || (opction = {});
 
         //push mark
         finallyRunStacks.push(id)
 
-        var vi = _create(self, data, isAttribute);
+        var vi = _create(self, data, opction.isAttr);
 
         //TODO:create with callback then getTop.touchOff
         vi.model.getTop().touchOff();
@@ -34,6 +35,7 @@ function View(arg, vmName) {
         //last layer,and run finallyRun
         !finallyRunStacks.length && finallyRun();
 
+        opction.callback && opction.callback(vi);
         // console.log(self.id)
         // console.groupEnd(self.id)
         if (self.vmName) {
@@ -77,6 +79,9 @@ var _isHTMLUnknownElement = typeof HTMLUnknownElement === "function" ? function(
         //maybe HTMLUnknownElement,IE7- can't konwn
         return " a abbr acronym address applet area b base basefont bdo big blockquote body br button caption center cite code col colgroup dd del dfn dir div dl dt em fieldset font form frame frameset head hr html i iframe img input ins kbd label legend li link map menu meta noframes noscript object ol optgroup option p param pre q s samp script select small span strike strong style sub sup table tbody td textarea tfoot th thead title tr tt u ul var marquee h1 h2 h3 h4 h5 h6 xmp plaintext listing nobr bgsound bas blink comment isindex multiple noframe person ".indexOf(" " + tagName + " ") === -1;
     };
+var _unkonwnElementFix = {
+    "class": "className"
+};
 
 function _buildHandler(self) {
     var handles = self._handles;
@@ -107,25 +112,18 @@ function _buildHandler(self) {
                     //boolean\tabIndex should be save
                     //style shoule be handle alone
                     if (name && value !== $NULL && value !== "" && name !== "style") {
+                        // console.log(name,value);
                         //be an Element, attribute's name may be diffrend;
-                        name = (_isIE && IEfix[name]) || name;
+                        name = (_isIE ? IEfix[name] : _unkonwnElementFix[name]) || name;
                         $.p(handle._unEleAttr, name);
                         handle._unEleAttr._[name] = value;
                         // console.log("saveAttribute:", name, " : ", value, "(" + name + ")");
                     }
                 });
                 //save style
-                if (node.style.getAttribute) {
-                    var cssText = node.style.getAttribute("cssText");
-                    if (cssText) {
-                        handle._unEleAttr._["style"] = cssText;
-                    }
-                } else {
-                    //unKnown Element
-                    cssText = node.style.cssText;
-                    if (cssText) {
-                        handle._unEleAttr._["style.cssText"] = cssText;
-                    }
+                var cssText = node.style.cssText;
+                if (cssText) {
+                    handle._unEleAttr._["style"] = cssText;
                 }
             }
         }
@@ -209,11 +207,6 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
                 })
                 //set Style
                 var cssText = _unknownElementAttribute._["style"];
-                if (cssText) {
-                    currentNode.style.setAttribute('cssText', cssText);
-                }
-                //set unKnownElementStyle
-                cssText = _unknownElementAttribute._["style.cssText"];
                 if (cssText) {
                     currentNode.style.cssText = cssText;
                 }

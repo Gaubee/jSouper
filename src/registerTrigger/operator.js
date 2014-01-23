@@ -1,4 +1,5 @@
-var _tryToNumber = function(str) {
+var _tryToNumberHash = _placeholder("tTN");
+var _tryToNumber = global[_tryToNumberHash] = function(str) {
     if ($.isStoN(str)) {
         str = parseFloat(str);
     }
@@ -31,7 +32,8 @@ var _operator_handle_build_str = String(_operator_handle_builder),
     _operator_handle_build_arguments = _operator_handle_build_str.match(/\(([\w\W]+?)\)/)[1],
     _operator_handle_build_str = _operator_handle_build_str.substring(_operator_handle_build_str.indexOf("{") + 1, _operator_handle_build_str.length - 1),
     _operator_handle_build_factory = function(operator) {
-        var result = Function(_operator_handle_build_arguments, _operator_handle_build_str.replace(/\+/g, operator))
+        var result = _operator_handle_build_str.replace(/\+/g, operator).replace(/_tryToNumber/g, _tryToNumberHash);
+        result = Function(_operator_handle_build_arguments, result);
         return result
     };
 $.E(_operator_list, function(operator) {

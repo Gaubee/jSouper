@@ -42,10 +42,10 @@
     // 委托 set\get\form
     // this ==> model but not Observer-instance
     Observer.prototype = {
-        set: function(dm, key, value) {
-            return this._set.call(dm, key, value)
+        set: function(dm, key, value, currentKey) {
+            return this._set.call(dm, key, value, currentKey)
         },
-        get: function(dm, key, value) {
+        get: function(dm, key, value, currentKey) {
             var dm_id = dm.id
             var observerCache_ = observerCache._
             /*
@@ -57,7 +57,7 @@
             $.p(_get_collect_stack, [])
 
             //运行原生get
-            var result = this.value = this._get.call(dm, key, value)
+            var result = this.value = this._get.call(dm, key, value, currentKey)
 
             /*
              * dm normal get mode

@@ -953,6 +953,7 @@ function _mix(sObj, nObj) {
 };
 
 //获取所有的兄弟节点
+
 function _getAllSiblingModels(self, result) {
     $.p(result || (result = []), self)
     var dmSublingModels = self._siblingModels;
@@ -1028,6 +1029,32 @@ var _dm_set_source // =$FALSE //set Source ignore extend-Object
 var _dm_force_update //= $FALSE;  //ignore equal
 
 var DM_proto = Model.prototype = {
+    queryElement: function(matchFun) {
+        var self = this;
+        var result = [];
+        if (!(matchFun instanceof Function)) {
+            var matchAttr = matchFun;
+            matchFun = function(node) {
+                for (var attrKey in matchAttr) {
+                    if (matchAttr[attrKey] != node[attrKey]) {
+                        return $FALSE;
+                    }
+                }
+                return $TRUE;
+            }
+        }
+        //查询当前VM的元素
+        var vms = self._viewModels;
+        $.E(vms, function(vm) {
+            result.push.apply(result, vm._queryElement(matchFun));
+        });
+        //查询子model所拥有的VM的元素
+        var subsetModels = self._subsetModels;
+        $.E(subsetModels, function(subsetModel) {
+            result.push.apply(result, subsetModel.queryElement(matchFun));
+        });
+        return result;
+    },
     getSource: function() {
         _dm_get_source = $TRUE;
         var result = this.get.apply(this, arguments)
@@ -1053,14 +1080,16 @@ var DM_proto = Model.prototype = {
 
                 //perkey出现异常（为空或者结束）或者result已经取不到有意义的值时才停止循环
                 while (perkey && result != $UNDEFINED) {
-                    //如果当前层是拓展类型层且不是取源操作，调用getter
-                    if (result[_DM_extends_object_constructor] && !_dm_get_source) {
-                        //拓展类型的getter，这点遵守使用和默认的defineGetter一样的原则，每一次取值都要运行getter函数，而不直接用缓存
-                        result = result.get(self, key, result.value);
-                    }
                     //获取下一层
                     result = result[perkey];
                     perkey = $.st(_split_laveStr, ".");
+
+                    //放在取值后面代表着是从第一层开始查找，第0层也就是_database直接当成最后一层来做
+                    //如果当前层是拓展类型层且不是取源操作，调用getter
+                    if (result && result[_DM_extends_object_constructor] && !_dm_get_source) {
+                        //拓展类型的getter，这点遵守使用和默认的defineGetter一样的原则，每一次取值都要运行getter函数，而不直接用缓存
+                        result = result.get(self, key, result.value, key.substr(0, key.length - (((perkey /*perkey === false*/ .length) + 1 /*perkey不为false时，要换算成'.'.length+length*/ ) || 0) - _split_laveStr.length - 1) /*currentKey*/ );
+                    }
                 }
                 //最后一层，老式浏览器不支持String类型用下标索引，所以统一使用charAt搞定
                 //lastKey
@@ -1071,7 +1100,7 @@ var DM_proto = Model.prototype = {
         }
         //如果最后一层是拓展类，且非取源操作，运行getter
         if (result && result[_DM_extends_object_constructor] && !_dm_get_source) {
-            result = result.get(self, key, result.value);
+            result = result.get(self, key, result.value, key);
         }
         //filterKey应该在拓展类的getter运行后定义，避免被覆盖，因为其中可能有其它get函数
         Model.session.filterKey = filterKey;
@@ -1140,7 +1169,7 @@ var DM_proto = Model.prototype = {
 
                 var sObj = self._database;
                 if (sObj && sObj[_DM_extends_object_constructor] && !_dm_set_source) {
-                    sObj.set(self, "", nObj);
+                    sObj.set(self, "", nObj, "");
                 } else if (sObj !== nObj || _dm_force_update) {
                     self._database = nObj;
                 } else if (!$.isO(nObj)) { //sObj === nObj && no-object
@@ -1160,16 +1189,19 @@ var DM_proto = Model.prototype = {
                     while (perkey) {
                         back_perkey = perkey;
                         cache_cache_n_Obj = cache_n_Obj;
+                        cache_n_Obj = cache_n_Obj[perkey] || (cache_n_Obj[perkey] = {})
+                        //放在取值后面代表着是从第一层开始，第0层也就是_database直接当成最后一层来做
                         if (cache_n_Obj[_DM_extends_object_constructor]) {
-                            cache_n_Obj.set(self, key, nObj);
+                            cache_n_Obj.set(self, key, nObj, key.substr(0, key.length - _split_laveStr.length - 1) /*currentKey*/ );
                             break;
                         }
-                        cache_n_Obj = cache_n_Obj[perkey] || (cache_n_Obj[perkey] = {})
                         perkey = $.st(_split_laveStr, ".");
                     }
-                    if (!perkey) {
+
+                    //最后一层，而非中途中断（遇到ExtendModel）的情况
+                    if (perkey === $FALSE) {
                         if ((sObj = cache_n_Obj[_split_laveStr]) && sObj[_DM_extends_object_constructor] && !_dm_set_source) {
-                            sObj.set(self, key, nObj) //call ExtendsClass API
+                            sObj.set(self, key, nObj, key) //call ExtendsClass API
                         } else if ($.isO(cache_n_Obj)) {
                             cache_n_Obj[_split_laveStr] = nObj;
                         } else if (cache_cache_n_Obj) {
@@ -1240,17 +1272,15 @@ var DM_proto = Model.prototype = {
             __arrayData;
 
         //简单的判定是否可能是数组类型的操作并且可能影响到长度
-        if (/[^\w]\.?length/.test(key) || /[^\w]\.?[\d]+[^\w]\.?/.test(key)) {
-            var arrKey = key.split("."),
-                lastKey = arrKey.pop();
+        if (/[^\w]\.?length/.test(key) || /[^\w]\.?[\d]+([^\w]\.?|$)/.test(key)) {
 
-            //寻找长度开始变动的那一层级的数据开始_touchOffSibling
-            arrKey && $.E(arrKey, function(maybeArrayKey) {
-                linkKey = linkKey ? linkKey + "." + maybeArrayKey : maybeArrayKey;
-                if ($.isA(__arrayData = DM_proto.get.call(self, linkKey)) && __arrayLen[linkKey] !== __arrayData.length) {
-                    // console.log(linkKey,__arrayData.length, __arrayLen[linkKey])
-                    __arrayLen[linkKey] = __arrayData.length
-                    result = self._touchOffSibling(linkKey)
+            key.replace(/[^\w]\.?([\d]+)([^\w]\.?|$)/g, function(matchKey, num, endKey, index) {
+                var maybeArrayKey = key.substr(0, index);
+                //寻找长度开始变动的那一层级的数据开始_touchOffSibling
+                if ($.isA(__arrayData = DM_proto.get.call(self, maybeArrayKey)) && __arrayLen[maybeArrayKey] !== __arrayData.length) {
+                    // console.log(maybeArrayKey,__arrayData.length, __arrayLen[maybeArrayKey])
+                    __arrayLen[maybeArrayKey] = __arrayData.length
+                    result = self._touchOffSibling(maybeArrayKey)
                 }
             })
         }
@@ -1444,27 +1474,28 @@ var DM_proto = Model.prototype = {
 
 // make an Object-Constructor to Model-Extend-Object-Constructor
 var _modelExtend = Model.extend = function(extendsName, extendsObjConstructor) {
-	if (_modelExtend.hasOwnProperty(extendsName)) {
-		throw Error(extendsName + " is defined!");
-	}
-	var exObjProto = extendsObjConstructor.prototype
-	exObjProto[_DM_extends_object_constructor] = $TRUE;
-	_modelExtend.set(exObjProto)
-	_modelExtend.get(exObjProto)
-	Model[extendsName] = extendsObjConstructor
+    if (_modelExtend.hasOwnProperty(extendsName)) {
+        throw Error(extendsName + " is defined!");
+    }
+    var exObjProto = extendsObjConstructor.prototype
+    exObjProto[_DM_extends_object_constructor] = $TRUE;
+    _modelExtend.set(exObjProto)
+    _modelExtend.get(exObjProto)
+    Model[extendsName] = extendsObjConstructor
 };
 _modelExtend.set = function(exObjProto) {
-	var _set = exObjProto.set;
-	exObjProto.set = function(dm, key, value) {
-		return (this.value = _set.call(this, dm, key, value))
-	}
+    var _set = exObjProto.set;
+    exObjProto.set = function(dm, key, value, currentKey) {
+        return (this.value = _set.call(this, dm, key, value, currentKey))
+    }
 }
 _modelExtend.get = function(exObjProto) {
-	var _get = exObjProto.get;
-	exObjProto.get = function(dm, key, value) {
-		return (this.value = _get.call(this, dm, key, value))
-	}
+    var _get = exObjProto.get;
+    exObjProto.get = function(dm, key, value, currentKey) {
+        return (this.value = _get.call(this, dm, key, value, currentKey))
+    }
 }
+
 /*
  * _ArrayModel constructor
  * to mamage #each model
@@ -1504,7 +1535,7 @@ _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片�
                 $.E(nObj, function(nObj_item, i) {
                     var DM = DMs[i];
                     //针对remove的优化
-                    if (DM) {//TODO:WHY?
+                    if (DM) { //TODO:WHY?
                         if (nObj_item !== DM._database) { //强制优化，但是$INDEX关键字要缓存判定更新
                             DM._database = nObj_item;
                             DM.touchOff("");
@@ -1539,7 +1570,6 @@ _ArrDM_proto.push = function(model) {
         pperfix = self._prefix;
     var DMs = this._DMs;
     var index = String(model._index = DMs.length)
-    model._prefix = pperfix ? pperfix + "." + index : index;
     $.p(DMs, model)
     model._arrayModel = self;
     model._parentModel = self._parentModel;
@@ -1550,6 +1580,8 @@ _ArrDM_proto.remove = function(model) {
     var pperfix = self._prefix;
     var DMs = self._DMs;
     $.sp.call(DMs, index, 1);
+    model._prefix = pperfix ? pperfix + "." + index : index;
+
     // DMs.splice(index, 1);
     $.E(DMs, function(model, i) {
         var index = String(model._index -= 1);
@@ -1565,6 +1597,13 @@ _ArrDM_proto.remove = function(model) {
         _remove_index = 0;
         model._arrayModel = model._parentModel = $UNDEFINED;
     }
+}
+_ArrDM_proto.queryElement = function(matchFun) {
+    var result = [];
+    $.E(this._DMs, function(_each_model) {
+        result.push.apply(result, _each_model.queryElement(matchFun));
+    });
+    return result;
 }
 _ArrDM_proto.lineUp = function(model) {
     this.remove(model);
@@ -1759,36 +1798,36 @@ DM_proto.lineUp = function() {
 		return result;
 	}
 }());
-	//by RubyLouvre(司徒正美)
-	//setAttribute bug:http://www.iefans.net/ie-setattribute-bug/
+//by RubyLouvre(司徒正美)
+//setAttribute bug:http://www.iefans.net/ie-setattribute-bug/
 var IEfix = {
-		acceptcharset: "acceptCharset",
-		accesskey: "accessKey",
-		allowtransparency: "allowTransparency",
-		bgcolor: "bgColor",
-		cellpadding: "cellPadding",
-		cellspacing: "cellSpacing",
-		"class": "className",
-		colspan: "colSpan",
-		// checked: "defaultChecked",
-		selected: "defaultSelected",
-		"for": "htmlFor",
-		frameborder: "frameBorder",
-		hspace: "hSpace",
-		longdesc: "longDesc",
-		maxlength: "maxLength",
-		marginwidth: "marginWidth",
-		marginheight: "marginHeight",
-		noresize: "noResize",
-		noshade: "noShade",
-		readonly: "readOnly",
-		rowspan: "rowSpan",
-		tabindex: "tabIndex",
-		valign: "vAlign",
-		vspace: "vSpace",
-		DOMContentLoaded:"readystatechange"
-	},
-	/*
+    acceptcharset: "acceptCharset",
+    accesskey: "accessKey",
+    allowtransparency: "allowTransparency",
+    bgcolor: "bgColor",
+    cellpadding: "cellPadding",
+    cellspacing: "cellSpacing",
+    "class": "className",
+    colspan: "colSpan",
+    // checked: "defaultChecked",
+    selected: "defaultSelected",
+    "for": "htmlFor",
+    frameborder: "frameBorder",
+    hspace: "hSpace",
+    longdesc: "longDesc",
+    maxlength: "maxLength",
+    marginwidth: "marginWidth",
+    marginheight: "marginHeight",
+    noresize: "noResize",
+    noshade: "noShade",
+    readonly: "readOnly",
+    rowspan: "rowSpan",
+    tabindex: "tabIndex",
+    valign: "vAlign",
+    vspace: "vSpace",
+    DOMContentLoaded: "readystatechange"
+},
+    /*
 The full list of boolean attributes in HTML 4.01 (and hence XHTML 1.0) is (with property names where they differ in case): 
 
 checked             (input type=checkbox/radio) 
@@ -1831,55 +1870,59 @@ marquee: truespeed
 editable 
 draggable 
 */
-	_AttributeHandle = function(attrKey,element) {
-		var assign;
-		var attrHandles = V.attrHandles,
-			result;
-		$.e(attrHandles, function(attrHandle) {
-			if (attrHandle.match(attrKey)) {
-				// if (element.type==="textarea") {debugger}
-				result = attrHandle.handle(attrKey,element);
-				return $FALSE
-			}
-		});
-		return result || _AttributeHandleEvent.com;
-	},
-	_templateMatchRule= /\{[\w\W]*?\{[\w\W]*?\}[\s]*\}/,
-	attributeHandle = function(attrKey , attrValue, node, handle, triggerTable) {
-		attrKey = attrKey.indexOf(V.prefix) ? attrKey : attrKey.replace(V.prefix, "")
-		attrKey = (_isIE && IEfix[attrKey]) || attrKey
-		// console.log(attrValue,":",_matchRule.test(attrValue)||_templateMatchRule.test(attrValue))
-		//if (/*_matchRule.test(attrValue)||*/_templateMatchRule.test(attrValue)) {
-			var attrViewModel = (V.attrModules[handle.id + attrKey] = jSouper.parse(attrValue,attrKey+"="+attrValue))($UNDEFINED,$TRUE),
-				_shadowDIV = fragment(),//$.D.cl(shadowDIV), //parserNode
-				_attributeHandle = _AttributeHandle(attrKey,node);
-			attrViewModel.append(_shadowDIV);
-			attrViewModel._isAttr = {
-				key: attrKey
-			}
-			var attrTrigger = {
-				handleId:handle.id+attrKey,
-				key:attrKey,
-				type:"attributesTrigger",
-				event: function(NodeList, model,/* eventTrigger,*/ isAttr, viewModel_ID) { /*NodeList, model, eventTrigger, self._isAttr, self._id*/
-					var currentNode = NodeList[handle.id].currentNode,
-						viewModel = V._instances[viewModel_ID];
-					if (currentNode) {
-						attrViewModel.model = model;
-						$.e(attrViewModel._triggers, function(key) {//touchoff all triggers
-							attrViewModel.touchOff(key);
-						});
-						_attributeHandle(attrKey, currentNode, _shadowDIV, viewModel, /*model.id,*/ handle, triggerTable);
-						// model.remove(attrViewModel); //?
-					}
-				}
-			}
-			$.e(attrViewModel._triggers, function(key) {
-				$.us(triggerTable[key] || (triggerTable[key] = []), attrTrigger);
-			});
-			// node.removeAttribute(baseAttrKey);
-		//}
-	};
+    _AttributeHandle = function(attrKey, element) {
+        var assign;
+        var attrHandles = V.attrHandles,
+            result;
+        $.e(attrHandles, function(attrHandle) {
+            if (attrHandle.match(attrKey)) {
+                // if (element.type==="textarea") {debugger}
+                result = attrHandle.handle(attrKey, element);
+                return $FALSE
+            }
+        });
+        return result || _AttributeHandleEvent.com;
+    },
+    _templateMatchRule = /\{[\w\W]*?\{[\w\W]*?\}[\s]*\}/,
+    attributeHandle = function(attrKey, attrValue, node, handle, triggerTable) {
+        attrKey = attrKey.indexOf(V.prefix) ? attrKey : attrKey.replace(V.prefix, "")
+        attrKey = (_isIE && IEfix[attrKey]) || attrKey
+        // console.log(attrValue,":",_matchRule.test(attrValue)||_templateMatchRule.test(attrValue))
+        //if (/*_matchRule.test(attrValue)||*/_templateMatchRule.test(attrValue)) {
+        var attrViewModel = (V.attrModules[handle.id + attrKey] = jSouper.parse(attrValue, attrKey + "=" + attrValue))($UNDEFINED, {
+            isAttr: $TRUE
+        }),
+            // _shadowDIV = fragment(), //$.D.cl(shadowDIV), //parserNode
+            //获取对应的属性处理器
+            _attributeHandle = _AttributeHandle(attrKey, node);
+        // attrViewModel.append(_shadowDIV);
+        attrViewModel._isAttr = {
+            key: attrKey
+        }
+        var attrTrigger = {
+            handleId: handle.id + attrKey,
+            key: attrKey,
+            type: "attributesTrigger",
+            event: function(NodeList, model, /* eventTrigger,*/ isAttr, viewModel_ID) { /*NodeList, model, eventTrigger, self._isAttr, self._id*/
+                var currentNode = NodeList[handle.id].currentNode,
+                    viewModel = V._instances[viewModel_ID];
+                if (currentNode) {
+                    attrViewModel.model = model;
+                    $.e(attrViewModel._triggers, function(key) { //touchoff all triggers
+                        attrViewModel.touchOff(key);
+                    });
+                    _attributeHandle(attrKey, currentNode, /*_shadowDIV*/ attrViewModel.topNode(), viewModel, /*model.id,*/ handle, triggerTable);
+                    // model.remove(attrViewModel); //?
+                }
+            }
+        }
+        $.e(attrViewModel._triggers, function(key) {
+            $.us(triggerTable[key] || (triggerTable[key] = []), attrTrigger);
+        });
+        // node.removeAttribute(baseAttrKey);
+        //}
+    };
+
 /*
  * View constructor
  */
@@ -1898,14 +1941,15 @@ function View(arg, vmName) {
     // console.log(vmName)
     _buildHandler(self);
     _buildTrigger(self);
-    return function(data, isAttribute) {
+    return function(data, opction) {
         var id = $.uid();
         var finallyRunStacks = Model.session.finallyRunStacks;
+        opction || (opction = {});
 
         //push mark
         finallyRunStacks.push(id)
 
-        var vi = _create(self, data, isAttribute);
+        var vi = _create(self, data, opction.isAttr);
 
         //TODO:create with callback then getTop.touchOff
         vi.model.getTop().touchOff();
@@ -1916,6 +1960,7 @@ function View(arg, vmName) {
         //last layer,and run finallyRun
         !finallyRunStacks.length && finallyRun();
 
+        opction.callback && opction.callback(vi);
         // console.log(self.id)
         // console.groupEnd(self.id)
         if (self.vmName) {
@@ -1959,6 +2004,9 @@ var _isHTMLUnknownElement = typeof HTMLUnknownElement === "function" ? function(
         //maybe HTMLUnknownElement,IE7- can't konwn
         return " a abbr acronym address applet area b base basefont bdo big blockquote body br button caption center cite code col colgroup dd del dfn dir div dl dt em fieldset font form frame frameset head hr html i iframe img input ins kbd label legend li link map menu meta noframes noscript object ol optgroup option p param pre q s samp script select small span strike strong style sub sup table tbody td textarea tfoot th thead title tr tt u ul var marquee h1 h2 h3 h4 h5 h6 xmp plaintext listing nobr bgsound bas blink comment isindex multiple noframe person ".indexOf(" " + tagName + " ") === -1;
     };
+var _unkonwnElementFix = {
+    "class": "className"
+};
 
 function _buildHandler(self) {
     var handles = self._handles;
@@ -1989,25 +2037,18 @@ function _buildHandler(self) {
                     //boolean\tabIndex should be save
                     //style shoule be handle alone
                     if (name && value !== $NULL && value !== "" && name !== "style") {
+                        // console.log(name,value);
                         //be an Element, attribute's name may be diffrend;
-                        name = (_isIE && IEfix[name]) || name;
+                        name = (_isIE ? IEfix[name] : _unkonwnElementFix[name]) || name;
                         $.p(handle._unEleAttr, name);
                         handle._unEleAttr._[name] = value;
                         // console.log("saveAttribute:", name, " : ", value, "(" + name + ")");
                     }
                 });
                 //save style
-                if (node.style.getAttribute) {
-                    var cssText = node.style.getAttribute("cssText");
-                    if (cssText) {
-                        handle._unEleAttr._["style"] = cssText;
-                    }
-                } else {
-                    //unKnown Element
-                    cssText = node.style.cssText;
-                    if (cssText) {
-                        handle._unEleAttr._["style.cssText"] = cssText;
-                    }
+                var cssText = node.style.cssText;
+                if (cssText) {
+                    handle._unEleAttr._["style"] = cssText;
                 }
             }
         }
@@ -2091,11 +2132,6 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
                 })
                 //set Style
                 var cssText = _unknownElementAttribute._["style"];
-                if (cssText) {
-                    currentNode.style.setAttribute('cssText', cssText);
-                }
-                //set unKnownElementStyle
-                cssText = _unknownElementAttribute._["style.cssText"];
                 if (cssText) {
                     currentNode.style.cssText = cssText;
                 }
@@ -2390,6 +2426,33 @@ var VI_proto = ViewModel.prototype = {
 
         return self;
     },
+    addAttr: function(node, attrJson) {
+        $.fI(attrJson, function(attrValue, attrKey) {
+            attributeHandle(attrKey, attrValue, node, handle, triggerTable)
+        })
+    },
+    _queryElement: function(matchFun) {
+        var self = this;
+        var result = [];
+        //获取数组化的节点
+        var nodeList = self.NodeList._ || (self.NodeList._ = (function(nodeHash) {
+            var nodeList = [];
+            $.fI(nodeHash, function(handle) {
+                if (handle.type === "element") {
+                    $.p(nodeList, handle);
+                }
+            })
+            return nodeList;
+        }(self.NodeList)));
+
+        //遍历节点
+        $.E(nodeList, function(elementHandle) {
+            if (matchFun(elementHandle.currentNode)) {
+                $.p(result, elementHandle.currentNode);
+            }
+        })
+        return result;
+    },
     remove: function() {
         var self = this,
             el = self._packingBag;
@@ -2464,7 +2527,7 @@ var VI_proto = ViewModel.prototype = {
             }
         }
         if (!result) {
-        	result = NodeList[handleNodeTree.id].currentNode;
+            result = NodeList[handleNodeTree.id].currentNode;
         }
         return result;
     },
@@ -2758,6 +2821,7 @@ var placeholder = {
             var end_ns = "</" + V.namespace;
             var Placeholder = "_" + Math.random(),
                 ScriptPlaceholder = "_" + Math.random(),
+                //备份字符串与script、XMP标签
                 htmlStr = htmlStr.replace(QuotedString, function(qs) {
                     quotedString.push(qs)
                     return Placeholder;
@@ -2773,7 +2837,7 @@ var placeholder = {
                     }
                     return html;
                 })
-                //回滚字符串与script标签
+                //回滚字符串与script、XMP标签
                 .replace(RegExp(ScriptPlaceholder, "g"), function(p) {
                     return scriptNodeString.shift();
                 }).replace(RegExp(Placeholder, "g"), function(p) {
@@ -3677,16 +3741,20 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
             if (!module) {
                 return
             }
-            console.log(new_templateHandle_name , templateHandle_name,id);
             if (new_templateHandle_name && (new_templateHandle_name !== templateHandle_name)) {
                 // console.log(uuid, new_templateHandle_name, templateHandle_name, !! module)
                 self[id] = new_templateHandle_name;
                 layoutViewModel && layoutViewModel.destory();
                 //console.log(new_templateHandle_name, id);
                 var key = NodeList_of_ViewModel[dataHandle_id]._data,
-                    layoutViewModel = AllLayoutViewModel[id] = module().insert(NodeList_of_ViewModel[comment_layout_id].currentNode);
-                layoutViewModel._layoutName = new_templateHandle_name;
-                model.subset(layoutViewModel, key);
+                    layoutViewModel = AllLayoutViewModel[id] = module($UNDEFINED, {
+                        callback: function(vm) {
+                            //使用回调，可以使其script[type='text/vm']脚本运行时能取到渲染完成的VM
+                            vm._layoutName = new_templateHandle_name;
+                            model.subset(vm, key);
+                            vm.insert(NodeList_of_ViewModel[comment_layout_id].currentNode);
+                        }
+                    });
             } else {
                 layoutViewModel = AllLayoutViewModel[id];
             }
@@ -3736,7 +3804,8 @@ V.rt("!", V.rt("nega", function(handle, index, parentHandle) { //Negate
 	}
 	return trigger;
 }));
-var _tryToNumber = function(str) {
+var _tryToNumberHash = _placeholder("tTN");
+var _tryToNumber = global[_tryToNumberHash] = function(str) {
     if ($.isStoN(str)) {
         str = parseFloat(str);
     }
@@ -3769,7 +3838,8 @@ var _operator_handle_build_str = String(_operator_handle_builder),
     _operator_handle_build_arguments = _operator_handle_build_str.match(/\(([\w\W]+?)\)/)[1],
     _operator_handle_build_str = _operator_handle_build_str.substring(_operator_handle_build_str.indexOf("{") + 1, _operator_handle_build_str.length - 1),
     _operator_handle_build_factory = function(operator) {
-        var result = Function(_operator_handle_build_arguments, _operator_handle_build_str.replace(/\+/g, operator))
+        var result = _operator_handle_build_str.replace(/\+/g, operator).replace(/_tryToNumber/g, _tryToNumberHash);
+        result = Function(_operator_handle_build_arguments, result);
         return result
     };
 $.E(_operator_list, function(operator) {
@@ -4330,6 +4400,7 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 	// SingleQuotedString = /'(?:\.|(\\\')|[^\''\n])*'/g, //单引号字符串
 	QuotedString = /"(?:\.|(\\\")|[^\""\n])*"|'(?:\.|(\\\')|[^\''\n])*'/g, //引号字符串
 	ScriptNodeString = /<script[^>]*>([\s\S]*?)<\/script>/gi,
+    XmpNodeString = /<xmp[^>]*>([\s\S]*?)<\/xmp>/gi,
 	templateHandles = {};
 $.fI(V.handles, function(handleFun, handleName) {
 	var result = $TRUE
@@ -4582,8 +4653,22 @@ registerHandle("HTML",function () {
  * export
  */
 var jSouper = global.jSouper = {
+    //暴露基本的工具集合，给拓展组件使用
+    $: $,
     scans: function(node) {
         node || (node = doc);
+        var xmps = $.s(node.getElementsByTagName("xmp"));
+        Array.prototype.push.apply(xmps, node.getElementsByTagName(V.namespace + "xmp"));
+        $.e(xmps, function(tplNode) {
+            var type = tplNode.getAttribute("type");
+            var name = tplNode.getAttribute("name");
+            if (name) {
+                if (type === "template") {
+                    V.modules[name] = jSouper.parseStr(tplNode.innerHTML, name);
+                    $.D.rm(tplNode);
+                }
+            }
+        });
         $.e(node.getElementsByTagName("script"), function(scriptNode) {
             var type = scriptNode.getAttribute("type");
             var name = scriptNode.getAttribute("name");
@@ -4591,7 +4676,7 @@ var jSouper = global.jSouper = {
                 if (type === "text/template") {
                     V.modules[name] = jSouper.parseStr(scriptNode.text, name);
                     $.D.rm(scriptNode);
-                } else if (type === "text/viewmodel") {
+                } else if (type === "text/vm") {
                     V.modulesInit[name] = Function("return " + $.trim(scriptNode.text))();
                     $.D.rm(scriptNode);
                 }
@@ -4785,10 +4870,10 @@ if (typeof module === "object" && module && typeof module.exports === "object") 
     // 委托 set\get\form
     // this ==> model but not Observer-instance
     Observer.prototype = {
-        set: function(dm, key, value) {
-            return this._set.call(dm, key, value)
+        set: function(dm, key, value, currentKey) {
+            return this._set.call(dm, key, value, currentKey)
         },
-        get: function(dm, key, value) {
+        get: function(dm, key, value, currentKey) {
             var dm_id = dm.id
             var observerCache_ = observerCache._
             /*
@@ -4800,7 +4885,7 @@ if (typeof module === "object" && module && typeof module.exports === "object") 
             $.p(_get_collect_stack, [])
 
             //运行原生get
-            var result = this.value = this._get.call(dm, key, value)
+            var result = this.value = this._get.call(dm, key, value, currentKey)
 
             /*
              * dm normal get mode

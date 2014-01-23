@@ -93,6 +93,7 @@ function _mix(sObj, nObj) {
 };
 
 //获取所有的兄弟节点
+
 function _getAllSiblingModels(self, result) {
     $.p(result || (result = []), self)
     var dmSublingModels = self._siblingModels;
@@ -168,6 +169,32 @@ var _dm_set_source // =$FALSE //set Source ignore extend-Object
 var _dm_force_update //= $FALSE;  //ignore equal
 
 var DM_proto = Model.prototype = {
+    queryElement: function(matchFun) {
+        var self = this;
+        var result = [];
+        if (!(matchFun instanceof Function)) {
+            var matchAttr = matchFun;
+            matchFun = function(node) {
+                for (var attrKey in matchAttr) {
+                    if (matchAttr[attrKey] != node[attrKey]) {
+                        return $FALSE;
+                    }
+                }
+                return $TRUE;
+            }
+        }
+        //查询当前VM的元素
+        var vms = self._viewModels;
+        $.E(vms, function(vm) {
+            result.push.apply(result, vm._queryElement(matchFun));
+        });
+        //查询子model所拥有的VM的元素
+        var subsetModels = self._subsetModels;
+        $.E(subsetModels, function(subsetModel) {
+            result.push.apply(result, subsetModel.queryElement(matchFun));
+        });
+        return result;
+    },
     getSource: function() {
         _dm_get_source = $TRUE;
         var result = this.get.apply(this, arguments)
@@ -193,14 +220,16 @@ var DM_proto = Model.prototype = {
 
                 //perkey出现异常（为空或者结束）或者result已经取不到有意义的值时才停止循环
                 while (perkey && result != $UNDEFINED) {
-                    //如果当前层是拓展类型层且不是取源操作，调用getter
-                    if (result[_DM_extends_object_constructor] && !_dm_get_source) {
-                        //拓展类型的getter，这点遵守使用和默认的defineGetter一样的原则，每一次取值都要运行getter函数，而不直接用缓存
-                        result = result.get(self, key, result.value);
-                    }
                     //获取下一层
                     result = result[perkey];
                     perkey = $.st(_split_laveStr, ".");
+
+                    //放在取值后面代表着是从第一层开始查找，第0层也就是_database直接当成最后一层来做
+                    //如果当前层是拓展类型层且不是取源操作，调用getter
+                    if (result && result[_DM_extends_object_constructor] && !_dm_get_source) {
+                        //拓展类型的getter，这点遵守使用和默认的defineGetter一样的原则，每一次取值都要运行getter函数，而不直接用缓存
+                        result = result.get(self, key, result.value, key.substr(0, key.length - (((perkey /*perkey === false*/ .length) + 1 /*perkey不为false时，要换算成'.'.length+length*/ ) || 0) - _split_laveStr.length - 1) /*currentKey*/ );
+                    }
                 }
                 //最后一层，老式浏览器不支持String类型用下标索引，所以统一使用charAt搞定
                 //lastKey
@@ -211,7 +240,7 @@ var DM_proto = Model.prototype = {
         }
         //如果最后一层是拓展类，且非取源操作，运行getter
         if (result && result[_DM_extends_object_constructor] && !_dm_get_source) {
-            result = result.get(self, key, result.value);
+            result = result.get(self, key, result.value, key);
         }
         //filterKey应该在拓展类的getter运行后定义，避免被覆盖，因为其中可能有其它get函数
         Model.session.filterKey = filterKey;
@@ -280,7 +309,7 @@ var DM_proto = Model.prototype = {
 
                 var sObj = self._database;
                 if (sObj && sObj[_DM_extends_object_constructor] && !_dm_set_source) {
-                    sObj.set(self, "", nObj);
+                    sObj.set(self, "", nObj, "");
                 } else if (sObj !== nObj || _dm_force_update) {
                     self._database = nObj;
                 } else if (!$.isO(nObj)) { //sObj === nObj && no-object
@@ -300,16 +329,19 @@ var DM_proto = Model.prototype = {
                     while (perkey) {
                         back_perkey = perkey;
                         cache_cache_n_Obj = cache_n_Obj;
+                        cache_n_Obj = cache_n_Obj[perkey] || (cache_n_Obj[perkey] = {})
+                        //放在取值后面代表着是从第一层开始，第0层也就是_database直接当成最后一层来做
                         if (cache_n_Obj[_DM_extends_object_constructor]) {
-                            cache_n_Obj.set(self, key, nObj);
+                            cache_n_Obj.set(self, key, nObj, key.substr(0, key.length - _split_laveStr.length - 1) /*currentKey*/ );
                             break;
                         }
-                        cache_n_Obj = cache_n_Obj[perkey] || (cache_n_Obj[perkey] = {})
                         perkey = $.st(_split_laveStr, ".");
                     }
-                    if (!perkey) {
+
+                    //最后一层，而非中途中断（遇到ExtendModel）的情况
+                    if (perkey === $FALSE) {
                         if ((sObj = cache_n_Obj[_split_laveStr]) && sObj[_DM_extends_object_constructor] && !_dm_set_source) {
-                            sObj.set(self, key, nObj) //call ExtendsClass API
+                            sObj.set(self, key, nObj, key) //call ExtendsClass API
                         } else if ($.isO(cache_n_Obj)) {
                             cache_n_Obj[_split_laveStr] = nObj;
                         } else if (cache_cache_n_Obj) {
@@ -380,17 +412,15 @@ var DM_proto = Model.prototype = {
             __arrayData;
 
         //简单的判定是否可能是数组类型的操作并且可能影响到长度
-        if (/[^\w]\.?length/.test(key) || /[^\w]\.?[\d]+[^\w]\.?/.test(key)) {
-            var arrKey = key.split("."),
-                lastKey = arrKey.pop();
+        if (/[^\w]\.?length/.test(key) || /[^\w]\.?[\d]+([^\w]\.?|$)/.test(key)) {
 
-            //寻找长度开始变动的那一层级的数据开始_touchOffSibling
-            arrKey && $.E(arrKey, function(maybeArrayKey) {
-                linkKey = linkKey ? linkKey + "." + maybeArrayKey : maybeArrayKey;
-                if ($.isA(__arrayData = DM_proto.get.call(self, linkKey)) && __arrayLen[linkKey] !== __arrayData.length) {
-                    // console.log(linkKey,__arrayData.length, __arrayLen[linkKey])
-                    __arrayLen[linkKey] = __arrayData.length
-                    result = self._touchOffSibling(linkKey)
+            key.replace(/[^\w]\.?([\d]+)([^\w]\.?|$)/g, function(matchKey, num, endKey, index) {
+                var maybeArrayKey = key.substr(0, index);
+                //寻找长度开始变动的那一层级的数据开始_touchOffSibling
+                if ($.isA(__arrayData = DM_proto.get.call(self, maybeArrayKey)) && __arrayLen[maybeArrayKey] !== __arrayData.length) {
+                    // console.log(maybeArrayKey,__arrayData.length, __arrayLen[maybeArrayKey])
+                    __arrayLen[maybeArrayKey] = __arrayData.length
+                    result = self._touchOffSibling(maybeArrayKey)
                 }
             })
         }

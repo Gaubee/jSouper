@@ -222,6 +222,33 @@ var VI_proto = ViewModel.prototype = {
 
         return self;
     },
+    addAttr: function(node, attrJson) {
+        $.fI(attrJson, function(attrValue, attrKey) {
+            attributeHandle(attrKey, attrValue, node, handle, triggerTable)
+        })
+    },
+    _queryElement: function(matchFun) {
+        var self = this;
+        var result = [];
+        //获取数组化的节点
+        var nodeList = self.NodeList._ || (self.NodeList._ = (function(nodeHash) {
+            var nodeList = [];
+            $.fI(nodeHash, function(handle) {
+                if (handle.type === "element") {
+                    $.p(nodeList, handle);
+                }
+            })
+            return nodeList;
+        }(self.NodeList)));
+
+        //遍历节点
+        $.E(nodeList, function(elementHandle) {
+            if (matchFun(elementHandle.currentNode)) {
+                $.p(result, elementHandle.currentNode);
+            }
+        })
+        return result;
+    },
     remove: function() {
         var self = this,
             el = self._packingBag;
@@ -296,7 +323,7 @@ var VI_proto = ViewModel.prototype = {
             }
         }
         if (!result) {
-        	result = NodeList[handleNodeTree.id].currentNode;
+            result = NodeList[handleNodeTree.id].currentNode;
         }
         return result;
     },

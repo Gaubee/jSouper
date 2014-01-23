@@ -23,16 +23,20 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
             if (!module) {
                 return
             }
-            console.log(new_templateHandle_name , templateHandle_name,id);
             if (new_templateHandle_name && (new_templateHandle_name !== templateHandle_name)) {
                 // console.log(uuid, new_templateHandle_name, templateHandle_name, !! module)
                 self[id] = new_templateHandle_name;
                 layoutViewModel && layoutViewModel.destory();
                 //console.log(new_templateHandle_name, id);
                 var key = NodeList_of_ViewModel[dataHandle_id]._data,
-                    layoutViewModel = AllLayoutViewModel[id] = module().insert(NodeList_of_ViewModel[comment_layout_id].currentNode);
-                layoutViewModel._layoutName = new_templateHandle_name;
-                model.subset(layoutViewModel, key);
+                    layoutViewModel = AllLayoutViewModel[id] = module($UNDEFINED, {
+                        callback: function(vm) {
+                            //使用回调，可以使其script[type='text/vm']脚本运行时能取到渲染完成的VM
+                            vm._layoutName = new_templateHandle_name;
+                            model.subset(vm, key);
+                            vm.insert(NodeList_of_ViewModel[comment_layout_id].currentNode);
+                        }
+                    });
             } else {
                 layoutViewModel = AllLayoutViewModel[id];
             }

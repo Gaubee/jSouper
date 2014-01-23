@@ -72,6 +72,7 @@ var placeholder = {
             var end_ns = "</" + V.namespace;
             var Placeholder = "_" + Math.random(),
                 ScriptPlaceholder = "_" + Math.random(),
+                //备份字符串与script、XMP标签
                 htmlStr = htmlStr.replace(QuotedString, function(qs) {
                     quotedString.push(qs)
                     return Placeholder;
@@ -87,7 +88,7 @@ var placeholder = {
                     }
                     return html;
                 })
-                //回滚字符串与script标签
+                //回滚字符串与script、XMP标签
                 .replace(RegExp(ScriptPlaceholder, "g"), function(p) {
                     return scriptNodeString.shift();
                 }).replace(RegExp(Placeholder, "g"), function(p) {

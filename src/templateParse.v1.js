@@ -3,6 +3,7 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 	// SingleQuotedString = /'(?:\.|(\\\')|[^\''\n])*'/g, //单引号字符串
 	QuotedString = /"(?:\.|(\\\")|[^\""\n])*"|'(?:\.|(\\\')|[^\''\n])*'/g, //引号字符串
 	ScriptNodeString = /<script[^>]*>([\s\S]*?)<\/script>/gi,
+    XmpNodeString = /<xmp[^>]*>([\s\S]*?)<\/xmp>/gi,
 	templateHandles = {};
 $.fI(V.handles, function(handleFun, handleName) {
 	var result = $TRUE

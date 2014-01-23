@@ -2,8 +2,22 @@
  * export
  */
 var jSouper = global.jSouper = {
+    //暴露基本的工具集合，给拓展组件使用
+    $: $,
     scans: function(node) {
         node || (node = doc);
+        var xmps = $.s(node.getElementsByTagName("xmp"));
+        Array.prototype.push.apply(xmps, node.getElementsByTagName(V.namespace + "xmp"));
+        $.e(xmps, function(tplNode) {
+            var type = tplNode.getAttribute("type");
+            var name = tplNode.getAttribute("name");
+            if (name) {
+                if (type === "template") {
+                    V.modules[name] = jSouper.parseStr(tplNode.innerHTML, name);
+                    $.D.rm(tplNode);
+                }
+            }
+        });
         $.e(node.getElementsByTagName("script"), function(scriptNode) {
             var type = scriptNode.getAttribute("type");
             var name = scriptNode.getAttribute("name");
@@ -11,7 +25,7 @@ var jSouper = global.jSouper = {
                 if (type === "text/template") {
                     V.modules[name] = jSouper.parseStr(scriptNode.text, name);
                     $.D.rm(scriptNode);
-                } else if (type === "text/viewmodel") {
+                } else if (type === "text/vm") {
                     V.modulesInit[name] = Function("return " + $.trim(scriptNode.text))();
                     $.D.rm(scriptNode);
                 }
