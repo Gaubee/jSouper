@@ -172,17 +172,7 @@ var DM_proto = Model.prototype = {
     queryElement: function(matchFun) {
         var self = this;
         var result = [];
-        if (!(matchFun instanceof Function)) {
-            var matchAttr = matchFun;
-            matchFun = function(node) {
-                for (var attrKey in matchAttr) {
-                    if (matchAttr[attrKey] != node[attrKey]) {
-                        return $FALSE;
-                    }
-                }
-                return $TRUE;
-            }
-        }
+        matchFun = _buildQueryMatchFun(matchFun);
         //查询当前VM的元素
         var vms = self._viewModels;
         $.E(vms, function(vm) {

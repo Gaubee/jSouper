@@ -7,6 +7,16 @@ var jSouper = global.jSouper = {
     queryHandle: function(node) {
         return ViewModel.queryList._[$.hashCode(node)];
     },
+    queryElement: function(matchFun) {
+        var result = [];
+        matchFun = _buildQueryMatchFun(matchFun);
+        $.E(ViewModel.queryList, function(node) {
+            if (matchFun(node)) {
+                $.p(result, node);
+            }
+        })
+        return result;
+    },
     scans: function(node) {
         node || (node = doc);
         var xmps = $.s(node.getElementsByTagName("xmp"));

@@ -187,6 +187,21 @@ function _moveChild(self, el) {
     });
 };
 
+//根据AttrJson创建索引函数
+
+function _buildQueryMatchFun(matchAttr) {
+    if (matchAttr instanceof Function) {
+        return matchAttr
+    }
+    return function(node) {
+        for (var attrKey in matchAttr) {
+            if (matchAttr[attrKey] != node[attrKey]) {
+                return $FALSE;
+            }
+        }
+        return $TRUE;
+    }
+};
 var fr = doc.createDocumentFragment();
 
 var VI_proto = ViewModel.prototype = {

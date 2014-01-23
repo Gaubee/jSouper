@@ -1032,17 +1032,7 @@ var DM_proto = Model.prototype = {
     queryElement: function(matchFun) {
         var self = this;
         var result = [];
-        if (!(matchFun instanceof Function)) {
-            var matchAttr = matchFun;
-            matchFun = function(node) {
-                for (var attrKey in matchAttr) {
-                    if (matchAttr[attrKey] != node[attrKey]) {
-                        return $FALSE;
-                    }
-                }
-                return $TRUE;
-            }
-        }
+        matchFun = _buildQueryMatchFun(matchFun);
         //查询当前VM的元素
         var vms = self._viewModels;
         $.E(vms, function(vm) {
@@ -2413,6 +2403,21 @@ function _moveChild(self, el) {
     });
 };
 
+//根据AttrJson创建索引函数
+
+function _buildQueryMatchFun(matchAttr) {
+    if (matchAttr instanceof Function) {
+        return matchAttr
+    }
+    return function(node) {
+        for (var attrKey in matchAttr) {
+            if (matchAttr[attrKey] != node[attrKey]) {
+                return $FALSE;
+            }
+        }
+        return $TRUE;
+    }
+};
 var fr = doc.createDocumentFragment();
 
 var VI_proto = ViewModel.prototype = {
@@ -4741,6 +4746,16 @@ var jSouper = global.jSouper = {
     $: $,
     queryHandle: function(node) {
         return ViewModel.queryList._[$.hashCode(node)];
+    },
+    queryElement: function(matchFun) {
+        var result = [];
+        matchFun = _buildQueryMatchFun(matchFun);
+        $.E(ViewModel.queryList, function(node) {
+            if (matchFun(node)) {
+                $.p(result, node);
+            }
+        })
+        return result;
     },
     scans: function(node) {
         node || (node = doc);
