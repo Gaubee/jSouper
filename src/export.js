@@ -4,6 +4,9 @@
 var jSouper = global.jSouper = {
     //暴露基本的工具集合，给拓展组件使用
     $: $,
+    queryHandle: function(node) {
+        return ViewModel.queryList._[$.hashCode(node)];
+    },
     scans: function(node) {
         node || (node = doc);
         var xmps = $.s(node.getElementsByTagName("xmp"));

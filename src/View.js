@@ -245,7 +245,10 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
     });
 
     //createNode
-    var nodeCollections = $.D.cs("<div>" + catchNodesStr + "</div>")
+    var nodeCollections = $.D.cs("<div>" + catchNodesStr + "</div>");
+
+    var queryList = ViewModel.queryList;
+    var queryMap = queryList._;
 
     $.E(catchNodes, function(nodeInfo) {
         var parentHandle = NodeList_of_ViewModel[nodeInfo.parentId];
@@ -267,6 +270,10 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
             }
         }
         $.D.ap(parentNode, currentNode);
+        if (currentNode.nodeType === 1) {
+            $.p(queryList, currentNode);
+            queryMap[$.hashCode(currentNode)] = currentHandle;
+        }
     })
 
     $.e(self._handles, function(handle) {

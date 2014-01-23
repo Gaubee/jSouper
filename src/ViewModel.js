@@ -7,8 +7,8 @@
     DM_proto.rebuildTree = function() {
         var self = this,
             DMSet = self._subsetModels;
-        $.E(self._viewModels, function(childViewModel) {
-            $.E(childViewModel._smartTriggers, function(smartTrigger) {
+        $.E(self._viewModels, function(viewModel) {
+            $.E(viewModel._smartTriggers, function(smartTrigger) {
                 var TEMP = smartTrigger.TEMP;
                 TEMP.viewModel.get(TEMP.sourceKey);
                 var topGetter = Model.session.topGetter,
@@ -139,6 +139,9 @@ var VI_session = ViewModel.session = {
     touchStacks: $NULL
 };
 
+//保存所有的node与相应的handle的信息，用于查询
+(ViewModel.queryList = [])._ = {};
+
 function _bubbleTrigger(tiggerCollection, NodeList, model /*, eventTrigger*/ ) {
     var self = this, // result,
         eventStack = [],
@@ -222,24 +225,83 @@ var VI_proto = ViewModel.prototype = {
 
         return self;
     },
-    addAttr: function(node, attrJson) {
+    _addAttr: function(node, attrJson) {
+        var self = this;
+        //保存新增属性说对应的key，返回进行统一触发
+        var result = [];
+        var handle = jSouper.queryHandle(node);
         $.fI(attrJson, function(attrValue, attrKey) {
-            attributeHandle(attrKey, attrValue, node, handle, triggerTable)
-        })
+            attrKey = _fixAttrKey(attrKey);
+            var attrViewModel = _getAttrViewModel(attrValue);
+            //获取对应的属性处理器
+            var _attributeHandle = _AttributeHandle(attrKey, node);
+            var attrTrigger = {
+                handleId: handle.id + attrKey,
+                key: attrKey,
+                type: "attributesTrigger",
+                event: function(NodeList, model, /* eventTrigger,*/ isAttr, viewModel_ID) { /*NodeList, model, eventTrigger, self._isAttr, self._id*/
+                    var viewModel = V._instances[viewModel_ID];
+                    attrViewModel.model = model;
+                    $.E(attrViewModel._triggers, function(key) { //touchoff all triggers
+                        attrViewModel.touchOff(key);
+                    });
+                    _attributeHandle(attrKey, node, /*_shadowDIV*/ attrViewModel.topNode(), viewModel, /*model.id,*/ handle, triggerTable);
+                    // model.remove(attrViewModel); //?
+                }
+            }
+            var triggerTable = self._triggers._;
+            $.E(attrViewModel._triggers, function(key) {
+                var triggerContainer = triggerTable[key];
+                if (!triggerContainer) {
+                    self._buildSmart(key);
+                    triggerContainer = triggerTable[key] = [];
+                    $.p(self._triggers, key);
+                    $.p(result, key);
+                }
+                $.us(triggerContainer, attrTrigger);
+            });
+        });
+        return result;
+    },
+    addAttr: function(node, attrJson) {
+        var self = this;
+        var _touchOffKeys;
+        if ($.isA(node)) {
+            $.E(node, function(node) {
+                _touchOffKeys = self._addAttr(node, attrJson)
+            });
+        } else {
+            _touchOffKeys = self._addAttr(node, attrJson)
+        }
+        self.model.rebuildTree();
+        $.E(_touchOffKeys, function(key) {
+            self.model.touchOff(key);
+        });
+        return self;
+    },
+    queryElement: function(matchFun) {
+        return this.model.queryElement(matchFun);
+    },
+    _buildElementMap: function() {
+        var self = this;
+        var NodeList = self.NodeList;
+        if (!NodeList._) {
+            var result = NodeList._ = [];
+            $.fI(NodeList, function(handle) {
+                if (handle.type === "element") {
+                    $.p(result, handle);
+                    //使得Element可以直接映射到Handle
+                    result[$.hashCode(handle.currentNode)] = handle;
+                }
+            })
+        }
+        return NodeList._;
     },
     _queryElement: function(matchFun) {
         var self = this;
         var result = [];
         //获取数组化的节点
-        var nodeList = self.NodeList._ || (self.NodeList._ = (function(nodeHash) {
-            var nodeList = [];
-            $.fI(nodeHash, function(handle) {
-                if (handle.type === "element") {
-                    $.p(nodeList, handle);
-                }
-            })
-            return nodeList;
-        }(self.NodeList)));
+        var nodeList = self._buildElementMap();
 
         //遍历节点
         $.E(nodeList, function(elementHandle) {

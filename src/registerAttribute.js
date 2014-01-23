@@ -84,18 +84,29 @@ draggable
         return result || _AttributeHandleEvent.com;
     },
     _templateMatchRule = /\{[\w\W]*?\{[\w\W]*?\}[\s]*\}/,
-    attributeHandle = function(attrKey, attrValue, node, handle, triggerTable) {
-        attrKey = attrKey.indexOf(V.prefix) ? attrKey : attrKey.replace(V.prefix, "")
+    _fixAttrKey = function(attrKey) {
+        attrKey = attrKey.indexOf(V.prefix) /*!== 0*/ ? attrKey : attrKey.replace(V.prefix, "")
         attrKey = (_isIE && IEfix[attrKey]) || attrKey
-        // console.log(attrValue,":",_matchRule.test(attrValue)||_templateMatchRule.test(attrValue))
-        //if (/*_matchRule.test(attrValue)||*/_templateMatchRule.test(attrValue)) {
-        var attrViewModel = (V.attrModules[handle.id + attrKey] = jSouper.parse(attrValue, attrKey + "=" + attrValue))($UNDEFINED, {
-            isAttr: $TRUE
-        }),
-            // _shadowDIV = fragment(), //$.D.cl(shadowDIV), //parserNode
-            //获取对应的属性处理器
-            _attributeHandle = _AttributeHandle(attrKey, node);
-        // attrViewModel.append(_shadowDIV);
+        return attrKey;
+    },
+    _getAttrViewModel = function(attrValue) {
+        var AttrView = V.attrModules[attrValue];
+        if (!AttrView) {
+            //属性VM都是共享的，因为简单，玩玩只有少于10个的触发key。
+            AttrView = V.attrModules[attrValue] = jSouper.parse(attrValue, attrValue)
+            AttrView.instance = AttrView($UNDEFINED, {
+                isAttr: $TRUE
+            });
+        }
+        return AttrView.instance
+    },
+    attributeHandle = function(attrKey, attrValue, node, handle, triggerTable) {
+        attrKey = _fixAttrKey(attrKey);
+
+        var attrViewModel = _getAttrViewModel(attrValue);
+
+        //获取对应的属性处理器
+        var _attributeHandle = _AttributeHandle(attrKey, node);
         attrViewModel._isAttr = {
             key: attrKey
         }
@@ -107,16 +118,20 @@ draggable
                 var currentNode = NodeList[handle.id].currentNode,
                     viewModel = V._instances[viewModel_ID];
                 if (currentNode) {
+                	//绑定数据域
                     attrViewModel.model = model;
-                    $.e(attrViewModel._triggers, function(key) { //touchoff all triggers
+                    //更新所有节点
+                    $.E(attrViewModel._triggers, function(key) { //touchoff all triggers
                         attrViewModel.touchOff(key);
                     });
-                    _attributeHandle(attrKey, currentNode, /*_shadowDIV*/ attrViewModel.topNode(), viewModel, /*model.id,*/ handle, triggerTable);
+                    _attributeHandle(attrKey, currentNode, attrViewModel.topNode(), viewModel, /*model.id,*/ handle, triggerTable);
                     // model.remove(attrViewModel); //?
                 }
             }
         }
-        $.e(attrViewModel._triggers, function(key) {
+
+        //将所有的触发key映射到父VM中，任意一个节点触发都会引发
+        $.E(attrViewModel._triggers, function(key) {
             $.us(triggerTable[key] || (triggerTable[key] = []), attrTrigger);
         });
         // node.removeAttribute(baseAttrKey);

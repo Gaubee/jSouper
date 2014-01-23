@@ -1862,18 +1862,29 @@ draggable
         return result || _AttributeHandleEvent.com;
     },
     _templateMatchRule = /\{[\w\W]*?\{[\w\W]*?\}[\s]*\}/,
-    attributeHandle = function(attrKey, attrValue, node, handle, triggerTable) {
-        attrKey = attrKey.indexOf(V.prefix) ? attrKey : attrKey.replace(V.prefix, "")
+    _fixAttrKey = function(attrKey) {
+        attrKey = attrKey.indexOf(V.prefix) /*!== 0*/ ? attrKey : attrKey.replace(V.prefix, "")
         attrKey = (_isIE && IEfix[attrKey]) || attrKey
-        // console.log(attrValue,":",_matchRule.test(attrValue)||_templateMatchRule.test(attrValue))
-        //if (/*_matchRule.test(attrValue)||*/_templateMatchRule.test(attrValue)) {
-        var attrViewModel = (V.attrModules[handle.id + attrKey] = jSouper.parse(attrValue, attrKey + "=" + attrValue))($UNDEFINED, {
-            isAttr: $TRUE
-        }),
-            // _shadowDIV = fragment(), //$.D.cl(shadowDIV), //parserNode
-            //获取对应的属性处理器
-            _attributeHandle = _AttributeHandle(attrKey, node);
-        // attrViewModel.append(_shadowDIV);
+        return attrKey;
+    },
+    _getAttrViewModel = function(attrValue) {
+        var AttrView = V.attrModules[attrValue];
+        if (!AttrView) {
+            //属性VM都是共享的，因为简单，玩玩只有少于10个的触发key。
+            AttrView = V.attrModules[attrValue] = jSouper.parse(attrValue, attrValue)
+            AttrView.instance = AttrView($UNDEFINED, {
+                isAttr: $TRUE
+            });
+        }
+        return AttrView.instance
+    },
+    attributeHandle = function(attrKey, attrValue, node, handle, triggerTable) {
+        attrKey = _fixAttrKey(attrKey);
+
+        var attrViewModel = _getAttrViewModel(attrValue);
+
+        //获取对应的属性处理器
+        var _attributeHandle = _AttributeHandle(attrKey, node);
         attrViewModel._isAttr = {
             key: attrKey
         }
@@ -1885,16 +1896,20 @@ draggable
                 var currentNode = NodeList[handle.id].currentNode,
                     viewModel = V._instances[viewModel_ID];
                 if (currentNode) {
+                	//绑定数据域
                     attrViewModel.model = model;
-                    $.e(attrViewModel._triggers, function(key) { //touchoff all triggers
+                    //更新所有节点
+                    $.E(attrViewModel._triggers, function(key) { //touchoff all triggers
                         attrViewModel.touchOff(key);
                     });
-                    _attributeHandle(attrKey, currentNode, /*_shadowDIV*/ attrViewModel.topNode(), viewModel, /*model.id,*/ handle, triggerTable);
+                    _attributeHandle(attrKey, currentNode, attrViewModel.topNode(), viewModel, /*model.id,*/ handle, triggerTable);
                     // model.remove(attrViewModel); //?
                 }
             }
         }
-        $.e(attrViewModel._triggers, function(key) {
+
+        //将所有的触发key映射到父VM中，任意一个节点触发都会引发
+        $.E(attrViewModel._triggers, function(key) {
             $.us(triggerTable[key] || (triggerTable[key] = []), attrTrigger);
         });
         // node.removeAttribute(baseAttrKey);
@@ -2148,7 +2163,10 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
     });
 
     //createNode
-    var nodeCollections = $.D.cs("<div>" + catchNodesStr + "</div>")
+    var nodeCollections = $.D.cs("<div>" + catchNodesStr + "</div>");
+
+    var queryList = ViewModel.queryList;
+    var queryMap = queryList._;
 
     $.E(catchNodes, function(nodeInfo) {
         var parentHandle = NodeList_of_ViewModel[nodeInfo.parentId];
@@ -2170,6 +2188,10 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
             }
         }
         $.D.ap(parentNode, currentNode);
+        if (currentNode.nodeType === 1) {
+            $.p(queryList, currentNode);
+            queryMap[$.hashCode(currentNode)] = currentHandle;
+        }
     })
 
     $.e(self._handles, function(handle) {
@@ -2189,8 +2211,8 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
     DM_proto.rebuildTree = function() {
         var self = this,
             DMSet = self._subsetModels;
-        $.E(self._viewModels, function(childViewModel) {
-            $.E(childViewModel._smartTriggers, function(smartTrigger) {
+        $.E(self._viewModels, function(viewModel) {
+            $.E(viewModel._smartTriggers, function(smartTrigger) {
                 var TEMP = smartTrigger.TEMP;
                 TEMP.viewModel.get(TEMP.sourceKey);
                 var topGetter = Model.session.topGetter,
@@ -2321,6 +2343,9 @@ var VI_session = ViewModel.session = {
     touchStacks: $NULL
 };
 
+//保存所有的node与相应的handle的信息，用于查询
+(ViewModel.queryList = [])._ = {};
+
 function _bubbleTrigger(tiggerCollection, NodeList, model /*, eventTrigger*/ ) {
     var self = this, // result,
         eventStack = [],
@@ -2404,24 +2429,83 @@ var VI_proto = ViewModel.prototype = {
 
         return self;
     },
-    addAttr: function(node, attrJson) {
+    _addAttr: function(node, attrJson) {
+        var self = this;
+        //保存新增属性说对应的key，返回进行统一触发
+        var result = [];
+        var handle = jSouper.queryHandle(node);
         $.fI(attrJson, function(attrValue, attrKey) {
-            attributeHandle(attrKey, attrValue, node, handle, triggerTable)
-        })
+            attrKey = _fixAttrKey(attrKey);
+            var attrViewModel = _getAttrViewModel(attrValue);
+            //获取对应的属性处理器
+            var _attributeHandle = _AttributeHandle(attrKey, node);
+            var attrTrigger = {
+                handleId: handle.id + attrKey,
+                key: attrKey,
+                type: "attributesTrigger",
+                event: function(NodeList, model, /* eventTrigger,*/ isAttr, viewModel_ID) { /*NodeList, model, eventTrigger, self._isAttr, self._id*/
+                    var viewModel = V._instances[viewModel_ID];
+                    attrViewModel.model = model;
+                    $.E(attrViewModel._triggers, function(key) { //touchoff all triggers
+                        attrViewModel.touchOff(key);
+                    });
+                    _attributeHandle(attrKey, node, /*_shadowDIV*/ attrViewModel.topNode(), viewModel, /*model.id,*/ handle, triggerTable);
+                    // model.remove(attrViewModel); //?
+                }
+            }
+            var triggerTable = self._triggers._;
+            $.E(attrViewModel._triggers, function(key) {
+                var triggerContainer = triggerTable[key];
+                if (!triggerContainer) {
+                    self._buildSmart(key);
+                    triggerContainer = triggerTable[key] = [];
+                    $.p(self._triggers, key);
+                    $.p(result, key);
+                }
+                $.us(triggerContainer, attrTrigger);
+            });
+        });
+        return result;
+    },
+    addAttr: function(node, attrJson) {
+        var self = this;
+        var _touchOffKeys;
+        if ($.isA(node)) {
+            $.E(node, function(node) {
+                _touchOffKeys = self._addAttr(node, attrJson)
+            });
+        } else {
+            _touchOffKeys = self._addAttr(node, attrJson)
+        }
+        self.model.rebuildTree();
+        $.E(_touchOffKeys, function(key) {
+            self.model.touchOff(key);
+        });
+        return self;
+    },
+    queryElement: function(matchFun) {
+        return this.model.queryElement(matchFun);
+    },
+    _buildElementMap: function() {
+        var self = this;
+        var NodeList = self.NodeList;
+        if (!NodeList._) {
+            var result = NodeList._ = [];
+            $.fI(NodeList, function(handle) {
+                if (handle.type === "element") {
+                    $.p(result, handle);
+                    //使得Element可以直接映射到Handle
+                    result[$.hashCode(handle.currentNode)] = handle;
+                }
+            })
+        }
+        return NodeList._;
     },
     _queryElement: function(matchFun) {
         var self = this;
         var result = [];
         //获取数组化的节点
-        var nodeList = self.NodeList._ || (self.NodeList._ = (function(nodeHash) {
-            var nodeList = [];
-            $.fI(nodeHash, function(handle) {
-                if (handle.type === "element") {
-                    $.p(nodeList, handle);
-                }
-            })
-            return nodeList;
-        }(self.NodeList)));
+        var nodeList = self._buildElementMap();
 
         //遍历节点
         $.E(nodeList, function(elementHandle) {
@@ -4633,6 +4717,9 @@ registerHandle("HTML",function () {
 var jSouper = global.jSouper = {
     //暴露基本的工具集合，给拓展组件使用
     $: $,
+    queryHandle: function(node) {
+        return ViewModel.queryList._[$.hashCode(node)];
+    },
     scans: function(node) {
         node || (node = doc);
         var xmps = $.s(node.getElementsByTagName("xmp"));
