@@ -1,7 +1,7 @@
 /*
  * export
  */
-var jSouper = global.jSouper = {
+var _jSouperBase = {
     //暴露基本的工具集合，给拓展组件使用
     $: $,
     queryHandle: function(node) {
@@ -58,9 +58,6 @@ var jSouper = global.jSouper = {
         }
         return this.parseStr(html, name)
     },
-    modules: V.modules,
-    modulesInit: V.modulesInit,
-    _V: V,
     config: {
         Id: 'HVP',
         Var: 'App',
@@ -152,6 +149,10 @@ var jSouper = global.jSouper = {
         }
     }())
 };
+var jSouper = global.jSouper = $.c(V);
+$.fI(_jSouperBase, function(value, key) {
+    jSouper[key] = value;
+});
 (function() {
     var scriptTags = doc.getElementsByTagName("script"),
         HVP_config = jSouper.config,

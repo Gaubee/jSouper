@@ -75,6 +75,7 @@ _ArrDM_proto.push = function(model) {
     $.p(DMs, model)
     model._arrayModel = self;
     model._parentModel = self._parentModel;
+    model._prefix = pperfix ? pperfix + "." + index : index;
 }
 _ArrDM_proto.remove = function(model) {
     var index = model._index

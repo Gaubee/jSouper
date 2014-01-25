@@ -149,7 +149,7 @@ doc = document,
 
         //清空两边字符串
         trim: function(str) {
-            str = str.replace(/^\s\s*/, '')
+            str = String(str).replace(/^\s\s*/, '')
             var ws = /\s/,
                 i = str.length;
             while (ws.test(str.charAt(--i)));
@@ -1451,6 +1451,9 @@ var _modelExtend = Model.extend = function(extendsName, extendsObjConstructor) {
     _modelExtend.get(exObjProto)
     Model[extendsName] = extendsObjConstructor
 };
+//get的结果并不保存到this.value，原则上setter、getter本身就不能通过return保存。
+//这里为了方便，仅仅运行setter可以通过return保存，避免混乱
+//如果需要缓存，开发者需要知识额外定义缓冲变量进行缓存
 _modelExtend.set = function(exObjProto) {
     var _set = exObjProto.set;
     exObjProto.set = function(dm, key, value, currentKey) {
@@ -1460,7 +1463,7 @@ _modelExtend.set = function(exObjProto) {
 _modelExtend.get = function(exObjProto) {
     var _get = exObjProto.get;
     exObjProto.get = function(dm, key, value, currentKey) {
-        return (this.value = _get.call(this, dm, key, value, currentKey))
+        return _get.call(this, dm, key, value, currentKey);
     }
 }
 
@@ -1541,6 +1544,7 @@ _ArrDM_proto.push = function(model) {
     $.p(DMs, model)
     model._arrayModel = self;
     model._parentModel = self._parentModel;
+    model._prefix = pperfix ? pperfix + "." + index : index;
 }
 _ArrDM_proto.remove = function(model) {
     var index = model._index
@@ -4719,7 +4723,7 @@ registerHandle("HTML",function () {
 /*
  * export
  */
-var jSouper = global.jSouper = {
+var _jSouperBase = {
     //暴露基本的工具集合，给拓展组件使用
     $: $,
     queryHandle: function(node) {
@@ -4776,9 +4780,6 @@ var jSouper = global.jSouper = {
         }
         return this.parseStr(html, name)
     },
-    modules: V.modules,
-    modulesInit: V.modulesInit,
-    _V: V,
     config: {
         Id: 'HVP',
         Var: 'App',
@@ -4870,6 +4871,10 @@ var jSouper = global.jSouper = {
         }
     }())
 };
+var jSouper = global.jSouper = $.c(V);
+$.fI(_jSouperBase, function(value, key) {
+    jSouper[key] = value;
+});
 (function() {
     var scriptTags = doc.getElementsByTagName("script"),
         HVP_config = jSouper.config,
@@ -4935,11 +4940,17 @@ if (typeof module === "object" && module && typeof module.exports === "object") 
 
         //当前收集层
         var _current_collect_layer = _get_collect_stack[_get_collect_stack.length - 1]
-        //存储相关的依赖信息
+        /*
+         * 存储相关的依赖信息
+         * 保存的都是Model顶部的信息，不使用最临近，因为临近的可能有同prefix的Model，
+         * 会导致保存的信息片面，或者易损
+         */
+        //获取最顶层的信息
+        var keyInfo = self.getTopModel(Model.session.filterKey);
         _current_collect_layer && $.p(_current_collect_layer, {
             //rely object
-            dm_id: self.id,
-            dm_key: Model.session.filterKey
+            dm_id: keyInfo.model.id,
+            dm_key: keyInfo.key
         })
         return result;
     }
@@ -4954,7 +4965,6 @@ if (typeof module === "object" && module && typeof module.exports === "object") 
             return this._set.call(dm, key, value, currentKey)
         },
         get: function(dm, key, value, currentKey) {
-            var dm_id = dm.id
             var observerCache_ = observerCache._
             /*
              * dm collect get mode
@@ -4965,7 +4975,7 @@ if (typeof module === "object" && module && typeof module.exports === "object") 
             $.p(_get_collect_stack, [])
 
             //运行原生get
-            var result = this.value = this._get.call(dm, key, value, currentKey)
+            var result = this._get.call(dm, key, value, currentKey)
 
             /*
              * dm normal get mode
@@ -4974,10 +4984,9 @@ if (typeof module === "object" && module && typeof module.exports === "object") 
             var _current_collect_layer = _get_collect_stack.pop()
 
             //获取上次收集的依赖，将上次依赖进行回退
-            var _oldObserverObjects = observerCache_[dm_id] || (observerCache_[dm_id] = {});
-            var _oldObserverObj
+            var _oldObserverObj = this.observerObj
             //舍弃上一次的依赖关系
-            if (_oldObserverObj = _oldObserverObjects[key]) {
+            if (_oldObserverObj) {
                 $.E(_oldObserverObj._parent, function(parent) {
                     var abandon_index = $.iO(parent, _oldObserverObj);
                     $.sp.call(parent, abandon_index, 1)
@@ -4986,15 +4995,16 @@ if (typeof module === "object" && module && typeof module.exports === "object") 
                 delete _oldObserverObj._parent
             }
 
-
-            var _newObserverObj = {
+            //获取顶层信息
+            var keyInfo = dm.getTopModel(key);
+            var dm_id = keyInfo.model.id
+            var key = keyInfo.key;
+            //保存最近一层依赖
+            var _newObserverObj = this.observerObj = {
                 _parent: [],
                 dm_id: dm_id,
                 dm_key: key
             }
-
-            //保存最近一层依赖
-            _oldObserverObjects[key] = _newObserverObj
 
             //将依赖关系你想逆向转换
             $.E(_current_collect_layer, function(relyObj) {

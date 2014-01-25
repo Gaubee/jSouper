@@ -147,7 +147,7 @@ doc = document,
 
         //清空两边字符串
         trim: function(str) {
-            str = str.replace(/^\s\s*/, '')
+            str = String(str).replace(/^\s\s*/, '')
             var ws = /\s/,
                 i = str.length;
             while (ws.test(str.charAt(--i)));
