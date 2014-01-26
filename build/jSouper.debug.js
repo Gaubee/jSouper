@@ -445,8 +445,8 @@ _event_cache = {},
             rclick: $TRUE,
             rightclick: $TRUE
         },
-        //模拟IE的mouseEnter、mouseLeave
-        el: {
+        //模拟mouseEnter、mouseLeave
+        el: ("onmouseenter" in doc) ? {} : {
             mouseenter: "mouseover",
             mouseleave: "mouseout"
         },
@@ -541,20 +541,20 @@ _event_cache = {},
                     }
                 }
             }());
-        } else if (result._cacheName = _registerEventRouterMatch.el[eventName] && ("mouseenter" in doc)) {
+        } else if (result._cacheName = _registerEventRouterMatch.el[eventName]) {
             (function() {
                 result.name = result._cacheName;
                 result.fn = function(e) {
                     var topNode = e.relatedTarget,
                         self = this;
                     /*compareDocumentPosition
-						0 self == topNode ===> 
-						1 self in deffriend Document with topNode
-						2 topNode befor self
-						4 self befor topNode
-						8 topNode contains self
-						16 self contains topNode  ==>  
-						32 Brower private*/
+                        0 self == topNode ===> 
+                        1 self in deffriend Document with topNode
+                        2 topNode befor self
+                        4 self befor topNode
+                        8 topNode contains self
+                        16 self contains topNode  ==>  
+                        32 Brower private*/
                     if (!topNode || (topNode !== self && !(self.compareDocumentPosition(topNode) & 16))) { //@Rubylouvre
                         e._extend = {
                             type: eventName
@@ -714,7 +714,7 @@ _event_cache = {},
         var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
         wrapEventFun && Element.detachEvent("on" + eventName, wrapEventFun);
     },
-    
+
     //对外的接口
     _registerEvent = _isIE ? _attachEvent : _addEventListener,
     _cancelEvent = _isIE ? _detachEvent : _removeEventListener;
