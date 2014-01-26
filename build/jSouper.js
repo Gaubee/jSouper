@@ -4271,7 +4271,7 @@ var _formCache = {},
 			}
 		}
 	};
-V.ra("form", function(attrKey) {
+V.ra("input", function(attrKey) {
 	return formListerAttribute;
 });
 var _event_by_fun = (function() {

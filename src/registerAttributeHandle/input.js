@@ -147,6 +147,6 @@ var _formCache = {},
 			}
 		}
 	};
-V.ra("form", function(attrKey) {
+V.ra("input", function(attrKey) {
 	return formListerAttribute;
 });
