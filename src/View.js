@@ -36,8 +36,7 @@ function View(arg, vmName) {
         !finallyRunStacks.length && finallyRun();
 
         opction.callback && opction.callback(vi);
-        // console.log(self.id)
-        // console.groupEnd(self.id)
+        
         if (self.vmName) {
             var viewModel_init = V.modulesInit[self.vmName];
             if (viewModel_init) {

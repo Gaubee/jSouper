@@ -537,7 +537,7 @@ var DM_proto = Model.prototype = {
         //所以each对象内部的数据自身获取临时数据进行更新完成后，再移除touchOff
         model._database = self.get(prefixKey);
         finallyRunStacks.push(self.id)
-        self.getTop().touchOff("");
+        self.getTop().touchOff();
         finallyRunStacks.pop();
         !finallyRunStacks.length && Model.finallyRun();
         return self;
@@ -568,6 +568,8 @@ var DM_proto = Model.prototype = {
             subsetDM._parentModel = model;
             $.p(model._subsetModels, subsetDM)
         });
+
+        //合并兄弟节点Model对象
         var new_siblingModels = model._siblingModels;
         $.E(_getAllSiblingModels(self), function(sublingDM) {
             var siblingModels = sublingDM._siblingModels;
@@ -580,16 +582,26 @@ var DM_proto = Model.prototype = {
             }
         });
         $.rm(new_siblingModels, self)
+
+        //合并VM对象
         $.E(self._viewModels, function(viewModel) {
             viewModel.model = model;
             $.p(model._viewModels, viewModel)
         });
+
+        //合并绑定点触发器
         self._triggerKeys.forIn(function(smartTriggerSet, key) {
             model._triggerKeys.push(key, smartTriggerSet)
         })
-        model.set(model._database);
+
+        //触发更新
+        Model.finallyRun.register("replaceAs"+model.id,function (argument) {
+            model.touchOff();
+        })
+
+        //更改存储源
         Model._instances[self.id] = model;
-        self.destroy()
+        self.destroy();
         return $NULL;
     },
     destroy: function() {

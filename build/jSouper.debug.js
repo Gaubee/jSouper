@@ -1397,7 +1397,7 @@ var DM_proto = Model.prototype = {
         //所以each对象内部的数据自身获取临时数据进行更新完成后，再移除touchOff
         model._database = self.get(prefixKey);
         finallyRunStacks.push(self.id)
-        self.getTop().touchOff("");
+        self.getTop().touchOff();
         finallyRunStacks.pop();
         !finallyRunStacks.length && Model.finallyRun();
         return self;
@@ -1428,6 +1428,8 @@ var DM_proto = Model.prototype = {
             subsetDM._parentModel = model;
             $.p(model._subsetModels, subsetDM)
         });
+
+        //合并兄弟节点Model对象
         var new_siblingModels = model._siblingModels;
         $.E(_getAllSiblingModels(self), function(sublingDM) {
             var siblingModels = sublingDM._siblingModels;
@@ -1440,16 +1442,26 @@ var DM_proto = Model.prototype = {
             }
         });
         $.rm(new_siblingModels, self)
+
+        //合并VM对象
         $.E(self._viewModels, function(viewModel) {
             viewModel.model = model;
             $.p(model._viewModels, viewModel)
         });
+
+        //合并绑定点触发器
         self._triggerKeys.forIn(function(smartTriggerSet, key) {
             model._triggerKeys.push(key, smartTriggerSet)
         })
-        model.set(model._database);
+
+        //触发更新
+        Model.finallyRun.register("replaceAs"+model.id,function (argument) {
+            model.touchOff();
+        })
+
+        //更改存储源
         Model._instances[self.id] = model;
-        self.destroy()
+        self.destroy();
         return $NULL;
     },
     destroy: function() {
@@ -1970,8 +1982,7 @@ function View(arg, vmName) {
         !finallyRunStacks.length && finallyRun();
 
         opction.callback && opction.callback(vi);
-        // console.log(self.id)
-        // console.groupEnd(self.id)
+        
         if (self.vmName) {
             var viewModel_init = V.modulesInit[self.vmName];
             if (viewModel_init) {
@@ -3837,23 +3848,27 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
             if (new_templateHandle_name && (new_templateHandle_name !== templateHandle_name)) {
                 // console.log(uuid, new_templateHandle_name, templateHandle_name, !! module)
                 self[id] = new_templateHandle_name;
+                var layoutViewModel = AllLayoutViewModel[id];
                 layoutViewModel && layoutViewModel.destory();
                 //console.log(new_templateHandle_name, id);
-                var key = NodeList_of_ViewModel[dataHandle_id]._data,
-                    layoutViewModel = AllLayoutViewModel[id] = module($UNDEFINED, {
-                        callback: function(vm) {
-                            //使用回调，可以使其script[type='text/vm']脚本运行时能取到渲染完成的VM
-                            vm._layoutName = new_templateHandle_name;
-                            model.subset(vm, key);
-                            vm.insert(NodeList_of_ViewModel[comment_layout_id].currentNode);
-                        }
-                    });
+                var key = NodeList_of_ViewModel[dataHandle_id]._data;
+                module($UNDEFINED, {
+                    callback: function(vm) {
+                        layoutViewModel = AllLayoutViewModel[id] = vm;
+                        //使用回调，可以使其script[type='text/vm']脚本运行时能取到渲染完成的VM
+                        vm._layoutName = new_templateHandle_name;
+                        model.subset(vm, key);
+                        vm.insert(NodeList_of_ViewModel[comment_layout_id].currentNode);
+                    }
+                });
             } else {
                 layoutViewModel = AllLayoutViewModel[id];
             }
             return layoutViewModel;
         }
     }
+
+    var _simulationInitVm;
     if (ifHandle_id) {
         trigger.event = function(NodeList_of_ViewModel, model, /*eventTrigger,*/ isAttr, viewModel_ID) {
             var isShow = _booleanFalseRegExp(NodeList_of_ViewModel[ifHandle_id]._data),
@@ -3862,21 +3877,37 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
             if (isShow) {
                 if (!layoutViewModel) {
                     var key = NodeList_of_ViewModel[dataHandle_id]._data;
-                    if (model.get(key)) {
-                        var module = V.modules[NodeList_of_ViewModel[templateHandle_id]._data];
-                        if (!module) {
-                            return
-                        }
-                        layoutViewModel = AllLayoutViewModel[id] = module();
-                        model.subset(layoutViewModel, key);
+                    var module = V.modules[NodeList_of_ViewModel[templateHandle_id]._data];
+                    if (!module) {
+                        return
                     }
+                    module($UNDEFINED, {
+                        callback: function(vm) {
+                            layoutViewModel = AllLayoutViewModel[id] = vm;
+                            model.subset(vm, key);
+                        }
+                    });
                 }
-                if (layoutViewModel && !layoutViewModel._canRemoveAble) {
+                if (!layoutViewModel._canRemoveAble) {
                     layoutViewModel.insert(NodeList_of_ViewModel[comment_layout_id].currentNode);
                 }
             } else {
-                if (layoutViewModel && layoutViewModel._canRemoveAble) {
-                    layoutViewModel.remove();
+                if (layoutViewModel) {
+                    layoutViewModel._canRemoveAble && layoutViewModel.remove();
+                } else if (!_simulationInitVm) {
+                    //强制运行一次getter，因为vm没有初始化
+                    //如果是初始化条件又依赖于其内部（Observer等），恐怕无法自动触发
+                    //所以这里手动地简单模拟一次layoutViewModel已经初始化的情况
+                    _simulationInitVm = $TRUE;
+
+                    //model这时的数据源可能还没绑定，所以用注册finallyRun来实现
+                    //可能因为subset的值，会被replaceAs，所以在finallyRun中用id取真model实例
+                    var modelId = model.id;
+                    Model.finallyRun.register("layoutMoniInt" + id, function() {
+                        var key = NodeList_of_ViewModel[dataHandle_id]._data;
+                        model = Model._instances[modelId];
+                        model.get(key);
+                    })
                 }
             }
             return layoutViewModel;
