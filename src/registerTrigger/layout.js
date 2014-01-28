@@ -46,7 +46,7 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
         }
     }
 
-    var _simulationInitVm;
+    // var _simulationInitVm;
     if (ifHandle_id) {
         trigger.event = function(NodeList_of_ViewModel, model, /*eventTrigger,*/ isAttr, viewModel_ID) {
             var isShow = _booleanFalseRegExp(NodeList_of_ViewModel[ifHandle_id]._data),
@@ -62,6 +62,7 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
                     module($UNDEFINED, {
                         callback: function(vm) {
                             layoutViewModel = AllLayoutViewModel[id] = vm;
+                            console.log(key,model);
                             model.subset(vm, key);
                         }
                     });
@@ -72,7 +73,8 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
             } else {
                 if (layoutViewModel) {
                     layoutViewModel._canRemoveAble && layoutViewModel.remove();
-                } else if (!_simulationInitVm) {
+                }
+                /*else if (!_simulationInitVm) {
                     //强制运行一次getter，因为vm没有初始化
                     //如果是初始化条件又依赖于其内部（Observer等），恐怕无法自动触发
                     //所以这里手动地简单模拟一次layoutViewModel已经初始化的情况
@@ -86,7 +88,7 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
                         model = Model._instances[modelId];
                         model.get(key);
                     })
-                }
+                }*/
             }
             return layoutViewModel;
         }

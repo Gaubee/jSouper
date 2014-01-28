@@ -1004,7 +1004,7 @@ var _dm_set_source // =$FALSE //set Source ignore extend-Object
 
 //set时强制更新，不论是否相同，因为有事数据源的更新并非来自set本身，所以无法直接作出判断
 //TODO: replace `_dm_force_update` by setting stack
-var _dm_force_update //= $FALSE;  //ignore equal
+var _dm_force_update = 0;  //ignore equal
 
 var DM_proto = Model.prototype = {
     queryElement: function(matchFun) {
@@ -1287,10 +1287,10 @@ var DM_proto = Model.prototype = {
             // debugger
             var prefix = childModel._prefix,
                 childResult; // || "";
-            _dm_force_update = $TRUE; //TODO: use Stack 
+            _dm_force_update += 1; //TODO: use Stack 
             if (!key) { //key === "",touchoff all
                 childResult = childModel.set(self.get(prefix))
-            } else if (!prefix) { //prefix==="" equal to $THIS
+            } else if (!prefix) { //prefix==="" equal to $THIS//TODO:可优化，交由collect处理
                 childResult = childModel.set(key, self.get(key))
             } else if (key === prefix || prefix.indexOf(key + ".") === 0) { //prefix is a part of key,just maybe had been changed
                 // childModel.touchOff(prefix.replace(key + ".", ""));
@@ -1299,7 +1299,7 @@ var DM_proto = Model.prototype = {
                 prefix = key.replace(prefix + ".", "")
                 childResult = childModel.set(prefix, self.get(key))
             }
-            _dm_force_update = $FALSE;
+            _dm_force_update -= 1;
             //如果不进行锁定，当数组因为其子对象被修改，
             //改动信息就需要冒泡到顶层，等同于强制触发数组的所有关键字，通知所有子对象检查自身是否发生变化。
             //所以锁定是效率所需。
@@ -3846,7 +3846,7 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
         }
     }
 
-    var _simulationInitVm;
+    // var _simulationInitVm;
     if (ifHandle_id) {
         trigger.event = function(NodeList_of_ViewModel, model, /*eventTrigger,*/ isAttr, viewModel_ID) {
             var isShow = _booleanFalseRegExp(NodeList_of_ViewModel[ifHandle_id]._data),
@@ -3862,6 +3862,7 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
                     module($UNDEFINED, {
                         callback: function(vm) {
                             layoutViewModel = AllLayoutViewModel[id] = vm;
+                            console.log(key,model);
                             model.subset(vm, key);
                         }
                     });
@@ -3872,7 +3873,8 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
             } else {
                 if (layoutViewModel) {
                     layoutViewModel._canRemoveAble && layoutViewModel.remove();
-                } else if (!_simulationInitVm) {
+                }
+                /*else if (!_simulationInitVm) {
                     //强制运行一次getter，因为vm没有初始化
                     //如果是初始化条件又依赖于其内部（Observer等），恐怕无法自动触发
                     //所以这里手动地简单模拟一次layoutViewModel已经初始化的情况
@@ -3886,7 +3888,7 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
                         model = Model._instances[modelId];
                         model.get(key);
                     })
-                }
+                }*/
             }
             return layoutViewModel;
         }
