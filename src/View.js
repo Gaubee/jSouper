@@ -36,7 +36,7 @@ function View(arg, vmName) {
         !finallyRunStacks.length && finallyRun();
 
         opction.callback && opction.callback(vi);
-        
+
         if (self.vmName) {
             var viewModel_init = V.modulesInit[self.vmName];
             if (viewModel_init) {
@@ -72,14 +72,29 @@ var _outerHTML = (function() {
     return fireOuterHTML;
 }());
 
-var _isHTMLUnknownElement = typeof HTMLUnknownElement === "function" ? function(tagName) {
-        return doc.createElement(tagName) instanceof HTMLUnknownElement;
-    } : function(tagName) {
-        //maybe HTMLUnknownElement,IE7- can't konwn
-        return " a abbr acronym address applet area b base basefont bdo big blockquote body br button caption center cite code col colgroup dd del dfn dir div dl dt em fieldset font form frame frameset head hr html i iframe img input ins kbd label legend li link map menu meta noframes noscript object ol optgroup option p param pre q s samp script select small span strike strong style sub sup table tbody td textarea tfoot th thead title tr tt u ul var marquee h1 h2 h3 h4 h5 h6 xmp plaintext listing nobr bgsound bas blink comment isindex multiple noframe person ".indexOf(" " + tagName + " ") === -1;
-    };
+var _isHTMLUnknownElement = (function(HUE) {
+    var __knownElementTag = {};
+    $.E("a abbr acronym address applet area b base basefont bdo big blockquote body br button caption center cite code col colgroup dd del dfn dir div dl dt em fieldset font form frame frameset head hr html i iframe img input ins kbd label legend li link map menu meta noframes noscript object ol optgroup option p param pre q s samp script select small span strike strong style sub sup table tbody td textarea tfoot th thead title tr tt u ul var marquee h1 h2 h3 h4 h5 h6 xmp plaintext listing nobr bgsound bas blink comment isindex multiple noframe person".split(" "), function(tagName, index) {
+        __knownElementTag[tagName] = $TRUE;
+    });
+    var result;
+    if (HUE) {
+        result = function(tagName) {
+            if (__knownElementTag[tagName] === $UNDEFINED) {
+                __knownElementTag[tagName] = !(doc.createElement(tagName) instanceof HTMLUnknownElement);
+            }
+            return !__knownElementTag[tagName];
+        }
+    } else {
+        result = function(tagName) {
+            //maybe HTMLUnknownElement,IE7- can't konwn
+            return !__knownElementTag[tagName];
+        }
+    }
+    return result;
+}(typeof HTMLUnknownElement === "function"));
 var _unkonwnElementFix = {
-    "class": "className"
+    // "class": "className"
 };
 
 function _buildHandler(self) {
@@ -96,8 +111,56 @@ function _buildHandler(self) {
             }
         } else if (handle.type === "element") {
             handle.tag = node.tagName.toLowerCase().replace(V.namespace.toLowerCase(), "");
+        }
+    });
+};
+var _attrRegExp = /(\S+)=["']?((?:.(?!["']?\s+(?:\S+)=|[>"']))+.)["']?/g;
+var ignoreTagNameMap = {};
+$.fI("script|pre|template|style|link".split("|"),function  (value,key) {
+    ignoreTagNameMap[value] = ignoreTagNameMap[value.toUpperCase()] = $TRUE;
+})
+
+function _buildTrigger(self) {
+    var triggerTable = self._triggerTable;
+    var handleNodeTree = self.handleNodeTree;
+    _traversal(handleNodeTree, function(handle, index, parentHandle) {
+        if (handle.type === "handle") {
+            var triggerFactory = V.triggers[handle.handleName];
+            if (triggerFactory) {
+                var trigger = triggerFactory(handle, index, parentHandle);
+                if (trigger) {
+                    var key = trigger.key || (trigger.key = "");
+                    trigger.handleId = trigger.handleId || handle.id;
+                    //unshift list and In order to achieve the trigger can be simulated bubble
+                    $.us((triggerTable[key] || (triggerTable[key] = [])), trigger); //Storage as key -> array
+                    $.p(handle._triggers, trigger); //Storage as array
+                }
+            }
+        } else if (handle.type === "element") {
+            var node = handle.node;
+            handle.tag = node.tagName.toLowerCase().replace(V.namespace.toLowerCase(), "");
+            if (ignoreTagNameMap[handle.tag]) {
+                return $FALSE;
+            }
+            // var attrs = nodeHTMLStr.match(_attrRegExp);
+            $.e(node.attributes, function(attr, i) {
+                var value = attr.value,
+                    name = attr.name;
+                if (_templateMatchRule.test(value)) {
+                    attributeHandle(name, value, node, handle, triggerTable);
+                    node.removeAttribute(name);
+                }
+            });
+            var nodeHTMLStr = _outerHTML(node);
+            if (wrapMap.hasOwnProperty(handle.tag)) {
+                var wrapStr = wrapMap[handle.tag];
+                handle.tagDeep = wrapStr[0];
+                handle.nodeStr = wrapStr[1] + nodeHTMLStr + wrapStr[2];
+            } else {
+                handle.nodeStr = nodeHTMLStr;
+            }
             if (_isHTMLUnknownElement(handle.tag)) {
-                // console.log(handle.tag);
+                
                 (handle._unEleAttr = [])._ = {};
                 //save attributes
                 $.E(node.attributes, function(attr) {
@@ -124,50 +187,6 @@ function _buildHandler(self) {
                 if (cssText) {
                     handle._unEleAttr._["style"] = cssText;
                 }
-            }
-        }
-    });
-};
-var _attrRegExp = /(\S+)=["']?((?:.(?!["']?\s+(?:\S+)=|[>"']))+.)["']?/g;
-var ignoreTagName = "SCRIPT|PRE|TEMPLATE|STYLE|LINK".split("|");
-
-function _buildTrigger(self) {
-    var triggerTable = self._triggerTable;
-    var handleNodeTree = self.handleNodeTree;
-    _traversal(handleNodeTree, function(handle, index, parentHandle) {
-        if (handle.type === "handle") {
-            var triggerFactory = V.triggers[handle.handleName];
-            if (triggerFactory) {
-                var trigger = triggerFactory(handle, index, parentHandle);
-                if (trigger) {
-                    var key = trigger.key || (trigger.key = "");
-                    trigger.handleId = trigger.handleId || handle.id;
-                    //unshift list and In order to achieve the trigger can be simulated bubble
-                    $.us((triggerTable[key] || (triggerTable[key] = [])), trigger); //Storage as key -> array
-                    $.p(handle._triggers, trigger); //Storage as array
-                }
-            }
-        } else if (handle.type === "element") {
-            if ($.iO(ignoreTagName, handle.node.tagName) !== -1) {
-                return $FALSE;
-            }
-            var node = handle.node;
-            // var attrs = nodeHTMLStr.match(_attrRegExp);
-            $.e(node.attributes, function(attr, i) {
-                var value = attr.value,
-                    name = attr.name;
-                if (_templateMatchRule.test(value)) {
-                    attributeHandle(name, value, node, handle, triggerTable);
-                    node.removeAttribute(name);
-                }
-            });
-            var nodeHTMLStr = _outerHTML(node);
-            if (wrapMap.hasOwnProperty(handle.tag)) {
-                var wrapStr = wrapMap[handle.tag];
-                handle.tagDeep = wrapStr[0];
-                handle.nodeStr = wrapStr[1] + nodeHTMLStr + wrapStr[2];
-            } else {
-                handle.nodeStr = nodeHTMLStr;
             }
         } else if (handle.type === "comment") { //Comment
             !handle.nodeStr && (handle.nodeStr = "<!--" + handle.node.data + "-->");
@@ -202,7 +221,9 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
                 currentNode = doc.createElement(handle.tag);
                 $.E(_unknownElementAttribute, function(attrName) {
                     // console.log("setAttribute:", attrName, " : ", _unknownElementAttribute._[attrName])
-                    currentNode[attrName] = _unknownElementAttribute._[attrName];
+                    //直接使用赋值的话，非标准属性只会变成property而不是Attribute
+                    // currentNode[attrName] = _unknownElementAttribute._[attrName];
+                    currentNode.setAttribute(attrName,_unknownElementAttribute._[attrName]);
                 })
                 //set Style
                 var cssText = _unknownElementAttribute._["style"];
