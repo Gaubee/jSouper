@@ -2702,7 +2702,7 @@ var VI_proto = ViewModel.prototype = {
         (telporterName === $UNDEFINED) && (telporterName = "index");
         var teleporter = self._teleporters[telporterName];
         if (teleporter) {
-            if (teleporter.show_or_hidden !== $FALSE) {
+            if (teleporter.show_or_hidden !== $FALSE&&teleporter.display) {
                 //remove old
                 var old_viewModel = teleporter.vi;
                 old_viewModel && old_viewModel.remove();
@@ -3252,7 +3252,7 @@ function _teleporter_display(show_or_hidden, NodeList_of_ViewModel, model, /*tri
     console.log(show_or_hidden ? "display:" : "remove:", teleporterViewModel);
 
     if (teleporterViewModel) {
-        if (show_or_hidden) {
+        if (show_or_hidden&&teleporter.display) {
             if(!teleporterViewModel._canRemoveAble){//can-insert-able
                 teleporterViewModel.insert(commentPlaceholderElement);
             }
@@ -4001,6 +4001,11 @@ V.rt("&gt;", V.triggers[">"]);
 
 V.rt("#teleporter", function(handle, index, parentHandle) {
     var teleporterNameHandle = handle.childNodes[0];
+    var booleanHandle = handle.childNodes[1];
+    if (booleanHandle.type==="handle") {
+        var booleanHandle_id = booleanHandle.id;
+    }
+    console.log(booleanHandle);
     var placeholderHandle = $.lI(handle.childNodes);
     if (placeholderHandle === teleporterNameHandle) { //no first argument;
         var teleporterName = "index"
@@ -4012,10 +4017,22 @@ V.rt("#teleporter", function(handle, index, parentHandle) {
         key: ".",
         event: function(NodeList_of_ViewModel, model, /*eventTrigger,*/ isAttr, viewModel_ID) {
             var viewModel = V._instances[viewModel_ID];
-            if (!viewModel._teleporters[teleporterName]) {
-                viewModel._teleporters[teleporterName] = {
+            var teleporters = viewModel._teleporters
+            var teleporter = teleporters[teleporterName];
+            //初始化传送配置
+            if (!teleporter) {
+               teleporter = teleporters[teleporterName] = {
                 	//placeholder comment node
-                    ph: NodeList_of_ViewModel[placeholderHandle.id].currentNode
+                    ph: NodeList_of_ViewModel[placeholderHandle.id].currentNode,
+                    display:$TRUE
+                }
+            }
+            //第二参数，由第三方控制显示与否，同layout
+            if (booleanHandle_id&&teleporter.vi&&teleporter.show_or_hidden !== $FALSE) {
+                if (teleporter.display = NodeList_of_ViewModel[booleanHandle_id]._data) {
+                    teleporter.vi.insert(teleporter.ph);
+                }else{
+                    teleporter.vi.remove();
                 }
             }
             /*else{

@@ -1,5 +1,10 @@
 V.rt("#teleporter", function(handle, index, parentHandle) {
     var teleporterNameHandle = handle.childNodes[0];
+    var booleanHandle = handle.childNodes[1];
+    if (booleanHandle.type==="handle") {
+        var booleanHandle_id = booleanHandle.id;
+    }
+    console.log(booleanHandle);
     var placeholderHandle = $.lI(handle.childNodes);
     if (placeholderHandle === teleporterNameHandle) { //no first argument;
         var teleporterName = "index"
@@ -11,10 +16,22 @@ V.rt("#teleporter", function(handle, index, parentHandle) {
         key: ".",
         event: function(NodeList_of_ViewModel, model, /*eventTrigger,*/ isAttr, viewModel_ID) {
             var viewModel = V._instances[viewModel_ID];
-            if (!viewModel._teleporters[teleporterName]) {
-                viewModel._teleporters[teleporterName] = {
+            var teleporters = viewModel._teleporters
+            var teleporter = teleporters[teleporterName];
+            //初始化传送配置
+            if (!teleporter) {
+               teleporter = teleporters[teleporterName] = {
                 	//placeholder comment node
-                    ph: NodeList_of_ViewModel[placeholderHandle.id].currentNode
+                    ph: NodeList_of_ViewModel[placeholderHandle.id].currentNode,
+                    display:$TRUE
+                }
+            }
+            //第二参数，由第三方控制显示与否，同layout
+            if (booleanHandle_id&&teleporter.vi&&teleporter.show_or_hidden !== $FALSE) {
+                if (teleporter.display = NodeList_of_ViewModel[booleanHandle_id]._data) {
+                    teleporter.vi.insert(teleporter.ph);
+                }else{
+                    teleporter.vi.remove();
                 }
             }
             /*else{

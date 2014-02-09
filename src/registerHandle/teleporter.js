@@ -18,7 +18,7 @@ function _teleporter_display(show_or_hidden, NodeList_of_ViewModel, model, /*tri
     console.log(show_or_hidden ? "display:" : "remove:", teleporterViewModel);
 
     if (teleporterViewModel) {
-        if (show_or_hidden) {
+        if (show_or_hidden&&teleporter.display) {
             if(!teleporterViewModel._canRemoveAble){//can-insert-able
                 teleporterViewModel.insert(commentPlaceholderElement);
             }

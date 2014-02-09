@@ -449,7 +449,7 @@ var VI_proto = ViewModel.prototype = {
         (telporterName === $UNDEFINED) && (telporterName = "index");
         var teleporter = self._teleporters[telporterName];
         if (teleporter) {
-            if (teleporter.show_or_hidden !== $FALSE) {
+            if (teleporter.show_or_hidden !== $FALSE&&teleporter.display) {
                 //remove old
                 var old_viewModel = teleporter.vi;
                 old_viewModel && old_viewModel.remove();
