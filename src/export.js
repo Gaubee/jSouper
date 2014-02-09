@@ -19,6 +19,7 @@ var _jSouperBase = {
     },
     scans: function(node) {
         node || (node = doc);
+        //想解析子模块
         var xmps = $.s(node.getElementsByTagName("xmp"));
         Array.prototype.push.apply(xmps, node.getElementsByTagName(V.namespace + "xmp"));
         $.e(xmps, function(tplNode) {
@@ -31,25 +32,26 @@ var _jSouperBase = {
                 }
             }
         });
+        
         $.e(node.getElementsByTagName("script"), function(scriptNode) {
             var type = scriptNode.getAttribute("type");
             var name = scriptNode.getAttribute("name");
-            if (name) {
-                if (type === "text/template") {
-                    V.modules[name] = jSouper.parseStr(scriptNode.text, name);
-                    $.D.rm(scriptNode);
-                } else if (type === "text/vm") {
-                    V.modulesInit[name] = Function("return " + $.trim(scriptNode.text))();
-                    $.D.rm(scriptNode);
-                }
+            if (name && type === "text/template") {
+                V.modules[name] = jSouper.parseStr(scriptNode.text, name);
+                $.D.rm(scriptNode);
+            } else if (type === "text/vm" && (name || (name = $.lI(V._currentParsers)))) {
+                V.modulesInit[name] = Function("return " + $.trim(scriptNode.text))();
+                $.D.rm(scriptNode);
             }
         });
         return node;
     },
     parseStr: function(htmlStr, name) {
+        V._currentParser = name;
         return V.parse(parse(htmlStr), name)
     },
     parseNode: function(htmlNode, name) {
+        V._currentParser = name;
         return V.parse(parse(htmlNode.innerHTML), name)
     },
     parse: function(html, name) {
@@ -115,6 +117,7 @@ var _jSouperBase = {
                 global[appName] = vi;
             }
         }
+        _runScript(vi.topNode());
         return vi;
     },
     ready: (function() {
@@ -142,7 +145,7 @@ var _jSouperBase = {
                 //complete ==> onload , interactive ==> DOMContentLoaded
                 //https://developer.mozilla.org/en-US/docs/Web/API/document.readyState
                 //seajs src/util-require.js
-                if (/complete|onload/.test(doc.readyState)) { //fix asyn load
+                if (/complete|onload|interactive/.test(doc.readyState)) { //fix asyn load
                     _load()
                 }
             }
