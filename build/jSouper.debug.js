@@ -524,23 +524,24 @@ _event_cache = {},
                     }
                 }
             }());
-        } else if (_registerEventRouterMatch.rc[eventName] && _isIE) {
-            (function() {
-                result.name = ["mousedown", "contextmenu"];
-                var _result;
-                result.fn = function(e) {
-                    if (e.type === "contextmenu") {
-                        return _result;
-                    } else {
-                        if (e.button === 2) {
+        } else if (_registerEventRouterMatch.rc[eventName] /*&& _isIE*/ ) {
+            if (_isIE) {
+                (function() {
+                    result.name = ["mousedown", "contextmenu"];
+                    var _result;
+                    result.fn = function(e) {
+                        if (e.type !== "contextmenu" && e.button === 2) {
                             e._extend = {
                                 type: "contextmenu"
                             }
                             _result = _fn(e)
-                        };
+                        }
+                        return _result;
                     }
-                }
-            }());
+                }());
+            }else{
+                result.name = ["contextmenu"];
+            }
         } else if (result._cacheName = _registerEventRouterMatch.el[eventName]) {
             (function() {
                 result.name = result._cacheName;
@@ -716,8 +717,8 @@ _event_cache = {},
     },
 
     //对外的接口
-    _registerEvent = _isIE ? _attachEvent : _addEventListener,
-    _cancelEvent = _isIE ? _detachEvent : _removeEventListener;
+    _registerEvent = $.registerEvent = _isIE ? _attachEvent : _addEventListener,
+    _cancelEvent = $.cancelEvent = _isIE ? _detachEvent : _removeEventListener;
 
 /*
  * SmartTriggerHandle constructor
@@ -1936,7 +1937,7 @@ draggable
             }
         }
 
-        //将所有的触发key映射到父VM中，任意一个节点触发都会引发
+        //将属性VM的所有的触发key映射到父VM中。让父VM托管
         $.E(attrViewModel._triggers, function(key) {
             $.us(triggerTable[key] || (triggerTable[key] = []), attrTrigger);
         });
@@ -1982,7 +1983,7 @@ function View(arg, vmName) {
         !finallyRunStacks.length && finallyRun();
 
         opction.callback && opction.callback(vi);
-        
+
         if (self.vmName) {
             var viewModel_init = V.modulesInit[self.vmName];
             if (viewModel_init) {
@@ -2018,14 +2019,29 @@ var _outerHTML = (function() {
     return fireOuterHTML;
 }());
 
-var _isHTMLUnknownElement = typeof HTMLUnknownElement === "function" ? function(tagName) {
-        return doc.createElement(tagName) instanceof HTMLUnknownElement;
-    } : function(tagName) {
-        //maybe HTMLUnknownElement,IE7- can't konwn
-        return " a abbr acronym address applet area b base basefont bdo big blockquote body br button caption center cite code col colgroup dd del dfn dir div dl dt em fieldset font form frame frameset head hr html i iframe img input ins kbd label legend li link map menu meta noframes noscript object ol optgroup option p param pre q s samp script select small span strike strong style sub sup table tbody td textarea tfoot th thead title tr tt u ul var marquee h1 h2 h3 h4 h5 h6 xmp plaintext listing nobr bgsound bas blink comment isindex multiple noframe person ".indexOf(" " + tagName + " ") === -1;
-    };
+var _isHTMLUnknownElement = (function(HUE) {
+    var __knownElementTag = {};
+    $.E("a abbr acronym address applet area b base basefont bdo big blockquote body br button caption center cite code col colgroup dd del dfn dir div dl dt em fieldset font form frame frameset head hr html i iframe img input ins kbd label legend li link map menu meta noframes noscript object ol optgroup option p param pre q s samp script select small span strike strong style sub sup table tbody td textarea tfoot th thead title tr tt u ul var marquee h1 h2 h3 h4 h5 h6 xmp plaintext listing nobr bgsound bas blink comment isindex multiple noframe person".split(" "), function(tagName, index) {
+        __knownElementTag[tagName] = $TRUE;
+    });
+    var result;
+    if (HUE) {
+        result = function(tagName) {
+            if (__knownElementTag[tagName] === $UNDEFINED) {
+                __knownElementTag[tagName] = !(doc.createElement(tagName) instanceof HTMLUnknownElement);
+            }
+            return !__knownElementTag[tagName];
+        }
+    } else {
+        result = function(tagName) {
+            //maybe HTMLUnknownElement,IE7- can't konwn
+            return !__knownElementTag[tagName];
+        }
+    }
+    return result;
+}(typeof HTMLUnknownElement === "function"));
 var _unkonwnElementFix = {
-    "class": "className"
+    // "class": "className"
 };
 
 function _buildHandler(self) {
@@ -2042,8 +2058,56 @@ function _buildHandler(self) {
             }
         } else if (handle.type === "element") {
             handle.tag = node.tagName.toLowerCase().replace(V.namespace.toLowerCase(), "");
+        }
+    });
+};
+var _attrRegExp = /(\S+)=["']?((?:.(?!["']?\s+(?:\S+)=|[>"']))+.)["']?/g;
+var ignoreTagNameMap = {};
+$.fI("script|pre|template|style|link".split("|"),function  (value,key) {
+    ignoreTagNameMap[value] = ignoreTagNameMap[value.toUpperCase()] = $TRUE;
+})
+
+function _buildTrigger(self) {
+    var triggerTable = self._triggerTable;
+    var handleNodeTree = self.handleNodeTree;
+    _traversal(handleNodeTree, function(handle, index, parentHandle) {
+        if (handle.type === "handle") {
+            var triggerFactory = V.triggers[handle.handleName];
+            if (triggerFactory) {
+                var trigger = triggerFactory(handle, index, parentHandle);
+                if (trigger) {
+                    var key = trigger.key || (trigger.key = "");
+                    trigger.handleId = trigger.handleId || handle.id;
+                    //unshift list and In order to achieve the trigger can be simulated bubble
+                    $.us((triggerTable[key] || (triggerTable[key] = [])), trigger); //Storage as key -> array
+                    $.p(handle._triggers, trigger); //Storage as array
+                }
+            }
+        } else if (handle.type === "element") {
+            var node = handle.node;
+            handle.tag = node.tagName.toLowerCase().replace(V.namespace.toLowerCase(), "");
+            if (ignoreTagNameMap[handle.tag]) {
+                return $FALSE;
+            }
+            // var attrs = nodeHTMLStr.match(_attrRegExp);
+            $.e(node.attributes, function(attr, i) {
+                var value = attr.value,
+                    name = attr.name;
+                if (_templateMatchRule.test(value)) {
+                    attributeHandle(name, value, node, handle, triggerTable);
+                    node.removeAttribute(name);
+                }
+            });
+            var nodeHTMLStr = _outerHTML(node);
+            if (wrapMap.hasOwnProperty(handle.tag)) {
+                var wrapStr = wrapMap[handle.tag];
+                handle.tagDeep = wrapStr[0];
+                handle.nodeStr = wrapStr[1] + nodeHTMLStr + wrapStr[2];
+            } else {
+                handle.nodeStr = nodeHTMLStr;
+            }
             if (_isHTMLUnknownElement(handle.tag)) {
-                // console.log(handle.tag);
+                
                 (handle._unEleAttr = [])._ = {};
                 //save attributes
                 $.E(node.attributes, function(attr) {
@@ -2070,50 +2134,6 @@ function _buildHandler(self) {
                 if (cssText) {
                     handle._unEleAttr._["style"] = cssText;
                 }
-            }
-        }
-    });
-};
-var _attrRegExp = /(\S+)=["']?((?:.(?!["']?\s+(?:\S+)=|[>"']))+.)["']?/g;
-var ignoreTagName = "SCRIPT|PRE|TEMPLATE|STYLE|LINK".split("|");
-
-function _buildTrigger(self) {
-    var triggerTable = self._triggerTable;
-    var handleNodeTree = self.handleNodeTree;
-    _traversal(handleNodeTree, function(handle, index, parentHandle) {
-        if (handle.type === "handle") {
-            var triggerFactory = V.triggers[handle.handleName];
-            if (triggerFactory) {
-                var trigger = triggerFactory(handle, index, parentHandle);
-                if (trigger) {
-                    var key = trigger.key || (trigger.key = "");
-                    trigger.handleId = trigger.handleId || handle.id;
-                    //unshift list and In order to achieve the trigger can be simulated bubble
-                    $.us((triggerTable[key] || (triggerTable[key] = [])), trigger); //Storage as key -> array
-                    $.p(handle._triggers, trigger); //Storage as array
-                }
-            }
-        } else if (handle.type === "element") {
-            if ($.iO(ignoreTagName, handle.node.tagName) !== -1) {
-                return $FALSE;
-            }
-            var node = handle.node;
-            // var attrs = nodeHTMLStr.match(_attrRegExp);
-            $.e(node.attributes, function(attr, i) {
-                var value = attr.value,
-                    name = attr.name;
-                if (_templateMatchRule.test(value)) {
-                    attributeHandle(name, value, node, handle, triggerTable);
-                    node.removeAttribute(name);
-                }
-            });
-            var nodeHTMLStr = _outerHTML(node);
-            if (wrapMap.hasOwnProperty(handle.tag)) {
-                var wrapStr = wrapMap[handle.tag];
-                handle.tagDeep = wrapStr[0];
-                handle.nodeStr = wrapStr[1] + nodeHTMLStr + wrapStr[2];
-            } else {
-                handle.nodeStr = nodeHTMLStr;
             }
         } else if (handle.type === "comment") { //Comment
             !handle.nodeStr && (handle.nodeStr = "<!--" + handle.node.data + "-->");
@@ -2148,7 +2168,9 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
                 currentNode = doc.createElement(handle.tag);
                 $.E(_unknownElementAttribute, function(attrName) {
                     // console.log("setAttribute:", attrName, " : ", _unknownElementAttribute._[attrName])
-                    currentNode[attrName] = _unknownElementAttribute._[attrName];
+                    //直接使用赋值的话，非标准属性只会变成property而不是Attribute
+                    // currentNode[attrName] = _unknownElementAttribute._[attrName];
+                    currentNode.setAttribute(attrName,_unknownElementAttribute._[attrName]);
                 })
                 //set Style
                 var cssText = _unknownElementAttribute._["style"];
@@ -2911,6 +2933,7 @@ var placeholder = {
     V = {
         prefix: "bind-",
         namespace: "fix:",
+        _currentParsers: [],
         _nodeTree: function(htmlStr) {
             var _shadowBody = fragment( /*"body"*/ ); //$.D.cl(shadowBody);
 
@@ -2956,7 +2979,7 @@ var placeholder = {
             // console.log(htmlStr)
             var insertBefore = [];
             _traversal(_shadowBody, function(node, index, parentNode) {
-                if (node.nodeType === 1 && $.iO(ignoreTagName, node.tagName) !== -1) {
+                if (node.nodeType === 1 && ignoreTagNameMap[node.tagName]) {
                     return $FALSE;
                 }
                 if (node.nodeType === 3) { //text Node
@@ -2988,7 +3011,10 @@ var placeholder = {
             return new ElementHandle(_shadowBody);
         },
         parse: function(htmlStr, name) {
-            return View(this._nodeTree(htmlStr), name);
+            $.p(V._currentParsers, name);
+            var result = View(V._nodeTree(htmlStr), name);
+            V._currentParsers.pop();
+            return result;
         },
         rt: function(handleName, triggerFactory) {
             return V.triggers[handleName] = triggerFactory;
@@ -3884,7 +3910,6 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
                     module($UNDEFINED, {
                         callback: function(vm) {
                             layoutViewModel = AllLayoutViewModel[id] = vm;
-                            console.log(key,model);
                             model.subset(vm, key);
                         }
                     });
@@ -4149,11 +4174,10 @@ V.ra(function(attrKey){
 	return _AttributeHandleEvent.dir;
 })
 var _elementCache = {},
-	eventListerAttribute = function(key, currentNode, parserNode, vi /*, dm_id*/ ) {
+	eventListerAttribute = function(key, currentNode, parserNode, vi /*, dm_id*/ ,handle, triggerTable) {
 		var attrOuter = _getAttrOuter(parserNode),
 			eventInfos = key.replace("event-", "").toLowerCase().split("-"),
 			eventName = eventInfos.shift(), //Multi-event binding
-			eventFun = vi.get(attrOuter) || $.noop, //can remove able
 			elementHashCode = $.hashCode(currentNode, "event" + eventInfos.join("-"));
 		if (eventName.indexOf("on") === 0) {
 			eventName = eventName.substr(2)
@@ -4165,11 +4189,14 @@ var _elementCache = {},
 		var wrapEventFun = eventCollection[eventName]
 		if (!wrapEventFun) { //init Event and register event
 			wrapEventFun = eventCollection[eventName] = function(e) {
-				return wrapEventFun.eventFun.call(this, e, vi)
+				//因为事件的绑定是传入事件所在的key，所以外部触发可能只是一个"."类型的字符串
+				//没法自动更新eventFun，只能自动更新eventName，因此eventFun要动态获取
+				var eventFun = vi.get(attrOuter) || $.noop;
+				return eventFun.call(this, e, vi)
 			}
 			_registerEvent(currentNode, eventName, wrapEventFun, elementHashCode);
 		}
-		wrapEventFun.eventFun = eventFun;
+		wrapEventFun.eventName = eventName;
 	};
 
 V.ra(function(attrKey) {
@@ -4796,6 +4823,7 @@ var _jSouperBase = {
     },
     scans: function(node) {
         node || (node = doc);
+        //想解析子模块
         var xmps = $.s(node.getElementsByTagName("xmp"));
         Array.prototype.push.apply(xmps, node.getElementsByTagName(V.namespace + "xmp"));
         $.e(xmps, function(tplNode) {
@@ -4808,25 +4836,26 @@ var _jSouperBase = {
                 }
             }
         });
+        
         $.e(node.getElementsByTagName("script"), function(scriptNode) {
             var type = scriptNode.getAttribute("type");
             var name = scriptNode.getAttribute("name");
-            if (name) {
-                if (type === "text/template") {
-                    V.modules[name] = jSouper.parseStr(scriptNode.text, name);
-                    $.D.rm(scriptNode);
-                } else if (type === "text/vm") {
-                    V.modulesInit[name] = Function("return " + $.trim(scriptNode.text))();
-                    $.D.rm(scriptNode);
-                }
+            if (name && type === "text/template") {
+                V.modules[name] = jSouper.parseStr(scriptNode.text, name);
+                $.D.rm(scriptNode);
+            } else if (type === "text/vm" && (name || (name = $.lI(V._currentParsers)))) {
+                V.modulesInit[name] = Function("return " + $.trim(scriptNode.text))();
+                $.D.rm(scriptNode);
             }
         });
         return node;
     },
     parseStr: function(htmlStr, name) {
+        V._currentParser = name;
         return V.parse(parse(htmlStr), name)
     },
     parseNode: function(htmlNode, name) {
+        V._currentParser = name;
         return V.parse(parse(htmlNode.innerHTML), name)
     },
     parse: function(html, name) {
@@ -4892,6 +4921,7 @@ var _jSouperBase = {
                 global[appName] = vi;
             }
         }
+        _runScript(vi.topNode());
         return vi;
     },
     ready: (function() {
@@ -4919,7 +4949,7 @@ var _jSouperBase = {
                 //complete ==> onload , interactive ==> DOMContentLoaded
                 //https://developer.mozilla.org/en-US/docs/Web/API/document.readyState
                 //seajs src/util-require.js
-                if (/complete|onload/.test(doc.readyState)) { //fix asyn load
+                if (/complete|onload|interactive/.test(doc.readyState)) { //fix asyn load
                     _load()
                 }
             }

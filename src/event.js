@@ -156,23 +156,24 @@ _event_cache = {},
                     }
                 }
             }());
-        } else if (_registerEventRouterMatch.rc[eventName] && _isIE) {
-            (function() {
-                result.name = ["mousedown", "contextmenu"];
-                var _result;
-                result.fn = function(e) {
-                    if (e.type === "contextmenu") {
-                        return _result;
-                    } else {
-                        if (e.button === 2) {
+        } else if (_registerEventRouterMatch.rc[eventName] /*&& _isIE*/ ) {
+            if (_isIE) {
+                (function() {
+                    result.name = ["mousedown", "contextmenu"];
+                    var _result;
+                    result.fn = function(e) {
+                        if (e.type !== "contextmenu" && e.button === 2) {
                             e._extend = {
                                 type: "contextmenu"
                             }
                             _result = _fn(e)
-                        };
+                        }
+                        return _result;
                     }
-                }
-            }());
+                }());
+            }else{
+                result.name = ["contextmenu"];
+            }
         } else if (result._cacheName = _registerEventRouterMatch.el[eventName]) {
             (function() {
                 result.name = result._cacheName;
@@ -348,5 +349,5 @@ _event_cache = {},
     },
 
     //对外的接口
-    _registerEvent = _isIE ? _attachEvent : _addEventListener,
-    _cancelEvent = _isIE ? _detachEvent : _removeEventListener;
+    _registerEvent = $.registerEvent = _isIE ? _attachEvent : _addEventListener,
+    _cancelEvent = $.cancelEvent = _isIE ? _detachEvent : _removeEventListener;

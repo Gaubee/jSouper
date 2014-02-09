@@ -130,7 +130,7 @@ draggable
             }
         }
 
-        //将所有的触发key映射到父VM中，任意一个节点触发都会引发
+        //将属性VM的所有的触发key映射到父VM中。让父VM托管
         $.E(attrViewModel._triggers, function(key) {
             $.us(triggerTable[key] || (triggerTable[key] = []), attrTrigger);
         });

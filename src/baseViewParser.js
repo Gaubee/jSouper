@@ -58,6 +58,7 @@ var placeholder = {
     V = {
         prefix: "bind-",
         namespace: "fix:",
+        _currentParsers: [],
         _nodeTree: function(htmlStr) {
             var _shadowBody = fragment( /*"body"*/ ); //$.D.cl(shadowBody);
 
@@ -103,7 +104,7 @@ var placeholder = {
             // console.log(htmlStr)
             var insertBefore = [];
             _traversal(_shadowBody, function(node, index, parentNode) {
-                if (node.nodeType === 1 && $.iO(ignoreTagName, node.tagName) !== -1) {
+                if (node.nodeType === 1 && ignoreTagNameMap[node.tagName]) {
                     return $FALSE;
                 }
                 if (node.nodeType === 3) { //text Node
@@ -135,7 +136,10 @@ var placeholder = {
             return new ElementHandle(_shadowBody);
         },
         parse: function(htmlStr, name) {
-            return View(this._nodeTree(htmlStr), name);
+            $.p(V._currentParsers, name);
+            var result = View(V._nodeTree(htmlStr), name);
+            V._currentParsers.pop();
+            return result;
         },
         rt: function(handleName, triggerFactory) {
             return V.triggers[handleName] = triggerFactory;

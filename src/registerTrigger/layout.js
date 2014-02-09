@@ -62,7 +62,6 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
                     module($UNDEFINED, {
                         callback: function(vm) {
                             layoutViewModel = AllLayoutViewModel[id] = vm;
-                            console.log(key,model);
                             model.subset(vm, key);
                         }
                     });
