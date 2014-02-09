@@ -66,7 +66,7 @@ V.rt("#include", function(handle, index, parentHandle) {
             _include_lock[_uid] = $TRUE;
             if (!V.modules[url]) {
                 _require_module(url, function(status, xhr) {
-                    V.modules[url] = jSouper.parseStr(xhr.responseText);
+                    V.modules[url] = jSouper.parseStr(xhr.responseText, url);
                     layoutViewModel = _event.apply(trigger, args);
                     if (layoutViewModel && !layoutViewModel._runScripted) {
                         layoutViewModel._runScripted = $TRUE;
