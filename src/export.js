@@ -29,55 +29,12 @@ var _jSouperBase = {
     makeArray: function(likeArr) {
         return likeArr && likeArr !== $TRUE ? $.s(likeArr) : [];
     },
-    indexOf:$.iO,
-    isPlainObject:$.isO,
-    //加强版的foreach，可用做for-In
-    //帮助信息，看http://msdn.microsoft.com/zh-cn/library/ff679980(v=vs.94).aspx
-    forEach: function(likeArr, callback, context) {
-        if ($.isO(likeArr) && typeof likeArr.length !== "number") {
-            $.fI(likeArr, function(value, key) {
-                callback.call(context, value, key, likeArr);
-            })
-        } else if (likeArr && likeArr !== $TRUE) { //非空或者字符串长度不为0，且不为Boolean-true
-            $.E(likeArr, function(value, index) {
-                callback.call(context, value, index, likeArr);
-            })
-        }
-    },
-    //同jQ的grep工具
-    //帮助信息，看http://www.css88.com/jqapi-1.9/jQuery.grep/
-    //http://msdn.microsoft.com/zh-cn/library/ff679973(v=vs.94).aspx
-    filter: function(likeArr, callback, invert, context) {
-        var result = [];
-        invert === $UNDEFINED && (invert = $TRUE);
-        _jSouperBase.forEach(likeArr, function(value) {
-            if (callback.apply(context, arguments) == invert) {
-                $.p(result, value);
-            }
-        }, context);
-        return result;
-    },
-    //帮助信息，看http://msdn.microsoft.com/zh-cn/library/ff679976(v=vs.94).aspx
-    map: function(likeArr, callback, context) {
-        var result = [];
-        _jSouperBase.forEach(likeArr, function() {
-            $.p(result, callback.apply(context, arguments));
-        }, context);
-        return result;
-    },
-    //默认递归合并，且可合并循环对象
-    extend: function(target, extendObj) {
-        if (arguments.length > 2) {
-            var mixItems = $.s(arguments);
-            mixItems.shift();
-            $.E(mixItems, function(mixItem) {
-                target = _mix(target, mixItem);
-            })
-        } else {
-            target = _mix(target, extendObj);
-        }
-        return target;
-    },
+    indexOf: $.iO,
+    isPlainObject: $.isO,
+    forEach: $.forEach,
+    filter: $.filter,
+    map: $.map,
+    extend: $.extend,
     trim: function(str) {
         return $.isS(str) ? $.trim(str) : "";
     },

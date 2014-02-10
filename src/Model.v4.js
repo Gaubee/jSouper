@@ -614,23 +614,59 @@ var DM_proto = Model.prototype = {
             self.set(key_of_obj, result);
         }
         return result;
-    },
-    //可用做forEach
-    map: __addToolFun("map"),
-    //可用做remove
-    filter: __addToolFun("filter")
+    }
     // buildGetter: function(key) {},
     // buildSetter: function(key) {} 
 };
+var __setTool = {
+    //可用做forEach
+    map: $.map,
+    //可用做remove
+    filter: $.filter,
+    push: function( /*baseArr*/ ) {
+        var args = $.s(arguments),
+            result = $.s(args.shift());
+        Array.prototype.push.apply(result, args);
+        return result;
+    },
+    pop: function(baseArr) {
+        baseArr = $.s(baseArr);
+        baseArr.pop();
+        return baseArr;
+    },
+    _boolAvator: _placeholder(),
+    toggle: function(baser, toggler) {
+        if ($.isA(baser) || ($.isO(baser) && typeof baser.length === "number" && (baser = $.s(baser)))) { //数组型或类数组型
+            var index = baser.indexOf(toggler);
+            index === -1 ? baser.push(toggler) : baser.splice(index, 1);
+        } else if ($.isS(baser)) { //字符串型
+            baser.indexOf(toggler) === -1 ? baser += toggler : (baser = baser.replace(toggler, ""));
+        } else { //其余都用Boolean型处理
+            if ((baser instanceof Boolean) && baser.hasOwnProperty(__setTool._boolAvator)) {
+                baser = baser[__setTool._boolAvator];
+            } else {
+                var boolBaser = new Boolean(!baser);
+                boolBaser[__setTool._boolAvator] = baser;
+                baser = boolBaser;
+            }
+        }
+        return baser;
+    }
+};
 
-function __addToolFun(type) {
-    return function(key_of_likeArr) {
+function __setToolFun(type) {
+    var handle = __setTool[type];
+    return function(key_of_object) {
         var self = this,
             result,
             args = $.s(arguments);
-        args[0] = self.get(key_of_likeArr);
-        result = _jSouperBase[type].apply($NULL, args);
-        self.set(key_of_likeArr, result)
+        args[0] = self.get(key_of_object);
+        result = handle.apply($NULL, args);
+        self.set(key_of_object, result)
         return result
     }
 }
+
+$.fI(__setTool, function(handle, key) {
+    DM_proto[key] = __setToolFun(key);
+});

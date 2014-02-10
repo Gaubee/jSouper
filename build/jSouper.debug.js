@@ -117,7 +117,6 @@ doc = document,
             }
             return codeID;
         },
-
         //空函数
         noop: function() {},
 
@@ -132,12 +131,12 @@ doc = document,
         },
 
         //判断是否为数组
-        isA:function(obj){
+        isA: function(obj) {
             return obj instanceof Array;
         },
 
         //判断是否为非primitives（原始值）
-        isO:function(obj){
+        isO: function(obj) {
             return obj instanceof Object;
         },
 
@@ -148,11 +147,11 @@ doc = document,
         },
 
         //判断字符串能否完全转换成数字
-        isStoN:function  (str) {
+        isStoN: function(str) {
             //NaN != NaN
             return parseFloat(str) == str;
         },
-        
+
         //按字符串切割，返回切割后的字符串，所切割的字符串保存到临时变量_split_laveStr中，下一次切割会被覆盖
         st: function(str, splitKey) { //split
             var index = str.indexOf(splitKey);
@@ -353,10 +352,57 @@ doc = document,
             // xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest")
             xhr.send(null)
             return xhr
-        }
+        },
+        //加强版的foreach，可用做for-In
+        //帮助信息，看http://msdn.microsoft.com/zh-cn/library/ff679980(v=vs.94).aspx
+        forEach: function(likeArr, callback, context) {
+            if ($.isO(likeArr) && typeof likeArr.length !== "number") {
+                $.fI(likeArr, function(value, key) {
+                    callback.call(context, value, key, likeArr);
+                })
+            } else if (likeArr && likeArr !== $TRUE) { //非空或者字符串长度不为0，且不为Boolean-true
+                $.E(likeArr, function(value, index) {
+                    callback.call(context, value, index, likeArr);
+                })
+            }
+        },
+        //同jQ的grep工具
+        //帮助信息，看http://www.css88.com/jqapi-1.9/jQuery.grep/
+        //http://msdn.microsoft.com/zh-cn/library/ff679973(v=vs.94).aspx
+        filter: function(likeArr, callback, invert, context) {
+            var result = [];
+            invert === $UNDEFINED && (invert = $TRUE);
+            _jSouperBase.forEach(likeArr, function(value) {
+                if (callback.apply(context, arguments) == invert) {
+                    $.p(result, value);
+                }
+            }, context);
+            return result;
+        },
+        //帮助信息，看http://msdn.microsoft.com/zh-cn/library/ff679976(v=vs.94).aspx
+        map: function(likeArr, callback, context) {
+            var result = [];
+            _jSouperBase.forEach(likeArr, function() {
+                $.p(result, callback.apply(context, arguments));
+            }, context);
+            return result;
+        },
+        //默认递归合并，且可合并循环对象
+        extend: function(target, extendObj) {
+            if (arguments.length > 2) {
+                var mixItems = $.s(arguments);
+                mixItems.shift();
+                $.E(mixItems, function(mixItem) {
+                    target = _mix(target, mixItem);
+                })
+            } else {
+                target = _mix(target, extendObj);
+            }
+            return target;
+        },
     },
     //空函数，用于绑定对象到该原型链上并生成返回子对象
-    _Object_create_noop = function () {},
+    _Object_create_noop = function() {},
     _traversal = function(node, callback) {
         for (var i = 0, child_node, childNodes = node.childNodes; child_node = childNodes[i]; i += 1) {
             var result = callback(child_node, i, node);
@@ -1475,26 +1521,62 @@ var DM_proto = Model.prototype = {
             self.set(key_of_obj, result);
         }
         return result;
-    },
-    //可用做forEach
-    map: __addToolFun("map"),
-    //可用做remove
-    filter: __addToolFun("filter")
+    }
     // buildGetter: function(key) {},
     // buildSetter: function(key) {} 
 };
+var __setTool = {
+    //可用做forEach
+    map: $.map,
+    //可用做remove
+    filter: $.filter,
+    push: function( /*baseArr*/ ) {
+        var args = $.s(arguments),
+            result = $.s(args.shift());
+        Array.prototype.push.apply(result, args);
+        return result;
+    },
+    pop: function(baseArr) {
+        baseArr = $.s(baseArr);
+        baseArr.pop();
+        return baseArr;
+    },
+    _boolAvator: _placeholder(),
+    toggle: function(baser, toggler) {
+        if ($.isA(baser) || ($.isO(baser) && typeof baser.length === "number" && (baser = $.s(baser)))) { //数组型或类数组型
+            var index = baser.indexOf(toggler);
+            index === -1 ? baser.push(toggler) : baser.splice(index, 1);
+        } else if ($.isS(baser)) { //字符串型
+            baser.indexOf(toggler) === -1 ? baser += toggler : (baser = baser.replace(toggler, ""));
+        } else { //其余都用Boolean型处理
+            if ((baser instanceof Boolean) && baser.hasOwnProperty(__setTool._boolAvator)) {
+                baser = baser[__setTool._boolAvator];
+            } else {
+                var boolBaser = new Boolean(!baser);
+                boolBaser[__setTool._boolAvator] = baser;
+                baser = boolBaser;
+            }
+        }
+        return baser;
+    }
+};
 
-function __addToolFun(type) {
-    return function(key_of_likeArr) {
+function __setToolFun(type) {
+    var handle = __setTool[type];
+    return function(key_of_object) {
         var self = this,
             result,
             args = $.s(arguments);
-        args[0] = self.get(key_of_likeArr);
-        result = _jSouperBase[type].apply($NULL, args);
-        self.set(key_of_likeArr, result)
+        args[0] = self.get(key_of_object);
+        result = handle.apply($NULL, args);
+        self.set(key_of_object, result)
         return result
     }
 }
+
+$.fI(__setTool, function(handle, key) {
+    DM_proto[key] = __setToolFun(key);
+});
 
 // make an Object-Constructor to Model-Extend-Object-Constructor
 var _modelExtend = Model.extend = function(extendsName, extendsObjConstructor) {
@@ -2642,10 +2724,6 @@ var VI_proto = ViewModel.prototype = {
         var dm = this.model;
         return dm.get.apply(dm, arguments /*$.s(arguments)*/ );
     },
-    // mix: function mix() {
-    //     var dm = this.model;
-    //     return dm.mix.apply(dm, arguments /*$.s(arguments)*/ )
-    // },
     set: function set() {
         var dm = this.model;
         return dm.set.apply(dm, arguments /*$.s(arguments)*/ )
@@ -4871,55 +4949,12 @@ var _jSouperBase = {
     makeArray: function(likeArr) {
         return likeArr && likeArr !== $TRUE ? $.s(likeArr) : [];
     },
-    indexOf:$.iO,
-    isPlainObject:$.isO,
-    //加强版的foreach，可用做for-In
-    //帮助信息，看http://msdn.microsoft.com/zh-cn/library/ff679980(v=vs.94).aspx
-    forEach: function(likeArr, callback, context) {
-        if ($.isO(likeArr) && typeof likeArr.length !== "number") {
-            $.fI(likeArr, function(value, key) {
-                callback.call(context, value, key, likeArr);
-            })
-        } else if (likeArr && likeArr !== $TRUE) { //非空或者字符串长度不为0，且不为Boolean-true
-            $.E(likeArr, function(value, index) {
-                callback.call(context, value, index, likeArr);
-            })
-        }
-    },
-    //同jQ的grep工具
-    //帮助信息，看http://www.css88.com/jqapi-1.9/jQuery.grep/
-    //http://msdn.microsoft.com/zh-cn/library/ff679973(v=vs.94).aspx
-    filter: function(likeArr, callback, invert, context) {
-        var result = [];
-        invert === $UNDEFINED && (invert = $TRUE);
-        _jSouperBase.forEach(likeArr, function(value) {
-            if (callback.apply(context, arguments) == invert) {
-                $.p(result, value);
-            }
-        }, context);
-        return result;
-    },
-    //帮助信息，看http://msdn.microsoft.com/zh-cn/library/ff679976(v=vs.94).aspx
-    map: function(likeArr, callback, context) {
-        var result = [];
-        _jSouperBase.forEach(likeArr, function() {
-            $.p(result, callback.apply(context, arguments));
-        }, context);
-        return result;
-    },
-    //默认递归合并，且可合并循环对象
-    extend: function(target, extendObj) {
-        if (arguments.length > 2) {
-            var mixItems = $.s(arguments);
-            mixItems.shift();
-            $.E(mixItems, function(mixItem) {
-                target = _mix(target, mixItem);
-            })
-        } else {
-            target = _mix(target, extendObj);
-        }
-        return target;
-    },
+    indexOf: $.iO,
+    isPlainObject: $.isO,
+    forEach: $.forEach,
+    filter: $.filter,
+    map: $.map,
+    extend: $.extend,
     trim: function(str) {
         return $.isS(str) ? $.trim(str) : "";
     },
