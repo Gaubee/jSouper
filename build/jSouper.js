@@ -1005,7 +1005,7 @@ var _dm_set_source // =$FALSE //set Source ignore extend-Object
 
 //set时强制更新，不论是否相同，因为有事数据源的更新并非来自set本身，所以无法直接作出判断
 //TODO: replace `_dm_force_update` by setting stack
-var _dm_force_update = 0;  //ignore equal
+var _dm_force_update = 0; //ignore equal
 
 var DM_proto = Model.prototype = {
     queryElement: function(matchFun) {
@@ -1081,17 +1081,6 @@ var DM_proto = Model.prototype = {
         var result = this.mix.apply(this, arguments)
         _dm_get_source = $FALSE;
         _dm_set_source = $FALSE;
-        return result;
-    },
-    mix: function(key, nObj) {
-        //mix Data 合并数据
-        //TODO:复合操作，直接移动到ViewModel层，Model层只提供最基本的get、set
-        var self = this,
-            result;
-        if (arguments.length) {
-            result = self.get(key);
-            result = self.set(key, _mix(result, nObj));
-        }
         return result;
     },
     setSource: function() {
@@ -1434,7 +1423,7 @@ var DM_proto = Model.prototype = {
         })
 
         //触发更新
-        Model.finallyRun.register("replaceAs"+model.id,function (argument) {
+        Model.finallyRun.register("replaceAs" + model.id, function(argument) {
             model.touchOff();
         })
 
@@ -1447,11 +1436,43 @@ var DM_proto = Model.prototype = {
         for (var i in this) {
             delete this[i]
         }
-    }
-    /*,
-    buildGetter: function(key) {},
-    buildSetter: function(key) {}*/
+    },
+    forEach: function() {
+        // body...
+    },
+    mix: function(key_of_obj) {
+        //mix Data 合并数据
+        //TODO:复合操作，直接移动到ViewModel层，Model层只提供最基本的get、set
+        var self = this,
+            result,
+            args = $.s(arguments);
+        args.shift();
+        if (args.length) { //arguments>=2
+            args.unshift(self.get(key_of_obj));
+            result = _jSouperBase.extend.apply($NULL, args);
+            self.set(key_of_obj, result);
+        }
+        return result;
+    },
+    //可用做forEach
+    map: __addToolFun("map"),
+    //可用做remove
+    filter: __addToolFun("filter")
+    // buildGetter: function(key) {},
+    // buildSetter: function(key) {} 
 };
+
+function __addToolFun(type) {
+    return function(key_of_likeArr) {
+        var self = this,
+            result,
+            args = $.s(arguments);
+        args[0] = self.get(key_of_likeArr);
+        result = _jSouperBase[type].apply($NULL, args);
+        self.set(key_of_likeArr, result)
+        return result
+    }
+}
 
 // make an Object-Constructor to Model-Extend-Object-Constructor
 var _modelExtend = Model.extend = function(extendsName, extendsObjConstructor) {
@@ -2599,10 +2620,10 @@ var VI_proto = ViewModel.prototype = {
         var dm = this.model;
         return dm.get.apply(dm, arguments /*$.s(arguments)*/ );
     },
-    mix: function mix() {
-        var dm = this.model;
-        return dm.mix.apply(dm, arguments /*$.s(arguments)*/ )
-    },
+    // mix: function mix() {
+    //     var dm = this.model;
+    //     return dm.mix.apply(dm, arguments /*$.s(arguments)*/ )
+    // },
     set: function set() {
         var dm = this.model;
         return dm.set.apply(dm, arguments /*$.s(arguments)*/ )

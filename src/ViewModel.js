@@ -368,10 +368,10 @@ var VI_proto = ViewModel.prototype = {
         var dm = this.model;
         return dm.get.apply(dm, arguments /*$.s(arguments)*/ );
     },
-    mix: function mix() {
-        var dm = this.model;
-        return dm.mix.apply(dm, arguments /*$.s(arguments)*/ )
-    },
+    // mix: function mix() {
+    //     var dm = this.model;
+    //     return dm.mix.apply(dm, arguments /*$.s(arguments)*/ )
+    // },
     set: function set() {
         var dm = this.model;
         return dm.set.apply(dm, arguments /*$.s(arguments)*/ )
