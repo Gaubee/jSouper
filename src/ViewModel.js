@@ -90,7 +90,7 @@ function ViewModel(handleNodeTree, NodeList, triggerTable, model) {
     V._instances[self._id = $.uid()] = self;
     self._open = $.D.C(self._id + " _open");
     self._close = $.D.C(self._id + " _close");
-
+    if (self._id===1060||self._id===1046) {debugger};
     self._canRemoveAble = $FALSE;
     // var _canRemoveAble = $FALSE;
     // self.__defineGetter__("_canRemoveAble", function() {

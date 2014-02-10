@@ -130,13 +130,16 @@ V.rt("#each", function(handle, index, parentHandle) {
                     if (data) {
                         var fragment = $.D.cl(fr);
                         var elParentNode = comment_endeach_node.parentNode;
-
                         $.E($.s(data), function(eachItemData, index) {
                             //TODO:if too mush vi will be create, maybe asyn
                             var viewModel = arrViewModels[index];
                             //VM不存在，新建
                             if (!viewModel) {
-                                viewModel = arrViewModels[index] = eachModuleConstructor(eachItemData);
+                                eachModuleConstructor(eachItemData, {
+                                    onInit: function(vm) {
+                                        viewModel = arrViewModels[index] = vm
+                                    }
+                                });
 
                                 viewModel._arrayVI = arrViewModels;
                                 var viDM = viewModel.model
@@ -163,7 +166,7 @@ V.rt("#each", function(handle, index, parentHandle) {
                             _moveChild(viewModel, elParentNode);
                             viewModel._canRemoveAble = $TRUE;
 
-                        }, showed_vi_len );
+                        }, showed_vi_len);
 
                         //统一插入
                         $.D.iB(elParentNode, fragment, comment_endeach_node);

@@ -26,6 +26,12 @@ function View(arg, vmName) {
 
         var vi = _create(self, data, opction.isAttr);
 
+        //触发初始化事件，在finallyRun前运行，为了也在return前运行：
+        //为了finallyRun可能触发的VM初始化。
+        //有些VM的创建是判断一个缓存器中时候有实例对象，而此刻还没有return，
+        //实例对象还没有进入缓存器，这时运行finallyRun，会造成空缓存器而判断错误，所以这里需要一个onInit事件机制，来做缓存器锁定
+        opction.onInit && opction.onInit(vi);
+
         //TODO:create with callback then getTop.touchOff
         vi.model.getTop().touchOff();
 
@@ -35,6 +41,7 @@ function View(arg, vmName) {
         //last layer,and run finallyRun
         !finallyRunStacks.length && finallyRun();
 
+        //在return前运行回调
         opction.callback && opction.callback(vi);
 
         if (self.vmName) {

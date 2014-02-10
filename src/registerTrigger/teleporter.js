@@ -4,7 +4,6 @@ V.rt("#teleporter", function(handle, index, parentHandle) {
     if (booleanHandle.type==="handle") {
         var booleanHandle_id = booleanHandle.id;
     }
-    console.log(booleanHandle);
     var placeholderHandle = $.lI(handle.childNodes);
     if (placeholderHandle === teleporterNameHandle) { //no first argument;
         var teleporterName = "index"
