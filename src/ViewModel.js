@@ -74,6 +74,46 @@
 
 var stopTriggerBubble; // = $FALSE;
 
+function _addAttr(viewModel, node, attrJson) {
+    //保存新增属性说对应的key，返回进行统一触发
+    var result = [];
+    var handle = jSouper.queryHandle(node);
+    $.fI(attrJson, function(attrValue, attrKey) {
+        attrKey = _fixAttrKey(attrKey);
+        var attrViewModel = _getAttrViewModel(attrValue);
+        //获取对应的属性处理器
+        var _attributeHandle = _AttributeHandle(attrKey, node);
+        var attrTrigger = {
+            handleId: handle.id + attrKey,
+            key: attrKey,
+            type: "attributesTrigger",
+            event: function(NodeList, model, /* eventTrigger,*/ isAttr /*, viewModel_ID*/ ) { /*NodeList, model, eventTrigger, self._isAttr, self._id*/
+                //addAttr是违反解析规则的方法，所以VM的获取不一定是正确的，node与vm只能通过传入的参数确定
+                // var viewModel = V._instances[viewModel_ID];
+
+                attrViewModel.model = model;
+                $.E(attrViewModel._triggers, function(key) { //touchoff all triggers
+                    attrViewModel.touchOff(key);
+                });
+                _attributeHandle(attrKey, node, /*_shadowDIV*/ attrViewModel.topNode(), viewModel, /*model.id,*/ handle, triggerTable);
+                // model.remove(attrViewModel); //?
+            }
+        }
+        var triggerTable = viewModel._triggers._;
+        $.E(attrViewModel._triggers, function(key) {
+            var triggerContainer = triggerTable[key];
+            if (!triggerContainer) {
+                viewModel._buildSmart(key);
+                triggerContainer = triggerTable[key] = [];
+                $.p(viewModel._triggers, key);
+                $.p(result, key);
+            }
+            $.us(triggerContainer, attrTrigger);
+        });
+    });
+    return result;
+};
+
 function ViewModel(handleNodeTree, NodeList, triggerTable, model) {
     if (!(this instanceof ViewModel)) {
         return new ViewModel(handleNodeTree, NodeList, triggerTable, model);
@@ -90,7 +130,9 @@ function ViewModel(handleNodeTree, NodeList, triggerTable, model) {
     V._instances[self._id = $.uid()] = self;
     self._open = $.D.C(self._id + " _open");
     self._close = $.D.C(self._id + " _close");
-    if (self._id===1060||self._id===1046) {debugger};
+    if (self._id === 1060 || self._id === 1046) {
+        debugger
+    };
     self._canRemoveAble = $FALSE;
     // var _canRemoveAble = $FALSE;
     // self.__defineGetter__("_canRemoveAble", function() {
@@ -240,53 +282,15 @@ var VI_proto = ViewModel.prototype = {
 
         return self;
     },
-    _addAttr: function(node, attrJson) {
-        var self = this;
-        //保存新增属性说对应的key，返回进行统一触发
-        var result = [];
-        var handle = jSouper.queryHandle(node);
-        $.fI(attrJson, function(attrValue, attrKey) {
-            attrKey = _fixAttrKey(attrKey);
-            var attrViewModel = _getAttrViewModel(attrValue);
-            //获取对应的属性处理器
-            var _attributeHandle = _AttributeHandle(attrKey, node);
-            var attrTrigger = {
-                handleId: handle.id + attrKey,
-                key: attrKey,
-                type: "attributesTrigger",
-                event: function(NodeList, model, /* eventTrigger,*/ isAttr, viewModel_ID) { /*NodeList, model, eventTrigger, self._isAttr, self._id*/
-                    var viewModel = V._instances[viewModel_ID];
-                    attrViewModel.model = model;
-                    $.E(attrViewModel._triggers, function(key) { //touchoff all triggers
-                        attrViewModel.touchOff(key);
-                    });
-                    _attributeHandle(attrKey, node, /*_shadowDIV*/ attrViewModel.topNode(), viewModel, /*model.id,*/ handle, triggerTable);
-                    // model.remove(attrViewModel); //?
-                }
-            }
-            var triggerTable = self._triggers._;
-            $.E(attrViewModel._triggers, function(key) {
-                var triggerContainer = triggerTable[key];
-                if (!triggerContainer) {
-                    self._buildSmart(key);
-                    triggerContainer = triggerTable[key] = [];
-                    $.p(self._triggers, key);
-                    $.p(result, key);
-                }
-                $.us(triggerContainer, attrTrigger);
-            });
-        });
-        return result;
-    },
     addAttr: function(node, attrJson) {
         var self = this;
         var _touchOffKeys;
         if ($.isA(node)) {
             $.E(node, function(node) {
-                _touchOffKeys = self._addAttr(node, attrJson)
+                _touchOffKeys = _addAttr(self, node, attrJson)
             });
         } else {
-            _touchOffKeys = self._addAttr(node, attrJson)
+            _touchOffKeys = _addAttr(self, node, attrJson)
         }
         self.model.rebuildTree();
         $.E(_touchOffKeys, function(key) {
@@ -445,7 +449,7 @@ var VI_proto = ViewModel.prototype = {
         (telporterName === $UNDEFINED) && (telporterName = "index");
         var teleporter = self._teleporters[telporterName];
         if (teleporter) {
-            if (teleporter.show_or_hidden !== $FALSE&&teleporter.display) {
+            if (teleporter.show_or_hidden !== $FALSE && teleporter.display) {
                 //remove old
                 var old_viewModel = teleporter.vi;
                 old_viewModel && old_viewModel.remove();

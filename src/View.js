@@ -42,6 +42,7 @@ function View(arg, vmName) {
         !finallyRunStacks.length && finallyRun();
 
         //在return前运行回调
+        //在initVM前（text/vm所定义的），确定subset、collect等关系
         opction.callback && opction.callback(vi);
 
         if (self.vmName) {
