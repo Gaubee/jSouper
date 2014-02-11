@@ -138,19 +138,21 @@ V.rt("#each", function(handle, index, parentHandle) {
                                 eachModuleConstructor(eachItemData, {
                                     onInit: function(vm) {
                                         viewModel = arrViewModels[index] = vm
+                                    },
+                                    callback: function(vm) {
+                                        vm._arrayVI = arrViewModels;
+                                        var viDM = vm.model;
+                                        viDM._isEach = vm._isEach = {
+                                            //_index在push到Array_DM时才进行真正定义，由于remove会重新更正_index，所以这个参数完全交给Array_DM管理
+                                            // _index: index,
+                                            eachId: id,
+                                            eachVIs: arrViewModels
+                                        }
+                                        model.subset(viDM, arrDataHandle_Key + "." + index); //+"."+index //reset arrViewModel's model
+                                        _extend_DM_get_Index(viDM)
                                     }
                                 });
-
-                                viewModel._arrayVI = arrViewModels;
-                                var viDM = viewModel.model
-                                viDM._isEach = viewModel._isEach = {
-                                    //_index在push到Array_DM时才进行真正定义，由于remove会重新更正_index，所以这个参数完全交给Array_DM管理
-                                    // _index: index,
-                                    eachId: id,
-                                    eachVIs: arrViewModels
-                                }
-                                model.subset(viDM, arrDataHandle_Key + "." + index); //+"."+index //reset arrViewModel's model
-                                _extend_DM_get_Index(viDM)
+                                var viDM = viewModel.model;
                                 //强制刷新，保证这个对象的内部渲染正确，在subset后刷新，保证smartkey的渲染正确
                                 _touchOff.call(viDM, "");
                                 viDM.__cacheIndex = viDM._index;

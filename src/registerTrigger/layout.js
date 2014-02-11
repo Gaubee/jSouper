@@ -36,10 +36,12 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
                 module($UNDEFINED, {
                     onInit: function(vm) {
                         layoutViewModel = AllLayoutViewModel[id] = vm;
+                    },
+                    callback:function (vm) {
+                        model.subset(vm, key);
                     }
                 });
 
-                model.subset(layoutViewModel, key);
 
             }
         }
