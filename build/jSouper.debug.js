@@ -415,6 +415,8 @@ doc = document,
 var
 //事件缓存区
 _event_cache = {},
+    // //底层事件缓存区，实现系统的getEventListeners
+    // __base_event_cache = {},
     _fixEvent = function(e) { //@Rybylouvre
         // if (!e.target) {console.log(e)};
         e.target || (e.target = e.srcElement);
@@ -532,44 +534,68 @@ _event_cache = {},
             }
         }(_isIE ? (/mouse|click|contextmenu/.test(eventName) ? _fixMouseEvent : _fixEvent) : $.noop));
 
-        if (_registerEventRouterMatch.ip[eventName] && !("oninput" in doc)) {
-            (function() {
-                result.name = ["keypress", /*"focus", */ "blur", "keyup", "paste", "propertychange", "cut"]
-                var _fixPropertychangeLock,
-                    _deleteOrChienseInput,
-                    _oldValue = Element.value,
-                    _TI;
-                // delete Element.value;
-                result.fn = function(e) { // @Gaubee github/blog/issues/44
-                    var result;
-                    if (e.type === "keyup") { //keyup // 3
-                        if (_deleteOrChienseInput) {
-                            _deleteOrChienseInput = $FALSE;
-                            _oldValue = Element.value;
-                            e._extend = {
-                                type: "input"
+        if (_registerEventRouterMatch.ip[eventName] /*&& !("oninput" in doc)*/ ) {
+            if ("oninput" in doc) {
+                if (Element.__defineSetter__) {
+                    (function() {
+                        var value = "";
+                        var ev = doc.createEvent("HTMLEvents");
+                        ev.initEvent("input", true, false);
+                        Element.__defineSetter__("value", function(newValue) {
+                            if (typeof newValue === "number") {
+                                value = newValue;
+                            } else {
+                                value = String(newValue);
                             }
-                            result = _fn(e);
-                        }
-                    } else if (e.type === "propertychange") { // 2
-                        if (_fixPropertychangeLock) {
-                            _fixPropertychangeLock = $FALSE;
-                            e._extend = {
-                                type: "input"
+                            Element.setAttribute("value", newValue);
+                            if (doc.contains(Element)) {
+                                Element.dispatchEvent(ev);
                             }
-                            result = _fn(e);
-                        } else if ((e.keyCode === 8 /*backspace*/ || e.keyCode === 46 /*delete*/ ) || _oldValue !== Element.value) { //delete or chinese input
-                            _deleteOrChienseInput = $TRUE;
-                        }
-                    } else if (e.type === "blur") {
-                        Element.fireEvent("onkeyup")
-                        // clearInterval(_TI);
-                    } else { //paste cut keypress  // 1
-                        _fixPropertychangeLock = $TRUE;
-                        _deleteOrChienseInput = $FALSE;
-                    }
+                        });
+                        Element.__defineGetter__("value", function() {
+                            return value;
+                        })
+                    }());
                 }
-            }());
+            } else {
+                (function() {
+                    result.name = ["keypress", /*"focus", */ "blur", "keyup", "paste", "propertychange", "cut"]
+                    var _fixPropertychangeLock,
+                        _deleteOrChienseInput,
+                        _oldValue = Element.value,
+                        _TI;
+                    // delete Element.value;
+                    result.fn = function(e) { // @Gaubee github/blog/issues/44
+                        var result;
+                        if (e.type === "keyup") { //keyup // 3
+                            if (_deleteOrChienseInput) {
+                                _deleteOrChienseInput = $FALSE;
+                                _oldValue = Element.value;
+                                e._extend = {
+                                    type: "input"
+                                }
+                                result = _fn(e);
+                            }
+                        } else if (e.type === "propertychange") { // 2
+                            if (_fixPropertychangeLock) {
+                                _fixPropertychangeLock = $FALSE;
+                                e._extend = {
+                                    type: "input"
+                                }
+                                result = _fn(e);
+                            } else if ((e.keyCode === 8 /*backspace*/ || e.keyCode === 46 /*delete*/ ) || _oldValue !== Element.value) { //delete or chinese input
+                                _deleteOrChienseInput = $TRUE;
+                            }
+                        } else if (e.type === "blur") {
+                            Element.fireEvent("onkeyup")
+                            // clearInterval(_TI);
+                        } else { //paste cut keypress  // 1
+                            _fixPropertychangeLock = $TRUE;
+                            _deleteOrChienseInput = $FALSE;
+                        }
+                    }
+                }());
+            }
         } else if (_registerEventRouterMatch.rc[eventName] /*&& _isIE*/ ) {
             if (_isIE) {
                 (function() {
@@ -585,7 +611,7 @@ _event_cache = {},
                         return _result;
                     }
                 }());
-            }else{
+            } else {
                 result.name = ["contextmenu"];
             }
         } else if (result._cacheName = _registerEventRouterMatch.el[eventName]) {
@@ -731,35 +757,49 @@ _event_cache = {},
     //现代浏览器的事件监听
     _addEventListener = function(Element, eventName, eventFun, elementHash) {
         var eventConfig = _registerEventBase(Element, eventName, eventFun, elementHash)
+        // var __base_hash_code = $.hashCode(Element);
+        // var event_cache = __base_event_cache[__base_hash_code] || (__base_event_cache[__base_hash_code] = {});
         if ($.isS(eventConfig.name)) {
             Element.addEventListener(eventConfig.name, eventConfig.fn, $FALSE);
+            // $.p(event_cache[eventConfig.name] || (event_cache[eventConfig.name] = []), eventConfig.fn);
         } else {
             $.E(eventConfig.name, function(eventName) {
                 Element.addEventListener(eventName, eventConfig.fn, $FALSE);
+                // $.p(event_cache[eventConfig.name] || (event_cache[eventConfig.name] = []), eventConfig.fn);
             })
         }
     },
     //现代浏览器的事件移除
     _removeEventListener = function(Element, eventName, eventFun, elementHash) {
         var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
+        // var __base_hash_code = $.hashCode(Element);
+        // var eventList = __base_event_cache[__base_hash_code][eventConfig.name];
         wrapEventFun && Element.removeEventListener(eventName, wrapEventFun, $FALSE);
+        // eventList.splice($.iO(eventList, eventFun), 1);
     },
 
     //IE浏览器的时间监听
     _attachEvent = function(Element, eventName, eventFun, elementHash) {
         var eventConfig = _registerEventBase(Element, eventName, eventFun, elementHash)
+        // var __base_hash_code = $.hashCode(Element);
+        // var event_cache = __base_event_cache[__base_hash_code] || (__base_event_cache[__base_hash_code] = {});
         if ($.isS(eventConfig.name)) {
             Element.attachEvent("on" + eventConfig.name, eventConfig.fn);
+            // $.p(event_cache[eventConfig.name] || (event_cache[eventConfig.name] = []), eventConfig.fn);
         } else {
             $.E(eventConfig.name, function(eventName) {
                 Element.attachEvent("on" + eventName, eventConfig.fn);
+                // $.p(event_cache[eventConfig.name] || (event_cache[eventConfig.name] = []), eventConfig.fn);
             })
         }
     },
     //IE浏览器的事件移除
     _detachEvent = function(Element, eventName, eventFun, elementHash) {
         var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
+        // var __base_hash_code = $.hashCode(Element);
+        // var eventList = __base_event_cache[__base_hash_code][eventConfig.name];
         wrapEventFun && Element.detachEvent("on" + eventName, wrapEventFun);
+        // eventList.splice($.iO(eventList, eventFun), 1);
     },
 
     //对外的接口
@@ -932,6 +972,9 @@ function Model(baseData) {
     //父级Model
     self._parentModel // = $UNDEFINED; //to get data
 
+    //私有数据集
+    self._privateModel // = $UNDEFINED;
+
     //相对于父级的前缀key，代表在父级中的位置
     self._prefix // = $NULL; //冒泡时需要加上的前缀
 
@@ -1011,6 +1054,7 @@ function _getAllSiblingModels(self, result) {
             _getAllSiblingModels(dm, result);
         }
     });
+
     return result;
 };
 
@@ -1021,7 +1065,9 @@ var DM_config = Model.config = {
     prefix: {
         This: "$THIS",
         Parent: "$PARENT",
-        Top: "$TOP"
+        Top: "$TOP",
+        Private: "$PRIVATE",
+        Js: "$JS"
     }
 };
 
@@ -1141,6 +1187,9 @@ var DM_proto = Model.prototype = {
         }
         //filterKey应该在拓展类的getter运行后定义，避免被覆盖，因为其中可能有其它get函数
         Model.session.filterKey = filterKey;
+
+        //在最后再进行一次定义，理由同上
+        Model.session.topGetter = self;
         return result;
     },
     mixSource: function() {
@@ -1363,6 +1412,8 @@ var DM_proto = Model.prototype = {
             //所以锁定是效率所需。
             // $.p(chidlUpdateKey, childResult);
         });
+        //private
+        self._privateModel && self._privateModel.touchOff(key);
     },
     rebuildTree: $.noop,
     getTop: function() { //get DM tree top
@@ -1525,6 +1576,7 @@ var DM_proto = Model.prototype = {
     // buildGetter: function(key) {},
     // buildSetter: function(key) {} 
 };
+var M_Session = {};
 var __setTool = {
     //可用做forEach
     map: $.map,
@@ -1732,182 +1784,218 @@ DM_proto.lineUp = function() {
  */
 ;
 (function() {
-	var _get = DM_proto.get,
-		_set = DM_proto.set,
-		prefix = DM_config.prefix,
-		_rebuildTree = DM_proto.rebuildTree,
-		_subset = DM_proto.subset,
-		set = DM_proto.set = function(key) {
-			var self = this,
-				args = arguments /*$.s(arguments)*/ ,
-				result;
-			if (args.length > 1) {
-				if (key.indexOf(prefix.Parent) === 0) { //$parent
-					if (self = self._parentModel) {
-						if (key === prefix.Parent) {
-							// args.splice(0, 1);
-							$.sp.call(args, 0, 1)
-						} else if (key.charAt(prefix.Parent.length) === ".") {
-							args[0] = key.replace(prefix.Parent + ".", "");
-						}
-						result = set.apply(self, args);
-					} else {
-						Model.session.filterKey = $UNDEFINED;
-						Model.session.topSetter = $UNDEFINED;
-						key = ""
-					}
-				} else if (key.indexOf(prefix.This) === 0) { //$this
-					if (key === prefix.This) {
-						// args.splice(0, 1);
-						$.sp.call(args, 0, 1)
-					} else if (key.charAt(prefix.This.length) === ".") {
-						args[0] = key.replace(prefix.This + ".", "");
-					}
-					result = set.apply(self, args);
-				} else if (key.indexOf(prefix.Top) === 0) {
-					var next;
-					while (next = self._parentModel) {
-						self = next;
-					}
-					if (key === prefix.Top) {
-						// args.splice(0, 1);
-						$.sp.call(args, 0, 1)
-					} else if (key.charAt(prefix.Top.length) === ".") {
-						args[0] = key.replace(prefix.Top + ".", "");
-					}
-					result = set.apply(self, args);
-				} else { //no prefix key
-					result = _set.apply(self, args);
-				}
-			} else { //one argument
-				result = _set.apply(self, args);
-			}
-			//TODO:简化返回结果，节省内存
-			result || (result = {
-				key: key/*,
+    var _get = DM_proto.get,
+        _set = DM_proto.set,
+        prefix = DM_config.prefix,
+        _rebuildTree = DM_proto.rebuildTree,
+        _subset = DM_proto.subset,
+        set = DM_proto.set = function(key) {
+            var self = this,
+                args = arguments /*$.s(arguments)*/ ,
+                result;
+            if (args.length > 1) {
+                if (key.indexOf(prefix.Private) === 0) {
+                    var privateModel = self._privateModel || (self._privateModel = new Model);
+                    if (key === prefix.Private) {
+                        // args.splice(0, 1);
+                        $.sp.call(args, 0, 1)
+                    } else if (key.charAt(prefix.Private.length) === ".") {
+                        args[0] = key.replace(prefix.Private + ".", "");
+                    }
+                    result = set.apply(privateModel, args);
+                } else if (key.indexOf(prefix.Js) === 0) {
+                    if (key === prefix.Js) {
+                        // args.splice(0, 1);
+                        $.sp.call(args, 0, 1)
+                    } else if (key.charAt(prefix.Js.length) === ".") {
+                        args[0] = key.replace(prefix.Js + ".", "");
+                    }
+                    result = set.apply(_jSouperBase.$JS, args);
+                } else if (key.indexOf(prefix.Parent) === 0) { //$parent
+                    if (self = self._parentModel) {
+                        if (key === prefix.Parent) {
+                            // args.splice(0, 1);
+                            $.sp.call(args, 0, 1)
+                        } else if (key.charAt(prefix.Parent.length) === ".") {
+                            args[0] = key.replace(prefix.Parent + ".", "");
+                        }
+                        result = set.apply(self, args);
+                    } else {
+                        Model.session.filterKey = $UNDEFINED;
+                        Model.session.topSetter = $UNDEFINED;
+                        key = ""
+                    }
+                } else if (key.indexOf(prefix.This) === 0) { //$this
+                    if (key === prefix.This) {
+                        // args.splice(0, 1);
+                        $.sp.call(args, 0, 1)
+                    } else if (key.charAt(prefix.This.length) === ".") {
+                        args[0] = key.replace(prefix.This + ".", "");
+                    }
+                    result = set.apply(self, args);
+                } else if (key.indexOf(prefix.Top) === 0) {
+                    var next;
+                    while (next = self._parentModel) {
+                        self = next;
+                    }
+                    if (key === prefix.Top) {
+                        // args.splice(0, 1);
+                        $.sp.call(args, 0, 1)
+                    } else if (key.charAt(prefix.Top.length) === ".") {
+                        args[0] = key.replace(prefix.Top + ".", "");
+                    }
+                    result = set.apply(self, args);
+                } else { //no prefix key
+                    result = _set.apply(self, args);
+                }
+            } else { //one argument
+                result = _set.apply(self, args);
+            }
+            //TODO:简化返回结果，节省内存
+            result || (result = {
+                key: key
+                /*,
 				// allUpdateKey: allUpdateKey,
 				updateKey: [key],
 				chidlUpdateKey: []*/
-			});
+            });
 
-			//更新调用堆栈层数，如果是0,则意味着冒泡到顶层的调用即将结束，是最后一层set
-			result.stacks = Model.session.finallyRunStacks.length
-			return result
-		},
-		get = DM_proto.get = function(key) {
-			var self = this,
-				args = arguments /*$.s(arguments)*/ ,
-				result;
-			if (args.length > 0) {
-				if (key.indexOf(prefix.Parent) === 0) { //$parent
-					if (self = self._parentModel) {
-						if (key === prefix.Parent) {
-							// args.splice(0, 1);
-							$.sp.call(args, 0, 1)
-						} else if (key.charAt(prefix.Parent.length) === ".") {
-							args[0] = key.replace(prefix.Parent + ".", "");
-						}
-						result = get.apply(self, args);
-					} else {
-						Model.session.filterKey = $UNDEFINED;
-						Model.session.topGetter = $UNDEFINED;
-						key = ""
-					}
-				} else if (key.indexOf(prefix.This) === 0) { //$this
-					if (key === prefix.This) {
-						// args.splice(0, 1);
-						$.sp.call(args, 0, 1)
-					} else if (key.charAt(prefix.This.length) === ".") {
-						args[0] = key.replace(prefix.This + ".", "");
-					}
-					result = get.apply(self, args);
-				} else if (key.indexOf(prefix.Top) === 0) {
-					var next;
-					while (next = self._parentModel) {
-						self = next;
-					}
-					if (key === prefix.Top) {
-						// args.splice(0, 1);
-						$.sp.call(args, 0, 1)
-					} else if (key.charAt(prefix.Top.length) === ".") {
-						args[0] = key.replace(prefix.Top + ".", "");
-					}
-					result = get.apply(self, args);
-				} else { //no prefix key
-					result = _get.apply(self, args);
-				}
-			} else { //one argument
-				result = _get.apply(self, args);
-			}
-			return result;
-		};
+            //更新调用堆栈层数，如果是0,则意味着冒泡到顶层的调用即将结束，是最后一层set
+            result.stacks = Model.session.finallyRunStacks.length
+            return result
+        },
+        get = DM_proto.get = function(key) {
+            var self = this,
+                args = arguments /*$.s(arguments)*/ ,
+                result;
+            if (args.length > 0) {
+                if (key.indexOf(prefix.Private) === 0) {
+                    var privateModel = self._privateModel || (self._privateModel = new Model);
+                    if (key === prefix.Private) {
+                        // args.splice(0, 1);
+                        $.sp.call(args, 0, 1)
+                    } else if (key.charAt(prefix.Private.length) === ".") {
+                        args[0] = key.replace(prefix.Private + ".", "");
+                    }
+                    result = get.apply(privateModel, args);
+                } else if (key.indexOf(prefix.Js) === 0) {
+                    if (key === prefix.Js) {
+                        // args.splice(0, 1);
+                        $.sp.call(args, 0, 1)
+                    } else if (key.charAt(prefix.Js.length) === ".") {
+                        args[0] = key.replace(prefix.Js + ".", "");
+                    }
+                    result = get.apply(_jSouperBase.$JS, args);
+                } else if (key.indexOf(prefix.Parent) === 0) { //$parent
+                    if (self = self._parentModel) {
+                        if (key === prefix.Parent) {
+                            // args.splice(0, 1);
+                            $.sp.call(args, 0, 1)
+                        } else if (key.charAt(prefix.Parent.length) === ".") {
+                            args[0] = key.replace(prefix.Parent + ".", "");
+                        }
+                        result = get.apply(self, args);
+                    } else {
+                        Model.session.filterKey = $UNDEFINED;
+                        Model.session.topGetter = $UNDEFINED;
+                        key = ""
+                    }
+                } else if (key.indexOf(prefix.This) === 0) { //$this
+                    if (key === prefix.This) {
+                        // args.splice(0, 1);
+                        $.sp.call(args, 0, 1)
+                    } else if (key.charAt(prefix.This.length) === ".") {
+                        args[0] = key.replace(prefix.This + ".", "");
+                    }
+                    result = get.apply(self, args);
+                } else if (key.indexOf(prefix.Top) === 0) {
+                    var next;
+                    while (next = self._parentModel) {
+                        self = next;
+                    }
+                    if (key === prefix.Top) {
+                        // args.splice(0, 1);
+                        $.sp.call(args, 0, 1)
+                    } else if (key.charAt(prefix.Top.length) === ".") {
+                        args[0] = key.replace(prefix.Top + ".", "");
+                    }
+                    result = get.apply(self, args);
+                } else { //no prefix key
+                    result = _get.apply(self, args);
+                }
+            } else { //one argument
+                result = _get.apply(self, args);
+            }
+            return result;
+        };
 
-	function _getAllSmartModels(self, result) {
-		result ? $.p(result, self) : (result = []);
-		var dmSmartModels = self._smartDMs_id;
-		dmSmartModels && $.E(dmSmartModels, function(dm) {
-			dm = Model.get(dm);
-			if ($.iO(result, dm) === -1) {
-				_getAllSmartModels(dm, result);
-			}
-		});
-		// console.table(result)
-		return result;
-	};
-	DM_proto.rebuildTree = function() {
-		var self = this,
-			smartSource;
-		$.E(_getAllSmartModels(self), function(dm) {
-			if (smartSource = dm._smartSource) {
-				var smart_prefix = smartSource.prefix,
-					smart_model = Model.get(smartSource.dm_id);
-				// console.log(smart_prefix)
-				if (smart_prefix.indexOf(prefix.Parent) === 0 || smart_prefix.indexOf(prefix.Top) === 0) {
-					var data = smart_model.get(smart_prefix);
-					var topGetter = Model.session.topGetter
-					if (topGetter !== smartSource.topGetter && (smartSource.topGetter = topGetter)) {
-						smart_model.subset(dm, smart_prefix);
-					}
-				}
-			}
-		})
-		return _rebuildTree.call(self);
-	};
-	DM_proto.subset = function(model, prefixKey) {
-		var self = this,
-			data = self.get(prefixKey),
-			result,
-			topGetter = Model.session.topGetter,
-			filterKey = Model.session.filterKey || "";
-		if (filterKey !== prefixKey) { //is smart key
+    function _getAllSmartModels(self, result) {
+        result ? $.p(result, self) : (result = []);
+        var dmSmartModels = self._smartDMs_id;
+        dmSmartModels && $.E(dmSmartModels, function(dm) {
+            dm = Model.get(dm);
+            if ($.iO(result, dm) === -1) {
+                _getAllSmartModels(dm, result);
+            }
+        });
+        // console.table(result)
+        return result;
+    };
+    DM_proto.rebuildTree = function() {
+        var self = this,
+            smartSource;
+        $.E(_getAllSmartModels(self), function(dm) {
+            if (smartSource = dm._smartSource) {
+                var smart_prefix = smartSource.prefix,
+                    smart_model = Model.get(smartSource.dm_id);
+                // console.log(smart_prefix)
+                if (smart_prefix.indexOf(prefix.Parent) === 0 || smart_prefix.indexOf(prefix.Top) === 0) {
+                    var data = smart_model.get(smart_prefix);
+                    var topGetter = Model.session.topGetter
+                    if (topGetter !== smartSource.topGetter && (smartSource.topGetter = topGetter)) {
+                        smart_model.subset(dm, smart_prefix);
+                    }
+                }
+            }
+        })
+        return _rebuildTree.call(self);
+    };
+    DM_proto.subset = function(model, prefixKey) {
+        var self = this,
+            data = self.get(prefixKey),
+            result,
+            topGetter = Model.session.topGetter,
+            filterKey = Model.session.filterKey || "";
+        if (filterKey !== prefixKey) { //is smart key
 
-			if (prefixKey.indexOf(prefix.This) === 0) {
-				if (filterKey) {
-					_subset.call(self, model, filterKey)
-				} else { //prefixKey === "$THIS"
-					model.replaceAs(self);
-				}
-			} else {
-				model._smartSource = {
-					topGetter: topGetter, // current coordinate
-					dm_id: self.id,
-					prefix: prefixKey
-				};
-				$.p(self._smartDMs_id || (self._smartDMs_id = []), model.id);
-				if (topGetter) { // smart dm maybe change coodition
-					if (filterKey) {
-						_subset.call(topGetter, model, filterKey)
-					} else {
-						topGetter.collect(model);
-					}
-				}
-			}
-		} else {
-			result = _subset.apply(self, arguments /*$.s(arguments)*/ );
-		}
-		return result;
-	}
+            if (prefixKey.indexOf(prefix.This) === 0) {
+                if (filterKey) {
+                    _subset.call(self, model, filterKey)
+                } else { //prefixKey === "$THIS"
+                    model.replaceAs(self);
+                }
+            } else {
+                model._smartSource = {
+                    topGetter: topGetter, // current coordinate
+                    dm_id: self.id,
+                    prefix: prefixKey
+                };
+                $.p(self._smartDMs_id || (self._smartDMs_id = []), model.id);
+                if (topGetter) { // smart dm maybe change coodition
+                    if (filterKey) {
+                        _subset.call(topGetter, model, filterKey)
+                    } else {
+                        topGetter.collect(model);
+                    }
+                }
+            }
+        } else {
+            result = _subset.apply(self, arguments /*$.s(arguments)*/ );
+        }
+        return result;
+    }
 }());
+
 //by RubyLouvre(司徒正美)
 //setAttribute bug:http://www.iefans.net/ie-setattribute-bug/
 var IEfix = {
@@ -2062,10 +2150,13 @@ function View(arg, vmName) {
     self._triggerTable = {};
     self.vmName = vmName;
     self.id = $.uid();
+
     // console.group(self.id);
     // console.log(vmName)
     _buildHandler(self);
     _buildTrigger(self);
+    
+    V._scansVMInit(arg.node, vmName);
     return function(data, opction) {
         var id = $.uid();
         var finallyRunStacks = Model.session.finallyRunStacks;
@@ -2082,8 +2173,9 @@ function View(arg, vmName) {
         //实例对象还没有进入缓存器，这时运行finallyRun，会造成空缓存器而判断错误，所以这里需要一个onInit事件机制，来做缓存器锁定
         opction.onInit && opction.onInit(vi);
 
-        //TODO:create with callback then getTop.touchOff
+
         vi.model.getTop().touchOff();
+        _jSouperBase.$JS.touchOff();
 
         //pop mark
         finallyRunStacks.pop();
@@ -2101,6 +2193,9 @@ function View(arg, vmName) {
                 viewModel_init(vi);
             }
         }
+
+        vi.model._privateModel && vi.model._privateModel.touchOff();
+
         return vi
     }
 };
@@ -2162,9 +2257,9 @@ function _buildHandler(self) {
         handle.parentNode = parentHandle;
         var node = handle.node;
         if (handle.type === "handle") {
-            var handleFactory = V.handles[handle.handleName];
-            if (handleFactory) {
-                var handle = handleFactory(handle, index, parentHandle)
+            var handleHandle = V.handles[handle.handleName];
+            if (handleHandle) {
+                var handle = handleHandle(handle, index, parentHandle)
                 handle && $.p(handles, handle);
             }
         } else if (handle.type === "element") {
@@ -2174,7 +2269,7 @@ function _buildHandler(self) {
 };
 var _attrRegExp = /(\S+)=["']?((?:.(?!["']?\s+(?:\S+)=|[>"']))+.)["']?/g;
 var ignoreTagNameMap = {};
-$.fI("script|pre|template|style|link".split("|"),function  (value,key) {
+$.fI("script|pre|template|style|link".split("|"), function(value, key) {
     ignoreTagNameMap[value] = ignoreTagNameMap[value.toUpperCase()] = $TRUE;
 })
 
@@ -2218,7 +2313,7 @@ function _buildTrigger(self) {
                 handle.nodeStr = nodeHTMLStr;
             }
             if (_isHTMLUnknownElement(handle.tag)) {
-                
+
                 (handle._unEleAttr = [])._ = {};
                 //save attributes
                 $.E(node.attributes, function(attr) {
@@ -2281,7 +2376,7 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
                     // console.log("setAttribute:", attrName, " : ", _unknownElementAttribute._[attrName])
                     //直接使用赋值的话，非标准属性只会变成property而不是Attribute
                     // currentNode[attrName] = _unknownElementAttribute._[attrName];
-                    currentNode.setAttribute(attrName,_unknownElementAttribute._[attrName]);
+                    currentNode.setAttribute(attrName, _unknownElementAttribute._[attrName]);
                 })
                 //set Style
                 var cssText = _unknownElementAttribute._["style"];
@@ -2303,6 +2398,7 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
                 //     // console.log(scriptNode)
                 //     handle.node.parentNode.replaceChild(currentNode, handle.node);
                 // }else{
+                // return;
                 currentNode = $.D.cl(handle.node);
                 // }
             }
@@ -2378,6 +2474,7 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
                 var topGetter = Model.session.topGetter,
                     currentTopGetter = Model.get(TEMP.dm_id),
                     matchKey = Model.session.filterKey || "";
+
                 if (topGetter) {
                     if (topGetter !== currentTopGetter || matchKey !== smartTrigger.matchKey) {
                         TEMP.dm_id = topGetter.id;
@@ -2494,9 +2591,7 @@ function ViewModel(handleNodeTree, NodeList, triggerTable, model) {
     V._instances[self._id = $.uid()] = self;
     self._open = $.D.C(self._id + " _open");
     self._close = $.D.C(self._id + " _close");
-    if (self._id === 1060 || self._id === 1046) {
-        debugger
-    };
+
     self._canRemoveAble = $FALSE;
     // var _canRemoveAble = $FALSE;
     // self.__defineGetter__("_canRemoveAble", function() {
@@ -3044,7 +3139,7 @@ var placeholder = {
     V = {
         prefix: "bind-",
         namespace: "fix:",
-        _currentParsers: [],
+        // _currentParsers: [],
         _nodeTree: function(htmlStr) {
             var _shadowBody = fragment( /*"body"*/ ); //$.D.cl(shadowBody);
 
@@ -3086,8 +3181,13 @@ var placeholder = {
             _shadowBody.innerHTML = htmlStr;
 
             //递归过滤
-            jSouper.scans(_shadowBody);
-            // console.log(htmlStr)
+            //在ElementHandle(_shadowBody)前扫描，因为在ElementHandle会将模板语法过滤掉
+            //到时候innerHTML就取不到完整的模板语法了，只留下DOM结构的残骸
+            V._scansView(_shadowBody);
+
+            //提取所有文本节点，特殊标签（script、style等）除外
+            //将文本节点尝试当成模板语意进行解析，保存在insertNodesHTML中
+            //扫描过程中不宜对节点进行操作，因此缓存完后统一处理
             var insertBefore = [];
             _traversal(_shadowBody, function(node, index, parentNode) {
                 if (node.nodeType === 1 && ignoreTagNameMap[node.tagName]) {
@@ -3101,30 +3201,80 @@ var placeholder = {
                     });
                 }
             });
+            //统一处理模板语意
             $.e(insertBefore, function(item, i) {
                 var node = item.baseNode,
                     parentNode = item.parentNode,
                     insertNodesHTML = item.insertNodesHTML;
-                shadowDIV.innerHTML = $.trim(insertNodesHTML); //optimization
-                //Using innerHTML rendering is complete immediate operation DOM, 
-                //innerHTML otherwise covered again, the node if it is not, 
-                //then memory leaks, IE can not get to the full node.
-                $.e(shadowDIV.childNodes, function(refNode) {
-                    //现代浏览器XMP标签中，空格和回车总是不过滤的显示，和浏览器默认效果不一致，手动格式化
-                    if (refNode.nodeType === 3) {
-                        refNode.data = refNode.data.replace(/^[\s\n]\s*/, ' ');
-                    }
-                    $.D.iB(parentNode, refNode, node)
-                })
-                $.D.rC(parentNode, node);
+                if (node.data === insertNodesHTML) {
+                    //普通文本做简答处理即可
+                    node.data = insertNodesHTML.replace(/^[\s\n]\s*/, ' ');
+                } else {
+                    //使用浏览器默认功能，将XML转化为JS-Object，TODO：有待优化，应该直接使用JSON进行转化
+                    shadowDIV.innerHTML = $.trim(insertNodesHTML); //optimization
+                    //Using innerHTML rendering is complete immediate operation DOM, 
+                    //innerHTML otherwise covered again, the node if it is not, 
+                    //then memory leaks, IE can not get to the full node.
+                    $.e(shadowDIV.childNodes, function(refNode) {
+                        //现代浏览器XMP标签中，空格和回车总是不过滤的显示，和浏览器默认效果不一致，手动格式化
+                        if (refNode.nodeType === 3) {
+                            refNode.data = refNode.data.replace(/^[\s\n]\s*/, ' ');
+                        }
+                        //将模板语意节点插入
+                        $.D.iB(parentNode, refNode, node)
+                    })
+                    $.D.rC(parentNode, node);
+                }
             });
             //when re-rendering,select node's child will be filter by ``` _shadowBody.innerHTML = _shadowBody.innerHTML;```
             return new ElementHandle(_shadowBody);
         },
+        _scansView: function(node, vmName) {
+            node || (node = doc);
+            //想解析子模块
+            var xmps = $.s(node.getElementsByTagName("xmp"));
+            Array.prototype.push.apply(xmps, node.getElementsByTagName(V.namespace + "xmp"));
+            $.e(xmps, function(tplNode) {
+                var type = tplNode.getAttribute("type");
+                var name = tplNode.getAttribute("name");
+                if (name) {
+                    if (type === "template") {
+                        V.modules[name] = jSouper.parseStr(tplNode.innerHTML, name);
+                        $.D.rm(tplNode);
+                    }
+                }
+            });
+
+            return node;
+        },
+        _scansVMInit: function(node, vmName) {
+            node || (node = doc);
+
+            $.e(node.getElementsByTagName("script"), function(scriptNode) {
+                var type = scriptNode.getAttribute("type");
+                var name = scriptNode.getAttribute("name");
+                if (name && type === "text/template") {
+                    V.modules[name] = jSouper.parseStr(scriptNode.text, name);
+                    $.D.rm(scriptNode);
+                } else if (type === "text/vm") {
+                    if (!name && vmName) {
+                        //如果是最顶层的匿名script节点，则默认为当前解析中的View的initVM函数
+                        if (!scriptNode.parentNode.parentNode.parentNode) { //null=>document-fragment=>wrap-div=>current-scriptNode
+                            name = vmName;
+                        }
+                    }
+                    if (name) {
+                        V.modulesInit[name] = Function("return " + $.trim(scriptNode.text))();
+                        $.D.rm(scriptNode);
+                    }
+                }
+            });
+            return node;
+        },
         parse: function(htmlStr, name) {
-            $.p(V._currentParsers, name);
+            // $.p(V._currentParsers, name);
             var result = View(V._nodeTree(htmlStr), name);
-            V._currentParsers.pop();
+            // V._currentParsers.pop();
             return result;
         },
         rt: function(handleName, triggerFactory) {
@@ -3232,13 +3382,14 @@ V.rh("#each", function(handle, index, parentHandle) {
             }
         }
         $.p(eachModuleHandle.childNodes, childHandle);
+        childHandle.node && $.D.ap(eachModuleHandle.node, childHandle.node);
         // layer && console.log("inner each:", childHandle)
     }, index + 1);
     if (!handle.eh_id) {
         throw SyntaxError("#each can't find close-tag(/each).");
     }
     parentHandle.childNodes.splice(index + 1, endIndex - index - 1); //Pulled out
-    V.eachModules[handle.id] = View(eachModuleHandle); //Compiled into new View module
+    V.eachModules[handle.id] = View(eachModuleHandle, "each-" + handle.id + "-" + handle.eh_id); //Compiled into new View module
 
     handle.display = _each_display; //Custom rendering function
     _commentPlaceholder(handle, parentHandle);
@@ -3462,12 +3613,11 @@ V.rt("#define", function(handle, index, parentHandle) {
                 if (!(finallyRun = Model.finallyRun[uid_hash])) {
                     Model.finallyRun.register(uid_hash, Model.finallyRun[uid_hash] = finallyRun = function() {
                         viewModel = finallyRun.viewModel
-                        // if (finallyRun.key==="dd") {debugger};
                         //已经被remove的VI，就不应该触发define
                         // if (viewModel._canRemoveAble) {
                         viewModel.set(finallyRun.key, finallyRun.result)
                         // }
-                        Model.finallyRun[uid_hash] = $FALSE; //can push into finally quene
+                        delete Model.finallyRun[uid_hash]/* = $FALSE;*/ //can push into finally quene
                     })
                 }
                 finallyRun.viewModel = viewModel
@@ -3615,7 +3765,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 
                 if (showed_vi_len > new_data_len) {
                     $.e(arrViewModels, function(eachItemHandle) {
-                        var isEach = eachItemHandle._isEach
+                        var isEach = eachItemHandle._isEach;
                         //移除each标志避免排队
                         eachItemHandle._isEach = $FALSE;
                         eachItemHandle.remove();
@@ -3810,10 +3960,15 @@ V.rt("#if", function(handle, index, parentHandle) {
         // key:"",//default is ""
         event: function(NodeList_of_ViewModel, model, /*triggerBy,*/ isAttr, viewModel_ID) {
             //要显示的类型，true为if-else，false为else-endif
-            var conditionVal = !! NodeList_of_ViewModel[conditionHandleId]._data,
+            var conditionVal = NodeList_of_ViewModel[conditionHandleId]._data,
                 parentNode = NodeList_of_ViewModel[parentHandleId].currentNode,
                 markHandleId = comment_else_id, //if(true)
                 markHandle; //default is undefined --> insertBefore === appendChild
+
+            //获取PrimitiveValue
+            conditionVal && (conditionVal = conditionVal.valueOf());
+            //转化为Boolean值
+            conditionVal = !! conditionVal;
 
             if (NodeList_of_ViewModel[this.handleId]._data !== conditionVal /*|| triggerBy*/ ) {
                 NodeList_of_ViewModel[this.handleId]._data = conditionVal;
@@ -3836,7 +3991,7 @@ V.rt("#if", function(handle, index, parentHandle) {
                         //Traverse all Logic Controller(if-else-endif) to determine whether each Controller are allowed to display it.
                         var controllerHandle = NodeList_of_ViewModel[controller_id]
                         //控制器中的显示时候包含当前元素
-                        return display = display && ($.iO(controllerHandle._controllers[!!controllerHandle._data], currentHandle.id) !== -1);
+                        return display = display && ($.iO(controllerHandle._controllers[ !! controllerHandle._data], currentHandle.id) !== -1);
                         //when display is false,abort traversing
                     });
                     if (display) {
@@ -3992,7 +4147,7 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
         var layoutViewModel = AllLayoutViewModel[id];
         if (new_templateHandle_name) {
             if (layoutViewModel && layoutViewModel.vmName !== new_templateHandle_name) {
-                layoutViewModel = layoutViewModel.destory(); //layoutViewModel=null
+                layoutViewModel = layoutViewModel.destroy(); //layoutViewModel=null
             }
             if (!layoutViewModel) {
                 var key = NodeList_of_ViewModel[dataHandle_id]._data;
@@ -4936,6 +5091,7 @@ registerHandle("HTML",function () {
 var _jSouperBase = {
     //暴露基本的工具集合，给拓展组件使用
     $: $,
+    $JS: new Model(global),
     isViewModel: function(vm) {
         return vm instanceof ViewModel;
     },
@@ -4970,41 +5126,17 @@ var _jSouperBase = {
     trim: function(str) {
         return $.isS(str) ? $.trim(str) : "";
     },
-    scans: function(node) {
-        node || (node = doc);
-        //想解析子模块
-        var xmps = $.s(node.getElementsByTagName("xmp"));
-        Array.prototype.push.apply(xmps, node.getElementsByTagName(V.namespace + "xmp"));
-        $.e(xmps, function(tplNode) {
-            var type = tplNode.getAttribute("type");
-            var name = tplNode.getAttribute("name");
-            if (name) {
-                if (type === "template") {
-                    V.modules[name] = jSouper.parseStr(tplNode.innerHTML, name);
-                    $.D.rm(tplNode);
-                }
-            }
-        });
-
-        $.e(node.getElementsByTagName("script"), function(scriptNode) {
-            var type = scriptNode.getAttribute("type");
-            var name = scriptNode.getAttribute("name");
-            if (name && type === "text/template") {
-                V.modules[name] = jSouper.parseStr(scriptNode.text, name);
-                $.D.rm(scriptNode);
-            } else if (type === "text/vm" && (name || (name = $.lI(V._currentParsers)))) {
-                V.modulesInit[name] = Function("return " + $.trim(scriptNode.text))();
-                $.D.rm(scriptNode);
-            }
-        });
+    scans: function(node, vmName) {
+        V._scansView(node, vmName);
+        V._scansVMInit(node, vmName);
         return node;
     },
     parseStr: function(htmlStr, name) {
-        V._currentParser = name;
+        // V._currentParser = name;
         return V.parse(parse(htmlStr), name)
     },
     parseNode: function(htmlNode, name) {
-        V._currentParser = name;
+        // V._currentParser = name;
         return V.parse(parse(htmlNode.innerHTML), name)
     },
     parse: function(html, name) {
@@ -5060,7 +5192,7 @@ var _jSouperBase = {
             module = jSouper.modules[url] = jSouper.parseStr(HTML, url);
         }
         if (module) {
-            vi = module(userConfig.Data);
+            vi = module(userConfig.Data, userConfig.extendConfig);
             var appName = userConfig.Var;
             if (appName) {
                 if (appName in global) {
@@ -5111,18 +5243,18 @@ $.fI(_jSouperBase, function(value, key) {
 });
 (function() {
     var scriptTags = doc.getElementsByTagName("script"),
-        HVP_config = jSouper.config,
+        HVP_config = _jSouperBase.config,
         userConfigStr = $.trim(scriptTags[scriptTags.length - 1].innerHTML);
     //TODO:append style:xmp{display:none}
-    jSouper.ready(function() {
-        jSouper.scans();
+    _jSouperBase.ready(function() {
+        _jSouperBase.scans();
         if (userConfigStr.charAt(0) === "{") {
             try {
                 var userConfig = userConfigStr ? Function("return" + userConfigStr)() : {};
             } catch (e) {
                 console.error("config error:" + e.message);
             }
-            userConfig && jSouper.app(userConfig)
+            userConfig && _jSouperBase.app(userConfig)
         }
     });
 }());
@@ -5274,7 +5406,7 @@ if (typeof module === "object" && module && typeof module.exports === "object") 
         var observerObjCollect = observerCache[self.id]
         if (observerObjCollect) {
             var key = result.key
-            var observerObjs = observerObjCollect[key];
+            var observerObjs = /*observerObjCollect[""]||*/observerObjCollect[key];
             if (!observerObjs) {
                 while (!observerObjs) {
                     key = $.lst(key, ".");
@@ -5285,8 +5417,10 @@ if (typeof module === "object" && module && typeof module.exports === "object") 
                     }
                 }
             }
-            observerObjs && $.e(observerObjs, function(observerObj, abandon_index) {
-                Model.get(observerObj.dm_id).touchOff(observerObj.dm_key)
+            observerObjs && $.E(observerObjs, function(observerObj, abandon_index) {
+                var model = Model.get(observerObj.dm_id);
+                //直接使用touchOff无法触发自动更新
+                model.touchOff(observerObj.dm_key)
             })
         }
         return result;

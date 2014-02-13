@@ -1,6 +1,8 @@
 var
 //事件缓存区
 _event_cache = {},
+    // //底层事件缓存区，实现系统的getEventListeners
+    // __base_event_cache = {},
     _fixEvent = function(e) { //@Rybylouvre
         // if (!e.target) {console.log(e)};
         e.target || (e.target = e.srcElement);
@@ -118,44 +120,68 @@ _event_cache = {},
             }
         }(_isIE ? (/mouse|click|contextmenu/.test(eventName) ? _fixMouseEvent : _fixEvent) : $.noop));
 
-        if (_registerEventRouterMatch.ip[eventName] && !("oninput" in doc)) {
-            (function() {
-                result.name = ["keypress", /*"focus", */ "blur", "keyup", "paste", "propertychange", "cut"]
-                var _fixPropertychangeLock,
-                    _deleteOrChienseInput,
-                    _oldValue = Element.value,
-                    _TI;
-                // delete Element.value;
-                result.fn = function(e) { // @Gaubee github/blog/issues/44
-                    var result;
-                    if (e.type === "keyup") { //keyup // 3
-                        if (_deleteOrChienseInput) {
-                            _deleteOrChienseInput = $FALSE;
-                            _oldValue = Element.value;
-                            e._extend = {
-                                type: "input"
+        if (_registerEventRouterMatch.ip[eventName] /*&& !("oninput" in doc)*/ ) {
+            if ("oninput" in doc) {
+                if (Element.__defineSetter__) {
+                    (function() {
+                        var value = "";
+                        var ev = doc.createEvent("HTMLEvents");
+                        ev.initEvent("input", true, false);
+                        Element.__defineSetter__("value", function(newValue) {
+                            if (typeof newValue === "number") {
+                                value = newValue;
+                            } else {
+                                value = String(newValue);
                             }
-                            result = _fn(e);
-                        }
-                    } else if (e.type === "propertychange") { // 2
-                        if (_fixPropertychangeLock) {
-                            _fixPropertychangeLock = $FALSE;
-                            e._extend = {
-                                type: "input"
+                            Element.setAttribute("value", newValue);
+                            if (doc.contains(Element)) {
+                                Element.dispatchEvent(ev);
                             }
-                            result = _fn(e);
-                        } else if ((e.keyCode === 8 /*backspace*/ || e.keyCode === 46 /*delete*/ ) || _oldValue !== Element.value) { //delete or chinese input
-                            _deleteOrChienseInput = $TRUE;
-                        }
-                    } else if (e.type === "blur") {
-                        Element.fireEvent("onkeyup")
-                        // clearInterval(_TI);
-                    } else { //paste cut keypress  // 1
-                        _fixPropertychangeLock = $TRUE;
-                        _deleteOrChienseInput = $FALSE;
-                    }
+                        });
+                        Element.__defineGetter__("value", function() {
+                            return value;
+                        })
+                    }());
                 }
-            }());
+            } else {
+                (function() {
+                    result.name = ["keypress", /*"focus", */ "blur", "keyup", "paste", "propertychange", "cut"]
+                    var _fixPropertychangeLock,
+                        _deleteOrChienseInput,
+                        _oldValue = Element.value,
+                        _TI;
+                    // delete Element.value;
+                    result.fn = function(e) { // @Gaubee github/blog/issues/44
+                        var result;
+                        if (e.type === "keyup") { //keyup // 3
+                            if (_deleteOrChienseInput) {
+                                _deleteOrChienseInput = $FALSE;
+                                _oldValue = Element.value;
+                                e._extend = {
+                                    type: "input"
+                                }
+                                result = _fn(e);
+                            }
+                        } else if (e.type === "propertychange") { // 2
+                            if (_fixPropertychangeLock) {
+                                _fixPropertychangeLock = $FALSE;
+                                e._extend = {
+                                    type: "input"
+                                }
+                                result = _fn(e);
+                            } else if ((e.keyCode === 8 /*backspace*/ || e.keyCode === 46 /*delete*/ ) || _oldValue !== Element.value) { //delete or chinese input
+                                _deleteOrChienseInput = $TRUE;
+                            }
+                        } else if (e.type === "blur") {
+                            Element.fireEvent("onkeyup")
+                            // clearInterval(_TI);
+                        } else { //paste cut keypress  // 1
+                            _fixPropertychangeLock = $TRUE;
+                            _deleteOrChienseInput = $FALSE;
+                        }
+                    }
+                }());
+            }
         } else if (_registerEventRouterMatch.rc[eventName] /*&& _isIE*/ ) {
             if (_isIE) {
                 (function() {
@@ -171,7 +197,7 @@ _event_cache = {},
                         return _result;
                     }
                 }());
-            }else{
+            } else {
                 result.name = ["contextmenu"];
             }
         } else if (result._cacheName = _registerEventRouterMatch.el[eventName]) {
@@ -317,35 +343,49 @@ _event_cache = {},
     //现代浏览器的事件监听
     _addEventListener = function(Element, eventName, eventFun, elementHash) {
         var eventConfig = _registerEventBase(Element, eventName, eventFun, elementHash)
+        // var __base_hash_code = $.hashCode(Element);
+        // var event_cache = __base_event_cache[__base_hash_code] || (__base_event_cache[__base_hash_code] = {});
         if ($.isS(eventConfig.name)) {
             Element.addEventListener(eventConfig.name, eventConfig.fn, $FALSE);
+            // $.p(event_cache[eventConfig.name] || (event_cache[eventConfig.name] = []), eventConfig.fn);
         } else {
             $.E(eventConfig.name, function(eventName) {
                 Element.addEventListener(eventName, eventConfig.fn, $FALSE);
+                // $.p(event_cache[eventConfig.name] || (event_cache[eventConfig.name] = []), eventConfig.fn);
             })
         }
     },
     //现代浏览器的事件移除
     _removeEventListener = function(Element, eventName, eventFun, elementHash) {
         var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
+        // var __base_hash_code = $.hashCode(Element);
+        // var eventList = __base_event_cache[__base_hash_code][eventConfig.name];
         wrapEventFun && Element.removeEventListener(eventName, wrapEventFun, $FALSE);
+        // eventList.splice($.iO(eventList, eventFun), 1);
     },
 
     //IE浏览器的时间监听
     _attachEvent = function(Element, eventName, eventFun, elementHash) {
         var eventConfig = _registerEventBase(Element, eventName, eventFun, elementHash)
+        // var __base_hash_code = $.hashCode(Element);
+        // var event_cache = __base_event_cache[__base_hash_code] || (__base_event_cache[__base_hash_code] = {});
         if ($.isS(eventConfig.name)) {
             Element.attachEvent("on" + eventConfig.name, eventConfig.fn);
+            // $.p(event_cache[eventConfig.name] || (event_cache[eventConfig.name] = []), eventConfig.fn);
         } else {
             $.E(eventConfig.name, function(eventName) {
                 Element.attachEvent("on" + eventName, eventConfig.fn);
+                // $.p(event_cache[eventConfig.name] || (event_cache[eventConfig.name] = []), eventConfig.fn);
             })
         }
     },
     //IE浏览器的事件移除
     _detachEvent = function(Element, eventName, eventFun, elementHash) {
         var wrapEventFun = _event_cache[elementHash + $.hashCode(eventFun)];
+        // var __base_hash_code = $.hashCode(Element);
+        // var eventList = __base_event_cache[__base_hash_code][eventConfig.name];
         wrapEventFun && Element.detachEvent("on" + eventName, wrapEventFun);
+        // eventList.splice($.iO(eventList, eventFun), 1);
     },
 
     //对外的接口
