@@ -49,13 +49,14 @@ V.rh("#each", function(handle, index, parentHandle) {
             }
         }
         $.p(eachModuleHandle.childNodes, childHandle);
+        childHandle.node && $.D.ap(eachModuleHandle.node, childHandle.node);
         // layer && console.log("inner each:", childHandle)
     }, index + 1);
     if (!handle.eh_id) {
         throw SyntaxError("#each can't find close-tag(/each).");
     }
     parentHandle.childNodes.splice(index + 1, endIndex - index - 1); //Pulled out
-    V.eachModules[handle.id] = View(eachModuleHandle); //Compiled into new View module
+    V.eachModules[handle.id] = View(eachModuleHandle, "each-" + handle.id + "-" + handle.eh_id); //Compiled into new View module
 
     handle.display = _each_display; //Custom rendering function
     _commentPlaceholder(handle, parentHandle);

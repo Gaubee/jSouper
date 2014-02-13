@@ -4,6 +4,7 @@
 var _jSouperBase = {
     //暴露基本的工具集合，给拓展组件使用
     $: $,
+    $JS: new Model(global),
     isViewModel: function(vm) {
         return vm instanceof ViewModel;
     },
@@ -38,41 +39,17 @@ var _jSouperBase = {
     trim: function(str) {
         return $.isS(str) ? $.trim(str) : "";
     },
-    scans: function(node) {
-        node || (node = doc);
-        //想解析子模块
-        var xmps = $.s(node.getElementsByTagName("xmp"));
-        Array.prototype.push.apply(xmps, node.getElementsByTagName(V.namespace + "xmp"));
-        $.e(xmps, function(tplNode) {
-            var type = tplNode.getAttribute("type");
-            var name = tplNode.getAttribute("name");
-            if (name) {
-                if (type === "template") {
-                    V.modules[name] = jSouper.parseStr(tplNode.innerHTML, name);
-                    $.D.rm(tplNode);
-                }
-            }
-        });
-
-        $.e(node.getElementsByTagName("script"), function(scriptNode) {
-            var type = scriptNode.getAttribute("type");
-            var name = scriptNode.getAttribute("name");
-            if (name && type === "text/template") {
-                V.modules[name] = jSouper.parseStr(scriptNode.text, name);
-                $.D.rm(scriptNode);
-            } else if (type === "text/vm" && (name || (name = $.lI(V._currentParsers)))) {
-                V.modulesInit[name] = Function("return " + $.trim(scriptNode.text))();
-                $.D.rm(scriptNode);
-            }
-        });
+    scans: function(node, vmName) {
+        V._scansView(node, vmName);
+        V._scansVMInit(node, vmName);
         return node;
     },
     parseStr: function(htmlStr, name) {
-        V._currentParser = name;
+        // V._currentParser = name;
         return V.parse(parse(htmlStr), name)
     },
     parseNode: function(htmlNode, name) {
-        V._currentParser = name;
+        // V._currentParser = name;
         return V.parse(parse(htmlNode.innerHTML), name)
     },
     parse: function(html, name) {
@@ -128,7 +105,7 @@ var _jSouperBase = {
             module = jSouper.modules[url] = jSouper.parseStr(HTML, url);
         }
         if (module) {
-            vi = module(userConfig.Data);
+            vi = module(userConfig.Data, userConfig.extendConfig);
             var appName = userConfig.Var;
             if (appName) {
                 if (appName in global) {
@@ -179,18 +156,18 @@ $.fI(_jSouperBase, function(value, key) {
 });
 (function() {
     var scriptTags = doc.getElementsByTagName("script"),
-        HVP_config = jSouper.config,
+        HVP_config = _jSouperBase.config,
         userConfigStr = $.trim(scriptTags[scriptTags.length - 1].innerHTML);
     //TODO:append style:xmp{display:none}
-    jSouper.ready(function() {
-        jSouper.scans();
+    _jSouperBase.ready(function() {
+        _jSouperBase.scans();
         if (userConfigStr.charAt(0) === "{") {
             try {
                 var userConfig = userConfigStr ? Function("return" + userConfigStr)() : {};
             } catch (e) {
                 console.error("config error:" + e.message);
             }
-            userConfig && jSouper.app(userConfig)
+            userConfig && _jSouperBase.app(userConfig)
         }
     });
 }());

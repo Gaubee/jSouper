@@ -118,7 +118,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 
                 if (showed_vi_len > new_data_len) {
                     $.e(arrViewModels, function(eachItemHandle) {
-                        var isEach = eachItemHandle._isEach
+                        var isEach = eachItemHandle._isEach;
                         //移除each标志避免排队
                         eachItemHandle._isEach = $FALSE;
                         eachItemHandle.remove();

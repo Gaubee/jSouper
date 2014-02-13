@@ -58,7 +58,7 @@ var placeholder = {
     V = {
         prefix: "bind-",
         namespace: "fix:",
-        _currentParsers: [],
+        // _currentParsers: [],
         _nodeTree: function(htmlStr) {
             var _shadowBody = fragment( /*"body"*/ ); //$.D.cl(shadowBody);
 
@@ -100,8 +100,13 @@ var placeholder = {
             _shadowBody.innerHTML = htmlStr;
 
             //递归过滤
-            jSouper.scans(_shadowBody);
-            // console.log(htmlStr)
+            //在ElementHandle(_shadowBody)前扫描，因为在ElementHandle会将模板语法过滤掉
+            //到时候innerHTML就取不到完整的模板语法了，只留下DOM结构的残骸
+            V._scansView(_shadowBody);
+
+            //提取所有文本节点，特殊标签（script、style等）除外
+            //将文本节点尝试当成模板语意进行解析，保存在insertNodesHTML中
+            //扫描过程中不宜对节点进行操作，因此缓存完后统一处理
             var insertBefore = [];
             _traversal(_shadowBody, function(node, index, parentNode) {
                 if (node.nodeType === 1 && ignoreTagNameMap[node.tagName]) {
@@ -115,30 +120,80 @@ var placeholder = {
                     });
                 }
             });
+            //统一处理模板语意
             $.e(insertBefore, function(item, i) {
                 var node = item.baseNode,
                     parentNode = item.parentNode,
                     insertNodesHTML = item.insertNodesHTML;
-                shadowDIV.innerHTML = $.trim(insertNodesHTML); //optimization
-                //Using innerHTML rendering is complete immediate operation DOM, 
-                //innerHTML otherwise covered again, the node if it is not, 
-                //then memory leaks, IE can not get to the full node.
-                $.e(shadowDIV.childNodes, function(refNode) {
-                    //现代浏览器XMP标签中，空格和回车总是不过滤的显示，和浏览器默认效果不一致，手动格式化
-                    if (refNode.nodeType === 3) {
-                        refNode.data = refNode.data.replace(/^[\s\n]\s*/, ' ');
-                    }
-                    $.D.iB(parentNode, refNode, node)
-                })
-                $.D.rC(parentNode, node);
+                if (node.data === insertNodesHTML) {
+                    //普通文本做简答处理即可
+                    node.data = insertNodesHTML.replace(/^[\s\n]\s*/, ' ');
+                } else {
+                    //使用浏览器默认功能，将XML转化为JS-Object，TODO：有待优化，应该直接使用JSON进行转化
+                    shadowDIV.innerHTML = $.trim(insertNodesHTML); //optimization
+                    //Using innerHTML rendering is complete immediate operation DOM, 
+                    //innerHTML otherwise covered again, the node if it is not, 
+                    //then memory leaks, IE can not get to the full node.
+                    $.e(shadowDIV.childNodes, function(refNode) {
+                        //现代浏览器XMP标签中，空格和回车总是不过滤的显示，和浏览器默认效果不一致，手动格式化
+                        if (refNode.nodeType === 3) {
+                            refNode.data = refNode.data.replace(/^[\s\n]\s*/, ' ');
+                        }
+                        //将模板语意节点插入
+                        $.D.iB(parentNode, refNode, node)
+                    })
+                    $.D.rC(parentNode, node);
+                }
             });
             //when re-rendering,select node's child will be filter by ``` _shadowBody.innerHTML = _shadowBody.innerHTML;```
             return new ElementHandle(_shadowBody);
         },
+        _scansView: function(node, vmName) {
+            node || (node = doc);
+            //想解析子模块
+            var xmps = $.s(node.getElementsByTagName("xmp"));
+            Array.prototype.push.apply(xmps, node.getElementsByTagName(V.namespace + "xmp"));
+            $.e(xmps, function(tplNode) {
+                var type = tplNode.getAttribute("type");
+                var name = tplNode.getAttribute("name");
+                if (name) {
+                    if (type === "template") {
+                        V.modules[name] = jSouper.parseStr(tplNode.innerHTML, name);
+                        $.D.rm(tplNode);
+                    }
+                }
+            });
+
+            return node;
+        },
+        _scansVMInit: function(node, vmName) {
+            node || (node = doc);
+
+            $.e(node.getElementsByTagName("script"), function(scriptNode) {
+                var type = scriptNode.getAttribute("type");
+                var name = scriptNode.getAttribute("name");
+                if (name && type === "text/template") {
+                    V.modules[name] = jSouper.parseStr(scriptNode.text, name);
+                    $.D.rm(scriptNode);
+                } else if (type === "text/vm") {
+                    if (!name && vmName) {
+                        //如果是最顶层的匿名script节点，则默认为当前解析中的View的initVM函数
+                        if (!scriptNode.parentNode.parentNode.parentNode) { //null=>document-fragment=>wrap-div=>current-scriptNode
+                            name = vmName;
+                        }
+                    }
+                    if (name) {
+                        V.modulesInit[name] = Function("return " + $.trim(scriptNode.text))();
+                        $.D.rm(scriptNode);
+                    }
+                }
+            });
+            return node;
+        },
         parse: function(htmlStr, name) {
-            $.p(V._currentParsers, name);
+            // $.p(V._currentParsers, name);
             var result = View(V._nodeTree(htmlStr), name);
-            V._currentParsers.pop();
+            // V._currentParsers.pop();
             return result;
         },
         rt: function(handleName, triggerFactory) {
