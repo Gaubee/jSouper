@@ -25,6 +25,9 @@ function Model(baseData) {
     //父级Model
     self._parentModel // = $UNDEFINED; //to get data
 
+    //私有数据集
+    self._privateModel // = $UNDEFINED;
+
     //相对于父级的前缀key，代表在父级中的位置
     self._prefix // = $NULL; //冒泡时需要加上的前缀
 
@@ -104,6 +107,7 @@ function _getAllSiblingModels(self, result) {
             _getAllSiblingModels(dm, result);
         }
     });
+
     return result;
 };
 
@@ -114,7 +118,9 @@ var DM_config = Model.config = {
     prefix: {
         This: "$THIS",
         Parent: "$PARENT",
-        Top: "$TOP"
+        Top: "$TOP",
+        Private: "$PRIVATE",
+        Js: "$JS"
     }
 };
 
@@ -234,6 +240,9 @@ var DM_proto = Model.prototype = {
         }
         //filterKey应该在拓展类的getter运行后定义，避免被覆盖，因为其中可能有其它get函数
         Model.session.filterKey = filterKey;
+
+        //在最后再进行一次定义，理由同上
+        Model.session.topGetter = self;
         return result;
     },
     mixSource: function() {
@@ -456,6 +465,8 @@ var DM_proto = Model.prototype = {
             //所以锁定是效率所需。
             // $.p(chidlUpdateKey, childResult);
         });
+        //private
+        self._privateModel && self._privateModel.touchOff(key);
     },
     rebuildTree: $.noop,
     getTop: function() { //get DM tree top
@@ -618,6 +629,7 @@ var DM_proto = Model.prototype = {
     // buildGetter: function(key) {},
     // buildSetter: function(key) {} 
 };
+var M_Session = {};
 var __setTool = {
     //可用做forEach
     map: $.map,

@@ -12,10 +12,13 @@ function View(arg, vmName) {
     self._triggerTable = {};
     self.vmName = vmName;
     self.id = $.uid();
+
     // console.group(self.id);
     // console.log(vmName)
     _buildHandler(self);
     _buildTrigger(self);
+    
+    V._scansVMInit(arg.node, vmName);
     return function(data, opction) {
         var id = $.uid();
         var finallyRunStacks = Model.session.finallyRunStacks;
@@ -32,8 +35,9 @@ function View(arg, vmName) {
         //实例对象还没有进入缓存器，这时运行finallyRun，会造成空缓存器而判断错误，所以这里需要一个onInit事件机制，来做缓存器锁定
         opction.onInit && opction.onInit(vi);
 
-        //TODO:create with callback then getTop.touchOff
+
         vi.model.getTop().touchOff();
+        _jSouperBase.$JS.touchOff();
 
         //pop mark
         finallyRunStacks.pop();
@@ -51,6 +55,9 @@ function View(arg, vmName) {
                 viewModel_init(vi);
             }
         }
+
+        vi.model._privateModel && vi.model._privateModel.touchOff();
+
         return vi
     }
 };
@@ -112,9 +119,9 @@ function _buildHandler(self) {
         handle.parentNode = parentHandle;
         var node = handle.node;
         if (handle.type === "handle") {
-            var handleFactory = V.handles[handle.handleName];
-            if (handleFactory) {
-                var handle = handleFactory(handle, index, parentHandle)
+            var handleHandle = V.handles[handle.handleName];
+            if (handleHandle) {
+                var handle = handleHandle(handle, index, parentHandle)
                 handle && $.p(handles, handle);
             }
         } else if (handle.type === "element") {
@@ -124,7 +131,7 @@ function _buildHandler(self) {
 };
 var _attrRegExp = /(\S+)=["']?((?:.(?!["']?\s+(?:\S+)=|[>"']))+.)["']?/g;
 var ignoreTagNameMap = {};
-$.fI("script|pre|template|style|link".split("|"),function  (value,key) {
+$.fI("script|pre|template|style|link".split("|"), function(value, key) {
     ignoreTagNameMap[value] = ignoreTagNameMap[value.toUpperCase()] = $TRUE;
 })
 
@@ -168,7 +175,7 @@ function _buildTrigger(self) {
                 handle.nodeStr = nodeHTMLStr;
             }
             if (_isHTMLUnknownElement(handle.tag)) {
-                
+
                 (handle._unEleAttr = [])._ = {};
                 //save attributes
                 $.E(node.attributes, function(attr) {
@@ -231,7 +238,7 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
                     // console.log("setAttribute:", attrName, " : ", _unknownElementAttribute._[attrName])
                     //直接使用赋值的话，非标准属性只会变成property而不是Attribute
                     // currentNode[attrName] = _unknownElementAttribute._[attrName];
-                    currentNode.setAttribute(attrName,_unknownElementAttribute._[attrName]);
+                    currentNode.setAttribute(attrName, _unknownElementAttribute._[attrName]);
                 })
                 //set Style
                 var cssText = _unknownElementAttribute._["style"];
@@ -253,6 +260,7 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
                 //     // console.log(scriptNode)
                 //     handle.node.parentNode.replaceChild(currentNode, handle.node);
                 // }else{
+                // return;
                 currentNode = $.D.cl(handle.node);
                 // }
             }
