@@ -38,10 +38,15 @@ V.rt("#if", function(handle, index, parentHandle) {
         // key:"",//default is ""
         event: function(NodeList_of_ViewModel, model, /*triggerBy,*/ isAttr, viewModel_ID) {
             //要显示的类型，true为if-else，false为else-endif
-            var conditionVal = !! NodeList_of_ViewModel[conditionHandleId]._data,
+            var conditionVal = NodeList_of_ViewModel[conditionHandleId]._data,
                 parentNode = NodeList_of_ViewModel[parentHandleId].currentNode,
                 markHandleId = comment_else_id, //if(true)
                 markHandle; //default is undefined --> insertBefore === appendChild
+
+            //获取PrimitiveValue
+            conditionVal && (conditionVal = conditionVal.valueOf());
+            //转化为Boolean值
+            conditionVal = !! conditionVal;
 
             if (NodeList_of_ViewModel[this.handleId]._data !== conditionVal /*|| triggerBy*/ ) {
                 NodeList_of_ViewModel[this.handleId]._data = conditionVal;
@@ -64,7 +69,7 @@ V.rt("#if", function(handle, index, parentHandle) {
                         //Traverse all Logic Controller(if-else-endif) to determine whether each Controller are allowed to display it.
                         var controllerHandle = NodeList_of_ViewModel[controller_id]
                         //控制器中的显示时候包含当前元素
-                        return display = display && ($.iO(controllerHandle._controllers[!!controllerHandle._data], currentHandle.id) !== -1);
+                        return display = display && ($.iO(controllerHandle._controllers[ !! controllerHandle._data], currentHandle.id) !== -1);
                         //when display is false,abort traversing
                     });
                     if (display) {
