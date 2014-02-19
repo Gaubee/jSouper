@@ -127,7 +127,7 @@
         var observerObjCollect = observerCache[self.id]
         if (observerObjCollect) {
             var key = result.key
-            var observerObjs = observerObjCollect[key];
+            var observerObjs = /*observerObjCollect[""]||*/observerObjCollect[key];
             if (!observerObjs) {
                 while (!observerObjs) {
                     key = $.lst(key, ".");
@@ -138,8 +138,10 @@
                     }
                 }
             }
-            observerObjs && $.e(observerObjs, function(observerObj, abandon_index) {
-                Model.get(observerObj.dm_id).touchOff(observerObj.dm_key)
+            observerObjs && $.E(observerObjs, function(observerObj, abandon_index) {
+                var model = Model.get(observerObj.dm_id);
+                //直接使用touchOff无法触发自动更新
+                model.touchOff(observerObj.dm_key)
             })
         }
         return result;

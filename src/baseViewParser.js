@@ -183,8 +183,12 @@ var placeholder = {
                         }
                     }
                     if (name) {
-                        V.modulesInit[name] = Function("return " + $.trim(scriptNode.text))();
-                        $.D.rm(scriptNode);
+                        try {
+                            V.modulesInit[name] = Function("return " + $.trim(scriptNode.text))();
+                            $.D.rm(scriptNode);
+                        } catch (e) {
+                            console.error(e);
+                        }
                     }
                 }
             });

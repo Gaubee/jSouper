@@ -158,7 +158,7 @@ function _buildTrigger(self) {
                 return $FALSE;
             }
             // var attrs = nodeHTMLStr.match(_attrRegExp);
-            $.e(node.attributes, function(attr, i) {
+            $.E($.s(node.attributes)/*.reverse()*/, function(attr, i) {
                 var value = attr.value,
                     name = attr.name;
                 if (_templateMatchRule.test(value)) {

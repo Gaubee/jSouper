@@ -390,6 +390,44 @@ doc = document,
         }
     };
 
+//requestAnimationFrame polyfill 的极限压缩版
+//https://gist.github.com/paulirish/1579671
+//https://gist.github.com/globalaubee/6991570
+(function() {
+    var lastTime = 0,
+        vendors = ['ms', 'moz', 'webkit', 'o'],
+        _KEY_AnimationFrame = 'AnimationFrame',
+        _KEY_equest = 'equest',
+        _KEY_ancel = 'ancel',
+        _KEY_requestAnimationFrame = 'r' + _KEY_equest + _KEY_AnimationFrame,
+        _KEY_cancelAnimationFrame = 'c' + _KEY_ancel + _KEY_AnimationFrame,
+        now = Date.now || function() {
+            return +new Date
+        };
+    for (var x = 0; x < vendors.length && !global[_KEY_requestAnimationFrame]; ++x) {
+        global[_KEY_requestAnimationFrame] = global[vendors[x] + 'R' + _KEY_equest + _KEY_AnimationFrame];
+        global[_KEY_cancelAnimationFrame] = global[vendors[x] + 'C' + _KEY_ancel + _KEY_AnimationFrame] || global[vendors[x] + 'C' + _KEY_ancel + 'R' + _KEY_equest + _KEY_AnimationFrame];
+    }
+
+    if (!global[_KEY_requestAnimationFrame]) {
+        global[_KEY_requestAnimationFrame] = function(callback, element) {
+            var currTime = now(),
+                timeToCall = Math.max(0, 16 - (currTime - lastTime)),
+                id = global.setTimeout(function() {
+                        callback(currTime + timeToCall);
+                    },
+                    timeToCall);
+            lastTime = currTime + timeToCall;
+            return id;
+        };
+
+        global[_KEY_cancelAnimationFrame] = function(id) {
+            clearTimeout(id);
+        };
+    }
+
+}());
+
 var
 //事件缓存区
 _event_cache = {},
@@ -512,68 +550,87 @@ _event_cache = {},
             }
         }(_isIE ? (/mouse|click|contextmenu/.test(eventName) ? _fixMouseEvent : _fixEvent) : $.noop));
 
-        if (_registerEventRouterMatch.ip[eventName] /*&& !("oninput" in doc)*/ ) {
-            if ("oninput" in doc) {
-                if (Element.__defineSetter__) {
-                    (function() {
-                        var value = "";
-                        var ev = doc.createEvent("HTMLEvents");
-                        ev.initEvent("input", true, false);
-                        Element.__defineSetter__("value", function(newValue) {
-                            if (typeof newValue === "number") {
-                                value = newValue;
-                            } else {
-                                value = String(newValue);
-                            }
-                            Element.setAttribute("value", newValue);
-                            if (doc.contains(Element)) {
-                                Element.dispatchEvent(ev);
-                            }
-                        });
-                        Element.__defineGetter__("value", function() {
-                            return value;
-                        })
-                    }());
-                }
-            } else {
-                (function() {
-                    result.name = ["keypress", /*"focus", */ "blur", "keyup", "paste", "propertychange", "cut"]
-                    var _fixPropertychangeLock,
-                        _deleteOrChienseInput,
-                        _oldValue = Element.value,
-                        _TI;
-                    // delete Element.value;
-                    result.fn = function(e) { // @Gaubee github/blog/issues/44
-                        var result;
-                        if (e.type === "keyup") { //keyup // 3
-                            if (_deleteOrChienseInput) {
-                                _deleteOrChienseInput = $FALSE;
-                                _oldValue = Element.value;
-                                e._extend = {
-                                    type: "input"
-                                }
-                                result = _fn(e);
-                            }
-                        } else if (e.type === "propertychange") { // 2
-                            if (_fixPropertychangeLock) {
-                                _fixPropertychangeLock = $FALSE;
-                                e._extend = {
-                                    type: "input"
-                                }
-                                result = _fn(e);
-                            } else if ((e.keyCode === 8 /*backspace*/ || e.keyCode === 46 /*delete*/ ) || _oldValue !== Element.value) { //delete or chinese input
-                                _deleteOrChienseInput = $TRUE;
-                            }
-                        } else if (e.type === "blur") {
-                            Element.fireEvent("onkeyup")
-                            // clearInterval(_TI);
-                        } else { //paste cut keypress  // 1
-                            _fixPropertychangeLock = $TRUE;
+        if (_registerEventRouterMatch.ip[eventName] && !("oninput" in doc) ) {
+            //不真实，input只来自用户的输入，不来自脚本的改动
+            // //现代浏览器模拟value被写
+            // if ("oninput" in doc) {
+            //     //初始化模拟
+            //     var ev = doc.createEvent("HTMLEvents");
+            //     ev.initEvent("input", true, false);
+            //     Element.__value__ = "";
+            //     //如果这个现代浏览器没有对value做保护，可自定义，IE、Chrome、Firefox都支持
+            //     if (Element.__defineSetter__) {
+            //         (function() {
+            //             Element.__defineSetter__("value", function(newValue) {
+            //                 if (typeof newValue !== "number") {
+            //                     newValue = String(newValue);
+            //                 }
+            //                 if (Element.__value__ !== newValue) {
+            //                     Element.__value__ = newValue;
+            //                     Element.setAttribute("value", newValue);
+            //                     if (doc.contains(Element)) {
+            //                         Element.dispatchEvent(ev);
+            //                     }
+            //                 }
+            //             });
+            //             Element.__defineGetter__("value", function() {
+            //                 return Element.__value__;
+            //             })
+            //         }());
+            //     }
+            //     //如果不能自动义或者自定义失败
+            //     //不支持value监听的话，比如safari，只能时间循环机制轮询，为了浏览器渲染稳定，使用requestAnimationFrame
+            //     if (!Element.__lookupSetter__ || !Element.__lookupSetter__("value")) {
+            //         //无需顾及内存泄漏，框架对废弃的节点应自动收集重用
+            //         _jSouperBase.ready(function(argument) {
+            //             requestAnimationFrame(function checkValue() {
+            //                 if (doc.contains(Element) && Element.__value__ !== Element.value) {
+            //                     Element.setAttribute("value", Element.__value__ = Element.value);
+            //                     Element.dispatchEvent(ev);
+            //                 }
+            //                 requestAnimationFrame(checkValue);
+            //             });
+            //         })
+            //     }
+            // } else {
+            (function() {
+                result.name = ["keypress", /*"focus", */ "blur", "keyup", "paste", "propertychange", "cut"]
+                var _fixPropertychangeLock,
+                    _deleteOrChienseInput,
+                    _oldValue = Element.value,
+                    _TI;
+                // delete Element.value;
+                result.fn = function(e) { // @Gaubee github/blog/issues/44
+                    var result;
+                    if (e.type === "keyup") { //keyup // 3
+                        if (_deleteOrChienseInput) {
                             _deleteOrChienseInput = $FALSE;
+                            _oldValue = Element.value;
+                            e._extend = {
+                                type: "input"
+                            }
+                            result = _fn(e);
                         }
+                    } else if (e.type === "propertychange") { // 2
+                        if (_fixPropertychangeLock) {
+                            _fixPropertychangeLock = $FALSE;
+                            e._extend = {
+                                type: "input"
+                            }
+                            result = _fn(e);
+                        } else if ((e.keyCode === 8 /*backspace*/ || e.keyCode === 46 /*delete*/ ) || _oldValue !== Element.value) { //delete or chinese input
+                            _deleteOrChienseInput = $TRUE;
+                        }
+                    } else if (e.type === "blur") {
+                        Element.fireEvent("onkeyup")
+                        // clearInterval(_TI);
+                    } else { //paste cut keypress  // 1
+                        _fixPropertychangeLock = $TRUE;
+                        _deleteOrChienseInput = $FALSE;
                     }
-                }());
-            }
+                }
+            }());
+            // }
         } else if (_registerEventRouterMatch.rc[eventName] /*&& _isIE*/ ) {
             if (_isIE) {
                 (function() {
@@ -2108,7 +2165,10 @@ draggable
 
         //将属性VM的所有的触发key映射到父VM中。让父VM托管
         $.E(attrViewModel._triggers, function(key) {
-            $.us(triggerTable[key] || (triggerTable[key] = []), attrTrigger);
+            //TODO:这里是要使用push还是unshift?
+            //如果后者，则View再遍历属性时就需要reverse
+            //如果前者，会不会因为触发顺序而导致程序逻辑出问题
+            $.p(triggerTable[key] || (triggerTable[key] = []), attrTrigger);
         });
         // node.removeAttribute(baseAttrKey);
         //}
@@ -2274,7 +2334,7 @@ function _buildTrigger(self) {
                 return $FALSE;
             }
             // var attrs = nodeHTMLStr.match(_attrRegExp);
-            $.e(node.attributes, function(attr, i) {
+            $.E($.s(node.attributes)/*.reverse()*/, function(attr, i) {
                 var value = attr.value,
                     name = attr.name;
                 if (_templateMatchRule.test(value)) {
@@ -3242,8 +3302,12 @@ var placeholder = {
                         }
                     }
                     if (name) {
-                        V.modulesInit[name] = Function("return " + $.trim(scriptNode.text))();
-                        $.D.rm(scriptNode);
+                        try {
+                            V.modulesInit[name] = Function("return " + $.trim(scriptNode.text))();
+                            $.D.rm(scriptNode);
+                        } catch (e) {
+                            console.error(e);
+                        }
                     }
                 }
             });

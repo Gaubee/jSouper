@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>配置强大的initVM</title>
+    <script type="text/javascript" src="../build/jSouper.debug.js">
+    {
+        Id: "initVM",
+        Data: {
+            arraydata: [
+                [1, 2, 3, [1, [1, 2, 3, 4, 5], 3, 4, 5], 5],
+                [1, 2, [1, [1, 2, 3, 4, 5], 3, 4, 5], 4, 5],
+                [1, [1, 2, [1, 2, 3, 4, 5], 4, 5], 3, 4, 5]
+            ]
+        }
+    }
+    </script>
+</head>
+
+<body>
+    <div id="initVM">
+        {{#> 'tree','arraydata'}}
+    </div>
+    <xmp type="template" name="tree">
+        <ul>
+            {{#each $THIS}}
+            <li>
+                <p><a href="#{{$PRIVATE.url}}">{{$THIS}}</a>
+                </p>
+                {{#> 'tree','$THIS',$THIS.length}}
+            </li>
+            <script type="text/vm">
+            function initVM(vm) {
+                vm.set("$PRIVATE.url", Model.Observer(function() {
+                    return vm.get("$PARENT.$PRIVATE.url") + "|" + vm.get("$INDEX");
+                }));
+            }
+            </script>
+            {{/each }}
+        </ul>
+        <script type="text/vm">
+        function initVM(vm) {
+            vm.set("$PRIVATE.url", Model.Observer(function() {
+                var result = vm.get("$PARENT.$PRIVATE.url")
+                if (result) {
+                    result += "|" + vm.get("$INDEX")
+                } else {
+                    result = "router path:"
+                }
+                return result;
+            }));
+        }
+        </script>
+    </xmp>
+</body>
+
+</html>
+<script type="text/javascript">
+jSouper.ready(function() {
+    // body...
+});
+</script>

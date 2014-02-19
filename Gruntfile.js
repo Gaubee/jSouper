@@ -13,6 +13,7 @@ module.exports = function(grunt) {
     grunt.registerTask('server', ['connect:server', 'watch']);
 
     var baseFile = ['src/$.js',
+        // 'src/rAF.js',
         'src/event.js',
         'src/SmartTrigger_for_Model.js',
         'src/Model.v4.js',

@@ -22,12 +22,11 @@ V.rt("#define", function(handle, index, parentHandle) {
                 if (!(finallyRun = Model.finallyRun[uid_hash])) {
                     Model.finallyRun.register(uid_hash, Model.finallyRun[uid_hash] = finallyRun = function() {
                         viewModel = finallyRun.viewModel
-                        // if (finallyRun.key==="dd") {debugger};
                         //已经被remove的VI，就不应该触发define
                         // if (viewModel._canRemoveAble) {
                         viewModel.set(finallyRun.key, finallyRun.result)
                         // }
-                        Model.finallyRun[uid_hash] = $FALSE; //can push into finally quene
+                        delete Model.finallyRun[uid_hash]/* = $FALSE;*/ //can push into finally quene
                     })
                 }
                 finallyRun.viewModel = viewModel

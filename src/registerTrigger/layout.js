@@ -28,7 +28,7 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
         var layoutViewModel = AllLayoutViewModel[id];
         if (new_templateHandle_name) {
             if (layoutViewModel && layoutViewModel.vmName !== new_templateHandle_name) {
-                layoutViewModel = layoutViewModel.destory(); //layoutViewModel=null
+                layoutViewModel = layoutViewModel.destroy(); //layoutViewModel=null
             }
             if (!layoutViewModel) {
                 var key = NodeList_of_ViewModel[dataHandle_id]._data;
