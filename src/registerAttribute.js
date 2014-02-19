@@ -132,7 +132,10 @@ draggable
 
         //将属性VM的所有的触发key映射到父VM中。让父VM托管
         $.E(attrViewModel._triggers, function(key) {
-            $.us(triggerTable[key] || (triggerTable[key] = []), attrTrigger);
+            //TODO:这里是要使用push还是unshift?
+            //如果后者，则View再遍历属性时就需要reverse
+            //如果前者，会不会因为触发顺序而导致程序逻辑出问题
+            $.p(triggerTable[key] || (triggerTable[key] = []), attrTrigger);
         });
         // node.removeAttribute(baseAttrKey);
         //}
