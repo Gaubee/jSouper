@@ -20,6 +20,13 @@
     <xmp type="template" name="global">
         <h2>my name is:{{$Js.myName}}</h2>
     </xmp>
+    <xmp type="template" name="each">
+        <ul>
+            {{#each $This}}
+            <li class="each">{{$This}}</li>
+            {{/each}}
+        </ul>
+    </xmp>
 </body>
 
 </html>
@@ -80,9 +87,21 @@ jSouper.ready(function(argument) {
     vm_global = jSouper.modules["global"]();
     vm_global.append(document.body);
     vm_global.model.follow(m);
-    m.get("$Js.myName");
     console.log("全局绑定是否正确", vm_global.get("$Js.myName") === "Gaubee");
     console.groupEnd("测试$JS")
+
+    console.group("测试each")
+    window.myName = "Gaubee"
+    vm_each = jSouper.modules["each"](["z", "x", "c"]);
+    vm_each.append(document.body);
+    console.log("数组绑定是否正确", document.getElementsByClassName("each").length === 3);
+    vm_each.set("0", "xxx");
+    console.log("数组更新是否正确", vm_each.getModel()._childModels[0].get() === "xxx");
+    vm_each.set("3", "zzz")
+    console.log("数组添加是否正确", document.getElementsByClassName("each").length === 4);
+    vm_each.set("length",2)
+    console.log("数组删除是否正确", document.getElementsByClassName("each").length === 2);
+    console.groupEnd("测试each")
 
 });
 </script>

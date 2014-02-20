@@ -250,6 +250,7 @@ var DM_proto = Model.prototype = {
         var childModel = new Model;
         childModel._prefix = key;
         childModel._parentModel = self;
+        childModel._database = self.get(key);
         $.p(self._childModels, childModel);
         // //聚拢关于这个key的父Model
         // self.sock(key);
@@ -324,31 +325,45 @@ var DM_proto = Model.prototype = {
             });
         }
         //child
-        for (var childModel, childModels = self._childModels, i = childModels.length - 1; childModel = childModels[i]; i--) {
-            var prefix = childModel._prefix,
-                childResult,
+        var childModel,
+            childModels = self._childModels,
+            i = childModels.length - 1;
+        var prefix,
+            childResult,
+            result;
+        if (key) {
+            for (; childModel = childModels[i]; i--) {
+                prefix = childModel._prefix;
                 result = $FALSE;
-            _dm_force_update += 1;
-            if (!key) { //key === "",touchoff all
-                childResult = childModel.set(self.get(prefix))
-            } else if (!prefix) { //prefix==="" equal to $THIS//TODO:可优化，交由collect处理
-                childResult = childModel.set(key, self.get(key))
-            } else if (key === prefix || prefix.indexOf(key + ".") === 0) { //prefix is a part of key,just maybe had been changed
-                // childModel.touchOff(prefix.replace(key + ".", ""));
-                childResult = childModel.set(self.get(prefix))
-            } else if (key.indexOf(prefix + ".") === 0) { //key is a part of prefix,must had be changed
-                prefix = key.replace(prefix + ".", "")
-                childResult = childModel.set(prefix, self.get(key))
-            } else {
-                result = $TRUE;
-            }
-            _dm_force_update -= 1;
-            if (result) {
-                continue;
-            } else {
-                break;
-            }
-        };
+                _dm_force_update += 1;
+                if (!key) { //key === "",touchoff all
+                    childResult = childModel.set(self.get(prefix))
+                } else if (!prefix) { //prefix==="" equal to $THIS//TODO:可优化，交由collect处理
+                    childResult = childModel.set(key, self.get(key))
+                } else if (key === prefix || prefix.indexOf(key + ".") === 0) { //prefix is a part of key,just maybe had been changed
+                    // childModel.touchOff(prefix.replace(key + ".", ""));
+                    childResult = childModel.set(self.get(prefix))
+                } else if (key.indexOf(prefix + ".") === 0) { //key is a part of prefix,must had be changed
+                    prefix = key.replace(prefix + ".", "")
+                    childResult = childModel.set(prefix, self.get(key))
+                } else {
+                    result = $TRUE;
+                }
+                _dm_force_update -= 1;
+                if (result) {
+                    continue;
+                } else {
+                    break;
+                }
+            };
+        } else { //key为$This的话直接触发所有，无需break
+
+            for (; childModel = childModels[i]; i--) {
+                _dm_force_update += 1;
+                childResult = childModel.set(self.get(childModel._prefix))
+                _dm_force_update -= 1;
+            };
+        }
         //private
         self._privateModel && self._privateModel.touchOff(key);
 

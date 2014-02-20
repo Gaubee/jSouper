@@ -45,12 +45,12 @@ V.rt("#each", function(handle, index, parentHandle) {
     var comment_endeach_id = parentHandle.childNodes[index + 3].id; //eachHandle --> eachComment --> endeachHandle --> endeachComment
     var trigger;
 
-    var _rebuildTree = DM_proto.rebuildTree,
-        _touchOff = DM_proto.touchOff;
+    // var _rebuildTree = DM_proto.rebuildTree,
+    //     _touchOff = DM_proto.touchOff;
     trigger = {
         // smartTrigger:$NULL,
         // key:$NULL,
-        event: function(NodeList_of_ViewModel, model, /*eventTrigger,*/ isAttr, viewModel_ID) {
+        event: function(NodeList_of_ViewModel, proxyModel, /*eventTrigger,*/ isAttr, viewModel_ID) {
             var data = NodeList_of_ViewModel[arrDataHandle_id]._data,
                 // arrTriggerKey = arrDataHandle_Key + ".length",
                 viewModel = V._instances[viewModel_ID],
@@ -110,12 +110,6 @@ V.rt("#each", function(handle, index, parentHandle) {
             if (showed_vi_len !== new_data_len) {
                 arrViewModels.len = new_data_len; //change immediately,to avoid the `subset` trigger the `rebuildTree`,and than trigger each-trigger again.
 
-                //沉默相关多余操作的API，提升效率
-                DM_proto.rebuildTree = $.noop //doesn't need rebuild every subset
-
-                //关闭touchOff会影响关于smartKey
-                DM_proto.touchOff = $.noop; //subset的touchOff会遍历整个子链，会造成爆炸性增长。
-
                 if (showed_vi_len > new_data_len) {
                     $.e(arrViewModels, function(eachItemHandle) {
                         var isEach = eachItemHandle._isEach;
@@ -135,27 +129,25 @@ V.rt("#each", function(handle, index, parentHandle) {
                             var viewModel = arrViewModels[index];
                             //VM不存在，新建
                             if (!viewModel) {
-                                eachModuleConstructor(eachItemData, {
+                                eachModuleConstructor(/*eachItemData*/$UNDEFINED, {
                                     onInit: function(vm) {
                                         viewModel = arrViewModels[index] = vm
                                     },
                                     callback: function(vm) {
                                         vm._arrayVI = arrViewModels;
-                                        var viDM = vm.model;
-                                        viDM._isEach = vm._isEach = {
-                                            //_index在push到Array_DM时才进行真正定义，由于remove会重新更正_index，所以这个参数完全交给Array_DM管理
-                                            // _index: index,
-                                            eachId: id,
-                                            eachVIs: arrViewModels
-                                        }
-                                        model.subset(viDM, arrDataHandle_Key + "." + index); //+"."+index //reset arrViewModel's model
-                                        _extend_DM_get_Index(viDM)
+                                        proxyModel.shelter(vm, arrDataHandle_Key + "." + index); //+"."+index //reset arrViewModel's model
+                                        // var viDM = vm.getModel();
+                                        // viDM._isEach = vm._isEach = {
+                                        //     //_index在push到Array_DM时才进行真正定义，由于remove会重新更正_index，所以这个参数完全交给Array_DM管理
+                                        //     // _index: index,
+                                        //     eachId: id,
+                                        //     eachVIs: arrViewModels
+                                        // }
+                                        // _extend_DM_get_Index(viDM)
                                     }
                                 });
-                                var viDM = viewModel.model;
-                                //强制刷新，保证这个对象的内部渲染正确，在subset后刷新，保证smartkey的渲染正确
-                                _touchOff.call(viDM, "");
-                                viDM.__cacheIndex = viDM._index;
+                                // var viDM = viewModel.model;
+                                // viDM.__cacheIndex = viDM._index;
                             }
                             //自带的inser，针对each做特殊优化
                             // viewModel.insert(comment_endeach_node)
@@ -175,9 +167,9 @@ V.rt("#each", function(handle, index, parentHandle) {
 
                     }
                 }
-                //回滚沉默的功能
-                (DM_proto.rebuildTree = _rebuildTree).call(model);
-                (DM_proto.touchOff = _touchOff).call(model);
+                // //回滚沉默的功能
+                // (DM_proto.rebuildTree = _rebuildTree).call(model);
+                // (DM_proto.touchOff = _touchOff).call(model);
             }
         }
     }
