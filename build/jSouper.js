@@ -1188,29 +1188,6 @@ var DM_proto = Model.prototype = {
         }
         return result;
     },
-    /*
-     * 根据key的路由获取相应的Model与过滤后的key
-     */
-    getModelByKey: function(key) {
-        var self = this;
-        var result
-        if (key) {
-            $.E(self._childModels, function(childModel) {
-                var prefixKey = childModel._prefix;
-                //prefixKey >= key
-                if (prefixKey.indexOf(key) === 0) {
-                    result = childModel.getModelByKey(prefixKey.substr(key.length + 1));
-                }
-            });
-        }
-        if (!result) {
-            result = {
-                model: self,
-                key: key
-            };
-        }
-        return result;
-    },
     __buildChildModel: function(key) {
         var self = this;
         //生成一个新的子Model，绑定一系列关系
@@ -1530,6 +1507,9 @@ var _dm_force_update = 0;
             return model;
         }
     }
+    /*
+     * 通用寻址函数
+     */
     //根据带routerKey的字符串进行查找model
     Model.$router = function(model, key) {
         var result = {
@@ -1538,14 +1518,18 @@ var _dm_force_update = 0;
         };
         if (key) {
             var routerKey = $.st(key, ".");
-            var routerHandle = routerMap[_split_laveStr];
+            if (!routerKey) {
+                routerKey = _split_laveStr;
+                _split_laveStr = $FALSE;
+            }
+            var routerHandle = routerMap[routerKey];
             if (routerHandle) {
-                model = routerHandle(model, key);
+                model = routerHandle(model, _split_laveStr /*过滤后的key*/ );
                 if (model) { //递归路由
-                    result = Model.$router(model, routerKey)
+                    result = Model.$router(model, _split_laveStr)
                 } else { //找不到
                     result.model = model;
-                    result.key = routerKey;
+                    result.key = _split_laveStr;
                 }
             }
         }
@@ -1553,37 +1537,6 @@ var _dm_force_update = 0;
     };
     var _get = DM_proto.get,
         _set = DM_proto.set,
-        prefix = DM_config.prefix,
-        _rebuildTree = DM_proto.rebuildTree,
-        _subset = DM_proto.subset,
-        _setterRouter = {
-            "$Private": function(self, args, key) {
-                return set.apply(self._privateModel || (self._privateModel = new Model), args);
-            },
-            "$Js": function(self, args, key) {
-                return set.apply(_jSouperBase.$JS, args);
-            },
-            "$Parent": function(self, args, key) {
-                if (self = self._parentModel) {
-                    return set.apply(self, args);
-                }
-                /* else {
-                    Model.session.filterKey = $UNDEFINED;
-                    Model.session.topSetter = $UNDEFINED;
-                    key = ""
-                }*/
-            },
-            "$This": function(self, args, key) {
-                result = set.apply(self, args);
-            },
-            "$Top": function(self, args, key) {
-                var next;
-                while (next = self._parentModel) {
-                    self = next;
-                }
-                result = set.apply(self, args);
-            }
-        },
         set = DM_proto.set = function(key) {
             var self = this,
                 args = arguments /*$.s(arguments)*/ ,
@@ -1591,116 +1544,34 @@ var _dm_force_update = 0;
             if (args.length > 1) {
                 var router_result = Model.$router(self, key);
                 if (self = router_result.model) {
-                    (key = router_result.key) ?(args[0] = key):$.sp.call(args, 0, 1)
+                    (key = router_result.key) ? (args[0] = key) : $.sp.call(args, 0, 1)
                     result = _set.apply(self, args);
                 }
-                // var routerKey = $.st(key, ".");
-                // var routerHandle = _setterRouter[_split_laveStr];
-                // if (routerHandle) {
-                //     if (routerKey) {
-                //         args[0] = routerKey;
-                //     } else {
-                //         $.sp.call(args, 0, 1)
-                //     }
-                //     result = routerHandle(self, args, key);
-                // } else {
-                //     result = _set.apply(self, args);
-                // }
             } else { //one argument
-                result = _set.apply(self, args);
+                result = _set.call(self, key);
             }
-
-            result || (result = {
-                key: key
-            });
-
-            //更新调用堆栈层数，如果是0,则意味着冒泡到顶层的调用即将结束，是最后一层set
-            // result.stacks = Model.session.finallyRunStacks.length
             return result
-        },
-
-        _getterRouter = {
-            "$Private": function(self, args, key) {
-                return get.apply(self._privateModel || (self._privateModel = new Model), args);
-            },
-            "$Js": function(self, args, key) {
-                return get.apply(_jSouperBase.$JS, args);
-            },
-            "$Parent": function(self, args, key) {
-                if (self = self._parentModel) {
-                    return get.apply(self, args);
-                } else {
-                    Model.session.filterKey = $UNDEFINED;
-                    Model.session.topGetter = $UNDEFINED;
-                    key = ""
-                }
-            },
-            "$This": function(self, args, key) {
-                result = get.apply(self, args);
-            },
-            "$Top": function(self, args, key) {
-                var next;
-                while (next = self._parentModel) {
-                    self = next;
-                }
-                result = get.apply(self, args);
-            }
         },
         get = DM_proto.get = function(key) {
             var self = this,
                 args = arguments /*$.s(arguments)*/ ,
                 result;
             if (args.length > 0) {
-                var routerKey = $.st(key, ".");
-                var routerHandle = _getterRouter[_split_laveStr];
-                if (routerHandle) {
-                    if (routerKey) {
-                        args[0] = routerKey;
-                    } else {
-                        $.sp.call(args, 0, 1)
-                    }
-                    result = routerHandle(self, args, key);
-                } else {
+                var router_result = Model.$router(self, key);
+                if (self = router_result.model) {
+                    (key = router_result.key) ? (args[0] = key) : $.sp.call(args, 0, 1)
                     result = _get.apply(self, args);
                 }
-            } else { //one argument
-                // result = _get.apply(self, args);
+            } else {
                 result = _get.call(self);
             }
             return result;
-        };
-
-    function _getAllSmartModels(self, result) {
-        result ? $.p(result, self) : (result = []);
-        var dmSmartModels = self._smartDMs_id;
-        dmSmartModels && $.E(dmSmartModels, function(dm) {
-            dm = Model.get(dm);
-            if ($.iO(result, dm) === -1) {
-                _getAllSmartModels(dm, result);
-            }
-        });
-        // console.table(result)
-        return result;
-    };
-    DM_proto.rebuildTree = function() {
-        var self = this,
-            smartSource;
-        $.E(_getAllSmartModels(self), function(dm) {
-            if (smartSource = dm._smartSource) {
-                var smart_prefix = smartSource.prefix,
-                    smart_model = Model.get(smartSource.dm_id);
-                // console.log(smart_prefix)
-                if (smart_prefix.indexOf(prefix.Parent) === 0 || smart_prefix.indexOf(prefix.Top) === 0) {
-                    var data = smart_model.get(smart_prefix);
-                    var topGetter = Model.session.topGetter
-                    if (topGetter !== smartSource.topGetter && (smartSource.topGetter = topGetter)) {
-                        smart_model.subset(dm, smart_prefix);
-                    }
-                }
-            }
-        })
-        return _rebuildTree.call(self);
-    };
+        },
+        _buildModelByKey = DM_proto.buildModelByKey,
+        buildModelByKey = DM_proto.buildModelByKey = function(key) {
+            var router_result = Model.$router(this, key);
+            return _buildModelByKey.call(router_result.model, router_result.key);
+        }
 }());
 
 /*
@@ -1841,7 +1712,8 @@ function ProxyModel(entrust, model) {
     //存储收留的pm对象
     self._childProxyModel = [];
 
-    //“被收留者”的身份标记，动态生成，与model层的不同，这是保留最原始的key
+    //“被收留者”的身份标记，动态生成，与model层的不同，这是保留最原始的key，且是代表VM关系的前缀。
+    //Model层的prefix是代表数据结构上的
     // self._prefix
 
     //来自委托对象的触发器集合，需要委托对象实现静态_buildSmartTriggers接口
@@ -1864,9 +1736,9 @@ var __ProxyModelProto__ = ProxyModel.prototype = {
         (proxyModel instanceof self.EntrustConstructor) && (proxyModel = proxyModel.model);
         if (proxyModel instanceof ProxyModel) {
             //标记为“被收留者”
-            proxyModel._prefix = key;
+            proxyModel._prefix = key /*|| ""*/ ;
             $.p(self._childProxyModel, proxyModel);
-            proxyModel.fellow(self.model, key);
+            proxyModel.follow(self.model, key);
         }
     },
     //和指定的Model进行合并，吸附在指定Model上
@@ -1920,6 +1792,10 @@ var __ProxyModelProto__ = ProxyModel.prototype = {
                     if (topGetter) {
                         smartTrigger.matchKey = matchKey;
                         smartTrigger.bind(topGetter._triggerKeys);
+                        // finallyRun.register(viewModel._id + TEMP.sK, function() {
+                        //因为Model是惰性生成的，因此在Model存在的情况下已经可以进行更新DOM节点了
+                        smartTrigger.event(topGetter._triggerKeys)
+                        // });
                     }
                 }
             });
@@ -2153,8 +2029,8 @@ function View(arg, vmName) {
         opction.onInit && opction.onInit(vi);
 
 
-        vi.model.touchOff();
-        _jSouperBase.$JS.touchOff();
+        // vi.model.touchOff();
+        // _jSouperBase.$JS.touchOff();
 
         //pop mark
         finallyRunStacks.pop();
@@ -4149,7 +4025,7 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
         comment_layout_id = parentHandle.childNodes[index + 1].id, //eachHandle --> eachComment --> endeachHandle --> endeachComment
         trigger;
     var uuid = $.uid();
-    var triggerEvent = function(NodeList_of_ViewModel, model, /*eventTrigger,*/ isAttr, viewModel_ID) {
+    var triggerEvent = function(NodeList_of_ViewModel, proxyModel, /*eventTrigger,*/ isAttr, viewModel_ID) {
         //VM所存储的集合
         var AllLayoutViewModel = V._instances[viewModel_ID]._ALVI;
         //模板的名称
@@ -4172,13 +4048,13 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
             }
             if (!layoutViewModel) {
                 var key = NodeList_of_ViewModel[dataHandle_id]._data;
-                //加锁，放置callback前的finallyRun引发的
                 module($UNDEFINED, {
                     onInit: function(vm) {
+                        //加锁，放置callback前的finallyRun引发的
                         layoutViewModel = AllLayoutViewModel[id] = vm;
                     },
-                    callback:function (vm) {
-                        model.subset(vm, key);
+                    callback: function(vm) {
+                        proxyModel.shelter(vm, key);
                     }
                 });
 

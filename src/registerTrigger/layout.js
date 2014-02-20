@@ -9,7 +9,7 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
         comment_layout_id = parentHandle.childNodes[index + 1].id, //eachHandle --> eachComment --> endeachHandle --> endeachComment
         trigger;
     var uuid = $.uid();
-    var triggerEvent = function(NodeList_of_ViewModel, model, /*eventTrigger,*/ isAttr, viewModel_ID) {
+    var triggerEvent = function(NodeList_of_ViewModel, proxyModel, /*eventTrigger,*/ isAttr, viewModel_ID) {
         //VM所存储的集合
         var AllLayoutViewModel = V._instances[viewModel_ID]._ALVI;
         //模板的名称
@@ -32,13 +32,13 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
             }
             if (!layoutViewModel) {
                 var key = NodeList_of_ViewModel[dataHandle_id]._data;
-                //加锁，放置callback前的finallyRun引发的
                 module($UNDEFINED, {
                     onInit: function(vm) {
+                        //加锁，放置callback前的finallyRun引发的
                         layoutViewModel = AllLayoutViewModel[id] = vm;
                     },
-                    callback:function (vm) {
-                        model.subset(vm, key);
+                    callback: function(vm) {
+                        proxyModel.shelter(vm, key);
                     }
                 });
 

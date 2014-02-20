@@ -12,6 +12,14 @@
         {{title}}:{{name}}:{{c.a}}
         <hr>
     </xmp>
+    <xmp type="template" name="layout_test">
+        ---------
+        <br>{{#layout 'myView','$This'}} ---------
+        <br>
+    </xmp>
+    <xmp type="template" name="global">
+        <h2>my name is:{{$Js.myName}}</h2>
+    </xmp>
 </body>
 
 </html>
@@ -59,5 +67,22 @@ jSouper.ready(function(argument) {
     console.log(vm2.get("name"), ":", vm2.get("name") === "zzzz");
     vm2.append(document.body)
     console.groupEnd("生成ViewModel");
+
+    console.group("测试layout")
+    vm_layout = jSouper.modules["layout_test"]();
+    vm_layout.append(document.body);
+    vm.model.shelter(vm_layout);
+    console.log("model绑定是否正确", vm_layout.getModel() === vm.getModel());
+    console.groupEnd("测试layout")
+
+    console.group("测试$JS")
+    window.myName = "Gaubee"
+    vm_global = jSouper.modules["global"]();
+    vm_global.append(document.body);
+    vm_global.model.follow(m);
+    m.get("$Js.myName");
+    console.log("全局绑定是否正确", vm_global.get("$Js.myName") === "Gaubee");
+    console.groupEnd("测试$JS")
+
 });
 </script>

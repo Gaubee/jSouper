@@ -18,7 +18,8 @@ function ProxyModel(entrust, model) {
     //存储收留的pm对象
     self._childProxyModel = [];
 
-    //“被收留者”的身份标记，动态生成，与model层的不同，这是保留最原始的key
+    //“被收留者”的身份标记，动态生成，与model层的不同，这是保留最原始的key，且是代表VM关系的前缀。
+    //Model层的prefix是代表数据结构上的
     // self._prefix
 
     //来自委托对象的触发器集合，需要委托对象实现静态_buildSmartTriggers接口
@@ -41,9 +42,9 @@ var __ProxyModelProto__ = ProxyModel.prototype = {
         (proxyModel instanceof self.EntrustConstructor) && (proxyModel = proxyModel.model);
         if (proxyModel instanceof ProxyModel) {
             //标记为“被收留者”
-            proxyModel._prefix = key;
+            proxyModel._prefix = key /*|| ""*/ ;
             $.p(self._childProxyModel, proxyModel);
-            proxyModel.fellow(self.model, key);
+            proxyModel.follow(self.model, key);
         }
     },
     //和指定的Model进行合并，吸附在指定Model上
@@ -97,6 +98,10 @@ var __ProxyModelProto__ = ProxyModel.prototype = {
                     if (topGetter) {
                         smartTrigger.matchKey = matchKey;
                         smartTrigger.bind(topGetter._triggerKeys);
+                        // finallyRun.register(viewModel._id + TEMP.sK, function() {
+                        //因为Model是惰性生成的，因此在Model存在的情况下已经可以进行更新DOM节点了
+                        smartTrigger.event(topGetter._triggerKeys)
+                        // });
                     }
                 }
             });

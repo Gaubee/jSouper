@@ -244,29 +244,6 @@ var DM_proto = Model.prototype = {
         }
         return result;
     },
-    /*
-     * 根据key的路由获取相应的Model与过滤后的key
-     */
-    getModelByKey: function(key) {
-        var self = this;
-        var result
-        if (key) {
-            $.E(self._childModels, function(childModel) {
-                var prefixKey = childModel._prefix;
-                //prefixKey >= key
-                if (prefixKey.indexOf(key) === 0) {
-                    result = childModel.getModelByKey(prefixKey.substr(key.length + 1));
-                }
-            });
-        }
-        if (!result) {
-            result = {
-                model: self,
-                key: key
-            };
-        }
-        return result;
-    },
     __buildChildModel: function(key) {
         var self = this;
         //生成一个新的子Model，绑定一系列关系

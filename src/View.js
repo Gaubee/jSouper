@@ -36,8 +36,8 @@ function View(arg, vmName) {
         opction.onInit && opction.onInit(vi);
 
 
-        vi.model.touchOff();
-        _jSouperBase.$JS.touchOff();
+        // vi.model.touchOff();
+        // _jSouperBase.$JS.touchOff();
 
         //pop mark
         finallyRunStacks.pop();
