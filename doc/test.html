@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+
+<head>
+    <title>app - jSouper</title>
+    <script type="text/javascript" src="../build/jSouper.debug.js">
+    </script>
+
+</head>
+
+<body>
+    <xmp type="template" name="myView">
+        {{title}}:{{name}}:{{c.a}}
+        <hr>
+    </xmp>
+</body>
+
+</html>
+<script type="text/javascript">
+jSouper.ready(function(argument) {
+
+    m = new Model;
+    console.group("渐进式创建");
+    c = m.buildModelByKey("c");
+    a = m.buildModelByKey("c.a");
+    console.log(Model.$router(a, "$Parent").model == c);
+    console.log(Model.$router(a, "$Parent.$Parent").model == m);
+    console.log(Model.$router(a, "$Top").model == m);
+    console.groupEnd("渐进式创建");
+
+    console.group("截断式创建");
+    b = m.buildModelByKey("d.b");
+    d = m.buildModelByKey("d");
+    console.log(Model.$router(b, "$Parent").model == d);
+    console.log(Model.$router(b, "$Parent.$Parent").model == m);
+    console.log(Model.$router(b, "$Top").model == m);
+    console.groupEnd("截断式创建");
+
+    console.group("测试赋值取值");
+    m.set("c", {
+        a: "test String"
+    });
+    console.log(m.get("c.a"), ":", c.get("a") === a.get());
+    a.set("test String 2");
+    console.log(m.get("c.a"), ":", c.get("a") === a.get());
+    console.groupEnd("测试赋值取值");
+
+    console.group("生成ViewModel");
+    vm = jSouper.modules["myView"]({
+        name: "hhh",
+        title: "?????"
+    });
+    console.log(vm.get("name"), ":", vm.get("name") === "hhh");
+    vm.append(document.body)
+    console.groupEnd("生成ViewModel");
+
+    console.group("vm注入model");
+    vm2 = jSouper.modules["myView"](m);
+    m.set("name", "zzzz")
+    console.log(vm2.get("name"), ":", vm2.get("name") === "zzzz");
+    vm2.append(document.body)
+    console.groupEnd("生成ViewModel");
+});
+</script>

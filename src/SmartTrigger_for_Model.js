@@ -6,11 +6,11 @@
  */
 
 function SmartTriggerHandle(key, triggerEvent, data) {
-    var self = this,
-        match = key;
-    self.matchKey = String(key);
-    self.TEMP = data;
+    var self = this;
+
+    self.matchKey = key;
     self.event = triggerEvent instanceof Function ? triggerEvent : $.noop;
+    self.TEMP = data;
 
     //根据key开判断是否需要在Model相对变动时你，进行重新绑定。
     //现在默认都重新绑定。到后期再进行优化

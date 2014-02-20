@@ -2,76 +2,76 @@
  * View Instance constructor
  */
 
-(function() { //DM_extends_fot_VI
-    var _rebuildTree = DM_proto.rebuildTree;
-    DM_proto.rebuildTree = function() {
-        var self = this,
-            DMSet = self._subsetModels;
-        $.E(self._viewModels, function(viewModel) {
-            $.E(viewModel._smartTriggers, function(smartTrigger) {
-                var TEMP = smartTrigger.TEMP;
-                TEMP.viewModel.get(TEMP.sourceKey);
-                var topGetter = Model.session.topGetter,
-                    currentTopGetter = Model.get(TEMP.dm_id),
-                    matchKey = Model.session.filterKey || "";
+// (function() { //DM_extends_fot_VI
+//     var _rebuildTree = DM_proto.rebuildTree;
+//     DM_proto.rebuildTree = function() {
+//         var self = this,
+//             DMSet = self._subsetModels;
+//         $.E(self._viewModels, function(viewModel) {
+//             $.E(viewModel._smartTriggers, function(smartTrigger) {
+//                 var TEMP = smartTrigger.TEMP;
+//                 TEMP.viewModel.get(TEMP.sourceKey);
+//                 var topGetter = Model.session.topGetter,
+//                     currentTopGetter = Model.get(TEMP.dm_id),
+//                     matchKey = Model.session.filterKey || "";
 
-                if (topGetter) {
-                    if (topGetter !== currentTopGetter || matchKey !== smartTrigger.matchKey) {
-                        TEMP.dm_id = topGetter.id;
-                        currentTopGetter && smartTrigger.unbind(currentTopGetter._triggerKeys)
-                        smartTrigger.matchKey = matchKey;
-                        smartTrigger.bind(topGetter._triggerKeys);
-                        currentTopGetter = topGetter;
-                    }
-                }
-            })
-        })
-        $.E(self._subsetModels, function(childModel) {
-            childModel.rebuildTree()
-        })
-        return _rebuildTree.call(self);
-    }
-    var _collect = DM_proto.collect;
-    DM_proto.collect = function(viewModel) {
-        var self = this;
-        if (viewModel instanceof Model) {
-            _collect.call(self, viewModel);
-            //TODO:release memory.
-        } else if (viewModel instanceof ViewModel) {
-            var vi_DM = viewModel.model;
-            if (!vi_DM) { // for VI init in constructor
-                vi_DM = viewModel.model = self;
-                var viewModelTriggers = viewModel._triggers
-                $.E(viewModelTriggers, function(sKey) {
-                    viewModel._buildSmart(sKey);
-                });
-            }
+//                 if (topGetter) {
+//                     if (topGetter !== currentTopGetter || matchKey !== smartTrigger.matchKey) {
+//                         TEMP.dm_id = topGetter.id;
+//                         currentTopGetter && smartTrigger.unbind(currentTopGetter._triggerKeys)
+//                         smartTrigger.matchKey = matchKey;
+//                         smartTrigger.bind(topGetter._triggerKeys);
+//                         currentTopGetter = topGetter;
+//                     }
+//                 }
+//             })
+//         })
+//         $.E(self._subsetModels, function(childModel) {
+//             childModel.rebuildTree()
+//         })
+//         return _rebuildTree.call(self);
+//     }
+//     var _collect = DM_proto.collect;
+//     DM_proto.collect = function(viewModel) {
+//         var self = this;
+//         if (viewModel instanceof Model) {
+//             _collect.call(self, viewModel);
+//             //TODO:release memory.
+//         } else if (viewModel instanceof ViewModel) {
+//             var vi_DM = viewModel.model;
+//             if (!vi_DM) { // for VI init in constructor
+//                 vi_DM = viewModel.model = self;
+//                 var viewModelTriggers = viewModel._triggers
+//                 $.E(viewModelTriggers, function(sKey) {
+//                     viewModel._buildSmart(sKey);
+//                 });
+//             }
 
-            //to rebuildTree => remark smartyKeys
-            $.p(self._viewModels, viewModel);
+//             //to rebuildTree => remark smartyKeys
+//             $.p(self._viewModels, viewModel);
 
-            _collect.call(self, vi_DM) //self collect self will Forced triggered updates
-        }
-        return self;
-    };
-    var _subset = DM_proto.subset;
-    DM_proto.subset = function(viewModel, prefix) {
-        var self = this;
+//             _collect.call(self, vi_DM) //self collect self will Forced triggered updates
+//         }
+//         return self;
+//     };
+//     var _subset = DM_proto.subset;
+//     DM_proto.subset = function(viewModel, prefix) {
+//         var self = this;
 
-        if (viewModel instanceof Model) {
-            _subset.call(self, viewModel, prefix);
-        } else {
+//         if (viewModel instanceof Model) {
+//             _subset.call(self, viewModel, prefix);
+//         } else {
 
-            var vi_DM = viewModel.model;
-            if (!vi_DM) {
-                vi_DM = Model();
-                //收集触发器
-                vi_DM.collect(viewModel);
-            }
-            _subset.call(self, vi_DM, prefix);
-        }
-    };
-}());
+//             var vi_DM = viewModel.model;
+//             if (!vi_DM) {
+//                 vi_DM = Model();
+//                 //收集触发器
+//                 vi_DM.collect(viewModel);
+//             }
+//             _subset.call(self, vi_DM, prefix);
+//         }
+//     };
+// }());
 
 var stopTriggerBubble; // = $FALSE;
 
@@ -104,7 +104,7 @@ function _addAttr(viewModel, node, attrJson) {
         $.E(attrViewModel._triggers, function(key) {
             var triggerContainer = triggerTable[key];
             if (!triggerContainer) {
-                viewModel._buildSmart(key);
+                ViewModel._buildSmart(viewModel, key);
                 triggerContainer = triggerTable[key] = [];
                 $.p(viewModel._triggers, key);
                 $.p(result, key);
@@ -122,7 +122,6 @@ function ViewModel(handleNodeTree, NodeList, triggerTable, model) {
     var self = this;
     self._isAttr = $FALSE; //if no null --> Storage the attribute key and current.
     self._isEach = $FALSE; //if no null --> Storage the attribute key and current.
-    self.model; //= model;
     self.handleNodeTree = handleNodeTree;
     self.DOMArr = $.s(handleNodeTree.childNodes);
     self.NodeList = NodeList;
@@ -133,16 +132,6 @@ function ViewModel(handleNodeTree, NodeList, triggerTable, model) {
     self._close = $.D.C(self._id + " _close");
 
     self._canRemoveAble = $FALSE;
-    // var _canRemoveAble = $FALSE;
-    // self.__defineGetter__("_canRemoveAble", function() {
-    //     return _canRemoveAble;
-    // });
-    // self.__defineSetter__("_canRemoveAble", function(nObj) {
-    //     if (nObj === $FALSE) {
-    //         debugger
-    //     };
-    //     _canRemoveAble = nObj;
-    // })
 
     self._AVI = {};
     self._ALVI = {};
@@ -160,13 +149,15 @@ function ViewModel(handleNodeTree, NodeList, triggerTable, model) {
         self._triggers._[key] = tiggerCollection;
     });
 
-    if (!(model instanceof Model)) {
-        model = Model(model);
-    }
-    self._smartTriggers = [];
+    self.constructor = ViewModel;
+    //为vm加上Model代理层
+    new ProxyModel(self, model);
 
-    //bind viewModel with DataManger
-    model.collect(self); //touchOff All triggers
+    //转移到proxyModel中
+    // self._smartTriggers = [];
+
+    // //bind viewModel with DataManger
+    // model.collect(self); //touchOff All triggers
 
     //console.group(self._id,"touchOff .")
     stopTriggerBubble = $TRUE;
@@ -174,6 +165,34 @@ function ViewModel(handleNodeTree, NodeList, triggerTable, model) {
     stopTriggerBubble = $FALSE;
     //console.groupEnd(self._id,"touchOff .")
 };
+
+/*
+ * 静态函数
+ */
+//_buildSmartTriggers接口，
+ViewModel._buildSmartTriggers = function(viewModel, sKey) {
+    var smartTriggers = [];
+    $.E(viewModel._triggers, function(sKey) {
+        $.p(smartTriggers, ViewModel._buildSmart(viewModel, sKey));
+    });
+    return smartTriggers;
+}
+//_buildSmart接口
+ViewModel._buildSmart = function(viewModel, sKey) {
+    smartTrigger = new SmartTriggerHandle(
+        sKey || "", //match key
+        vm_buildSmart_event, //VM通用的触发函数
+        { //TEMP data
+            vM: viewModel,
+            sK: sKey
+        }
+    );
+    return smartTrigger;
+}
+var vm_buildSmart_event = function(smartTriggerSet) {
+    var TEMP = this.TEMP;
+    TEMP.vM.touchOff(TEMP.sK);
+}
 
 var VI_session = ViewModel.session = {
     touchHandleIdSet: $NULL,
@@ -245,7 +264,7 @@ function _buildQueryMatchFun(matchAttr) {
 };
 var fr = doc.createDocumentFragment();
 
-var VI_proto = ViewModel.prototype = {
+var __ViewModelProto__ = ViewModel.prototype = {
     destroy: function() {
         var self = this;
         //TODO:delete node
@@ -367,14 +386,14 @@ var VI_proto = ViewModel.prototype = {
         }
         return self;
     },
-    get: function get() {
-        var dm = this.model;
-        return dm.get.apply(dm, arguments /*$.s(arguments)*/ );
-    },
-    set: function set() {
-        var dm = this.model;
-        return dm.set.apply(dm, arguments /*$.s(arguments)*/ )
-    },
+    // get: function get() {
+    //     var dm = this.model;
+    //     return dm.get.apply(dm, arguments /*$.s(arguments)*/ );
+    // },
+    // set: function set() {
+    //     var dm = this.model;
+    //     return dm.set.apply(dm, arguments /*$.s(arguments)*/ )
+    // },
     topNode: function(newCurrentTopNode) {
         var self = this,
             handleNodeTree = self.handleNodeTree,
@@ -422,27 +441,27 @@ var VI_proto = ViewModel.prototype = {
             })
         })
     },
-    _buildSmart: function(sKey) {
-        var self = this,
-            model = self.model,
-            smartTriggers = self._smartTriggers;
-        model.get(sKey);
-        var baseKey = Model.session.filterKey,
-            topGetterTriggerKeys = Model.session.topGetter && Model.session.topGetter._triggerKeys,
-            smartTrigger = new SmartTriggerHandle(
-                baseKey || (baseKey = ""), //match key
+    // _buildSmart: function(sKey) {
+    //     var self = this,
+    //         model = self.model,
+    //         smartTriggers = self._smartTriggers;
+    //     model.get(sKey);
+    //     var baseKey = Model.session.filterKey,
+    //         topGetterTriggerKeys = Model.session.topGetter && Model.session.topGetter._triggerKeys,
+    //         smartTrigger = new SmartTriggerHandle(
+    //             baseKey || (baseKey = ""), //match key
 
-                function(smartTriggerSet) {
-                    self.touchOff(sKey);
-                }, { //TEMP data
-                    viewModel: self,
-                    dm_id: model.id,
-                    sourceKey: sKey
-                }
-            );
-        $.p(smartTriggers, smartTrigger);
-        topGetterTriggerKeys && smartTrigger.bind(topGetterTriggerKeys); // topGetterTriggerKeys.push(baseKey, smartTrigger);
-    },
+    //             function(smartTriggerSet) {
+    //                 self.touchOff(sKey);
+    //             }, { //TEMP data
+    //                 viewModel: self,
+    //                 dm_id: model.id,
+    //                 sourceKey: sKey
+    //             }
+    //         );
+    //     $.p(smartTriggers, smartTrigger);
+    //     topGetterTriggerKeys && smartTrigger.bind(topGetterTriggerKeys); // topGetterTriggerKeys.push(baseKey, smartTrigger);
+    // },
     teleporter: function(viewModel, telporterName) {
         var self = this;
         (telporterName === $UNDEFINED) && (telporterName = "index");
@@ -460,17 +479,23 @@ var VI_proto = ViewModel.prototype = {
         }
         return self;
     },
-    collect: function() {
-        var self = this;
-        var model = self.model;
-        model.collect.apply(model, arguments);
-        return self;
-    },
-    subset: function() {
-        var self = this;
-        var model = self.model;
-        model.subset.apply(model, arguments);
-        return self;
+    // collect: function() {
+    //     var self = this;
+    //     var model = self.model;
+    //     model.collect.apply(model, arguments);
+    //     return self;
+    // },
+    // subset: function() {
+    //     var self = this;
+    //     var model = self.model;
+    //     model.subset.apply(model, arguments);
+    //     return self;
+    // },
+    /*
+     * 获取代理后面真正的Model
+     */
+    getModel: function(argument) {
+        return this.model.model;
     }
 };
 /*var _allEventNames = ("blur focus focusin focusout load resize" +
@@ -478,7 +503,20 @@ var VI_proto = ViewModel.prototype = {
     "mouseover mouseout mouseenter mouseleave change select" +
     "submit keydown keypress keyup error contextmenu").split(" ");
 $.E(_allEventNames, function(eventName) {
-    VI_proto[eventName] = function(fun) {
+    __ViewModelProto__[eventName] = function(fun) {
         return fun ? this.on(eventName, fun) : this.trigger(eventName);
     }
 })*/
+
+/*
+ * 为ViewModel拓展proxymodel代理类的功能
+ */
+
+$.E(["shelter", "set", "get"], function(handleName) {
+    var handle = __ProxyModelProto__[handleName];
+    __ViewModelProto__[handleName] = function() {
+        var self = this;
+        var model = self.model;
+        return handle.apply(model, arguments);
+    }
+});

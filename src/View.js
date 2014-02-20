@@ -36,7 +36,7 @@ function View(arg, vmName) {
         opction.onInit && opction.onInit(vi);
 
 
-        vi.model.getTop().touchOff();
+        vi.model.touchOff();
         _jSouperBase.$JS.touchOff();
 
         //pop mark

@@ -4,8 +4,8 @@ var _extend_DM_get_Index = (function() {
         var self = this;
         var indexKey = DM_config.prefix.Index;
         if (key === indexKey) {
-            Model.session.topSetter = self;
-            Model.session.filterKey = "";
+            // Model.session.topSetter = self;
+            // Model.session.filterKey = "";
             throw Error(indexKey + " is read only.")
         } else {
             return DM_proto.set.apply(self, arguments)
@@ -15,8 +15,8 @@ var _extend_DM_get_Index = (function() {
         var self = this;
         var indexKey = DM_config.prefix.Index;
         if (key === indexKey) {
-            Model.session.topGetter = self;
-            Model.session.filterKey = "";
+            // Model.session.topGetter = self;
+            // Model.session.filterKey = "";
             return parseInt(self._index);
         } else {
             return DM_proto.get.apply(self, arguments)

@@ -412,44 +412,6 @@ doc = document,
         }
     };
 
-//requestAnimationFrame polyfill 的极限压缩版
-//https://gist.github.com/paulirish/1579671
-//https://gist.github.com/globalaubee/6991570
-(function() {
-    var lastTime = 0,
-        vendors = ['ms', 'moz', 'webkit', 'o'],
-        _KEY_AnimationFrame = 'AnimationFrame',
-        _KEY_equest = 'equest',
-        _KEY_ancel = 'ancel',
-        _KEY_requestAnimationFrame = 'r' + _KEY_equest + _KEY_AnimationFrame,
-        _KEY_cancelAnimationFrame = 'c' + _KEY_ancel + _KEY_AnimationFrame,
-        now = Date.now || function() {
-            return +new Date
-        };
-    for (var x = 0; x < vendors.length && !global[_KEY_requestAnimationFrame]; ++x) {
-        global[_KEY_requestAnimationFrame] = global[vendors[x] + 'R' + _KEY_equest + _KEY_AnimationFrame];
-        global[_KEY_cancelAnimationFrame] = global[vendors[x] + 'C' + _KEY_ancel + _KEY_AnimationFrame] || global[vendors[x] + 'C' + _KEY_ancel + 'R' + _KEY_equest + _KEY_AnimationFrame];
-    }
-
-    if (!global[_KEY_requestAnimationFrame]) {
-        global[_KEY_requestAnimationFrame] = function(callback, element) {
-            var currTime = now(),
-                timeToCall = Math.max(0, 16 - (currTime - lastTime)),
-                id = global.setTimeout(function() {
-                        callback(currTime + timeToCall);
-                    },
-                    timeToCall);
-            lastTime = currTime + timeToCall;
-            return id;
-        };
-
-        global[_KEY_cancelAnimationFrame] = function(id) {
-            clearTimeout(id);
-        };
-    }
-
-}());
-
 var
 //事件缓存区
 _event_cache = {},
@@ -871,11 +833,11 @@ _event_cache = {},
  */
 
 function SmartTriggerHandle(key, triggerEvent, data) {
-    var self = this,
-        match = key;
-    self.matchKey = String(key);
-    self.TEMP = data;
+    var self = this;
+
+    self.matchKey = key;
     self.event = triggerEvent instanceof Function ? triggerEvent : $.noop;
+    self.TEMP = data;
 
     //根据key开判断是否需要在Model相对变动时你，进行重新绑定。
     //现在默认都重新绑定。到后期再进行优化
@@ -1006,6 +968,7 @@ SmartTriggerSet.prototype = {
  * Model constructor
  * MVVM核心之一——Model层，，在浏览器端创建了一个小型的层次数据模型的数据库
  * 为解决多ViewModel统一的数据来源问题而生
+ * v5版本去除了subset、collect等重建树结构的方法。将ViewModel和Model分离，中间使用ModelProty来进行代理
  */
 
 function Model(baseData) {
@@ -1023,8 +986,8 @@ function Model(baseData) {
     //用于缓存key所对应数组的长度，当数组长度发生改变，就需要向上缩减所要触发的key，确保所有集合的更新
     self.__arrayLen = {}; //cache array length with key
 
-    //用于保存所绑定的所有ViewModel实例对象
-    self._viewModels = []; //to touch off
+    // //用于保存所绑定的所有ViewModel实例对象
+    // self._viewModels = []; //to touch off
 
     //父级Model
     self._parentModel // = $UNDEFINED; //to get data
@@ -1038,15 +1001,12 @@ function Model(baseData) {
     //根据路（_prefix属性）径来动态寻找父级Model，在subset声明父子关系是会生成
     // self._smartSource // = $NULL; //store how to get parentModel
 
-    //存储同步节点，通过collect model声明而来的节点，多者共享数据源
-    self._siblingModels = [];
-
     //存储子model或者委托model（如array型的委托，
     //array型由于都拥有同样的前缀与一个索引号，所以可以用委托定位速度更快，详见_ArrayModel）
-    self._subsetModels = []; //to touch off
+    self._childModels = []; //to touch off
 
     //以hash的形式（这里用uid生成的唯一ID）存储_ArrayModel，方便新的array型model快速定位自己的受委托者，并进入队列中
-    self._collectModels = {};
+    self._arrayModelMap = {};
 
     //存储SmartTriggerHandled实例对象，并在set后对其进行更新，即更新View上的绑定。
     self._triggerKeys = new SmartTriggerSet({
@@ -1058,12 +1018,390 @@ function Model(baseData) {
     Model._instances[self.id] = self;
 };
 
+/*
+ * 核心方法
+ */
+var DM_proto = Model.prototype = {
+    getSource: function() {
+        _DM_extends_object_constructor = _DM_extends_object_constructor_break;
+        var self = this,
+            result = self.get.apply(self, arguments);
+        _DM_extends_object_constructor = _DM_extends_object_constructor_bak;
+        return result;
+    },
+    setSource: function() {
+        _DM_extends_object_constructor = _DM_extends_object_constructor_break;
+        var self = this,
+            result = self.set.apply(self, arguments);
+        _DM_extends_object_constructor = _DM_extends_object_constructor_bak;
+        return result;
+    },
+    get: function(key) {
+        //直接定义了topGetter，在保证正确的情况下尽可能早地定义
+        var self = /* Model.session.topGetter = */ this,
+            result = self._database,
+            filterKey;
+        //TODO:在终点直接默认filterKey的undefined为""，避免过多无用判断
+        if (key === $UNDEFINED || key === "") {
+            /*filterKey = "";*/
+        } else {
+            //强制转换成字符串，避免错误。
+            // key = String(key);//这里占时不强制转换，好捕捉错误
+
+            //不直接非空判断（if(result)），确保约束，String、Bumber、Boolean还是有属性的
+            if (result != $UNDEFINED) { //null|undefined
+                //开始按"."做寻址分割分离key
+                var perkey = $.st(key, ".");
+
+                //perkey出现异常（为空或者结束）或者result已经取不到有意义的值时才停止循环
+                while (perkey && result != $UNDEFINED) {
+                    //获取下一层
+                    result = result[perkey];
+                    perkey = $.st(_split_laveStr, ".");
+
+                    //放在取值后面代表着是从第一层开始查找，第0层也就是_database直接当成最后一层来做
+                    //如果当前层是拓展类型层且不是取源操作，调用getter
+                    if (result && result[_DM_extends_object_constructor] /* && !_dm_get_source*/ ) {
+                        //拓展类型的getter，这点遵守使用和默认的defineGetter一样的原则，每一次取值都要运行getter函数，而不直接用缓存
+                        result = result.get(self, key, result.value, key.substr(0, key.length - (((perkey /*perkey === false*/ .length) + 1 /*perkey不为false时，要换算成'.'.length+length*/ ) || 0) - _split_laveStr.length - 1) /*currentKey*/ );
+                    }
+                }
+                //最后一层，老式浏览器不支持String类型用下标索引，所以统一使用charAt搞定
+                //lastKey
+                result = $.isS(result) ? result.charAt(_split_laveStr) : (result != $UNDEFINED ? result[_split_laveStr] : result);
+            }
+
+            /*filterKey = key;*/
+        }
+        //如果最后一层是拓展类，且非取源操作，运行getter
+        if (result && result[_DM_extends_object_constructor] /* && !_dm_get_source*/ ) {
+            result = result.get(self, key, result.value, key);
+        }
+        /*//filterKey应该在拓展类的getter运行后定义，避免被覆盖，因为其中可能有其它get函数
+        Model.session.filterKey = filterKey;*/
+
+        /*//在最后再进行一次定义，理由同上
+        Model.session.topGetter = self;*/
+        return result;
+    },
+    /*
+     *操作数据源并触发更新
+     * (String, Object) String：所要更新的数据源路由点；Object：所要替换的数据
+     * (Object) 同.set("$THIS"/"",Object)，更新整个数据源
+     * 注意，如果所被更新的是Model拓展类，会强制调用setter方法
+     // * v5版本中的set不再对数据进行判断相同与否。如果非指针相同的话，那么这个数据为末端数据，不会造成大量的触发更新
+     // * 其次可以将v4以前的缓存机制融入进来
+     */
+    set: function(key, nObj) {
+        //replace Data 取代原有对象数据
+        var self = /*Model.session.topSetter = */ this,
+            lastKey,
+            argumentLen = arguments.length;
+
+        //参数长度检查
+        if (argumentLen === 0) {
+            return;
+        } else if (argumentLen === 1) {
+            //调整参数指向
+            nObj = key;
+            key = "";
+        }
+
+        //获取数据的最高层存储区，由上向下更新
+        var result = _getTopInfoByKey(self, key), //Leader:find the model matched by key
+            finallyRunStacks = Model.session.finallyRunStacks,
+            result_dm = result.model,
+            result_dm_id = result_dm.id;
+        if ($.iO(finallyRunStacks, result_dm_id) === -1) { //maybe have many fork by the ExtendsClass
+            $.p(finallyRunStacks, result_dm_id);
+            result = result_dm.set(result.key, nObj);
+            // result = result_dm.touchOff(result.key)
+            finallyRunStacks.pop();
+            !finallyRunStacks.length && Model.finallyRun();
+        } else {
+            if (!key) { //argumentLen === 1
+                var sObj = self._database;
+                if (sObj && sObj[_DM_extends_object_constructor] /*&& !_dm_set_source*/ ) {
+                    sObj.set(self, "", nObj, "");
+                } else if (sObj !== nObj || _dm_force_update) {
+                    self._database = nObj;
+                } else if (!$.isO(nObj)) { //sObj === nObj && no-object
+                    return;
+                };
+            } else { //argumentLen >= 1
+                //find Object by the key-dot-path and change it
+                if (_dm_force_update || nObj !== DM_proto.get.call(self, key)) {
+                    //[@Gaubee/blog/issues/45](https://github.com/Gaubee/blog/issues/45)
+                    var database = self._database || (self._database = {}),
+                        sObj,
+                        cache_n_Obj = database,
+                        cache_cache_n_Obj;
+                    var perkey = $.st(key, ".");
+                    var back_perkey;
+                    while (perkey) {
+                        back_perkey = perkey;
+                        cache_cache_n_Obj = cache_n_Obj;
+                        cache_n_Obj = cache_n_Obj[perkey] || (cache_n_Obj[perkey] = {})
+                        //放在取值后面代表着是从第一层开始，第0层也就是_database直接当成最后一层来做
+                        if (cache_n_Obj[_DM_extends_object_constructor]) {
+                            cache_n_Obj.set(self, key, nObj, key.substr(0, key.length - _split_laveStr.length - 1) /*currentKey*/ );
+                            break;
+                        }
+                        perkey = $.st(_split_laveStr, ".");
+                    }
+                    //最后一层，而非中途中断（遇到ExtendModel）的情况
+                    if (perkey === $FALSE) {
+                        if ((sObj = cache_n_Obj[_split_laveStr]) && sObj[_DM_extends_object_constructor] /*&& !_dm_set_source*/ ) {
+                            sObj.set(self, key, nObj, key) //call ExtendsClass API
+                        } else if ($.isO(cache_n_Obj)) {
+                            cache_n_Obj[_split_laveStr] = nObj;
+                        } else if (cache_cache_n_Obj) {
+                            (cache_cache_n_Obj[back_perkey] = {})[_split_laveStr] = nObj
+                        } else { //arrKey.length === 0,and database instanceof no-Object
+                            (self._database = {})[_split_laveStr] = nObj
+                        }
+                    }
+                } else if (!$.isO(nObj)) { //no any change, if instanceof Object and ==,just run touchOff
+                    return;
+                }
+            }
+            /*//TODO:set中的filterKey已经在return中存在，无需再有
+            Model.session.filterKey = key;*/
+            result = self.touchOff(key);
+        }
+        return result;
+    },
+    /*
+     * 根据key的路由生成相应的Model，如果是向上（由特殊前缀，在$scope模块进行实现），介于TopModel之间，可强制生成
+     */
+    buildModelByKey: function(key) {
+        var self = this;
+        var result,
+            //寻址的过程中可能找到自己的子model
+            result_child;
+        if (key) {
+            $.e(self._childModels, function(childModel) {
+                var prefixKey = childModel._prefix;
+                var _continue = $FALSE;
+                //prefixKey == key
+                if (prefixKey === key) {
+                    result = childModel;
+                }
+                //key > prefixKey
+                else if (key.indexOf(prefixKey + ".") === 0) {
+                    result = childModel.buildModelByKey(key.substr(prefixKey.length + 1));
+                }
+                //prefixKey > key
+                else if (prefixKey.indexOf(key + ".") === 0) {
+                    result_child = childModel;
+                } else {
+                    _continue = $TRUE;
+                }
+                return _continue;
+            });
+            //如果这个key与其它分支不同一路，则开辟新的分支
+            if (!result) {
+                result = self.__buildChildModel(key);
+                //如果有子model则进行收取，免得用sockchild实现
+                result_child && result_child.__follow(result, result_child._prefix.substr(key.length + 1))
+            }
+        } else {
+            result = self;
+        }
+        return result;
+    },
+    /*
+     * 根据key的路由获取相应的Model与过滤后的key
+     */
+    getModelByKey: function(key) {
+        var self = this;
+        var result
+        if (key) {
+            $.E(self._childModels, function(childModel) {
+                var prefixKey = childModel._prefix;
+                //prefixKey >= key
+                if (prefixKey.indexOf(key) === 0) {
+                    result = childModel.getModelByKey(prefixKey.substr(key.length + 1));
+                }
+            });
+        }
+        if (!result) {
+            result = {
+                model: self,
+                key: key
+            };
+        }
+        return result;
+    },
+    __buildChildModel: function(key) {
+        var self = this;
+        //生成一个新的子Model，绑定一系列关系
+        var childModel = new Model;
+        childModel._prefix = key;
+        childModel._parentModel = self;
+        $.p(self._childModels, childModel);
+        // //聚拢关于这个key的父Model
+        // self.sock(key);
+        return childModel;
+    },
+    // /*
+    //  * 整理子Model，认领父子关系
+    //  */
+    // sockChilds: function() {
+    //     var self = this;
+    // },
+    /*
+     * 获取最顶层的Model
+     */
+    topModel: function() { //get DM tree top
+        var self = this,
+            next;
+        while (next = self._parentModel) {
+            self = next;
+        }
+        return self;
+    },
+    touchOff: function(key) {
+        key === $UNDEFINED && (key = "");
+        var self = this;
+        var result;
+
+        var linkKey = "",
+            __arrayLen = self.__arrayLen,
+            __arrayData;
+
+        //简单的判定是否可能是数组类型的操作并且可能影响到长度
+        if (/[^\w]\.?length/.test(key) || /[^\w]\.?[\d]+([^\w]\.?|$)/.test(key)) {
+
+            key.replace(/[^\w]\.?([\d]+)([^\w]\.?|$)/g, function(matchKey, num, endKey, index) {
+                var maybeArrayKey = key.substr(0, index);
+                //寻找长度开始变动的那一层级的数据开始_touchOffSibling
+                if ($.isA(__arrayData = DM_proto.get.call(self, maybeArrayKey)) && __arrayLen[maybeArrayKey] !== __arrayData.length) {
+                    // console.log(maybeArrayKey,__arrayData.length, __arrayLen[maybeArrayKey])
+                    __arrayLen[maybeArrayKey] = __arrayData.length
+                    result = self._touchOffSibling(maybeArrayKey)
+                }
+            })
+        }
+        if (!result && $.isA(__arrayData = self._database /*get()*/ ) && __arrayLen[""] !== __arrayData.length) {
+            __arrayLen[""] = __arrayData.length
+            key = "";
+        }
+        result || (result = self._touchOff(key))
+        return result;
+    },
+    _touchOff: function(key) {
+        var self = this,
+            triggerKeys = self._triggerKeys;
+        //self
+        if (key) {
+            triggerKeys.forIn(function(triggerCollection, triggerKey) {
+                if (!triggerKey ||
+                    key === triggerKey || !triggerKey.indexOf(key + ".") /*=== 0 */ || !key.indexOf(triggerKey + ".") /* === 0*/ ) {
+                    $.E(triggerCollection, function(smartTriggerHandle) {
+                        smartTriggerHandle.event(triggerKeys);
+                    })
+                }
+            });
+        } else {
+            triggerKeys.forIn(function(triggerCollection, triggerKey) {
+                // if (!key ) {
+                $.E(triggerCollection, function(smartTriggerHandle) {
+                    smartTriggerHandle.event(triggerKeys);
+                })
+                // }
+            });
+        }
+        //child
+        for (var childModel, childModels = self._childModels, i = childModels.length - 1; childModel = childModels[i]; i--) {
+            var prefix = childModel._prefix,
+                childResult,
+                result = $FALSE;
+            _dm_force_update += 1;
+            if (!key) { //key === "",touchoff all
+                childResult = childModel.set(self.get(prefix))
+            } else if (!prefix) { //prefix==="" equal to $THIS//TODO:可优化，交由collect处理
+                childResult = childModel.set(key, self.get(key))
+            } else if (key === prefix || prefix.indexOf(key + ".") === 0) { //prefix is a part of key,just maybe had been changed
+                // childModel.touchOff(prefix.replace(key + ".", ""));
+                childResult = childModel.set(self.get(prefix))
+            } else if (key.indexOf(prefix + ".") === 0) { //key is a part of prefix,must had be changed
+                prefix = key.replace(prefix + ".", "")
+                childResult = childModel.set(prefix, self.get(key))
+            } else {
+                result = $TRUE;
+            }
+            _dm_force_update -= 1;
+            if (result) {
+                continue;
+            } else {
+                break;
+            }
+        };
+        //private
+        self._privateModel && self._privateModel.touchOff(key);
+
+        return {
+            key: key
+        }
+    },
+    /*
+     * 将指定Model移除数据树，使得独立，旗下的子Model也要跟着移除
+     * TODO:根据key进行remove
+     */
+    remove: function(remover) {
+        var self = this;
+        if (remover || (remover = self)) {
+            if (remover._isEach) {
+                arrayModel = remover._arrayModel;
+                arrayModel && arrayModel.remove(remover)
+            } else {
+                var parentModel = remover._parentModel;
+                if (parentModel) {
+                    var childModels = parentModel._childModels;
+                    childModels.splice($.iO(childModels, remover), 1);
+                    remover._parentModel = $UNDEFINED;
+                }
+            }
+        }
+    },
+    /*
+     * 代码片段，成为指定model的子model
+     * 使用此代码片段前要先进行remove！
+     */
+    __follow: function(model, key) {
+        var self = this;
+        self.remove();
+        self._parentModel = model;
+        $.p(model._childModels, self);
+    },
+    destroy: function() {
+        for (var i in this) {
+            delete this[i]
+        }
+    }
+    // buildGetter: function(key) {},
+    // buildSetter: function(key) {} 
+};
+
+/*
+ * Model base
+ * Model层对外的一些声明与Model层拓展的常用工具函数
+ */
+
 //绑定到全局中
 //声明全局存储Model实例对象的区域，根据uid生成的唯一标示作为hash作为区分
 (global.Model = Model)._instances = {};
 
-//所有Model拓展对象都要有的属性，生存期同页面内存，在重新载入脚本后就会刷新，确保程序在极大部分情况下正常运行
+/*
+ * 所有Model拓展对象都要有的属性，生存期同页面内存，在重新载入脚本后就会刷新，确保程序在极大部分情况下正常运行
+ */
+//将一个对象标记为有重载等号操作符，并使用期自定义操作代替系统原生的赋值取值
 var _DM_extends_object_constructor = _placeholder();
+//备份
+var _DM_extends_object_constructor_bak = _DM_extends_object_constructor;
+//额外的标记号，用于扰乱_DM_extends_object_constructor
+var _DM_extends_object_constructor_break = _placeholder("*");
 
 //根据唯一标示来获取一个Model实例对象
 // get Model instance by id
@@ -1099,32 +1437,16 @@ function _mix(sObj, nObj) {
     }
 };
 
-//获取所有的兄弟节点
-
-function _getAllSiblingModels(self, result) {
-    $.p(result || (result = []), self)
-    var dmSublingModels = self._siblingModels;
-    $.E(dmSublingModels, function(dm) {
-        //因为兄弟节点的数量一般不会很多，所以直接用indexOf来做重复判断来得简单
-        //TODO:如果有特殊需求则有待提高其性能
-        if ($.iO(result, dm) === -1) {
-            _getAllSiblingModels(dm, result);
-        }
-    });
-
-    return result;
-};
-
 //全局关键字配置
 //TODO:暴露给API：.app(opction)进行配置
 var DM_config = Model.config = {
     //特殊作用域的节点配置
     prefix: {
-        This: "$THIS",
-        Parent: "$PARENT",
-        Top: "$TOP",
-        Private: "$PRIVATE",
-        Js: "$JS"
+        This: "$This",
+        Parent: "$Parent",
+        Top: "$Top",
+        Private: "$Private",
+        Js: "$Js"
     }
 };
 
@@ -1138,10 +1460,13 @@ Model.session = {
     topSetter: $NULL,
     //在上面的例子中，在过滤掉关键字后的实际key值
     filterKey: $NULL,
-
     //用于保存数据更新引发的递归中的堆栈数，本质上是为了在最后一层调用结束后运行所收集的finallyRun，所收集的主要来自View层各种handle处理内部
     finallyRunStacks: []
 };
+
+/*
+ * Modeld的工具函数finallyRun，在set内部时有些操作必须提到set完成后才能运行，模拟线程安全
+ */
 
 //这里保存finallyRun的处理函数集合
 // to avoid `set` in setting 
@@ -1170,549 +1495,235 @@ finallyRun.register = function(id, fun) {
     _finallyQuene_hash[id] = fun;
 }
 
-//在get、set时忽略Model拓展类型的get、set，直接返回Model拓展实例对象
-var _dm_get_source // =$FALSE //get Source ignore extend-Object
-var _dm_set_source // =$FALSE //set Source ignore extend-Object
-
-//set时强制更新，不论是否相同，因为有事数据源的更新并非来自set本身，所以无法直接作出判断
-//TODO: replace `_dm_force_update` by setting stack
-var _dm_force_update = 0; //ignore equal
-
-var DM_proto = Model.prototype = {
-    queryElement: function(matchFun) {
-        var self = this;
-        var result = [];
-        matchFun = _buildQueryMatchFun(matchFun);
-        //查询当前VM的元素
-        var vms = self._viewModels;
-        $.E(vms, function(vm) {
-            result.push.apply(result, vm._queryElement(matchFun));
-        });
-        //查询子model所拥有的VM的元素
-        var subsetModels = self._subsetModels;
-        $.E(subsetModels, function(subsetModel) {
-            result.push.apply(result, subsetModel.queryElement(matchFun));
-        });
-        return result;
-    },
-    getSource: function() {
-        _dm_get_source = $TRUE;
-        var result = this.get.apply(this, arguments)
-        _dm_get_source = $FALSE;
-        return result;
-    },
-    get: function(key) {
-        //直接定义了topGetter，在保证正确的情况下尽可能早地定义
-        var self = Model.session.topGetter = this,
-            result = self._database,
-            filterKey;
-        //TODO:在终点直接默认filterKey的undefined为""，避免过多无用判断
-        if (key === $UNDEFINED || key === "") {
-            filterKey = "";
-        } else {
-            //强制转换成字符串，避免错误。
-            // key = String(key);//这里占时不强制转换，好捕捉错误
-
-            //不直接非空判断（if(result)），确保约束，String、Bumber、Boolean还是有属性的
-            if (result != $UNDEFINED) { //null|undefined
-                //开始按"."做寻址分割分离key
-                var perkey = $.st(key, ".");
-
-                //perkey出现异常（为空或者结束）或者result已经取不到有意义的值时才停止循环
-                while (perkey && result != $UNDEFINED) {
-                    //获取下一层
-                    result = result[perkey];
-                    perkey = $.st(_split_laveStr, ".");
-
-                    //放在取值后面代表着是从第一层开始查找，第0层也就是_database直接当成最后一层来做
-                    //如果当前层是拓展类型层且不是取源操作，调用getter
-                    if (result && result[_DM_extends_object_constructor] && !_dm_get_source) {
-                        //拓展类型的getter，这点遵守使用和默认的defineGetter一样的原则，每一次取值都要运行getter函数，而不直接用缓存
-                        result = result.get(self, key, result.value, key.substr(0, key.length - (((perkey /*perkey === false*/ .length) + 1 /*perkey不为false时，要换算成'.'.length+length*/ ) || 0) - _split_laveStr.length - 1) /*currentKey*/ );
-                    }
-                }
-                //最后一层，老式浏览器不支持String类型用下标索引，所以统一使用charAt搞定
-                //lastKey
-                result = $.isS(result) ? result.charAt(_split_laveStr) : (result != $UNDEFINED ? result[_split_laveStr] : result);
-            }
-
-            filterKey = key;
-        }
-        //如果最后一层是拓展类，且非取源操作，运行getter
-        if (result && result[_DM_extends_object_constructor] && !_dm_get_source) {
-            result = result.get(self, key, result.value, key);
-        }
-        //filterKey应该在拓展类的getter运行后定义，避免被覆盖，因为其中可能有其它get函数
-        Model.session.filterKey = filterKey;
-
-        //在最后再进行一次定义，理由同上
-        Model.session.topGetter = self;
-        return result;
-    },
-    mixSource: function() {
-        _dm_get_source = $TRUE;
-        _dm_set_source = $TRUE;
-        var result = this.mix.apply(this, arguments)
-        _dm_get_source = $FALSE;
-        _dm_set_source = $FALSE;
-        return result;
-    },
-    setSource: function() {
-        _dm_set_source = $TRUE;
-        var result = this.set.apply(this, arguments)
-        _dm_set_source = $FALSE;
-        return result;
-    },
-
-    /*
-     *操作数据源并触发更新
-     * (String, Object) String：所要更新的数据源路由点；Object：所要替换的数据
-     * (Object) 同.set("$THIS"/"",Object)，更新整个数据源
-     * 注意，如果所被更新的是Model拓展类，会强制调用setter方法
-     */
-    set: function(key, nObj) {
-        //replace Data 取代原有对象数据
-        var self = Model.session.topSetter = this,
-            lastKey,
-            argumentLen = arguments.length;
-
-        //参数长度检查
-        if (argumentLen === 0) {
-            return;
-        } else if (argumentLen === 1) {
-            //调整参数指向
-            nObj = key;
-            key = "";
-        }
-
-        //获取数据的最高层存储区，由上向下更新
-        var result = self.getTopModel(key), //Leader:find the model matched by key
-            finallyRunStacks = Model.session.finallyRunStacks,
-            result_dm = result.model,
-            result_dm_id = result_dm.id;
-        if ($.iO(finallyRunStacks, result_dm_id) === -1) { //maybe have many fork by the ExtendsClass
-            $.p(finallyRunStacks, result_dm_id);
-            result = result_dm.set(result.key, nObj);
-            // result = result_dm.touchOff(result.key)
-            finallyRunStacks.pop();
-            !finallyRunStacks.length && Model.finallyRun();
-        } else {
-            if (!key) { //argumentLen === 1
-
-                var sObj = self._database;
-                if (sObj && sObj[_DM_extends_object_constructor] && !_dm_set_source) {
-                    sObj.set(self, "", nObj, "");
-                } else if (sObj !== nObj || _dm_force_update) {
-                    self._database = nObj;
-                } else if (!$.isO(nObj)) { //sObj === nObj && no-object
-                    return;
-                };
-            } else { //argumentLen >= 1
-                //find Object by the key-dot-path and change it
-                if (_dm_force_update || nObj !== DM_proto.get.call(self, key)) {
-                    //[@Gaubee/blog/issues/45](https://github.com/Gaubee/blog/issues/45)
-                    var database = self._database || (self._database = {}),
-                        sObj,
-                        cache_n_Obj = database,
-                        cache_cache_n_Obj;
-
-                    var perkey = $.st(key, ".");
-                    var back_perkey;
-                    while (perkey) {
-                        back_perkey = perkey;
-                        cache_cache_n_Obj = cache_n_Obj;
-                        cache_n_Obj = cache_n_Obj[perkey] || (cache_n_Obj[perkey] = {})
-                        //放在取值后面代表着是从第一层开始，第0层也就是_database直接当成最后一层来做
-                        if (cache_n_Obj[_DM_extends_object_constructor]) {
-                            cache_n_Obj.set(self, key, nObj, key.substr(0, key.length - _split_laveStr.length - 1) /*currentKey*/ );
-                            break;
-                        }
-                        perkey = $.st(_split_laveStr, ".");
-                    }
-
-                    //最后一层，而非中途中断（遇到ExtendModel）的情况
-                    if (perkey === $FALSE) {
-                        if ((sObj = cache_n_Obj[_split_laveStr]) && sObj[_DM_extends_object_constructor] && !_dm_set_source) {
-                            sObj.set(self, key, nObj, key) //call ExtendsClass API
-                        } else if ($.isO(cache_n_Obj)) {
-                            cache_n_Obj[_split_laveStr] = nObj;
-                        } else if (cache_cache_n_Obj) {
-                            (cache_cache_n_Obj[back_perkey] = {})[_split_laveStr] = nObj
-                        } else { //arrKey.length === 0,and database instanceof no-Object
-                            (self._database = {})[_split_laveStr] = nObj
-                        }
-                    }
-                } else if (!$.isO(nObj)) { //no any change, if instanceof Object and ==,just run touchOff
-                    return;
-                }
-            }
-            //TODO:set中的filterKey已经在return中存在，无需再有
-            Model.session.filterKey = key;
-            // debugger
-            result = self.touchOff(key);
-        }
-        // console.log(result)
-        return result;
-    },
-    registerTrigger: function(key, trigger) {
-        var self = this,
-            triggerKeys = self._triggerKeys;
-        if (typeof trigger === "function") {
-            trigger = {
-                key: key,
-                event: trigger
-            };
-        } else {
-            if (!("key" in trigger)) {
-                trigger.key = key
-            }
-        }
-        return "id" in trigger ? trigger.id : (trigger.id = (triggerKeys.push(key, trigger) - 1) + "-" + key);
-    },
-    removeTrigger: function(trigger_id) {
-        var index = parseInt(trigger_id),
-            key = trigger_id.replace(index + "-", ""),
-            self = this,
-            triggerKeys = self._triggerKeys,
-            triggerCollection = triggerKeys.get(key) || [];
-        triggerCollection.splice(index, 1);
-    },
-    getTopModel: function(key) {
-        var self = this,
-            parent = self._parentModel,
-            result,
-            prefix;
-        if (parent) {
-            prefix = self._prefix //||"" ,all prefix has been filter $scope key
-            key ? (prefix && (key = prefix + "." + key) /*else key = key*/ ) : (prefix && (key = prefix) /*key=""*/ );
-            result = parent.getTopModel(key)
-        } else {
-            result = {
-                model: self,
-                key: key
-            };
-        }
-        return result;
-    },
-    touchOff: function(key) {
-        key === $UNDEFINED && (key = "");
-        var self = this;
-        var result;
-
-        var linkKey = "",
-            __arrayLen = self.__arrayLen,
-            __arrayData;
-
-        //简单的判定是否可能是数组类型的操作并且可能影响到长度
-        if (/[^\w]\.?length/.test(key) || /[^\w]\.?[\d]+([^\w]\.?|$)/.test(key)) {
-
-            key.replace(/[^\w]\.?([\d]+)([^\w]\.?|$)/g, function(matchKey, num, endKey, index) {
-                var maybeArrayKey = key.substr(0, index);
-                //寻找长度开始变动的那一层级的数据开始_touchOffSibling
-                if ($.isA(__arrayData = DM_proto.get.call(self, maybeArrayKey)) && __arrayLen[maybeArrayKey] !== __arrayData.length) {
-                    // console.log(maybeArrayKey,__arrayData.length, __arrayLen[maybeArrayKey])
-                    __arrayLen[maybeArrayKey] = __arrayData.length
-                    result = self._touchOffSibling(maybeArrayKey)
-                }
-            })
-        }
-        if (!result && $.isA(__arrayData = self._database /*get()*/ ) && __arrayLen[""] !== __arrayData.length) {
-            __arrayLen[""] = __arrayData.length
-            key = "";
-        }
-        result || (result = self._touchOffSibling(key))
-        return result;
-    },
-    _touchOffSibling: function(key) { //always touchoff from toppest dm
-        var self = this,
-            database = self._database;
-        $.E($.s(_getAllSiblingModels(self)), function(dm) {
-            dm._database = database; //maybe on-obj
-            dm._touchOff(key)
-        })
-        return {
+/*
+ * 根据key冒泡获取顶层的Model以及拼接的key路径
+ */
+var _getTopInfoByKey = Model.getTopInfoByKey = function(model, key) {
+    var parent = model._parentModel,
+        result,
+        prefix;
+    if (parent) {
+        prefix = model._prefix //||"" ,all prefix has been filter $scope key
+        key ? (prefix && (key = prefix + "." + key) /*else key = key*/ ) : (prefix && (key = prefix) /*key=""*/ );
+        result = _getTopInfoByKey(parent, key)
+    } else {
+        result = {
+            model: model,
             key: key
-        }
-    },
-    _touchOff: function(key) {
-        var self = this,
-            triggerKeys = self._triggerKeys;
-        //self
-        triggerKeys.forIn(function(triggerCollection, triggerKey) {
-            //!triggerKey==true;
-            if (!key || !triggerKey || key === triggerKey || triggerKey.indexOf(key + ".") === 0 || key.indexOf(triggerKey + ".") === 0) {
-                $.E(triggerCollection, function(smartTriggerHandle) {
-                    smartTriggerHandle.event(triggerKeys);
-                })
-            }
-        });
-        //child
-        $.E(self._subsetModels, function(childModel) {
-            // debugger
-            var prefix = childModel._prefix,
-                childResult; // || "";
-            _dm_force_update += 1; //TODO: use Stack 
-            if (!key) { //key === "",touchoff all
-                childResult = childModel.set(self.get(prefix))
-            } else if (!prefix) { //prefix==="" equal to $THIS//TODO:可优化，交由collect处理
-                childResult = childModel.set(key, self.get(key))
-            } else if (key === prefix || prefix.indexOf(key + ".") === 0) { //prefix is a part of key,just maybe had been changed
-                // childModel.touchOff(prefix.replace(key + ".", ""));
-                childResult = childModel.set(self.get(prefix))
-            } else if (key.indexOf(prefix + ".") === 0) { //key is a part of prefix,must had be changed
-                prefix = key.replace(prefix + ".", "")
-                childResult = childModel.set(prefix, self.get(key))
-            }
-            _dm_force_update -= 1;
-            //如果不进行锁定，当数组因为其子对象被修改，
-            //改动信息就需要冒泡到顶层，等同于强制触发数组的所有关键字，通知所有子对象检查自身是否发生变化。
-            //所以锁定是效率所需。
-            // $.p(chidlUpdateKey, childResult);
-        });
-        //private
-        self._privateModel && self._privateModel.touchOff(key);
-    },
-    rebuildTree: $.noop,
-    getTop: function() { //get DM tree top
-        var self = this,
-            next;
-        while (next = self._parentModel) {
-            self = next;
-        }
-        return self;
-    },
-    _pushToSubSetDM: function(model, prefixKey) {
-        model._parentModel = this;
-        model._prefix = prefixKey
-        return $.p(this._subsetModels, model);
-    },
-    _pushToCollectDM: function(model, pprefixKey, id) {
-        var self = this,
-            collectModels = self._collectModels;
-        var hash = pprefixKey + id;
-        var collectModel = collectModels[hash];
-        if (!collectModel) {
-            collectModel = collectModels[hash] = new _ArrayModel(pprefixKey);
-            self._pushToSubSetDM(collectModel, pprefixKey)
-        }
-        collectModel.push(model)
-    },
-    collect: function(model) {
-        // debugger
-        var self = this;
-        var finallyRunStacks = Model.session.finallyRunStacks;
+        };
+    }
+    return result;
+}
 
-        finallyRunStacks.push(self.id);
-        if (self !== model) {
-            if ($.iO(self._siblingModels, model) === -1) {
-                $.p(self._siblingModels, model);
-                $.p(model._siblingModels, self);
-                self.rebuildTree()
-                model._database = self._database;
-            } else {
-                model = $NULL;
+/*
+ * 用户记录set的堆栈层数，来实现强制变更数据而不通过判断相同与否再触发
+ */
+var _dm_force_update = 0;
+
+/*
+ * 为Model拓展出智能作用域寻址的功能
+ * 目前有五种作用域寻址：
+ * 1. $THIS 当前作用域寻址
+ * 2. $PARENT 父级作用域寻址
+ * 3. $TOP 顶级作用域寻址
+ * 4. $PRIVATE 私有数据库寻址
+ * 5. $JS 全局数据寻址
+ */
+;
+(function() {
+    var routerMap = Model._routerMap = {
+        "$Private": function(model, key) {
+            return model._privateModel || (model._privateModel = new Model);
+        },
+        "$Js": function(model, key) {
+            return _jSouperBase.$JS;
+        },
+        "$Parent": function(model, key) {
+            return model._parentModel;
+        },
+        "$This": function(model, key) {
+            return model;
+        },
+        "$Top": function(model, key) {
+            var next;
+            while (next = model._parentModel) {
+                model = next;
             }
+            return model;
         }
-        finallyRunStacks.pop();
-        if (model && !finallyRunStacks.length) {
-            //self === model || finallyRunStacks === 0
-            self.getTop().touchOff();
-            Model.finallyRun();
-        }
-        return self;
-    },
-    subset: function(model, prefixKey) {
-        var self = this,
-            finallyRunStacks = Model.session.finallyRunStacks;
-        model.remove();
-        if (model._isEach) {
-            self._pushToCollectDM(model,
-                //prefixkey === "[0-9]+?" ==> $THIS.0 ==> return ""; 
-                //else return prefixkey.split(".").pop().join(".")
-                $.lst(prefixKey, ".") || "",
-                // in dif handle
-                model._isEach.eachId)
-        } else {
-            self._pushToSubSetDM(model, prefixKey)
-        }
-        model.rebuildTree()
-
-        //注意：each会置空touchOff使其无效，导致each运行时页面数据无法更新，
-        //所以each对象内部的数据自身获取临时数据进行更新完成后，再移除touchOff
-        model._database = self.get(prefixKey);
-        finallyRunStacks.push(self.id)
-        self.getTop().touchOff();
-        finallyRunStacks.pop();
-        !finallyRunStacks.length && Model.finallyRun();
-        return self;
-    },
-    remove: function(model) {
-        var self = this;
-        if (model) {
-            if (model._isEach) {
-                arrayModel = model._arrayModel;
-                arrayModel && arrayModel.remove(model)
-            } else {
-                var subsetModels = self._subsetModels,
-                    index = $.iO(subsetModels, model);
-                subsetModels.splice(index, 1);
-                model._parentModel = $UNDEFINED;
+    }
+    //根据带routerKey的字符串进行查找model
+    Model.$router = function(model, key) {
+        var result = {
+            model: model,
+            key: key //|| ""
+        };
+        if (key) {
+            var routerKey = $.st(key, ".");
+            var routerHandle = routerMap[_split_laveStr];
+            if (routerHandle) {
+                model = routerHandle(model, key);
+                if (model) { //递归路由
+                    result = Model.$router(model, routerKey)
+                } else { //找不到
+                    result.model = model;
+                    result.key = routerKey;
+                }
             }
-        } else {
-            model = self._parentModel;
-            if (model) {
-                model.remove(self);
-            }
-        }
-        return self;
-    },
-    replaceAs: function(model) {
-        var self = this;
-        $.E(self._subsetModels, function(subsetDM) {
-            subsetDM._parentModel = model;
-            $.p(model._subsetModels, subsetDM)
-        });
-
-        //合并兄弟节点Model对象
-        var new_siblingModels = model._siblingModels;
-        $.E(_getAllSiblingModels(self), function(sublingDM) {
-            var siblingModels = sublingDM._siblingModels;
-            $.rm(siblingModels, self)
-            if ($.iO(new_siblingModels, sublingDM) === -1) {
-                $.p(new_siblingModels, sublingDM)
-            }
-            if ($.iO(siblingModels, model) === -1) {
-                $.p(siblingModels, model)
-            }
-        });
-        $.rm(new_siblingModels, self)
-
-        //合并VM对象
-        $.E(self._viewModels, function(viewModel) {
-            viewModel.model = model;
-            $.p(model._viewModels, viewModel)
-        });
-
-        //合并绑定点触发器
-        self._triggerKeys.forIn(function(smartTriggerSet, key) {
-            model._triggerKeys.push(key, smartTriggerSet)
-        })
-
-        //触发更新
-        Model.finallyRun.register("replaceAs" + model.id, function(argument) {
-            model.touchOff();
-        })
-
-        //更改存储源
-        Model._instances[self.id] = model;
-        self.destroy();
-        return $NULL;
-    },
-    destroy: function() {
-        for (var i in this) {
-            delete this[i]
-        }
-    },
-    forEach: function() {
-        // body...
-    },
-    mix: function(key_of_obj) {
-        //mix Data 合并数据
-        //TODO:复合操作，直接移动到ViewModel层，Model层只提供最基本的get、set
-        var self = this,
-            result,
-            args = $.s(arguments);
-        args.shift();
-        if (args.length) { //arguments>=2
-            args.unshift(self.get(key_of_obj));
-            result = _jSouperBase.extend.apply($NULL, args);
-            self.set(key_of_obj, result);
         }
         return result;
-    }
-    // buildGetter: function(key) {},
-    // buildSetter: function(key) {} 
-};
-var M_Session = {};
-var __setTool = {
-    //可用做forEach
-    map: $.map,
-    //可用做remove
-    filter: $.filter,
-    push: function( /*baseArr*/ ) {
-        var args = $.s(arguments),
-            result = $.s(args.shift());
-        Array.prototype.push.apply(result, args);
-        return result;
-    },
-    pop: function(baseArr) {
-        baseArr = $.s(baseArr);
-        baseArr.pop();
-        return baseArr;
-    },
-    _boolAvator: _placeholder(),
-    toggle: function(baser, toggler) {
-        if ($.isA(baser) || ($.isO(baser) && typeof baser.length === "number" && (baser = $.s(baser)))) { //数组型或类数组型
-            var index = baser.indexOf(toggler);
-            index === -1 ? baser.push(toggler) : baser.splice(index, 1);
-        } else if ($.isS(baser)) { //字符串型
-            baser.indexOf(toggler) === -1 ? baser += toggler : (baser = baser.replace(toggler, ""));
-        } else { //其余都用Boolean型处理
-            if ((baser instanceof Boolean) && baser.hasOwnProperty(__setTool._boolAvator)) {
-                baser = baser[__setTool._boolAvator];
-            } else {
-                var boolBaser = new Boolean(!baser);
-                boolBaser[__setTool._boolAvator] = baser;
-                baser = boolBaser;
+    };
+    var _get = DM_proto.get,
+        _set = DM_proto.set,
+        prefix = DM_config.prefix,
+        _rebuildTree = DM_proto.rebuildTree,
+        _subset = DM_proto.subset,
+        _setterRouter = {
+            "$Private": function(self, args, key) {
+                return set.apply(self._privateModel || (self._privateModel = new Model), args);
+            },
+            "$Js": function(self, args, key) {
+                return set.apply(_jSouperBase.$JS, args);
+            },
+            "$Parent": function(self, args, key) {
+                if (self = self._parentModel) {
+                    return set.apply(self, args);
+                }
+                /* else {
+                    Model.session.filterKey = $UNDEFINED;
+                    Model.session.topSetter = $UNDEFINED;
+                    key = ""
+                }*/
+            },
+            "$This": function(self, args, key) {
+                result = set.apply(self, args);
+            },
+            "$Top": function(self, args, key) {
+                var next;
+                while (next = self._parentModel) {
+                    self = next;
+                }
+                result = set.apply(self, args);
             }
-        }
-        return baser;
-    }
-};
+        },
+        set = DM_proto.set = function(key) {
+            var self = this,
+                args = arguments /*$.s(arguments)*/ ,
+                result;
+            if (args.length > 1) {
+                var router_result = Model.$router(self, key);
+                if (self = router_result.model) {
+                    (key = router_result.key) ?(args[0] = key):$.sp.call(args, 0, 1)
+                    result = _set.apply(self, args);
+                }
+                // var routerKey = $.st(key, ".");
+                // var routerHandle = _setterRouter[_split_laveStr];
+                // if (routerHandle) {
+                //     if (routerKey) {
+                //         args[0] = routerKey;
+                //     } else {
+                //         $.sp.call(args, 0, 1)
+                //     }
+                //     result = routerHandle(self, args, key);
+                // } else {
+                //     result = _set.apply(self, args);
+                // }
+            } else { //one argument
+                result = _set.apply(self, args);
+            }
 
-function __setToolFun(type) {
-    var handle = __setTool[type];
-    return function(key_of_object) {
+            result || (result = {
+                key: key
+            });
+
+            //更新调用堆栈层数，如果是0,则意味着冒泡到顶层的调用即将结束，是最后一层set
+            // result.stacks = Model.session.finallyRunStacks.length
+            return result
+        },
+
+        _getterRouter = {
+            "$Private": function(self, args, key) {
+                return get.apply(self._privateModel || (self._privateModel = new Model), args);
+            },
+            "$Js": function(self, args, key) {
+                return get.apply(_jSouperBase.$JS, args);
+            },
+            "$Parent": function(self, args, key) {
+                if (self = self._parentModel) {
+                    return get.apply(self, args);
+                } else {
+                    Model.session.filterKey = $UNDEFINED;
+                    Model.session.topGetter = $UNDEFINED;
+                    key = ""
+                }
+            },
+            "$This": function(self, args, key) {
+                result = get.apply(self, args);
+            },
+            "$Top": function(self, args, key) {
+                var next;
+                while (next = self._parentModel) {
+                    self = next;
+                }
+                result = get.apply(self, args);
+            }
+        },
+        get = DM_proto.get = function(key) {
+            var self = this,
+                args = arguments /*$.s(arguments)*/ ,
+                result;
+            if (args.length > 0) {
+                var routerKey = $.st(key, ".");
+                var routerHandle = _getterRouter[_split_laveStr];
+                if (routerHandle) {
+                    if (routerKey) {
+                        args[0] = routerKey;
+                    } else {
+                        $.sp.call(args, 0, 1)
+                    }
+                    result = routerHandle(self, args, key);
+                } else {
+                    result = _get.apply(self, args);
+                }
+            } else { //one argument
+                // result = _get.apply(self, args);
+                result = _get.call(self);
+            }
+            return result;
+        };
+
+    function _getAllSmartModels(self, result) {
+        result ? $.p(result, self) : (result = []);
+        var dmSmartModels = self._smartDMs_id;
+        dmSmartModels && $.E(dmSmartModels, function(dm) {
+            dm = Model.get(dm);
+            if ($.iO(result, dm) === -1) {
+                _getAllSmartModels(dm, result);
+            }
+        });
+        // console.table(result)
+        return result;
+    };
+    DM_proto.rebuildTree = function() {
         var self = this,
-            result,
-            args = $.s(arguments);
-        args[0] = self.get(key_of_object);
-        result = handle.apply($NULL, args);
-        self.set(key_of_object, result)
-        return result
-    }
-}
-
-$.fI(__setTool, function(handle, key) {
-    DM_proto[key] = __setToolFun(key);
-});
-
-// make an Object-Constructor to Model-Extend-Object-Constructor
-var _modelExtend = Model.extend = function(extendsName, extendsObjConstructor) {
-    if (_modelExtend.hasOwnProperty(extendsName)) {
-        throw Error(extendsName + " is defined!");
-    }
-    var exObjProto = extendsObjConstructor.prototype
-    exObjProto[_DM_extends_object_constructor] = $TRUE;
-    _modelExtend.set(exObjProto)
-    _modelExtend.get(exObjProto)
-    Model[extendsName] = extendsObjConstructor
-};
-//get的结果并不保存到this.value，原则上setter、getter本身就不能通过return保存。
-//这里为了方便，仅仅运行setter可以通过return保存，避免混乱
-//如果需要缓存，开发者需要知识额外定义缓冲变量进行缓存
-_modelExtend.set = function(exObjProto) {
-    var _set = exObjProto.set;
-    exObjProto.set = function(dm, key, value, currentKey) {
-        return (this.value = _set.call(this, dm, key, value, currentKey))
-    }
-}
-_modelExtend.get = function(exObjProto) {
-    var _get = exObjProto.get;
-    exObjProto.get = function(dm, key, value, currentKey) {
-        return _get.call(this, dm, key, value, currentKey);
-    }
-}
+            smartSource;
+        $.E(_getAllSmartModels(self), function(dm) {
+            if (smartSource = dm._smartSource) {
+                var smart_prefix = smartSource.prefix,
+                    smart_model = Model.get(smartSource.dm_id);
+                // console.log(smart_prefix)
+                if (smart_prefix.indexOf(prefix.Parent) === 0 || smart_prefix.indexOf(prefix.Top) === 0) {
+                    var data = smart_model.get(smart_prefix);
+                    var topGetter = Model.session.topGetter
+                    if (topGetter !== smartSource.topGetter && (smartSource.topGetter = topGetter)) {
+                        smart_model.subset(dm, smart_prefix);
+                    }
+                }
+            }
+        })
+        return _rebuildTree.call(self);
+    };
+}());
 
 /*
  * _ArrayModel constructor
@@ -1833,225 +1844,155 @@ DM_proto.lineUp = function() {
 }
 
 /*
- * 为Model拓展出智能作用域寻址的功能
- * 目前有三种作用域寻址：
- * 1. $THIS 当前作用域寻址
- * 2. $PARENT 父级作用域寻址
- * 3. $TOP 顶级作用域寻址
+ * Model的代理层
+ * 小巧灵活的功能，为VM提供更强悍的Model适配引擎
+ * 在v4版本中需要同时管理静态的数据与动态的代理，v5版本中将二者分离，从而带来更快更灵活稳定的体验
  */
-;
-(function() {
-    var _get = DM_proto.get,
-        _set = DM_proto.set,
-        prefix = DM_config.prefix,
-        _rebuildTree = DM_proto.rebuildTree,
-        _subset = DM_proto.subset,
-        set = DM_proto.set = function(key) {
-            var self = this,
-                args = arguments /*$.s(arguments)*/ ,
-                result;
-            if (args.length > 1) {
-                if (key.indexOf(prefix.Private) === 0) {
-                    var privateModel = self._privateModel || (self._privateModel = new Model);
-                    if (key === prefix.Private) {
-                        // args.splice(0, 1);
-                        $.sp.call(args, 0, 1)
-                    } else if (key.charAt(prefix.Private.length) === ".") {
-                        args[0] = key.replace(prefix.Private + ".", "");
-                    }
-                    result = set.apply(privateModel, args);
-                } else if (key.indexOf(prefix.Js) === 0) {
-                    if (key === prefix.Js) {
-                        // args.splice(0, 1);
-                        $.sp.call(args, 0, 1)
-                    } else if (key.charAt(prefix.Js.length) === ".") {
-                        args[0] = key.replace(prefix.Js + ".", "");
-                    }
-                    result = set.apply(_jSouperBase.$JS, args);
-                } else if (key.indexOf(prefix.Parent) === 0) { //$parent
-                    if (self = self._parentModel) {
-                        if (key === prefix.Parent) {
-                            // args.splice(0, 1);
-                            $.sp.call(args, 0, 1)
-                        } else if (key.charAt(prefix.Parent.length) === ".") {
-                            args[0] = key.replace(prefix.Parent + ".", "");
-                        }
-                        result = set.apply(self, args);
-                    } else {
-                        Model.session.filterKey = $UNDEFINED;
-                        Model.session.topSetter = $UNDEFINED;
-                        key = ""
-                    }
-                } else if (key.indexOf(prefix.This) === 0) { //$this
-                    if (key === prefix.This) {
-                        // args.splice(0, 1);
-                        $.sp.call(args, 0, 1)
-                    } else if (key.charAt(prefix.This.length) === ".") {
-                        args[0] = key.replace(prefix.This + ".", "");
-                    }
-                    result = set.apply(self, args);
-                } else if (key.indexOf(prefix.Top) === 0) {
-                    var next;
-                    while (next = self._parentModel) {
-                        self = next;
-                    }
-                    if (key === prefix.Top) {
-                        // args.splice(0, 1);
-                        $.sp.call(args, 0, 1)
-                    } else if (key.charAt(prefix.Top.length) === ".") {
-                        args[0] = key.replace(prefix.Top + ".", "");
-                    }
-                    result = set.apply(self, args);
-                } else { //no prefix key
-                    result = _set.apply(self, args);
-                }
-            } else { //one argument
-                result = _set.apply(self, args);
-            }
-            //TODO:简化返回结果，节省内存
-            result || (result = {
-                key: key
-                /*,
-				// allUpdateKey: allUpdateKey,
-				updateKey: [key],
-				chidlUpdateKey: []*/
-            });
 
-            //更新调用堆栈层数，如果是0,则意味着冒泡到顶层的调用即将结束，是最后一层set
-            result.stacks = Model.session.finallyRunStacks.length
-            return result
-        },
-        get = DM_proto.get = function(key) {
-            var self = this,
-                args = arguments /*$.s(arguments)*/ ,
-                result;
-            if (args.length > 0) {
-                if (key.indexOf(prefix.Private) === 0) {
-                    var privateModel = self._privateModel || (self._privateModel = new Model);
-                    if (key === prefix.Private) {
-                        // args.splice(0, 1);
-                        $.sp.call(args, 0, 1)
-                    } else if (key.charAt(prefix.Private.length) === ".") {
-                        args[0] = key.replace(prefix.Private + ".", "");
-                    }
-                    result = get.apply(privateModel, args);
-                } else if (key.indexOf(prefix.Js) === 0) {
-                    if (key === prefix.Js) {
-                        // args.splice(0, 1);
-                        $.sp.call(args, 0, 1)
-                    } else if (key.charAt(prefix.Js.length) === ".") {
-                        args[0] = key.replace(prefix.Js + ".", "");
-                    }
-                    result = get.apply(_jSouperBase.$JS, args);
-                } else if (key.indexOf(prefix.Parent) === 0) { //$parent
-                    if (self = self._parentModel) {
-                        if (key === prefix.Parent) {
-                            // args.splice(0, 1);
-                            $.sp.call(args, 0, 1)
-                        } else if (key.charAt(prefix.Parent.length) === ".") {
-                            args[0] = key.replace(prefix.Parent + ".", "");
-                        }
-                        result = get.apply(self, args);
-                    } else {
-                        Model.session.filterKey = $UNDEFINED;
-                        Model.session.topGetter = $UNDEFINED;
-                        key = ""
-                    }
-                } else if (key.indexOf(prefix.This) === 0) { //$this
-                    if (key === prefix.This) {
-                        // args.splice(0, 1);
-                        $.sp.call(args, 0, 1)
-                    } else if (key.charAt(prefix.This.length) === ".") {
-                        args[0] = key.replace(prefix.This + ".", "");
-                    }
-                    result = get.apply(self, args);
-                } else if (key.indexOf(prefix.Top) === 0) {
-                    var next;
-                    while (next = self._parentModel) {
-                        self = next;
-                    }
-                    if (key === prefix.Top) {
-                        // args.splice(0, 1);
-                        $.sp.call(args, 0, 1)
-                    } else if (key.charAt(prefix.Top.length) === ".") {
-                        args[0] = key.replace(prefix.Top + ".", "");
-                    }
-                    result = get.apply(self, args);
-                } else { //no prefix key
-                    result = _get.apply(self, args);
-                }
-            } else { //one argument
-                result = _get.apply(self, args);
-            }
-            return result;
-        };
+function ProxyModel(entrust, model) {
+    var self = this;
 
-    function _getAllSmartModels(self, result) {
-        result ? $.p(result, self) : (result = []);
-        var dmSmartModels = self._smartDMs_id;
-        dmSmartModels && $.E(dmSmartModels, function(dm) {
-            dm = Model.get(dm);
-            if ($.iO(result, dm) === -1) {
-                _getAllSmartModels(dm, result);
-            }
-        });
-        // console.table(result)
-        return result;
-    };
-    DM_proto.rebuildTree = function() {
+    //存储委托对象
+    self.entrust = entrust;
+    //双向绑定
+    entrust.model = self;
+
+    //委托对象的构造函数
+    var EntrustConstructor = self.EntrustConstructor = entrust.constructor;
+
+    //存储收留的pm对象
+    self._childProxyModel = [];
+
+    //“被收留者”的身份标记，动态生成，与model层的不同，这是保留最原始的key
+    // self._prefix
+
+    //来自委托对象的触发器集合，需要委托对象实现静态_buildSmartTriggers接口
+    self._smartTriggers = EntrustConstructor._buildSmartTriggers(entrust);
+    /*
+     * 存储Model对象
+     * 这里只是单向存储model实例，model只存储触发器。不管你pm对象
+     */
+    if (model) {
+        model instanceof Model || (model = Model(model));
+        self.follow(model)
+    }
+};
+
+var __ProxyModelProto__ = ProxyModel.prototype = {
+    //收留独立的代理层为model中的一份子，必要时会为其开辟新的子model块
+    shelter: function(proxyModel, key) {
+        var self = this;
+        //校准参数，proxyModel为ProxyModel对象，而不是VM或者PM对象
+        (proxyModel instanceof self.EntrustConstructor) && (proxyModel = proxyModel.model);
+        if (proxyModel instanceof ProxyModel) {
+            //标记为“被收留者”
+            proxyModel._prefix = key;
+            $.p(self._childProxyModel, proxyModel);
+            proxyModel.fellow(self.model, key);
+        }
+    },
+    //和指定的Model进行合并，吸附在指定Model上
+    combine: function(model) {
+        var self = this;
+        self.model = model;
+    },
+    //进入指定的Model或者其的key指定的下属中
+    follow: function(model, key) {
+        var self = this;
+        if (model instanceof Model) {
+            var model = model.buildModelByKey(key);
+            self.combine(model);
+            self.rebuildTree();
+        }
+    },
+    $router: function(key) {
         var self = this,
-            smartSource;
-        $.E(_getAllSmartModels(self), function(dm) {
-            if (smartSource = dm._smartSource) {
-                var smart_prefix = smartSource.prefix,
-                    smart_model = Model.get(smartSource.dm_id);
-                // console.log(smart_prefix)
-                if (smart_prefix.indexOf(prefix.Parent) === 0 || smart_prefix.indexOf(prefix.Top) === 0) {
-                    var data = smart_model.get(smart_prefix);
-                    var topGetter = Model.session.topGetter
-                    if (topGetter !== smartSource.topGetter && (smartSource.topGetter = topGetter)) {
-                        smart_model.subset(dm, smart_prefix);
-                    }
-                }
-            }
-        })
-        return _rebuildTree.call(self);
-    };
-    DM_proto.subset = function(model, prefixKey) {
-        var self = this,
-            data = self.get(prefixKey),
-            result,
-            topGetter = Model.session.topGetter,
-            filterKey = Model.session.filterKey || "";
-        if (filterKey !== prefixKey) { //is smart key
-
-            if (prefixKey.indexOf(prefix.This) === 0) {
-                if (filterKey) {
-                    _subset.call(self, model, filterKey)
-                } else { //prefixKey === "$THIS"
-                    model.replaceAs(self);
-                }
-            } else {
-                model._smartSource = {
-                    topGetter: topGetter, // current coordinate
-                    dm_id: self.id,
-                    prefix: prefixKey
-                };
-                $.p(self._smartDMs_id || (self._smartDMs_id = []), model.id);
-                if (topGetter) { // smart dm maybe change coodition
-                    if (filterKey) {
-                        _subset.call(topGetter, model, filterKey)
-                    } else {
-                        topGetter.collect(model);
-                    }
-                }
-            }
+            model = self.model,
+            result;
+        if (model) {
+            result = Model.$router(model, key);
         } else {
-            result = _subset.apply(self, arguments /*$.s(arguments)*/ );
+            result = {
+                model: model,
+                key: key
+            }
         }
         return result;
+    },
+    /*
+     * 整理委托者的触发器，为其重新定位到正确的Model
+     */
+    rebuildTree: function() {
+        var self = this;
+        var model = self.model;
+        if (model) {
+            //重新定位触发器位置
+            $.E(self._smartTriggers, function(smartTrigger) {
+                var TEMP = smartTrigger.TEMP;
+                var viewModel = TEMP.vM;
+                var router_result = viewModel.model.$router(TEMP.sK);
+                var topGetter = router_result.model,
+                    matchKey = router_result.key || "";
+                var currentTopGetter = TEMP.md;
+                if (topGetter !== currentTopGetter) {
+                    TEMP.md = topGetter
+                    if (currentTopGetter) {
+                        smartTrigger.unbind(currentTopGetter._triggerKeys)
+                    }
+                    if (topGetter) {
+                        smartTrigger.matchKey = matchKey;
+                        smartTrigger.bind(topGetter._triggerKeys);
+                    }
+                }
+            });
+            //递归重建
+            $.E(self._childProxyModel, function(proxyModel) {
+                //为“被收留者”重新定位到正确的Model，并重定位触发器位置
+                proxyModel.follow(model, proxyModel._prefix);
+            })
+        }
     }
-}());
+};
+/*
+ * 为ProxyModel拓展Model类的功能
+ */
+
+$.E(["set", "get", "touchOff"], function(handleName) {
+    __ProxyModelProto__[handleName] = function() {
+        var self = this;
+        var model = self.model;
+        if (model) {
+            return model[handleName].apply(model, arguments)
+        }
+    }
+});
+
+// make an Object-Constructor to Model-Extend-Object-Constructor
+var _modelExtend = Model.extend = function(extendsName, extendsObjConstructor) {
+    if (_modelExtend.hasOwnProperty(extendsName)) {
+        throw Error(extendsName + " is defined!");
+    }
+    var exObjProto = extendsObjConstructor.prototype
+    exObjProto[_DM_extends_object_constructor] = $TRUE;
+    _modelExtend.set(exObjProto)
+    _modelExtend.get(exObjProto)
+    Model[extendsName] = extendsObjConstructor
+};
+//get的结果并不保存到this.value，原则上setter、getter本身就不能通过return保存。
+//这里为了方便，仅仅运行setter可以通过return保存，避免混乱
+//如果需要缓存，开发者需要知识额外定义缓冲变量进行缓存
+_modelExtend.set = function(exObjProto) {
+    var _set = exObjProto.set;
+    exObjProto.set = function(dm, key, value, currentKey) {
+        return (this.value = _set.call(this, dm, key, value, currentKey))
+    }
+}
+_modelExtend.get = function(exObjProto) {
+    var _get = exObjProto.get;
+    exObjProto.get = function(dm, key, value, currentKey) {
+        return _get.call(this, dm, key, value, currentKey);
+    }
+}
 
 //by RubyLouvre(司徒正美)
 //setAttribute bug:http://www.iefans.net/ie-setattribute-bug/
@@ -2234,7 +2175,7 @@ function View(arg, vmName) {
         opction.onInit && opction.onInit(vi);
 
 
-        vi.model.getTop().touchOff();
+        vi.model.touchOff();
         _jSouperBase.$JS.touchOff();
 
         //pop mark
@@ -2522,76 +2463,76 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
  * View Instance constructor
  */
 
-(function() { //DM_extends_fot_VI
-    var _rebuildTree = DM_proto.rebuildTree;
-    DM_proto.rebuildTree = function() {
-        var self = this,
-            DMSet = self._subsetModels;
-        $.E(self._viewModels, function(viewModel) {
-            $.E(viewModel._smartTriggers, function(smartTrigger) {
-                var TEMP = smartTrigger.TEMP;
-                TEMP.viewModel.get(TEMP.sourceKey);
-                var topGetter = Model.session.topGetter,
-                    currentTopGetter = Model.get(TEMP.dm_id),
-                    matchKey = Model.session.filterKey || "";
+// (function() { //DM_extends_fot_VI
+//     var _rebuildTree = DM_proto.rebuildTree;
+//     DM_proto.rebuildTree = function() {
+//         var self = this,
+//             DMSet = self._subsetModels;
+//         $.E(self._viewModels, function(viewModel) {
+//             $.E(viewModel._smartTriggers, function(smartTrigger) {
+//                 var TEMP = smartTrigger.TEMP;
+//                 TEMP.viewModel.get(TEMP.sourceKey);
+//                 var topGetter = Model.session.topGetter,
+//                     currentTopGetter = Model.get(TEMP.dm_id),
+//                     matchKey = Model.session.filterKey || "";
 
-                if (topGetter) {
-                    if (topGetter !== currentTopGetter || matchKey !== smartTrigger.matchKey) {
-                        TEMP.dm_id = topGetter.id;
-                        currentTopGetter && smartTrigger.unbind(currentTopGetter._triggerKeys)
-                        smartTrigger.matchKey = matchKey;
-                        smartTrigger.bind(topGetter._triggerKeys);
-                        currentTopGetter = topGetter;
-                    }
-                }
-            })
-        })
-        $.E(self._subsetModels, function(childModel) {
-            childModel.rebuildTree()
-        })
-        return _rebuildTree.call(self);
-    }
-    var _collect = DM_proto.collect;
-    DM_proto.collect = function(viewModel) {
-        var self = this;
-        if (viewModel instanceof Model) {
-            _collect.call(self, viewModel);
-            //TODO:release memory.
-        } else if (viewModel instanceof ViewModel) {
-            var vi_DM = viewModel.model;
-            if (!vi_DM) { // for VI init in constructor
-                vi_DM = viewModel.model = self;
-                var viewModelTriggers = viewModel._triggers
-                $.E(viewModelTriggers, function(sKey) {
-                    viewModel._buildSmart(sKey);
-                });
-            }
+//                 if (topGetter) {
+//                     if (topGetter !== currentTopGetter || matchKey !== smartTrigger.matchKey) {
+//                         TEMP.dm_id = topGetter.id;
+//                         currentTopGetter && smartTrigger.unbind(currentTopGetter._triggerKeys)
+//                         smartTrigger.matchKey = matchKey;
+//                         smartTrigger.bind(topGetter._triggerKeys);
+//                         currentTopGetter = topGetter;
+//                     }
+//                 }
+//             })
+//         })
+//         $.E(self._subsetModels, function(childModel) {
+//             childModel.rebuildTree()
+//         })
+//         return _rebuildTree.call(self);
+//     }
+//     var _collect = DM_proto.collect;
+//     DM_proto.collect = function(viewModel) {
+//         var self = this;
+//         if (viewModel instanceof Model) {
+//             _collect.call(self, viewModel);
+//             //TODO:release memory.
+//         } else if (viewModel instanceof ViewModel) {
+//             var vi_DM = viewModel.model;
+//             if (!vi_DM) { // for VI init in constructor
+//                 vi_DM = viewModel.model = self;
+//                 var viewModelTriggers = viewModel._triggers
+//                 $.E(viewModelTriggers, function(sKey) {
+//                     viewModel._buildSmart(sKey);
+//                 });
+//             }
 
-            //to rebuildTree => remark smartyKeys
-            $.p(self._viewModels, viewModel);
+//             //to rebuildTree => remark smartyKeys
+//             $.p(self._viewModels, viewModel);
 
-            _collect.call(self, vi_DM) //self collect self will Forced triggered updates
-        }
-        return self;
-    };
-    var _subset = DM_proto.subset;
-    DM_proto.subset = function(viewModel, prefix) {
-        var self = this;
+//             _collect.call(self, vi_DM) //self collect self will Forced triggered updates
+//         }
+//         return self;
+//     };
+//     var _subset = DM_proto.subset;
+//     DM_proto.subset = function(viewModel, prefix) {
+//         var self = this;
 
-        if (viewModel instanceof Model) {
-            _subset.call(self, viewModel, prefix);
-        } else {
+//         if (viewModel instanceof Model) {
+//             _subset.call(self, viewModel, prefix);
+//         } else {
 
-            var vi_DM = viewModel.model;
-            if (!vi_DM) {
-                vi_DM = Model();
-                //收集触发器
-                vi_DM.collect(viewModel);
-            }
-            _subset.call(self, vi_DM, prefix);
-        }
-    };
-}());
+//             var vi_DM = viewModel.model;
+//             if (!vi_DM) {
+//                 vi_DM = Model();
+//                 //收集触发器
+//                 vi_DM.collect(viewModel);
+//             }
+//             _subset.call(self, vi_DM, prefix);
+//         }
+//     };
+// }());
 
 var stopTriggerBubble; // = $FALSE;
 
@@ -2624,7 +2565,7 @@ function _addAttr(viewModel, node, attrJson) {
         $.E(attrViewModel._triggers, function(key) {
             var triggerContainer = triggerTable[key];
             if (!triggerContainer) {
-                viewModel._buildSmart(key);
+                ViewModel._buildSmart(viewModel, key);
                 triggerContainer = triggerTable[key] = [];
                 $.p(viewModel._triggers, key);
                 $.p(result, key);
@@ -2642,7 +2583,6 @@ function ViewModel(handleNodeTree, NodeList, triggerTable, model) {
     var self = this;
     self._isAttr = $FALSE; //if no null --> Storage the attribute key and current.
     self._isEach = $FALSE; //if no null --> Storage the attribute key and current.
-    self.model; //= model;
     self.handleNodeTree = handleNodeTree;
     self.DOMArr = $.s(handleNodeTree.childNodes);
     self.NodeList = NodeList;
@@ -2653,16 +2593,6 @@ function ViewModel(handleNodeTree, NodeList, triggerTable, model) {
     self._close = $.D.C(self._id + " _close");
 
     self._canRemoveAble = $FALSE;
-    // var _canRemoveAble = $FALSE;
-    // self.__defineGetter__("_canRemoveAble", function() {
-    //     return _canRemoveAble;
-    // });
-    // self.__defineSetter__("_canRemoveAble", function(nObj) {
-    //     if (nObj === $FALSE) {
-    //         debugger
-    //     };
-    //     _canRemoveAble = nObj;
-    // })
 
     self._AVI = {};
     self._ALVI = {};
@@ -2680,13 +2610,15 @@ function ViewModel(handleNodeTree, NodeList, triggerTable, model) {
         self._triggers._[key] = tiggerCollection;
     });
 
-    if (!(model instanceof Model)) {
-        model = Model(model);
-    }
-    self._smartTriggers = [];
+    self.constructor = ViewModel;
+    //为vm加上Model代理层
+    new ProxyModel(self, model);
 
-    //bind viewModel with DataManger
-    model.collect(self); //touchOff All triggers
+    //转移到proxyModel中
+    // self._smartTriggers = [];
+
+    // //bind viewModel with DataManger
+    // model.collect(self); //touchOff All triggers
 
     //console.group(self._id,"touchOff .")
     stopTriggerBubble = $TRUE;
@@ -2694,6 +2626,34 @@ function ViewModel(handleNodeTree, NodeList, triggerTable, model) {
     stopTriggerBubble = $FALSE;
     //console.groupEnd(self._id,"touchOff .")
 };
+
+/*
+ * 静态函数
+ */
+//_buildSmartTriggers接口，
+ViewModel._buildSmartTriggers = function(viewModel, sKey) {
+    var smartTriggers = [];
+    $.E(viewModel._triggers, function(sKey) {
+        $.p(smartTriggers, ViewModel._buildSmart(viewModel, sKey));
+    });
+    return smartTriggers;
+}
+//_buildSmart接口
+ViewModel._buildSmart = function(viewModel, sKey) {
+    smartTrigger = new SmartTriggerHandle(
+        sKey || "", //match key
+        vm_buildSmart_event, //VM通用的触发函数
+        { //TEMP data
+            vM: viewModel,
+            sK: sKey
+        }
+    );
+    return smartTrigger;
+}
+var vm_buildSmart_event = function(smartTriggerSet) {
+    var TEMP = this.TEMP;
+    TEMP.vM.touchOff(TEMP.sK);
+}
 
 var VI_session = ViewModel.session = {
     touchHandleIdSet: $NULL,
@@ -2765,7 +2725,7 @@ function _buildQueryMatchFun(matchAttr) {
 };
 var fr = doc.createDocumentFragment();
 
-var VI_proto = ViewModel.prototype = {
+var __ViewModelProto__ = ViewModel.prototype = {
     destroy: function() {
         var self = this;
         //TODO:delete node
@@ -2887,14 +2847,14 @@ var VI_proto = ViewModel.prototype = {
         }
         return self;
     },
-    get: function get() {
-        var dm = this.model;
-        return dm.get.apply(dm, arguments /*$.s(arguments)*/ );
-    },
-    set: function set() {
-        var dm = this.model;
-        return dm.set.apply(dm, arguments /*$.s(arguments)*/ )
-    },
+    // get: function get() {
+    //     var dm = this.model;
+    //     return dm.get.apply(dm, arguments /*$.s(arguments)*/ );
+    // },
+    // set: function set() {
+    //     var dm = this.model;
+    //     return dm.set.apply(dm, arguments /*$.s(arguments)*/ )
+    // },
     topNode: function(newCurrentTopNode) {
         var self = this,
             handleNodeTree = self.handleNodeTree,
@@ -2942,27 +2902,27 @@ var VI_proto = ViewModel.prototype = {
             })
         })
     },
-    _buildSmart: function(sKey) {
-        var self = this,
-            model = self.model,
-            smartTriggers = self._smartTriggers;
-        model.get(sKey);
-        var baseKey = Model.session.filterKey,
-            topGetterTriggerKeys = Model.session.topGetter && Model.session.topGetter._triggerKeys,
-            smartTrigger = new SmartTriggerHandle(
-                baseKey || (baseKey = ""), //match key
+    // _buildSmart: function(sKey) {
+    //     var self = this,
+    //         model = self.model,
+    //         smartTriggers = self._smartTriggers;
+    //     model.get(sKey);
+    //     var baseKey = Model.session.filterKey,
+    //         topGetterTriggerKeys = Model.session.topGetter && Model.session.topGetter._triggerKeys,
+    //         smartTrigger = new SmartTriggerHandle(
+    //             baseKey || (baseKey = ""), //match key
 
-                function(smartTriggerSet) {
-                    self.touchOff(sKey);
-                }, { //TEMP data
-                    viewModel: self,
-                    dm_id: model.id,
-                    sourceKey: sKey
-                }
-            );
-        $.p(smartTriggers, smartTrigger);
-        topGetterTriggerKeys && smartTrigger.bind(topGetterTriggerKeys); // topGetterTriggerKeys.push(baseKey, smartTrigger);
-    },
+    //             function(smartTriggerSet) {
+    //                 self.touchOff(sKey);
+    //             }, { //TEMP data
+    //                 viewModel: self,
+    //                 dm_id: model.id,
+    //                 sourceKey: sKey
+    //             }
+    //         );
+    //     $.p(smartTriggers, smartTrigger);
+    //     topGetterTriggerKeys && smartTrigger.bind(topGetterTriggerKeys); // topGetterTriggerKeys.push(baseKey, smartTrigger);
+    // },
     teleporter: function(viewModel, telporterName) {
         var self = this;
         (telporterName === $UNDEFINED) && (telporterName = "index");
@@ -2980,17 +2940,23 @@ var VI_proto = ViewModel.prototype = {
         }
         return self;
     },
-    collect: function() {
-        var self = this;
-        var model = self.model;
-        model.collect.apply(model, arguments);
-        return self;
-    },
-    subset: function() {
-        var self = this;
-        var model = self.model;
-        model.subset.apply(model, arguments);
-        return self;
+    // collect: function() {
+    //     var self = this;
+    //     var model = self.model;
+    //     model.collect.apply(model, arguments);
+    //     return self;
+    // },
+    // subset: function() {
+    //     var self = this;
+    //     var model = self.model;
+    //     model.subset.apply(model, arguments);
+    //     return self;
+    // },
+    /*
+     * 获取代理后面真正的Model
+     */
+    getModel: function(argument) {
+        return this.model.model;
     }
 };
 /*var _allEventNames = ("blur focus focusin focusout load resize" +
@@ -2998,10 +2964,23 @@ var VI_proto = ViewModel.prototype = {
     "mouseover mouseout mouseenter mouseleave change select" +
     "submit keydown keypress keyup error contextmenu").split(" ");
 $.E(_allEventNames, function(eventName) {
-    VI_proto[eventName] = function(fun) {
+    __ViewModelProto__[eventName] = function(fun) {
         return fun ? this.on(eventName, fun) : this.trigger(eventName);
     }
 })*/
+
+/*
+ * 为ViewModel拓展proxymodel代理类的功能
+ */
+
+$.E(["shelter", "set", "get"], function(handleName) {
+    var handle = __ProxyModelProto__[handleName];
+    __ViewModelProto__[handleName] = function() {
+        var self = this;
+        var model = self.model;
+        return handle.apply(model, arguments);
+    }
+});
 
 /*
  * parse function
@@ -3715,8 +3694,8 @@ var _extend_DM_get_Index = (function() {
         var self = this;
         var indexKey = DM_config.prefix.Index;
         if (key === indexKey) {
-            Model.session.topSetter = self;
-            Model.session.filterKey = "";
+            // Model.session.topSetter = self;
+            // Model.session.filterKey = "";
             throw Error(indexKey + " is read only.")
         } else {
             return DM_proto.set.apply(self, arguments)
@@ -3726,8 +3705,8 @@ var _extend_DM_get_Index = (function() {
         var self = this;
         var indexKey = DM_config.prefix.Index;
         if (key === indexKey) {
-            Model.session.topGetter = self;
-            Model.session.filterKey = "";
+            // Model.session.topGetter = self;
+            // Model.session.filterKey = "";
             return parseInt(self._index);
         } else {
             return DM_proto.get.apply(self, arguments)

@@ -13,13 +13,16 @@ module.exports = function(grunt) {
     grunt.registerTask('server', ['connect:server', 'watch']);
 
     var baseFile = ['src/$.js',
-        // 'src/rAF.js',
         'src/event.js',
         'src/SmartTrigger_for_Model.js',
-        'src/Model.v4.js',
-        'src/Model.extend.js',
+
+        'src/Model.v5.core.js',
+        'src/Model.v5.base.js',
+        'src/Model.v5.$scope.js',
+        'src/Model.v5.ArrayModel.js',
+        'src/Model.v5.Proxy.js',
         'src/_ArrayModel.js',
-        'src/$scope.js',
+        'src/Model.extend.js',
         'src/registerAttribute.js',
         'src/View.js',
         'src/ViewModel.js',
