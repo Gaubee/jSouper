@@ -38,6 +38,7 @@ jSouper.ready(function(argument) {
     c = m.buildModelByKey("c");
     a = m.buildModelByKey("c.a");
     console.log(Model.$router(a, "$Parent").model == c);
+    debugger
     console.log(Model.$router(a, "$Parent.$Parent").model == m);
     console.log(Model.$router(a, "$Top").model == m);
     console.groupEnd("渐进式创建");

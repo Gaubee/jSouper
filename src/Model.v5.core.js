@@ -20,8 +20,8 @@ function Model(baseData) {
     //用于缓存key所对应数组的长度，当数组长度发生改变，就需要向上缩减所要触发的key，确保所有集合的更新
     self.__arrayLen = {}; //cache array length with key
 
-    // //用于保存所绑定的所有ViewModel实例对象
-    // self._viewModels = []; //to touch off
+    //用户保存外部数据
+    self.TEMP = {};
 
     //父级Model
     self._parentModel // = $UNDEFINED; //to get data
@@ -251,6 +251,9 @@ var DM_proto = Model.prototype = {
         childModel._prefix = key;
         childModel._parentModel = self;
         childModel._database = self.get(key);
+
+        //ArrayModel
+
         $.p(self._childModels, childModel);
         // //聚拢关于这个key的父Model
         // self.sock(key);
@@ -399,6 +402,7 @@ var DM_proto = Model.prototype = {
         var self = this;
         self.remove();
         self._parentModel = model;
+        self._prefix = key;
         $.p(model._childModels, self);
     },
     destroy: function() {
