@@ -12,7 +12,9 @@ function Model(baseData) {
     }
 
     //生成唯一的标示符号
-    self.id = $.uid();
+    //存储在全局集合中，方便跨Model访问，有些情况需要通过全局集合来获取
+    //因为Model可能因为多余而被销毁，所以直接使用引用是不可靠的，用标实获取全局集合中对象才是最实时且正确的对象
+    Model._instances[self.id = $.uid()] = self;
 
     //不对baseData做特殊处理，支持任意类型包括空类型的数据，且数据类型可任意更改
     self._database = baseData;
@@ -20,24 +22,22 @@ function Model(baseData) {
     //用于缓存key所对应数组的长度，当数组长度发生改变，就需要向上缩减所要触发的key，确保所有集合的更新
     self.__arrayLen = {}; //cache array length with key
 
-    //用户保存外部数据
-    self.TEMP = {};
+    // //用户保存外部数据
+    // self.TEMP = {};
 
     //父级Model
-    self._parentModel // = $UNDEFINED; //to get data
+    // self._parentModel // = $UNDEFINED; //to get data
 
     //私有数据集
-    self._privateModel // = $UNDEFINED;
+    // self._privateModel // = $UNDEFINED;
 
     //相对于父级的前缀key，代表在父级中的位置
-    self._prefix // = $NULL; //冒泡时需要加上的前缀
-
-    //根据路（_prefix属性）径来动态寻找父级Model，在subset声明父子关系是会生成
-    // self._smartSource // = $NULL; //store how to get parentModel
+    // self._prefix // = $NULL; //冒泡时需要加上的前缀
 
     //存储子model或者委托model（如array型的委托，
     //array型由于都拥有同样的前缀与一个索引号，所以可以用委托定位速度更快，详见_ArrayModel）
-    self._childModels = []; //to touch off
+    //“_”下划线属性是通过prefix来存储子Model
+    (self._childModels = [])._ = {}; //to touch off
 
     //以hash的形式（这里用uid生成的唯一ID）存储_ArrayModel，方便新的array型model快速定位自己的受委托者，并进入队列中
     self._arrayModelMap = {};
@@ -47,15 +47,13 @@ function Model(baseData) {
         model: self
     });
 
-    //存储在全局集合中，方便跨Model访问，有些情况需要通过全局集合来获取
-    //因为Model可能因为多余而被销毁（replace），所以直接使用引用是不可靠的，用标实获取全局集合中对象才是最实时且正确的对象
-    Model._instances[self.id] = self;
 };
 
+var abandonedModels = Model._abandonedModels = [];
 /*
  * 核心方法
  */
-var DM_proto = Model.prototype = {
+var __ModelProto__ = Model.prototype = {
     getSource: function() {
         _DM_extends_object_constructor = _DM_extends_object_constructor_break;
         var self = this,
@@ -164,7 +162,7 @@ var DM_proto = Model.prototype = {
                 };
             } else { //argumentLen >= 1
                 //find Object by the key-dot-path and change it
-                if (_dm_force_update || nObj !== DM_proto.get.call(self, key)) {
+                if (_dm_force_update || nObj !== self.get(key)) {
                     //[@Gaubee/blog/issues/45](https://github.com/Gaubee/blog/issues/45)
                     var database = self._database || (self._database = {}),
                         sObj,
@@ -246,16 +244,13 @@ var DM_proto = Model.prototype = {
     },
     __buildChildModel: function(key) {
         var self = this;
-        //生成一个新的子Model，绑定一系列关系
-        var childModel = new Model;
-        childModel._prefix = key;
+        //从回收区获取一个Model或者直接生成一个新的子Model，绑定一系列关系
+        var childModel = abandonedModels.pop() || new Model;
+        childModel.__follow(self, key);
         childModel._parentModel = self;
-        childModel._database = self.get(key);
-
-        //ArrayModel
 
         $.p(self._childModels, childModel);
-        // //聚拢关于这个key的父Model
+        // TODO:聚拢关于这个key的父Model
         // self.sock(key);
         return childModel;
     },
@@ -291,10 +286,10 @@ var DM_proto = Model.prototype = {
             key.replace(/[^\w]\.?([\d]+)([^\w]\.?|$)/g, function(matchKey, num, endKey, index) {
                 var maybeArrayKey = key.substr(0, index);
                 //寻找长度开始变动的那一层级的数据开始_touchOffSibling
-                if ($.isA(__arrayData = DM_proto.get.call(self, maybeArrayKey)) && __arrayLen[maybeArrayKey] !== __arrayData.length) {
+                if ($.isA(__arrayData = __ModelProto__.get.call(self, maybeArrayKey)) && __arrayLen[maybeArrayKey] !== __arrayData.length) {
                     // console.log(maybeArrayKey,__arrayData.length, __arrayLen[maybeArrayKey])
                     __arrayLen[maybeArrayKey] = __arrayData.length
-                    result = self._touchOffSibling(maybeArrayKey)
+                    result = self._touchOff(maybeArrayKey)
                 }
             })
         }
@@ -308,8 +303,16 @@ var DM_proto = Model.prototype = {
     _touchOff: function(key) {
         var self = this,
             triggerKeys = self._triggerKeys;
-        //self
+
+        var childModel,
+            childModels = self._childModels,
+            i = childModels.length - 1;
+        var prefix,
+            childResult;
         if (key) {
+            /*
+             * self：触发当前Model所携带的触发器
+             */
             triggerKeys.forIn(function(triggerCollection, triggerKey) {
                 if (!triggerKey ||
                     key === triggerKey || !triggerKey.indexOf(key + ".") /*=== 0 */ || !key.indexOf(triggerKey + ".") /* === 0*/ ) {
@@ -318,48 +321,55 @@ var DM_proto = Model.prototype = {
                     })
                 }
             });
+
+            /*
+             * child：向下触发子Model
+             */
+            /*
+             * 针对多ChildModel的优化方案，使用切割地址逐步寻址，比如对ArrayLike有很大的效率提升
+             */
+
+            //拼接的地址
+            var jointKey = $.st(key, ".");
+            //单节点地址
+            var nodeKey;
+            if (jointKey) { //key是多层次寻址
+                //所寻找到的子Model
+                while (nodeKey = $.st(_split_laveStr, ".")) {
+                    if (childModels._[jointKey]) {
+                        break;
+                    }
+                    jointKey += "." + nodeKey;
+                }
+                jointKey += "." + _split_laveStr;
+            } else { //非多层次寻址
+                jointKey = key
+            }
+            //若能找到对应的Model，则向下触发
+            _dm_force_update += 1;
+            if (childModel = childModels._[jointKey]) {
+                if (nodeKey) { //单节点地址未空，jointKey === prefixKey < key
+                    childResult = childModel.set(key.substr(jointKey.length + 1), self.get(key));
+                } else { //如果单节点地址已经指向空，则jointKey === prefixKey === key
+                    childResult = childModel.set(self.get(key));
+                }
+            } else { //无法找到，可能是key的长度太短
+                for (; childModel = childModels[i]; i--) {
+                    prefix = childModel._prefix
+                    //v5版本中不存在prefix===""的情况
+                    if (!prefix.indexOf(key + ".") /* === 0*/ ) { //prefix is a part of key,just maybe had been changed
+                        childResult = childModel.set(self.get(prefix))
+                    }
+                };
+            }
+            _dm_force_update -= 1;
         } else {
+            //key为$This（空）的话直接触发所有，无需break
             triggerKeys.forIn(function(triggerCollection, triggerKey) {
-                // if (!key ) {
                 $.E(triggerCollection, function(smartTriggerHandle) {
                     smartTriggerHandle.event(triggerKeys);
                 })
-                // }
             });
-        }
-        //child
-        var childModel,
-            childModels = self._childModels,
-            i = childModels.length - 1;
-        var prefix,
-            childResult,
-            result;
-        if (key) {
-            for (; childModel = childModels[i]; i--) {
-                prefix = childModel._prefix;
-                result = $FALSE;
-                _dm_force_update += 1;
-                if (!key) { //key === "",touchoff all
-                    childResult = childModel.set(self.get(prefix))
-                } else if (!prefix) { //prefix==="" equal to $THIS//TODO:可优化，交由collect处理
-                    childResult = childModel.set(key, self.get(key))
-                } else if (key === prefix || prefix.indexOf(key + ".") === 0) { //prefix is a part of key,just maybe had been changed
-                    // childModel.touchOff(prefix.replace(key + ".", ""));
-                    childResult = childModel.set(self.get(prefix))
-                } else if (key.indexOf(prefix + ".") === 0) { //key is a part of prefix,must had be changed
-                    prefix = key.replace(prefix + ".", "")
-                    childResult = childModel.set(prefix, self.get(key))
-                } else {
-                    result = $TRUE;
-                }
-                _dm_force_update -= 1;
-                if (result) {
-                    continue;
-                } else {
-                    break;
-                }
-            };
-        } else { //key为$This的话直接触发所有，无需break
 
             for (; childModel = childModels[i]; i--) {
                 _dm_force_update += 1;
@@ -367,12 +377,18 @@ var DM_proto = Model.prototype = {
                 _dm_force_update -= 1;
             };
         }
-        //private
-        self._privateModel && self._privateModel.touchOff(key);
 
         return {
             key: key
         }
+    },
+    /*
+     * 一个很危险的API，将一个Model进行回收利用
+     */
+    abandoned: function(remover) {
+        remover = this.remove(remover);
+        //将Model放入回收区回收利用
+        remover && $.p(abandonedModels, remover);
     },
     /*
      * 将指定Model移除数据树，使得独立，旗下的子Model也要跟着移除
@@ -380,19 +396,24 @@ var DM_proto = Model.prototype = {
      */
     remove: function(remover) {
         var self = this;
-        if (remover || (remover = self)) {
-            if (remover._isEach) {
-                arrayModel = remover._arrayModel;
-                arrayModel && arrayModel.remove(remover)
-            } else {
-                var parentModel = remover._parentModel;
-                if (parentModel) {
-                    var childModels = parentModel._childModels;
-                    childModels.splice($.iO(childModels, remover), 1);
-                    remover._parentModel = $UNDEFINED;
-                }
-            }
+        if (typeof remover === "string") {
+            remover = self._childModels._[remover];
+        } else {
+            remover = self
         }
+        if (remover) {
+            var parentModel = remover._parentModel;
+            if (parentModel) {
+                var childModels = parentModel._childModels;
+                childModels._[childModels._prefix] = $UNDEFINED;
+                childModels.splice($.iO(childModels, remover), 1);
+                remover.TEMP = remover._parentModel = childModels._prefix = $UNDEFINED;
+            }
+            $.E($.s(remover._childModels), function(childModel) {
+                childModel.remove();
+            });
+        }
+        return remover;
     },
     /*
      * 代码片段，成为指定model的子model
@@ -403,7 +424,9 @@ var DM_proto = Model.prototype = {
         self.remove();
         self._parentModel = model;
         self._prefix = key;
+        self._database = model.get(key);
         $.p(model._childModels, self);
+        model._childModels._[self._prefix] = self;
     },
     destroy: function() {
         for (var i in this) {

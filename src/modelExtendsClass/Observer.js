@@ -18,7 +18,7 @@
     };
 
     // 原始的DM-get方法
-    var _dm_normal_get = DM_proto.get
+    var _dm_normal_get = __ModelProto__.get
 
     // 带收集功能的DM-get
     var _dm_collect_get = function() {
@@ -56,7 +56,7 @@
             /*
              * dm collect get mode
              */
-            DM_proto.get = _dm_collect_get;
+            __ModelProto__.get = _dm_collect_get;
 
             //生成一层收集层
             $.p(_get_collect_stack, [])
@@ -107,7 +107,7 @@
 
             //确保是最后一层的了再恢复
             if (_get_collect_stack.length === 0) {
-                DM_proto.get = _dm_normal_get;
+                __ModelProto__.get = _dm_normal_get;
             }
 
             return result;
@@ -120,8 +120,8 @@
         }
     }
 
-    var _dm_normal_touchOff = DM_proto.touchOff;
-    DM_proto.touchOff = function() {
+    var _dm_normal_touchOff = __ModelProto__.touchOff;
+    __ModelProto__.touchOff = function() {
         var self = this;
         var result = _dm_normal_touchOff.apply(self, arguments)
         var observerObjCollect = observerCache[self.id]

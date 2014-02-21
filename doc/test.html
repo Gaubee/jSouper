@@ -27,6 +27,9 @@
             {{/each}}
         </ul>
     </xmp>
+    <xmp type="template" name="private">
+        <div id="private">{{$Private.name}}</div>
+    </xmp>
 </body>
 
 </html>
@@ -38,7 +41,6 @@ jSouper.ready(function(argument) {
     c = m.buildModelByKey("c");
     a = m.buildModelByKey("c.a");
     console.log(Model.$router(a, "$Parent").model == c);
-    debugger
     console.log(Model.$router(a, "$Parent.$Parent").model == m);
     console.log(Model.$router(a, "$Top").model == m);
     console.groupEnd("渐进式创建");
@@ -100,9 +102,16 @@ jSouper.ready(function(argument) {
     console.log("数组更新是否正确", vm_each.getModel()._childModels[0].get() === "xxx");
     vm_each.set("3", "zzz")
     console.log("数组添加是否正确", document.getElementsByClassName("each").length === 4);
-    vm_each.set("length",2)
+    vm_each.set("length", 2)
     console.log("数组删除是否正确", document.getElementsByClassName("each").length === 2);
     console.groupEnd("测试each")
+
+    console.group("测试$Private私有数据区域")
+    vm_private = jSouper.modules["private"]({});
+    vm_private.set("$Private.name", "amaz.....")
+    vm_private.append(document.body);
+    console.log(vm_private.get("$Private.name"), ":", document.getElementById("private").innerHTML === vm_private.get("$Private.name"));
+    console.groupEnd("测试$Private私有数据区域")
 
 });
 </script>

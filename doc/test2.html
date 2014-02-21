@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+
+<head>
+    <title>app - jSouper</title>
+    <script type="text/javascript" src="../build/jSouper.debug.js">
+    </script>
+
+</head>
+
+<body>
+    <xmp type="template" name="Pressure test">
+        {{#each arrayData}}
+        <input bind-input="{{'$This'}}" value="{{$This}}">
+            {{$Index}}({{$Path}})<button event-click="{{'$Top.$Private.removeItem'}}">remove</button>{{$This}}
+            <br>
+        {{/each}}
+    </xmp>
+</body>
+
+</html>
+<script type="text/javascript">
+jSouper.ready(function(argument) {
+    vm_private = jSouper.modules["Pressure test"]({
+        arrayData:[2,3,14,5,123,1,25,6,23,123,23,23,4,233,242]
+    });
+    vm_private.append(document.body);
+    vm_private.set("$Private.removeItem",function  (e,vm) {
+        vm.remove();
+    });
+    // debugger
+    // vm_private.set("arrayData",[4,2,3,1])
+});
+</script>

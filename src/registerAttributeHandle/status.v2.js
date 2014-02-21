@@ -32,7 +32,7 @@ var _statusEventCache = {},
 		}
 	},
 	_getStatusKey = function(vi, key) {
-		var _$Get = DM_config.prefix.Get + ".";
+		var _$Get = __ModelConfig__.prefix.Get + ".";
 		if ($.st(key, _$Get) !== false) {
 			key = vi.get(_split_laveStr);
 		}

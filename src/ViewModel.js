@@ -1,78 +1,6 @@
 /*
  * View Instance constructor
  */
-
-// (function() { //DM_extends_fot_VI
-//     var _rebuildTree = DM_proto.rebuildTree;
-//     DM_proto.rebuildTree = function() {
-//         var self = this,
-//             DMSet = self._subsetModels;
-//         $.E(self._viewModels, function(viewModel) {
-//             $.E(viewModel._smartTriggers, function(smartTrigger) {
-//                 var TEMP = smartTrigger.TEMP;
-//                 TEMP.viewModel.get(TEMP.sourceKey);
-//                 var topGetter = Model.session.topGetter,
-//                     currentTopGetter = Model.get(TEMP.dm_id),
-//                     matchKey = Model.session.filterKey || "";
-
-//                 if (topGetter) {
-//                     if (topGetter !== currentTopGetter || matchKey !== smartTrigger.matchKey) {
-//                         TEMP.dm_id = topGetter.id;
-//                         currentTopGetter && smartTrigger.unbind(currentTopGetter._triggerKeys)
-//                         smartTrigger.matchKey = matchKey;
-//                         smartTrigger.bind(topGetter._triggerKeys);
-//                         currentTopGetter = topGetter;
-//                     }
-//                 }
-//             })
-//         })
-//         $.E(self._subsetModels, function(childModel) {
-//             childModel.rebuildTree()
-//         })
-//         return _rebuildTree.call(self);
-//     }
-//     var _collect = DM_proto.collect;
-//     DM_proto.collect = function(viewModel) {
-//         var self = this;
-//         if (viewModel instanceof Model) {
-//             _collect.call(self, viewModel);
-//             //TODO:release memory.
-//         } else if (viewModel instanceof ViewModel) {
-//             var vi_DM = viewModel.model;
-//             if (!vi_DM) { // for VI init in constructor
-//                 vi_DM = viewModel.model = self;
-//                 var viewModelTriggers = viewModel._triggers
-//                 $.E(viewModelTriggers, function(sKey) {
-//                     viewModel._buildSmart(sKey);
-//                 });
-//             }
-
-//             //to rebuildTree => remark smartyKeys
-//             $.p(self._viewModels, viewModel);
-
-//             _collect.call(self, vi_DM) //self collect self will Forced triggered updates
-//         }
-//         return self;
-//     };
-//     var _subset = DM_proto.subset;
-//     DM_proto.subset = function(viewModel, prefix) {
-//         var self = this;
-
-//         if (viewModel instanceof Model) {
-//             _subset.call(self, viewModel, prefix);
-//         } else {
-
-//             var vi_DM = viewModel.model;
-//             if (!vi_DM) {
-//                 vi_DM = Model();
-//                 //收集触发器
-//                 vi_DM.collect(viewModel);
-//             }
-//             _subset.call(self, vi_DM, prefix);
-//         }
-//     };
-// }());
-
 var stopTriggerBubble; // = $FALSE;
 
 function _addAttr(viewModel, node, attrJson) {
@@ -375,14 +303,15 @@ var __ViewModelProto__ = ViewModel.prototype = {
             self.topNode(el);
 
             self._canRemoveAble = $FALSE; //Has being recovered into the _packingBag,can't no be remove again. --> it should be insert
-            if (self._isEach) {
+            /*if (self._isEach) {
                 // 排队到队位作为备用
                 self._arrayVI.splice(self.model._index, 1)
                 $.p(self._arrayVI, self);
 
                 //相应的DM以及数据也要做重新排队
                 self.model.lineUp();
-            }
+            }*/
+            self.onremove && self.onremove()
         }
         return self;
     },

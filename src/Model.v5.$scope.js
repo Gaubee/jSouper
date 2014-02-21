@@ -6,9 +6,14 @@
  * 3. $TOP 顶级作用域寻址
  * 4. $PRIVATE 私有数据库寻址
  * 5. $JS 全局数据寻址
+
+ * 6. $Index 数组类型的下标
  */
 ;
 (function() {
+    /*
+     * 路由寻址Model
+     */
     var routerMap = Model._routerMap = {
         "$Private": function(model, key) {
             return model._privateModel || (model._privateModel = new Model);
@@ -71,40 +76,108 @@
         }
         return result;
     };
-    var _get = DM_proto.get,
-        _set = DM_proto.set,
-        set = DM_proto.set = function(key) {
+    /*
+     * 自定义字段的set、get
+     */
+    Model._defineKeyMap = {
+        "$Index": {
+            set: function() {
+                console.error("$Index is read only.");
+            },
+            get: function(model, key) {
+                $.lst(model._prefix, ".")
+                return _split_laveStr;
+            }
+        },
+        "$Path": {
+            set: function() {
+                console.error("$Path is read only.");
+            },
+            get: function(model) {
+                var result = model._prefix;
+                var next;
+                while (next = model._parentModel) {
+                    model = next;
+                    result = model._prefix + result ? ("." + result) : "";
+                }
+                return result;
+            }
+        }
+    }
+    Model.$defineKey = function(model, key) {
+        var result = {
+            definer: $NULL,
+            key: key
+        }
+        var defineKey = $.st(key, ".");
+        var remainingKey = _split_laveStr;
+        if (!defineKey) {
+            defineKey = remainingKey;
+            remainingKey = $FALSE;
+        }
+        var definer = Model._defineKeyMap[defineKey];
+        if (definer) {
+            result.definer = definer
+            result.key = remainingKey
+        }
+        return result;
+    }
+    var _get = __ModelProto__.get,
+        _set = __ModelProto__.set,
+        set = __ModelProto__.set = function(key) {
             var self = this,
                 args = arguments /*$.s(arguments)*/ ,
                 result;
             if (args.length > 1) {
+                //查找关键字匹配的Model
                 var router_result = Model.$router(self, key);
                 if (self = router_result.model) {
-                    (key = router_result.key) ? (args[0] = key) : $.sp.call(args, 0, 1)
-                    result = _set.apply(self, args);
+                    if (key = router_result.key) {
+                        //查找通用自定义关键字
+                        var define_result = Model.$defineKey(self, key);
+                        var definer = define_result.definer
+                        if (definer) {
+                            result = definer.set(self, define_result.key)
+                        }
+                    }
+                    if (!definer) {
+                        key ? (args[0] = key) : $.sp.call(args, 0, 1)
+                        result = _set.apply(self, args);
+                    }
                 }
             } else { //one argument
                 result = _set.call(self, key);
             }
             return result
         },
-        get = DM_proto.get = function(key) {
+        get = __ModelProto__.get = function(key) {
             var self = this,
                 args = arguments /*$.s(arguments)*/ ,
                 result;
             if (args.length > 0) {
+                //查找关键字匹配的Model
                 var router_result = Model.$router(self, key);
                 if (self = router_result.model) {
-                    (key = router_result.key) ? (args[0] = key) : $.sp.call(args, 0, 1)
-                    result = _get.apply(self, args);
+                    if (key = router_result.key) {
+                        //查找通用自定义关键字
+                        var define_result = Model.$defineKey(self, key);
+                        var definer = define_result.definer
+                        if (definer) {
+                            result = definer.get(self, define_result.key)
+                        }
+                    }
+                    if (!definer) {
+                        key ? (args[0] = key) : $.sp.call(args, 0, 1)
+                        result = _get.apply(self, args);
+                    }
                 }
             } else {
                 result = _get.call(self);
             }
             return result;
         },
-        _buildModelByKey = DM_proto.buildModelByKey,
-        buildModelByKey = DM_proto.buildModelByKey = function(key) {
+        _buildModelByKey = __ModelProto__.buildModelByKey,
+        buildModelByKey = __ModelProto__.buildModelByKey = function(key) {
             var router_result = Model.$router(this, key);
             return _buildModelByKey.call(router_result.model, router_result.key);
         }

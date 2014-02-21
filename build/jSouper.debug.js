@@ -978,7 +978,9 @@ function Model(baseData) {
     }
 
     //生成唯一的标示符号
-    self.id = $.uid();
+    //存储在全局集合中，方便跨Model访问，有些情况需要通过全局集合来获取
+    //因为Model可能因为多余而被销毁，所以直接使用引用是不可靠的，用标实获取全局集合中对象才是最实时且正确的对象
+    Model._instances[self.id = $.uid()] = self;
 
     //不对baseData做特殊处理，支持任意类型包括空类型的数据，且数据类型可任意更改
     self._database = baseData;
@@ -986,24 +988,22 @@ function Model(baseData) {
     //用于缓存key所对应数组的长度，当数组长度发生改变，就需要向上缩减所要触发的key，确保所有集合的更新
     self.__arrayLen = {}; //cache array length with key
 
-    //用户保存外部数据
-    self.TEMP = {};
+    // //用户保存外部数据
+    // self.TEMP = {};
 
     //父级Model
-    self._parentModel // = $UNDEFINED; //to get data
+    // self._parentModel // = $UNDEFINED; //to get data
 
     //私有数据集
-    self._privateModel // = $UNDEFINED;
+    // self._privateModel // = $UNDEFINED;
 
     //相对于父级的前缀key，代表在父级中的位置
-    self._prefix // = $NULL; //冒泡时需要加上的前缀
-
-    //根据路（_prefix属性）径来动态寻找父级Model，在subset声明父子关系是会生成
-    // self._smartSource // = $NULL; //store how to get parentModel
+    // self._prefix // = $NULL; //冒泡时需要加上的前缀
 
     //存储子model或者委托model（如array型的委托，
     //array型由于都拥有同样的前缀与一个索引号，所以可以用委托定位速度更快，详见_ArrayModel）
-    self._childModels = []; //to touch off
+    //“_”下划线属性是通过prefix来存储子Model
+    (self._childModels = [])._ = {}; //to touch off
 
     //以hash的形式（这里用uid生成的唯一ID）存储_ArrayModel，方便新的array型model快速定位自己的受委托者，并进入队列中
     self._arrayModelMap = {};
@@ -1013,15 +1013,13 @@ function Model(baseData) {
         model: self
     });
 
-    //存储在全局集合中，方便跨Model访问，有些情况需要通过全局集合来获取
-    //因为Model可能因为多余而被销毁（replace），所以直接使用引用是不可靠的，用标实获取全局集合中对象才是最实时且正确的对象
-    Model._instances[self.id] = self;
 };
 
+var abandonedModels = Model._abandonedModels = [];
 /*
  * 核心方法
  */
-var DM_proto = Model.prototype = {
+var __ModelProto__ = Model.prototype = {
     getSource: function() {
         _DM_extends_object_constructor = _DM_extends_object_constructor_break;
         var self = this,
@@ -1130,7 +1128,7 @@ var DM_proto = Model.prototype = {
                 };
             } else { //argumentLen >= 1
                 //find Object by the key-dot-path and change it
-                if (_dm_force_update || nObj !== DM_proto.get.call(self, key)) {
+                if (_dm_force_update || nObj !== self.get(key)) {
                     //[@Gaubee/blog/issues/45](https://github.com/Gaubee/blog/issues/45)
                     var database = self._database || (self._database = {}),
                         sObj,
@@ -1212,16 +1210,13 @@ var DM_proto = Model.prototype = {
     },
     __buildChildModel: function(key) {
         var self = this;
-        //生成一个新的子Model，绑定一系列关系
-        var childModel = new Model;
-        childModel._prefix = key;
+        //从回收区获取一个Model或者直接生成一个新的子Model，绑定一系列关系
+        var childModel = abandonedModels.pop() || new Model;
+        childModel.__follow(self, key);
         childModel._parentModel = self;
-        childModel._database = self.get(key);
-
-        //ArrayModel
 
         $.p(self._childModels, childModel);
-        // //聚拢关于这个key的父Model
+        // TODO:聚拢关于这个key的父Model
         // self.sock(key);
         return childModel;
     },
@@ -1257,10 +1252,10 @@ var DM_proto = Model.prototype = {
             key.replace(/[^\w]\.?([\d]+)([^\w]\.?|$)/g, function(matchKey, num, endKey, index) {
                 var maybeArrayKey = key.substr(0, index);
                 //寻找长度开始变动的那一层级的数据开始_touchOffSibling
-                if ($.isA(__arrayData = DM_proto.get.call(self, maybeArrayKey)) && __arrayLen[maybeArrayKey] !== __arrayData.length) {
+                if ($.isA(__arrayData = __ModelProto__.get.call(self, maybeArrayKey)) && __arrayLen[maybeArrayKey] !== __arrayData.length) {
                     // console.log(maybeArrayKey,__arrayData.length, __arrayLen[maybeArrayKey])
                     __arrayLen[maybeArrayKey] = __arrayData.length
-                    result = self._touchOffSibling(maybeArrayKey)
+                    result = self._touchOff(maybeArrayKey)
                 }
             })
         }
@@ -1274,8 +1269,16 @@ var DM_proto = Model.prototype = {
     _touchOff: function(key) {
         var self = this,
             triggerKeys = self._triggerKeys;
-        //self
+
+        var childModel,
+            childModels = self._childModels,
+            i = childModels.length - 1;
+        var prefix,
+            childResult;
         if (key) {
+            /*
+             * self：触发当前Model所携带的触发器
+             */
             triggerKeys.forIn(function(triggerCollection, triggerKey) {
                 if (!triggerKey ||
                     key === triggerKey || !triggerKey.indexOf(key + ".") /*=== 0 */ || !key.indexOf(triggerKey + ".") /* === 0*/ ) {
@@ -1284,48 +1287,55 @@ var DM_proto = Model.prototype = {
                     })
                 }
             });
+
+            /*
+             * child：向下触发子Model
+             */
+            /*
+             * 针对多ChildModel的优化方案，使用切割地址逐步寻址，比如对ArrayLike有很大的效率提升
+             */
+
+            //拼接的地址
+            var jointKey = $.st(key, ".");
+            //单节点地址
+            var nodeKey;
+            if (jointKey) { //key是多层次寻址
+                //所寻找到的子Model
+                while (nodeKey = $.st(_split_laveStr, ".")) {
+                    if (childModels._[jointKey]) {
+                        break;
+                    }
+                    jointKey += "." + nodeKey;
+                }
+                jointKey += "." + _split_laveStr;
+            } else { //非多层次寻址
+                jointKey = key
+            }
+            //若能找到对应的Model，则向下触发
+            _dm_force_update += 1;
+            if (childModel = childModels._[jointKey]) {
+                if (nodeKey) { //单节点地址未空，jointKey === prefixKey < key
+                    childResult = childModel.set(key.substr(jointKey.length + 1), self.get(key));
+                } else { //如果单节点地址已经指向空，则jointKey === prefixKey === key
+                    childResult = childModel.set(self.get(key));
+                }
+            } else { //无法找到，可能是key的长度太短
+                for (; childModel = childModels[i]; i--) {
+                    prefix = childModel._prefix
+                    //v5版本中不存在prefix===""的情况
+                    if (!prefix.indexOf(key + ".") /* === 0*/ ) { //prefix is a part of key,just maybe had been changed
+                        childResult = childModel.set(self.get(prefix))
+                    }
+                };
+            }
+            _dm_force_update -= 1;
         } else {
+            //key为$This（空）的话直接触发所有，无需break
             triggerKeys.forIn(function(triggerCollection, triggerKey) {
-                // if (!key ) {
                 $.E(triggerCollection, function(smartTriggerHandle) {
                     smartTriggerHandle.event(triggerKeys);
                 })
-                // }
             });
-        }
-        //child
-        var childModel,
-            childModels = self._childModels,
-            i = childModels.length - 1;
-        var prefix,
-            childResult,
-            result;
-        if (key) {
-            for (; childModel = childModels[i]; i--) {
-                prefix = childModel._prefix;
-                result = $FALSE;
-                _dm_force_update += 1;
-                if (!key) { //key === "",touchoff all
-                    childResult = childModel.set(self.get(prefix))
-                } else if (!prefix) { //prefix==="" equal to $THIS//TODO:可优化，交由collect处理
-                    childResult = childModel.set(key, self.get(key))
-                } else if (key === prefix || prefix.indexOf(key + ".") === 0) { //prefix is a part of key,just maybe had been changed
-                    // childModel.touchOff(prefix.replace(key + ".", ""));
-                    childResult = childModel.set(self.get(prefix))
-                } else if (key.indexOf(prefix + ".") === 0) { //key is a part of prefix,must had be changed
-                    prefix = key.replace(prefix + ".", "")
-                    childResult = childModel.set(prefix, self.get(key))
-                } else {
-                    result = $TRUE;
-                }
-                _dm_force_update -= 1;
-                if (result) {
-                    continue;
-                } else {
-                    break;
-                }
-            };
-        } else { //key为$This的话直接触发所有，无需break
 
             for (; childModel = childModels[i]; i--) {
                 _dm_force_update += 1;
@@ -1333,12 +1343,18 @@ var DM_proto = Model.prototype = {
                 _dm_force_update -= 1;
             };
         }
-        //private
-        self._privateModel && self._privateModel.touchOff(key);
 
         return {
             key: key
         }
+    },
+    /*
+     * 一个很危险的API，将一个Model进行回收利用
+     */
+    abandoned: function(remover) {
+        remover = this.remove(remover);
+        //将Model放入回收区回收利用
+        remover && $.p(abandonedModels, remover);
     },
     /*
      * 将指定Model移除数据树，使得独立，旗下的子Model也要跟着移除
@@ -1346,19 +1362,24 @@ var DM_proto = Model.prototype = {
      */
     remove: function(remover) {
         var self = this;
-        if (remover || (remover = self)) {
-            if (remover._isEach) {
-                arrayModel = remover._arrayModel;
-                arrayModel && arrayModel.remove(remover)
-            } else {
-                var parentModel = remover._parentModel;
-                if (parentModel) {
-                    var childModels = parentModel._childModels;
-                    childModels.splice($.iO(childModels, remover), 1);
-                    remover._parentModel = $UNDEFINED;
-                }
-            }
+        if (typeof remover === "string") {
+            remover = self._childModels._[remover];
+        } else {
+            remover = self
         }
+        if (remover) {
+            var parentModel = remover._parentModel;
+            if (parentModel) {
+                var childModels = parentModel._childModels;
+                childModels._[childModels._prefix] = $UNDEFINED;
+                childModels.splice($.iO(childModels, remover), 1);
+                remover.TEMP = remover._parentModel = childModels._prefix = $UNDEFINED;
+            }
+            $.E($.s(remover._childModels), function(childModel) {
+                childModel.remove();
+            });
+        }
+        return remover;
     },
     /*
      * 代码片段，成为指定model的子model
@@ -1369,7 +1390,9 @@ var DM_proto = Model.prototype = {
         self.remove();
         self._parentModel = model;
         self._prefix = key;
+        self._database = model.get(key);
         $.p(model._childModels, self);
+        model._childModels._[self._prefix] = self;
     },
     destroy: function() {
         for (var i in this) {
@@ -1435,7 +1458,7 @@ function _mix(sObj, nObj) {
 
 //全局关键字配置
 //TODO:暴露给API：.app(opction)进行配置
-var DM_config = Model.config = {
+var __ModelConfig__ = Model.config = {
     //特殊作用域的节点配置
     prefix: {
         This: "$This",
@@ -1449,13 +1472,13 @@ var DM_config = Model.config = {
 //操作缓存区
 //这里实现思路类似$.st/lst，都是用一个外部静态缓存区进行缓存存储这些非return但是又很重要且频繁的过程变量，来避免重复计算。
 Model.session = {
-    //.get操作时，由于特殊作用域关键字导致寻址方向的改变，所以此缓存实际get所对的真实model
-    //如，model.get("$PARENT.key")，这里key实际上归宿与model.parentModel，所以topGetter存储model.parentModel
-    topGetter: $NULL,
-    //同上，但是是针对set操作
-    topSetter: $NULL,
-    //在上面的例子中，在过滤掉关键字后的实际key值
-    filterKey: $NULL,
+    // //.get操作时，由于特殊作用域关键字导致寻址方向的改变，所以此缓存实际get所对的真实model
+    // //如，model.get("$PARENT.key")，这里key实际上归宿与model.parentModel，所以topGetter存储model.parentModel
+    // topGetter: $NULL,
+    // //同上，但是是针对set操作
+    // topSetter: $NULL,
+    // //在上面的例子中，在过滤掉关键字后的实际key值
+    // filterKey: $NULL,
     //用于保存数据更新引发的递归中的堆栈数，本质上是为了在最后一层调用结束后运行所收集的finallyRun，所收集的主要来自View层各种handle处理内部
     finallyRunStacks: []
 };
@@ -1524,9 +1547,14 @@ var _dm_force_update = 0;
  * 3. $TOP 顶级作用域寻址
  * 4. $PRIVATE 私有数据库寻址
  * 5. $JS 全局数据寻址
+
+ * 6. $Index 数组类型的下标
  */
 ;
 (function() {
+    /*
+     * 路由寻址Model
+     */
     var routerMap = Model._routerMap = {
         "$Private": function(model, key) {
             return model._privateModel || (model._privateModel = new Model);
@@ -1589,73 +1617,149 @@ var _dm_force_update = 0;
         }
         return result;
     };
-    var _get = DM_proto.get,
-        _set = DM_proto.set,
-        set = DM_proto.set = function(key) {
+    /*
+     * 自定义字段的set、get
+     */
+    Model._defineKeyMap = {
+        "$Index": {
+            set: function() {
+                console.error("$Index is read only.");
+            },
+            get: function(model, key) {
+                $.lst(model._prefix, ".")
+                return _split_laveStr;
+            }
+        },
+        "$Path": {
+            set: function() {
+                console.error("$Path is read only.");
+            },
+            get: function(model) {
+                var result = model._prefix;
+                var next;
+                while (next = model._parentModel) {
+                    model = next;
+                    result = model._prefix + result ? ("." + result) : "";
+                }
+                return result;
+            }
+        }
+    }
+    Model.$defineKey = function(model, key) {
+        var result = {
+            definer: $NULL,
+            key: key
+        }
+        var defineKey = $.st(key, ".");
+        var remainingKey = _split_laveStr;
+        if (!defineKey) {
+            defineKey = remainingKey;
+            remainingKey = $FALSE;
+        }
+        var definer = Model._defineKeyMap[defineKey];
+        if (definer) {
+            result.definer = definer
+            result.key = remainingKey
+        }
+        return result;
+    }
+    var _get = __ModelProto__.get,
+        _set = __ModelProto__.set,
+        set = __ModelProto__.set = function(key) {
             var self = this,
                 args = arguments /*$.s(arguments)*/ ,
                 result;
             if (args.length > 1) {
+                //查找关键字匹配的Model
                 var router_result = Model.$router(self, key);
                 if (self = router_result.model) {
-                    (key = router_result.key) ? (args[0] = key) : $.sp.call(args, 0, 1)
-                    result = _set.apply(self, args);
+                    if (key = router_result.key) {
+                        //查找通用自定义关键字
+                        var define_result = Model.$defineKey(self, key);
+                        var definer = define_result.definer
+                        if (definer) {
+                            result = definer.set(self, define_result.key)
+                        }
+                    }
+                    if (!definer) {
+                        key ? (args[0] = key) : $.sp.call(args, 0, 1)
+                        result = _set.apply(self, args);
+                    }
                 }
             } else { //one argument
                 result = _set.call(self, key);
             }
             return result
         },
-        get = DM_proto.get = function(key) {
+        get = __ModelProto__.get = function(key) {
             var self = this,
                 args = arguments /*$.s(arguments)*/ ,
                 result;
             if (args.length > 0) {
+                //查找关键字匹配的Model
                 var router_result = Model.$router(self, key);
                 if (self = router_result.model) {
-                    (key = router_result.key) ? (args[0] = key) : $.sp.call(args, 0, 1)
-                    result = _get.apply(self, args);
+                    if (key = router_result.key) {
+                        //查找通用自定义关键字
+                        var define_result = Model.$defineKey(self, key);
+                        var definer = define_result.definer
+                        if (definer) {
+                            result = definer.get(self, define_result.key)
+                        }
+                    }
+                    if (!definer) {
+                        key ? (args[0] = key) : $.sp.call(args, 0, 1)
+                        result = _get.apply(self, args);
+                    }
                 }
             } else {
                 result = _get.call(self);
             }
             return result;
         },
-        _buildModelByKey = DM_proto.buildModelByKey,
-        buildModelByKey = DM_proto.buildModelByKey = function(key) {
+        _buildModelByKey = __ModelProto__.buildModelByKey,
+        buildModelByKey = __ModelProto__.buildModelByKey = function(key) {
             var router_result = Model.$router(this, key);
             return _buildModelByKey.call(router_result.model, router_result.key);
         }
 }());
 
 /*
- * _ArrayModel constructor
+ * ArrayModel constructor
  * to mamage #each model
  */
+//将一个普通的Model转化为ArrayModel
+Model.toArrayModel = function() {
 
-function _ArrayModel(perfix, id) {
+}
+//将一个ArrayModel转化为Model
+Model.toModel = function() {
+
+}
+
+function ArrayModel(perfix, id) {
     var self = this;
     self._id = id;
     self._prefix = perfix;
-    self._DMs = [];
+    self._arrayModels = [];
 }
-var _ArrDM_proto = _ArrayModel.prototype;
+var __ArrayModelProto__ = ArrayModel.prototype = $.c(__ModelProto__);
 
 //用于优化抽离的vi运行remove引发的$INDEX大变动的问题
 var _remove_index; // = 0;
 
-$.fI(DM_proto, function(fun, funName) {
-    _ArrDM_proto[funName] = function() {
-        var args = arguments;
-        $.E(this._DMs, function(_each_model) {
-            _each_model[funName].apply(_each_model, args)
-        })
-    }
-})
-_ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片，所以无需进行特殊处理
+// $.fI(__ModelProto__, function(fun, funName) {
+//     __ArrayModelProto__[funName] = function() {
+//         var args = arguments;
+//         $.E(this._arrayModels, function(_each_model) {
+//             _each_model[funName].apply(_each_model, args)
+//         })
+//     }
+// })
+__ArrayModelProto__.set = function(key, nObj) { //只做set方面的中间导航垫片，所以无需进行特殊处理
     var self = this;
     var args = arguments;
-    var DMs = this._DMs;
+    var arrayModels = this._arrayModels;
     var result;
     switch (args.length) {
         case 0:
@@ -1665,7 +1769,7 @@ _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片�
                 nObj = $.isA(key) ? key : $.s(key);
                 // self.length(nObj.length);
                 $.E(nObj, function(nObj_item, i) {
-                    var DM = DMs[i];
+                    var DM = arrayModels[i];
                     //针对remove的优化
                     if (DM) { //TODO:WHY?
                         if (nObj_item !== DM._database) { //强制优化，但是$INDEX关键字要缓存判定更新
@@ -1673,7 +1777,7 @@ _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片�
                             DM.touchOff("");
                         } else if (DM.__cacheIndex !== DM._index) {
                             DM.__cacheIndex = DM._index;
-                            DM.touchOff("DM_config.prefix.Index");
+                            DM.touchOff("__ModelConfig__.prefix.Index");
                         } else { //确保子集更新
                             DM.touchOff("");
                         }
@@ -1685,7 +1789,7 @@ _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片�
             //TODO: don't create Array to save memory
             var arrKeys = key.split(".");
             var index = arrKeys.shift();
-            var model = DMs[index];
+            var model = arrayModels[index];
             if (!model) {
                 return
             }
@@ -1697,26 +1801,26 @@ _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片�
     }
     return result;
 }
-_ArrDM_proto.push = function(model) {
+__ArrayModelProto__.push = function(model) {
     var self = this,
         pperfix = self._prefix;
-    var DMs = this._DMs;
-    var index = String(model._index = DMs.length)
-    $.p(DMs, model)
+    var arrayModels = this._arrayModels;
+    var index = String(model._index = arrayModels.length)
+    $.p(arrayModels, model)
     model._arrayModel = self;
     model._parentModel = self._parentModel;
     model._prefix = pperfix ? pperfix + "." + index : index;
 }
-_ArrDM_proto.remove = function(model) {
+__ArrayModelProto__.remove = function(model) {
     var index = model._index
     var self = this;
     var pperfix = self._prefix;
-    var DMs = self._DMs;
-    $.sp.call(DMs, index, 1);
+    var arrayModels = self._arrayModels;
+    $.sp.call(arrayModels, index, 1);
     model._prefix = pperfix ? pperfix + "." + index : index;
 
-    // DMs.splice(index, 1);
-    $.E(DMs, function(model, i) {
+    // arrayModels.splice(index, 1);
+    $.E(arrayModels, function(model, i) {
         var index = String(model._index -= 1);
         model._prefix = pperfix ? pperfix + "." + index : index;
     }, index)
@@ -1731,18 +1835,18 @@ _ArrDM_proto.remove = function(model) {
         model._arrayModel = model._parentModel = $UNDEFINED;
     }
 }
-_ArrDM_proto.queryElement = function(matchFun) {
+__ArrayModelProto__.queryElement = function(matchFun) {
     var result = [];
-    $.E(this._DMs, function(_each_model) {
+    $.E(this._arrayModels, function(_each_model) {
         result.push.apply(result, _each_model.queryElement(matchFun));
     });
     return result;
 }
-_ArrDM_proto.lineUp = function(model) {
+__ArrayModelProto__.lineUp = function(model) {
     this.remove(model);
     this.push(model);
 }
-DM_proto.lineUp = function() {
+__ModelProto__.lineUp = function() {
     this._arrayModel && this._arrayModel.lineUp(this)
 }
 
@@ -2370,78 +2474,6 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
 /*
  * View Instance constructor
  */
-
-// (function() { //DM_extends_fot_VI
-//     var _rebuildTree = DM_proto.rebuildTree;
-//     DM_proto.rebuildTree = function() {
-//         var self = this,
-//             DMSet = self._subsetModels;
-//         $.E(self._viewModels, function(viewModel) {
-//             $.E(viewModel._smartTriggers, function(smartTrigger) {
-//                 var TEMP = smartTrigger.TEMP;
-//                 TEMP.viewModel.get(TEMP.sourceKey);
-//                 var topGetter = Model.session.topGetter,
-//                     currentTopGetter = Model.get(TEMP.dm_id),
-//                     matchKey = Model.session.filterKey || "";
-
-//                 if (topGetter) {
-//                     if (topGetter !== currentTopGetter || matchKey !== smartTrigger.matchKey) {
-//                         TEMP.dm_id = topGetter.id;
-//                         currentTopGetter && smartTrigger.unbind(currentTopGetter._triggerKeys)
-//                         smartTrigger.matchKey = matchKey;
-//                         smartTrigger.bind(topGetter._triggerKeys);
-//                         currentTopGetter = topGetter;
-//                     }
-//                 }
-//             })
-//         })
-//         $.E(self._subsetModels, function(childModel) {
-//             childModel.rebuildTree()
-//         })
-//         return _rebuildTree.call(self);
-//     }
-//     var _collect = DM_proto.collect;
-//     DM_proto.collect = function(viewModel) {
-//         var self = this;
-//         if (viewModel instanceof Model) {
-//             _collect.call(self, viewModel);
-//             //TODO:release memory.
-//         } else if (viewModel instanceof ViewModel) {
-//             var vi_DM = viewModel.model;
-//             if (!vi_DM) { // for VI init in constructor
-//                 vi_DM = viewModel.model = self;
-//                 var viewModelTriggers = viewModel._triggers
-//                 $.E(viewModelTriggers, function(sKey) {
-//                     viewModel._buildSmart(sKey);
-//                 });
-//             }
-
-//             //to rebuildTree => remark smartyKeys
-//             $.p(self._viewModels, viewModel);
-
-//             _collect.call(self, vi_DM) //self collect self will Forced triggered updates
-//         }
-//         return self;
-//     };
-//     var _subset = DM_proto.subset;
-//     DM_proto.subset = function(viewModel, prefix) {
-//         var self = this;
-
-//         if (viewModel instanceof Model) {
-//             _subset.call(self, viewModel, prefix);
-//         } else {
-
-//             var vi_DM = viewModel.model;
-//             if (!vi_DM) {
-//                 vi_DM = Model();
-//                 //收集触发器
-//                 vi_DM.collect(viewModel);
-//             }
-//             _subset.call(self, vi_DM, prefix);
-//         }
-//     };
-// }());
-
 var stopTriggerBubble; // = $FALSE;
 
 function _addAttr(viewModel, node, attrJson) {
@@ -2744,14 +2776,15 @@ var __ViewModelProto__ = ViewModel.prototype = {
             self.topNode(el);
 
             self._canRemoveAble = $FALSE; //Has being recovered into the _packingBag,can't no be remove again. --> it should be insert
-            if (self._isEach) {
+            /*if (self._isEach) {
                 // 排队到队位作为备用
                 self._arrayVI.splice(self.model._index, 1)
                 $.p(self._arrayVI, self);
 
                 //相应的DM以及数据也要做重新排队
                 self.model.lineUp();
-            }
+            }*/
+            self.onremove && self.onremove()
         }
         return self;
     },
@@ -3596,28 +3629,28 @@ V.rt("#define", function(handle, index, parentHandle) {
     return trigger;
 });
 
-DM_config.prefix.Index = "$INDEX";
+__ModelConfig__.prefix.Index = "$INDEX";
 var _extend_DM_get_Index = (function() {
     var $Index_set = function(key) {
         var self = this;
-        var indexKey = DM_config.prefix.Index;
+        var indexKey = __ModelConfig__.prefix.Index;
         if (key === indexKey) {
             // Model.session.topSetter = self;
             // Model.session.filterKey = "";
             throw Error(indexKey + " is read only.")
         } else {
-            return DM_proto.set.apply(self, arguments)
+            return __ModelProto__.set.apply(self, arguments)
         }
     }
     var $Index_get = function(key) {
         var self = this;
-        var indexKey = DM_config.prefix.Index;
+        var indexKey = __ModelConfig__.prefix.Index;
         if (key === indexKey) {
             // Model.session.topGetter = self;
             // Model.session.filterKey = "";
             return parseInt(self._index);
         } else {
-            return DM_proto.get.apply(self, arguments)
+            return __ModelProto__.get.apply(self, arguments)
         }
     };
 
@@ -3629,6 +3662,11 @@ var _extend_DM_get_Index = (function() {
     return _extend_DM_get_Index;
 }());
 var Arr_sort = Array.prototype.sort;
+
+//each - VM的onremove事件
+var _eachVM_onremove = function() {
+
+}
 
 V.rt("#each", function(handle, index, parentHandle) {
     var id = handle.id;
@@ -3643,8 +3681,8 @@ V.rt("#each", function(handle, index, parentHandle) {
     var comment_endeach_id = parentHandle.childNodes[index + 3].id; //eachHandle --> eachComment --> endeachHandle --> endeachComment
     var trigger;
 
-    // var _rebuildTree = DM_proto.rebuildTree,
-    //     _touchOff = DM_proto.touchOff;
+    // var _rebuildTree = __ModelProto__.rebuildTree,
+    //     _touchOff = __ModelProto__.touchOff;
     trigger = {
         // smartTrigger:$NULL,
         // key:$NULL,
@@ -3727,13 +3765,14 @@ V.rt("#each", function(handle, index, parentHandle) {
                             var viewModel = arrViewModels[index];
                             //VM不存在，新建
                             if (!viewModel) {
-                                eachModuleConstructor(/*eachItemData*/$UNDEFINED, {
+                                eachModuleConstructor( /*eachItemData*/ $UNDEFINED, {
                                     onInit: function(vm) {
                                         viewModel = arrViewModels[index] = vm
                                     },
                                     callback: function(vm) {
                                         vm._arrayVI = arrViewModels;
                                         proxyModel.shelter(vm, arrDataHandle_Key + "." + index); //+"."+index //reset arrViewModel's model
+                                        vm.onremove = _eachVM_onremove;
                                         // var viDM = vm.getModel();
                                         // viDM._isEach = vm._isEach = {
                                         //     //_index在push到Array_DM时才进行真正定义，由于remove会重新更正_index，所以这个参数完全交给Array_DM管理
@@ -3766,8 +3805,8 @@ V.rt("#each", function(handle, index, parentHandle) {
                     }
                 }
                 // //回滚沉默的功能
-                // (DM_proto.rebuildTree = _rebuildTree).call(model);
-                // (DM_proto.touchOff = _touchOff).call(model);
+                // (__ModelProto__.rebuildTree = _rebuildTree).call(model);
+                // (__ModelProto__.touchOff = _touchOff).call(model);
             }
         }
     }
@@ -4705,7 +4744,7 @@ var _statusEventCache = {},
 		}
 	},
 	_getStatusKey = function(vi, key) {
-		var _$Get = DM_config.prefix.Get + ".";
+		var _$Get = __ModelConfig__.prefix.Get + ".";
 		if ($.st(key, _$Get) !== false) {
 			key = vi.get(_split_laveStr);
 		}
@@ -5240,7 +5279,7 @@ if (typeof module === "object" && module && typeof module.exports === "object") 
     };
 
     // 原始的DM-get方法
-    var _dm_normal_get = DM_proto.get
+    var _dm_normal_get = __ModelProto__.get
 
     // 带收集功能的DM-get
     var _dm_collect_get = function() {
@@ -5278,7 +5317,7 @@ if (typeof module === "object" && module && typeof module.exports === "object") 
             /*
              * dm collect get mode
              */
-            DM_proto.get = _dm_collect_get;
+            __ModelProto__.get = _dm_collect_get;
 
             //生成一层收集层
             $.p(_get_collect_stack, [])
@@ -5329,7 +5368,7 @@ if (typeof module === "object" && module && typeof module.exports === "object") 
 
             //确保是最后一层的了再恢复
             if (_get_collect_stack.length === 0) {
-                DM_proto.get = _dm_normal_get;
+                __ModelProto__.get = _dm_normal_get;
             }
 
             return result;
@@ -5342,8 +5381,8 @@ if (typeof module === "object" && module && typeof module.exports === "object") 
         }
     }
 
-    var _dm_normal_touchOff = DM_proto.touchOff;
-    DM_proto.touchOff = function() {
+    var _dm_normal_touchOff = __ModelProto__.touchOff;
+    __ModelProto__.touchOff = function() {
         var self = this;
         var result = _dm_normal_touchOff.apply(self, arguments)
         var observerObjCollect = observerCache[self.id]

@@ -1,25 +1,25 @@
-DM_config.prefix.Index = "$INDEX";
+__ModelConfig__.prefix.Index = "$INDEX";
 var _extend_DM_get_Index = (function() {
     var $Index_set = function(key) {
         var self = this;
-        var indexKey = DM_config.prefix.Index;
+        var indexKey = __ModelConfig__.prefix.Index;
         if (key === indexKey) {
             // Model.session.topSetter = self;
             // Model.session.filterKey = "";
             throw Error(indexKey + " is read only.")
         } else {
-            return DM_proto.set.apply(self, arguments)
+            return __ModelProto__.set.apply(self, arguments)
         }
     }
     var $Index_get = function(key) {
         var self = this;
-        var indexKey = DM_config.prefix.Index;
+        var indexKey = __ModelConfig__.prefix.Index;
         if (key === indexKey) {
             // Model.session.topGetter = self;
             // Model.session.filterKey = "";
             return parseInt(self._index);
         } else {
-            return DM_proto.get.apply(self, arguments)
+            return __ModelProto__.get.apply(self, arguments)
         }
     };
 
@@ -31,6 +31,11 @@ var _extend_DM_get_Index = (function() {
     return _extend_DM_get_Index;
 }());
 var Arr_sort = Array.prototype.sort;
+
+//each - VM的onremove事件
+var _eachVM_onremove = function() {
+
+}
 
 V.rt("#each", function(handle, index, parentHandle) {
     var id = handle.id;
@@ -45,8 +50,8 @@ V.rt("#each", function(handle, index, parentHandle) {
     var comment_endeach_id = parentHandle.childNodes[index + 3].id; //eachHandle --> eachComment --> endeachHandle --> endeachComment
     var trigger;
 
-    // var _rebuildTree = DM_proto.rebuildTree,
-    //     _touchOff = DM_proto.touchOff;
+    // var _rebuildTree = __ModelProto__.rebuildTree,
+    //     _touchOff = __ModelProto__.touchOff;
     trigger = {
         // smartTrigger:$NULL,
         // key:$NULL,
@@ -129,13 +134,14 @@ V.rt("#each", function(handle, index, parentHandle) {
                             var viewModel = arrViewModels[index];
                             //VM不存在，新建
                             if (!viewModel) {
-                                eachModuleConstructor(/*eachItemData*/$UNDEFINED, {
+                                eachModuleConstructor( /*eachItemData*/ $UNDEFINED, {
                                     onInit: function(vm) {
                                         viewModel = arrViewModels[index] = vm
                                     },
                                     callback: function(vm) {
                                         vm._arrayVI = arrViewModels;
                                         proxyModel.shelter(vm, arrDataHandle_Key + "." + index); //+"."+index //reset arrViewModel's model
+                                        vm.onremove = _eachVM_onremove;
                                         // var viDM = vm.getModel();
                                         // viDM._isEach = vm._isEach = {
                                         //     //_index在push到Array_DM时才进行真正定义，由于remove会重新更正_index，所以这个参数完全交给Array_DM管理
@@ -168,8 +174,8 @@ V.rt("#each", function(handle, index, parentHandle) {
                     }
                 }
                 // //回滚沉默的功能
-                // (DM_proto.rebuildTree = _rebuildTree).call(model);
-                // (DM_proto.touchOff = _touchOff).call(model);
+                // (__ModelProto__.rebuildTree = _rebuildTree).call(model);
+                // (__ModelProto__.touchOff = _touchOff).call(model);
             }
         }
     }

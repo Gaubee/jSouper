@@ -1,31 +1,39 @@
 /*
- * _ArrayModel constructor
+ * ArrayModel constructor
  * to mamage #each model
  */
+//将一个普通的Model转化为ArrayModel
+Model.toArrayModel = function() {
 
-function _ArrayModel(perfix, id) {
+}
+//将一个ArrayModel转化为Model
+Model.toModel = function() {
+
+}
+
+function ArrayModel(perfix, id) {
     var self = this;
     self._id = id;
     self._prefix = perfix;
-    self._DMs = [];
+    self._arrayModels = [];
 }
-var _ArrDM_proto = _ArrayModel.prototype;
+var __ArrayModelProto__ = ArrayModel.prototype = $.c(__ModelProto__);
 
 //用于优化抽离的vi运行remove引发的$INDEX大变动的问题
 var _remove_index; // = 0;
 
-$.fI(DM_proto, function(fun, funName) {
-    _ArrDM_proto[funName] = function() {
-        var args = arguments;
-        $.E(this._DMs, function(_each_model) {
-            _each_model[funName].apply(_each_model, args)
-        })
-    }
-})
-_ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片，所以无需进行特殊处理
+// $.fI(__ModelProto__, function(fun, funName) {
+//     __ArrayModelProto__[funName] = function() {
+//         var args = arguments;
+//         $.E(this._arrayModels, function(_each_model) {
+//             _each_model[funName].apply(_each_model, args)
+//         })
+//     }
+// })
+__ArrayModelProto__.set = function(key, nObj) { //只做set方面的中间导航垫片，所以无需进行特殊处理
     var self = this;
     var args = arguments;
-    var DMs = this._DMs;
+    var arrayModels = this._arrayModels;
     var result;
     switch (args.length) {
         case 0:
@@ -35,7 +43,7 @@ _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片�
                 nObj = $.isA(key) ? key : $.s(key);
                 // self.length(nObj.length);
                 $.E(nObj, function(nObj_item, i) {
-                    var DM = DMs[i];
+                    var DM = arrayModels[i];
                     //针对remove的优化
                     if (DM) { //TODO:WHY?
                         if (nObj_item !== DM._database) { //强制优化，但是$INDEX关键字要缓存判定更新
@@ -43,7 +51,7 @@ _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片�
                             DM.touchOff("");
                         } else if (DM.__cacheIndex !== DM._index) {
                             DM.__cacheIndex = DM._index;
-                            DM.touchOff("DM_config.prefix.Index");
+                            DM.touchOff("__ModelConfig__.prefix.Index");
                         } else { //确保子集更新
                             DM.touchOff("");
                         }
@@ -55,7 +63,7 @@ _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片�
             //TODO: don't create Array to save memory
             var arrKeys = key.split(".");
             var index = arrKeys.shift();
-            var model = DMs[index];
+            var model = arrayModels[index];
             if (!model) {
                 return
             }
@@ -67,26 +75,26 @@ _ArrDM_proto.set = function(key, nObj) { //只做set方面的中间导航垫片�
     }
     return result;
 }
-_ArrDM_proto.push = function(model) {
+__ArrayModelProto__.push = function(model) {
     var self = this,
         pperfix = self._prefix;
-    var DMs = this._DMs;
-    var index = String(model._index = DMs.length)
-    $.p(DMs, model)
+    var arrayModels = this._arrayModels;
+    var index = String(model._index = arrayModels.length)
+    $.p(arrayModels, model)
     model._arrayModel = self;
     model._parentModel = self._parentModel;
     model._prefix = pperfix ? pperfix + "." + index : index;
 }
-_ArrDM_proto.remove = function(model) {
+__ArrayModelProto__.remove = function(model) {
     var index = model._index
     var self = this;
     var pperfix = self._prefix;
-    var DMs = self._DMs;
-    $.sp.call(DMs, index, 1);
+    var arrayModels = self._arrayModels;
+    $.sp.call(arrayModels, index, 1);
     model._prefix = pperfix ? pperfix + "." + index : index;
 
-    // DMs.splice(index, 1);
-    $.E(DMs, function(model, i) {
+    // arrayModels.splice(index, 1);
+    $.E(arrayModels, function(model, i) {
         var index = String(model._index -= 1);
         model._prefix = pperfix ? pperfix + "." + index : index;
     }, index)
@@ -101,17 +109,17 @@ _ArrDM_proto.remove = function(model) {
         model._arrayModel = model._parentModel = $UNDEFINED;
     }
 }
-_ArrDM_proto.queryElement = function(matchFun) {
+__ArrayModelProto__.queryElement = function(matchFun) {
     var result = [];
-    $.E(this._DMs, function(_each_model) {
+    $.E(this._arrayModels, function(_each_model) {
         result.push.apply(result, _each_model.queryElement(matchFun));
     });
     return result;
 }
-_ArrDM_proto.lineUp = function(model) {
+__ArrayModelProto__.lineUp = function(model) {
     this.remove(model);
     this.push(model);
 }
-DM_proto.lineUp = function() {
+__ModelProto__.lineUp = function() {
     this._arrayModel && this._arrayModel.lineUp(this)
 }

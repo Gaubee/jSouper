@@ -53,7 +53,7 @@ function _mix(sObj, nObj) {
 
 //全局关键字配置
 //TODO:暴露给API：.app(opction)进行配置
-var DM_config = Model.config = {
+var __ModelConfig__ = Model.config = {
     //特殊作用域的节点配置
     prefix: {
         This: "$This",
@@ -67,13 +67,13 @@ var DM_config = Model.config = {
 //操作缓存区
 //这里实现思路类似$.st/lst，都是用一个外部静态缓存区进行缓存存储这些非return但是又很重要且频繁的过程变量，来避免重复计算。
 Model.session = {
-    //.get操作时，由于特殊作用域关键字导致寻址方向的改变，所以此缓存实际get所对的真实model
-    //如，model.get("$PARENT.key")，这里key实际上归宿与model.parentModel，所以topGetter存储model.parentModel
-    topGetter: $NULL,
-    //同上，但是是针对set操作
-    topSetter: $NULL,
-    //在上面的例子中，在过滤掉关键字后的实际key值
-    filterKey: $NULL,
+    // //.get操作时，由于特殊作用域关键字导致寻址方向的改变，所以此缓存实际get所对的真实model
+    // //如，model.get("$PARENT.key")，这里key实际上归宿与model.parentModel，所以topGetter存储model.parentModel
+    // topGetter: $NULL,
+    // //同上，但是是针对set操作
+    // topSetter: $NULL,
+    // //在上面的例子中，在过滤掉关键字后的实际key值
+    // filterKey: $NULL,
     //用于保存数据更新引发的递归中的堆栈数，本质上是为了在最后一层调用结束后运行所收集的finallyRun，所收集的主要来自View层各种handle处理内部
     finallyRunStacks: []
 };
