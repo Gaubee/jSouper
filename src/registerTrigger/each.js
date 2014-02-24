@@ -34,6 +34,7 @@ var Arr_sort = Array.prototype.sort;
 //each - VM的onremove事件
 var _eachVM_onremove = function() {
     var self = this;
+    var arrayViewModel = self._arrayViewModel;
     //对Model做相应的重新排列
     var model = self.getModel();
     var parentModel = model._parentModel;
@@ -41,7 +42,7 @@ var _eachVM_onremove = function() {
     //$Parent._prefix
     var arrayBaseKey = $.lst(model._prefix, ".");
     var oldIndex = parseInt(_split_laveStr);
-    //获取数据
+    //获取数据，更改ArrayModel队列元素的下标
     var data = parentModel.get(arrayBaseKey);
     var keyBuilder = arrayBaseKey ? function(index) {
             return arrayBaseKey + "." + index;
@@ -50,27 +51,38 @@ var _eachVM_onremove = function() {
         };
     var prefixIndex = __ModelConfig__.prefix.Index;
     var prefixPath = __ModelConfig__.prefix.Path;
-    $.E(data, function(value, index) {
+    $.E($.s(data), function(value, index) {
         var currentModel = arrayModelsMap[keyBuilder(index)];
         //往前挪
         arrayModelsMap[currentModel._prefix = keyBuilder(index - 1)] = currentModel;
+
+        //debugger
+        currentModel._database = index;
+        currentModel.touchOff();
+
         //前缀发生改变，触发$Index和$Path的更新
         currentModel._touchOff(prefixIndex);
         currentModel._touchOff(prefixPath);
     }, oldIndex + 1);
-    arrayModelsMap[model._prefix = keyBuilder(data.length)] = model;
+    //当前移除的Model放入队列末尾，具体的_prefix在insert时在做决定
+    //清除指定的数据
+    $.sp.call(data, oldIndex, 1);
+    var newIndex = data.length;
+    arrayModelsMap[ /*model._prefix = */ keyBuilder(newIndex)] = model;
+    // //清空数据
+    // model._database = $UNDEFINED;
 
-
-    //移除VM并排队到队位作为备用
-    self._arrayViewModel.splice(oldIndex, 1)
-    $.p(self._arrayViewModel, self);
+    //移除VM并排队到队尾作为备用
+    arrayViewModel.splice(oldIndex, 1)
+    /*
+    //注意，这里的队尾可能有大量同样作为废弃的VM，它们的model是没有重新排队
+    //所以，所谓的队尾指的是正在使用的VM的队尾，具体位置同model的newIndex
+    arrayViewModel.splice(newIndex, 0, self)*/
+    //废弃的VM和model暂时不同在一起，在insert时再统一
+    $.p(arrayViewModel, self);
 
     //VM移除完成后，长度发生改变，触发length的更新
-    data.splice(oldIndex, 1);
     parentModel._touchOff(keyBuilder("length"));
-
-    console.log(model._prefix);
-    // self.model.lineUp();
 }
 
 V.rt("#each", function(handle, index, parentHandle) {
@@ -152,7 +164,10 @@ V.rt("#each", function(handle, index, parentHandle) {
                 arrViewModels.len = new_data_len; //change immediately,to avoid the `subset` trigger the `rebuildTree`,and than trigger each-trigger again.
 
                 if (showed_vi_len > new_data_len) {
-                    $.e(arrViewModels, function(eachItemHandle) {
+                    $.E($.s(arrViewModels), function(eachItemHandle) {
+                        //onremove的效益发生在通过vm的remove来影响数据的改变，并做一定的优化，避免大量的更新
+                        eachItemHandle.onremove = $UNDEFINED;
+                        //这里的remove是通过数据改变来影响vm，因此要溢出onremove函数
                         eachItemHandle.remove();
                     }, new_data_len);
                 } else {
@@ -163,19 +178,39 @@ V.rt("#each", function(handle, index, parentHandle) {
                         $.E($.s(data), function(eachItemData, index) {
                             //TODO:if too mush vi will be create, maybe asyn
                             var viewModel = arrViewModels[index];
+                            var newPrefix = arrDataHandle_Key + "." + index;
                             //VM不存在，新建
                             if (!viewModel) {
                                 eachModuleConstructor( /*eachItemData*/ $UNDEFINED, {
                                     onInit: function(vm) {
-                                        viewModel = arrViewModels[index] = vm
+                                        viewModel = arrViewModels[index] = vm;
+                                        vm._arrayViewModel = arrViewModels;
                                     },
                                     callback: function(vm) {
-                                        vm._arrayViewModel = arrViewModels;
-                                        proxyModel.shelter(vm, arrDataHandle_Key + "." + index); //+"."+index //reset arrViewModel's model
-                                        vm.onremove = _eachVM_onremove;
+                                        proxyModel.shelter(vm, newPrefix); //+"."+index //reset arrViewModel's model
                                     }
                                 });
+                            } else {
+                                //onInsert
+                                var model = viewModel.getModel();
+                                var prefix = model._prefix;
+                                //TODO，优化！生成arrDataHandle_Key的中间Model，arrayModelsMap就可以直接统一的获取了
+                                var arrayModelsMap = model._parentModel._childModels._;
+                                var wraperModel = arrayModelsMap[newPrefix];
+                                //更正数据中的下标
+                                arrayModelsMap[prefix] = wraperModel;
+                                wraperModel._prefix = prefix;
+                                arrayModelsMap[newPrefix] = model;
+                                model._prefix = newPrefix;
+                                console.log(prefix, newPrefix);
+                                //注意，这里并不重置数据再touchOff()，因为each的定位是对VM的显示隐藏做调整，
+                                //TODO:数据的更新由model系统自行完成。
+                                // //重置数据
+                                // model._database = eachItemData;
+                                model._touchOff(__ModelConfig__.prefix.Index);
+                                model._touchOff(__ModelConfig__.prefix.Path);
                             }
+                            viewModel.onremove = _eachVM_onremove;
                             //自带的inser，针对each做特殊优化
                             // viewModel.insert(comment_endeach_node)
                             var currentTopNode = viewModel.topNode();
