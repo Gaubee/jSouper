@@ -1,4 +1,3 @@
-__ModelConfig__.prefix.Index = "$INDEX";
 var _extend_DM_get_Index = (function() {
     var $Index_set = function(key) {
         var self = this;
@@ -34,7 +33,44 @@ var Arr_sort = Array.prototype.sort;
 
 //each - VM的onremove事件
 var _eachVM_onremove = function() {
+    var self = this;
+    //对Model做相应的重新排列
+    var model = self.getModel();
+    var parentModel = model._parentModel;
+    var arrayModelsMap = parentModel._childModels._
+    //$Parent._prefix
+    var arrayBaseKey = $.lst(model._prefix, ".");
+    var oldIndex = parseInt(_split_laveStr);
+    //获取数据
+    var data = parentModel.get(arrayBaseKey);
+    var keyBuilder = arrayBaseKey ? function(index) {
+            return arrayBaseKey + "." + index;
+        } : function(index) {
+            return String(index);
+        };
+    var prefixIndex = __ModelConfig__.prefix.Index;
+    var prefixPath = __ModelConfig__.prefix.Path;
+    $.E(data, function(value, index) {
+        var currentModel = arrayModelsMap[keyBuilder(index)];
+        //往前挪
+        arrayModelsMap[currentModel._prefix = keyBuilder(index - 1)] = currentModel;
+        //前缀发生改变，触发$Index和$Path的更新
+        currentModel._touchOff(prefixIndex);
+        currentModel._touchOff(prefixPath);
+    }, oldIndex + 1);
+    arrayModelsMap[model._prefix = keyBuilder(data.length)] = model;
 
+
+    //移除VM并排队到队位作为备用
+    self._arrayViewModel.splice(oldIndex, 1)
+    $.p(self._arrayViewModel, self);
+
+    //VM移除完成后，长度发生改变，触发length的更新
+    data.splice(oldIndex, 1);
+    parentModel._touchOff(keyBuilder("length"));
+
+    console.log(model._prefix);
+    // self.model.lineUp();
 }
 
 V.rt("#each", function(handle, index, parentHandle) {
@@ -117,12 +153,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 
                 if (showed_vi_len > new_data_len) {
                     $.e(arrViewModels, function(eachItemHandle) {
-                        var isEach = eachItemHandle._isEach;
-                        //移除each标志避免排队
-                        eachItemHandle._isEach = $FALSE;
                         eachItemHandle.remove();
-                        //恢复原有each标志
-                        eachItemHandle._isEach = isEach;
                     }, new_data_len);
                 } else {
                     //undefined null false "" 0 ...
@@ -139,21 +170,11 @@ V.rt("#each", function(handle, index, parentHandle) {
                                         viewModel = arrViewModels[index] = vm
                                     },
                                     callback: function(vm) {
-                                        vm._arrayVI = arrViewModels;
+                                        vm._arrayViewModel = arrViewModels;
                                         proxyModel.shelter(vm, arrDataHandle_Key + "." + index); //+"."+index //reset arrViewModel's model
                                         vm.onremove = _eachVM_onremove;
-                                        // var viDM = vm.getModel();
-                                        // viDM._isEach = vm._isEach = {
-                                        //     //_index在push到Array_DM时才进行真正定义，由于remove会重新更正_index，所以这个参数完全交给Array_DM管理
-                                        //     // _index: index,
-                                        //     eachId: id,
-                                        //     eachVIs: arrViewModels
-                                        // }
-                                        // _extend_DM_get_Index(viDM)
                                     }
                                 });
-                                // var viDM = viewModel.model;
-                                // viDM.__cacheIndex = viDM._index;
                             }
                             //自带的inser，针对each做特殊优化
                             // viewModel.insert(comment_endeach_node)

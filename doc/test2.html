@@ -9,11 +9,11 @@
 
 <body>
     <xmp type="template" name="Pressure test">
-        {{#each arrayData}}
-        <input bind-input="{{'$This'}}" value="{{$This}}">
-            {{$Index}}({{$Path}})<button event-click="{{'$Top.$Private.removeItem'}}">remove</button>{{$This}}
-            <br>
-        {{/each}}
+        <input bind-input="{{'arrayData.length'}}" value="{{arrayData.length}}">
+        <hr/>{{#each arrayData}}
+        <input bind-input="{{'$This'}}" value="{{$This}}">{{$Index}}({{$Path}})
+        <button event-click="{{'$Top.$Private.removeItem'}}">remove</button>{{$This}}
+        <br>{{/each}}
     </xmp>
 </body>
 
@@ -21,10 +21,10 @@
 <script type="text/javascript">
 jSouper.ready(function(argument) {
     vm_private = jSouper.modules["Pressure test"]({
-        arrayData:[2,3,14,5,123,1,25,6,23,123,23,23,4,233,242]
+        arrayData: [2, 3, 14, 5, 123, 1, 25, 6, 23, 123, 23, 23, 4, 233, 242]
     });
     vm_private.append(document.body);
-    vm_private.set("$Private.removeItem",function  (e,vm) {
+    vm_private.set("$Private.removeItem", function(e, vm) {
         vm.remove();
     });
     // debugger

@@ -210,7 +210,7 @@ var __ModelProto__ = Model.prototype = {
         var self = this;
         var result,
             //寻址的过程中可能找到自己的子model
-            result_child;
+            resultChilds = [];
         if (key) {
             $.e(self._childModels, function(childModel) {
                 var prefixKey = childModel._prefix;
@@ -219,13 +219,14 @@ var __ModelProto__ = Model.prototype = {
                 if (prefixKey === key) {
                     result = childModel;
                 }
+                //prefixKey > key
+                else if (prefixKey.indexOf(key + ".") === 0) {
+                    $.p(resultChilds, childModel);
+                    _continue = $FLASE;
+                }
                 //key > prefixKey
                 else if (key.indexOf(prefixKey + ".") === 0) {
                     result = childModel.buildModelByKey(key.substr(prefixKey.length + 1));
-                }
-                //prefixKey > key
-                else if (prefixKey.indexOf(key + ".") === 0) {
-                    result_child = childModel;
                 } else {
                     _continue = $TRUE;
                 }
@@ -235,7 +236,9 @@ var __ModelProto__ = Model.prototype = {
             if (!result) {
                 result = self.__buildChildModel(key);
                 //如果有子model则进行收取，免得用sockchild实现
-                result_child && result_child.__follow(result, result_child._prefix.substr(key.length + 1))
+                resultChilds.length && $.E(resultChilds, function(result_child) {
+                    result_child.__follow(result, result_child._prefix.substr(key.length + 1))
+                });
             }
         } else {
             result = self;
@@ -348,17 +351,22 @@ var __ModelProto__ = Model.prototype = {
             //若能找到对应的Model，则向下触发
             _dm_force_update += 1;
             if (childModel = childModels._[jointKey]) {
-                if (nodeKey) { //单节点地址未空，jointKey === prefixKey < key
-                    childResult = childModel.set(key.substr(jointKey.length + 1), self.get(key));
-                } else { //如果单节点地址已经指向空，则jointKey === prefixKey === key
-                    childResult = childModel.set(self.get(key));
-                }
+                //更新数据源，不适用set方法来优化效率
+                childModel._database = self.get(jointKey);
+                // if (nodeKey) { //单节点地址未空，jointKey === prefixKey < key
+                //     childResult = childModel.set(key.substr(jointKey.length + 1), self.get(key));
+                // } else { //如果单节点地址已经指向空，则jointKey === prefixKey === key
+                //     childResult = childModel.set(self.get(key));
+                // }
+                childResult = childModel._touchOff(nodeKey ? key.substr(jointKey.length + 1) : "")
             } else { //无法找到，可能是key的长度太短
                 for (; childModel = childModels[i]; i--) {
                     prefix = childModel._prefix
                     //v5版本中不存在prefix===""的情况
                     if (!prefix.indexOf(key + ".") /* === 0*/ ) { //prefix is a part of key,just maybe had been changed
-                        childResult = childModel.set(self.get(prefix))
+                        childModel._database = self.get(prefix);
+                        childModel._touchOff();
+                        // childResult = childModel.set(self.get(prefix));
                     }
                 };
             }

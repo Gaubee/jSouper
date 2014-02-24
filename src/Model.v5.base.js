@@ -60,7 +60,9 @@ var __ModelConfig__ = Model.config = {
         Parent: "$Parent",
         Top: "$Top",
         Private: "$Private",
-        Js: "$Js"
+        Js: "$Js",
+        Index:"$Index",
+        Path:"$Path"
     }
 };
 

@@ -65,7 +65,7 @@ function ViewModel(handleNodeTree, NodeList, triggerTable, model) {
     self._ALVI = {};
     self._WVI = {};
     self._teleporters = {};
-    // self._arrayVI = $NULL;
+    // self._arrayViewModel = $NULL;
 
     $.D.iB(el, self._open, el.childNodes[0]);
     $.D.ap(el, self._close);
@@ -305,8 +305,8 @@ var __ViewModelProto__ = ViewModel.prototype = {
             self._canRemoveAble = $FALSE; //Has being recovered into the _packingBag,can't no be remove again. --> it should be insert
             /*if (self._isEach) {
                 // 排队到队位作为备用
-                self._arrayVI.splice(self.model._index, 1)
-                $.p(self._arrayVI, self);
+                self._arrayViewModel.splice(self.model._index, 1)
+                $.p(self._arrayViewModel, self);
 
                 //相应的DM以及数据也要做重新排队
                 self.model.lineUp();

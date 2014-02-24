@@ -8,6 +8,7 @@
  * 5. $JS 全局数据寻址
 
  * 6. $Index 数组类型的下标
+ * 7. $Path 当前Model到顶层Model的前缀集合
  */
 ;
 (function() {

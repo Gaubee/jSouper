@@ -1176,7 +1176,7 @@ var __ModelProto__ = Model.prototype = {
         var self = this;
         var result,
             //寻址的过程中可能找到自己的子model
-            result_child;
+            resultChilds = [];
         if (key) {
             $.e(self._childModels, function(childModel) {
                 var prefixKey = childModel._prefix;
@@ -1185,13 +1185,14 @@ var __ModelProto__ = Model.prototype = {
                 if (prefixKey === key) {
                     result = childModel;
                 }
+                //prefixKey > key
+                else if (prefixKey.indexOf(key + ".") === 0) {
+                    $.p(resultChilds, childModel);
+                    _continue = $FLASE;
+                }
                 //key > prefixKey
                 else if (key.indexOf(prefixKey + ".") === 0) {
                     result = childModel.buildModelByKey(key.substr(prefixKey.length + 1));
-                }
-                //prefixKey > key
-                else if (prefixKey.indexOf(key + ".") === 0) {
-                    result_child = childModel;
                 } else {
                     _continue = $TRUE;
                 }
@@ -1201,7 +1202,9 @@ var __ModelProto__ = Model.prototype = {
             if (!result) {
                 result = self.__buildChildModel(key);
                 //如果有子model则进行收取，免得用sockchild实现
-                result_child && result_child.__follow(result, result_child._prefix.substr(key.length + 1))
+                resultChilds.length && $.E(resultChilds, function(result_child) {
+                    result_child.__follow(result, result_child._prefix.substr(key.length + 1))
+                });
             }
         } else {
             result = self;
@@ -1314,17 +1317,22 @@ var __ModelProto__ = Model.prototype = {
             //若能找到对应的Model，则向下触发
             _dm_force_update += 1;
             if (childModel = childModels._[jointKey]) {
-                if (nodeKey) { //单节点地址未空，jointKey === prefixKey < key
-                    childResult = childModel.set(key.substr(jointKey.length + 1), self.get(key));
-                } else { //如果单节点地址已经指向空，则jointKey === prefixKey === key
-                    childResult = childModel.set(self.get(key));
-                }
+                //更新数据源，不适用set方法来优化效率
+                childModel._database = self.get(jointKey);
+                // if (nodeKey) { //单节点地址未空，jointKey === prefixKey < key
+                //     childResult = childModel.set(key.substr(jointKey.length + 1), self.get(key));
+                // } else { //如果单节点地址已经指向空，则jointKey === prefixKey === key
+                //     childResult = childModel.set(self.get(key));
+                // }
+                childResult = childModel._touchOff(nodeKey ? key.substr(jointKey.length + 1) : "")
             } else { //无法找到，可能是key的长度太短
                 for (; childModel = childModels[i]; i--) {
                     prefix = childModel._prefix
                     //v5版本中不存在prefix===""的情况
                     if (!prefix.indexOf(key + ".") /* === 0*/ ) { //prefix is a part of key,just maybe had been changed
-                        childResult = childModel.set(self.get(prefix))
+                        childModel._database = self.get(prefix);
+                        childModel._touchOff();
+                        // childResult = childModel.set(self.get(prefix));
                     }
                 };
             }
@@ -1465,7 +1473,9 @@ var __ModelConfig__ = Model.config = {
         Parent: "$Parent",
         Top: "$Top",
         Private: "$Private",
-        Js: "$Js"
+        Js: "$Js",
+        Index:"$Index",
+        Path:"$Path"
     }
 };
 
@@ -1549,6 +1559,7 @@ var _dm_force_update = 0;
  * 5. $JS 全局数据寻址
 
  * 6. $Index 数组类型的下标
+ * 7. $Path 当前Model到顶层Model的前缀集合
  */
 ;
 (function() {
@@ -1723,132 +1734,6 @@ var _dm_force_update = 0;
             return _buildModelByKey.call(router_result.model, router_result.key);
         }
 }());
-
-/*
- * ArrayModel constructor
- * to mamage #each model
- */
-//将一个普通的Model转化为ArrayModel
-Model.toArrayModel = function() {
-
-}
-//将一个ArrayModel转化为Model
-Model.toModel = function() {
-
-}
-
-function ArrayModel(perfix, id) {
-    var self = this;
-    self._id = id;
-    self._prefix = perfix;
-    self._arrayModels = [];
-}
-var __ArrayModelProto__ = ArrayModel.prototype = $.c(__ModelProto__);
-
-//用于优化抽离的vi运行remove引发的$INDEX大变动的问题
-var _remove_index; // = 0;
-
-// $.fI(__ModelProto__, function(fun, funName) {
-//     __ArrayModelProto__[funName] = function() {
-//         var args = arguments;
-//         $.E(this._arrayModels, function(_each_model) {
-//             _each_model[funName].apply(_each_model, args)
-//         })
-//     }
-// })
-__ArrayModelProto__.set = function(key, nObj) { //只做set方面的中间导航垫片，所以无需进行特殊处理
-    var self = this;
-    var args = arguments;
-    var arrayModels = this._arrayModels;
-    var result;
-    switch (args.length) {
-        case 0:
-            return;
-        case 1:
-            if (key) {
-                nObj = $.isA(key) ? key : $.s(key);
-                // self.length(nObj.length);
-                $.E(nObj, function(nObj_item, i) {
-                    var DM = arrayModels[i];
-                    //针对remove的优化
-                    if (DM) { //TODO:WHY?
-                        if (nObj_item !== DM._database) { //强制优化，但是$INDEX关键字要缓存判定更新
-                            DM._database = nObj_item;
-                            DM.touchOff("");
-                        } else if (DM.__cacheIndex !== DM._index) {
-                            DM.__cacheIndex = DM._index;
-                            DM.touchOff("__ModelConfig__.prefix.Index");
-                        } else { //确保子集更新
-                            DM.touchOff("");
-                        }
-                    }
-                }, _remove_index)
-            }
-            break;
-        default:
-            //TODO: don't create Array to save memory
-            var arrKeys = key.split(".");
-            var index = arrKeys.shift();
-            var model = arrayModels[index];
-            if (!model) {
-                return
-            }
-            if (arrKeys.length) {
-                result = model.set(arrKeys.join("."), nObj)
-            } else {
-                result = model.set(nObj)
-            }
-    }
-    return result;
-}
-__ArrayModelProto__.push = function(model) {
-    var self = this,
-        pperfix = self._prefix;
-    var arrayModels = this._arrayModels;
-    var index = String(model._index = arrayModels.length)
-    $.p(arrayModels, model)
-    model._arrayModel = self;
-    model._parentModel = self._parentModel;
-    model._prefix = pperfix ? pperfix + "." + index : index;
-}
-__ArrayModelProto__.remove = function(model) {
-    var index = model._index
-    var self = this;
-    var pperfix = self._prefix;
-    var arrayModels = self._arrayModels;
-    $.sp.call(arrayModels, index, 1);
-    model._prefix = pperfix ? pperfix + "." + index : index;
-
-    // arrayModels.splice(index, 1);
-    $.E(arrayModels, function(model, i) {
-        var index = String(model._index -= 1);
-        model._prefix = pperfix ? pperfix + "." + index : index;
-    }, index)
-    var parentModel = model._parentModel
-    var oldData = pperfix ? parentModel.get(pperfix) : parentModel._database /*get()*/ ;
-    if (oldData) {
-        // 对象的数据可能是空值，导致DM实际长度与数据长度不一致，直接splice会错位，所以需要纠正
-        $.sp.call(oldData, index, 1)
-        _remove_index = index;
-        parentModel.set(pperfix, oldData);
-        _remove_index = 0;
-        model._arrayModel = model._parentModel = $UNDEFINED;
-    }
-}
-__ArrayModelProto__.queryElement = function(matchFun) {
-    var result = [];
-    $.E(this._arrayModels, function(_each_model) {
-        result.push.apply(result, _each_model.queryElement(matchFun));
-    });
-    return result;
-}
-__ArrayModelProto__.lineUp = function(model) {
-    this.remove(model);
-    this.push(model);
-}
-__ModelProto__.lineUp = function() {
-    this._arrayModel && this._arrayModel.lineUp(this)
-}
 
 /*
  * Model的代理层
@@ -2538,7 +2423,7 @@ function ViewModel(handleNodeTree, NodeList, triggerTable, model) {
     self._ALVI = {};
     self._WVI = {};
     self._teleporters = {};
-    // self._arrayVI = $NULL;
+    // self._arrayViewModel = $NULL;
 
     $.D.iB(el, self._open, el.childNodes[0]);
     $.D.ap(el, self._close);
@@ -2778,8 +2663,8 @@ var __ViewModelProto__ = ViewModel.prototype = {
             self._canRemoveAble = $FALSE; //Has being recovered into the _packingBag,can't no be remove again. --> it should be insert
             /*if (self._isEach) {
                 // 排队到队位作为备用
-                self._arrayVI.splice(self.model._index, 1)
-                $.p(self._arrayVI, self);
+                self._arrayViewModel.splice(self.model._index, 1)
+                $.p(self._arrayViewModel, self);
 
                 //相应的DM以及数据也要做重新排队
                 self.model.lineUp();
@@ -3629,7 +3514,6 @@ V.rt("#define", function(handle, index, parentHandle) {
     return trigger;
 });
 
-__ModelConfig__.prefix.Index = "$INDEX";
 var _extend_DM_get_Index = (function() {
     var $Index_set = function(key) {
         var self = this;
@@ -3665,7 +3549,44 @@ var Arr_sort = Array.prototype.sort;
 
 //each - VM的onremove事件
 var _eachVM_onremove = function() {
+    var self = this;
+    //对Model做相应的重新排列
+    var model = self.getModel();
+    var parentModel = model._parentModel;
+    var arrayModelsMap = parentModel._childModels._
+    //$Parent._prefix
+    var arrayBaseKey = $.lst(model._prefix, ".");
+    var oldIndex = parseInt(_split_laveStr);
+    //获取数据
+    var data = parentModel.get(arrayBaseKey);
+    var keyBuilder = arrayBaseKey ? function(index) {
+            return arrayBaseKey + "." + index;
+        } : function(index) {
+            return String(index);
+        };
+    var prefixIndex = __ModelConfig__.prefix.Index;
+    var prefixPath = __ModelConfig__.prefix.Path;
+    $.E(data, function(value, index) {
+        var currentModel = arrayModelsMap[keyBuilder(index)];
+        //往前挪
+        arrayModelsMap[currentModel._prefix = keyBuilder(index - 1)] = currentModel;
+        //前缀发生改变，触发$Index和$Path的更新
+        currentModel._touchOff(prefixIndex);
+        currentModel._touchOff(prefixPath);
+    }, oldIndex + 1);
+    arrayModelsMap[model._prefix = keyBuilder(data.length)] = model;
 
+
+    //移除VM并排队到队位作为备用
+    self._arrayViewModel.splice(oldIndex, 1)
+    $.p(self._arrayViewModel, self);
+
+    //VM移除完成后，长度发生改变，触发length的更新
+    data.splice(oldIndex, 1);
+    parentModel._touchOff(keyBuilder("length"));
+
+    console.log(model._prefix);
+    // self.model.lineUp();
 }
 
 V.rt("#each", function(handle, index, parentHandle) {
@@ -3748,12 +3669,7 @@ V.rt("#each", function(handle, index, parentHandle) {
 
                 if (showed_vi_len > new_data_len) {
                     $.e(arrViewModels, function(eachItemHandle) {
-                        var isEach = eachItemHandle._isEach;
-                        //移除each标志避免排队
-                        eachItemHandle._isEach = $FALSE;
                         eachItemHandle.remove();
-                        //恢复原有each标志
-                        eachItemHandle._isEach = isEach;
                     }, new_data_len);
                 } else {
                     //undefined null false "" 0 ...
@@ -3770,21 +3686,11 @@ V.rt("#each", function(handle, index, parentHandle) {
                                         viewModel = arrViewModels[index] = vm
                                     },
                                     callback: function(vm) {
-                                        vm._arrayVI = arrViewModels;
+                                        vm._arrayViewModel = arrViewModels;
                                         proxyModel.shelter(vm, arrDataHandle_Key + "." + index); //+"."+index //reset arrViewModel's model
                                         vm.onremove = _eachVM_onremove;
-                                        // var viDM = vm.getModel();
-                                        // viDM._isEach = vm._isEach = {
-                                        //     //_index在push到Array_DM时才进行真正定义，由于remove会重新更正_index，所以这个参数完全交给Array_DM管理
-                                        //     // _index: index,
-                                        //     eachId: id,
-                                        //     eachVIs: arrViewModels
-                                        // }
-                                        // _extend_DM_get_Index(viDM)
                                     }
                                 });
-                                // var viDM = viewModel.model;
-                                // viDM.__cacheIndex = viDM._index;
                             }
                             //自带的inser，针对each做特殊优化
                             // viewModel.insert(comment_endeach_node)
