@@ -423,11 +423,12 @@ var __ModelProto__ = Model.prototype = {
     /*
      * 取消挂起状态，重新与父Model结合同步更新
      */
-    __hangdown: function() {
+    __hangdown: function(cusHangUpInfo) {
         var self = this;
         //首先TEMP.hangup属性不能为空
         var hangupInfo = self.TEMP && self.TEMP.hangup;
         if (hangupInfo) {
+            _mix(hangupInfo, cusHangUpInfo || {});
             var childModels = hangupInfo.pm._childModels;
             (childModels._[self._prefix = hangupInfo.pk] = self)._parentModel = hangupInfo.pm;
             $.p(childModels, self);

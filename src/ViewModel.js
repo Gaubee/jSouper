@@ -302,7 +302,8 @@ var __ViewModelProto__ = ViewModel.prototype = {
             self.topNode(el);
 
             self._canRemoveAble = $FALSE; //Has being recovered into the _packingBag,can't no be remove again. --> it should be insert
-            
+
+            self.onremove && self.onremove();
         }
         return self;
     },

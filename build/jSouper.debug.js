@@ -1176,29 +1176,33 @@ var __ModelProto__ = Model.prototype = {
     buildModelByKey: function(key) {
         var self = this;
         var result,
+            childModels = self._childModels
             //寻址的过程中可能找到自己的子model
             resultChilds = [];
         if (key) {
-            $.e(self._childModels, function(childModel) {
-                var prefixKey = childModel._prefix;
-                var _continue = $FALSE;
-                //prefixKey == key
-                if (prefixKey === key) {
-                    result = childModel;
-                }
-                //prefixKey > key
-                else if (prefixKey.indexOf(key + ".") === 0) {
-                    $.p(resultChilds, childModel);
-                    _continue = $FLASE;
-                }
-                //key > prefixKey
-                else if (key.indexOf(prefixKey + ".") === 0) {
-                    result = childModel.buildModelByKey(key.substr(prefixKey.length + 1));
-                } else {
-                    _continue = $TRUE;
-                }
-                return _continue;
-            });
+            //TODO:将prefixKey按长度进行缓存，多级缓存，用内存换取效率
+            if (!(result = childModels._[key])) {
+                $.E(childModels, function(childModel) {
+                    var prefixKey = childModel._prefix;
+                    var _continue = $FALSE;
+                    //prefixKey == key
+                    if (prefixKey === key) {
+                        result = childModel;
+                    }
+                    //prefixKey > key
+                    else if (prefixKey.indexOf(key + ".") === 0) {
+                        $.p(resultChilds, childModel);
+                        _continue = $FLASE;
+                    }
+                    //key > prefixKey
+                    else if (key.indexOf(prefixKey + ".") === 0) {
+                        result = childModel.buildModelByKey(key.substr(prefixKey.length + 1));
+                    } else {
+                        _continue = $TRUE;
+                    }
+                    return _continue;
+                });
+            }
             //如果这个key与其它分支不同一路，则开辟新的分支
             if (!result) {
                 result = self.__buildChildModel(key);
@@ -1385,11 +1389,12 @@ var __ModelProto__ = Model.prototype = {
     /*
      * 取消挂起状态，重新与父Model结合同步更新
      */
-    __hangdown: function() {
+    __hangdown: function(cusHangUpInfo) {
         var self = this;
         //首先TEMP.hangup属性不能为空
         var hangupInfo = self.TEMP && self.TEMP.hangup;
         if (hangupInfo) {
+            _mix(hangupInfo, cusHangUpInfo || {});
             var childModels = hangupInfo.pm._childModels;
             (childModels._[self._prefix = hangupInfo.pk] = self)._parentModel = hangupInfo.pm;
             $.p(childModels, self);
@@ -2700,7 +2705,8 @@ var __ViewModelProto__ = ViewModel.prototype = {
             self.topNode(el);
 
             self._canRemoveAble = $FALSE; //Has being recovered into the _packingBag,can't no be remove again. --> it should be insert
-            
+
+            self.onremove && self.onremove();
         }
         return self;
     },
@@ -3504,65 +3510,38 @@ V.rt("#define", function(handle, index, parentHandle) {
     return trigger;
 });
 
-var _extend_DM_get_Index = (function() {
-    var $Index_set = function(key) {
-        var self = this;
-        var indexKey = __ModelConfig__.prefix.Index;
-        if (key === indexKey) {
-            // Model.session.topSetter = self;
-            // Model.session.filterKey = "";
-            throw Error(indexKey + " is read only.")
-        } else {
-            return __ModelProto__.set.apply(self, arguments)
-        }
-    }
-    var $Index_get = function(key) {
-        var self = this;
-        var indexKey = __ModelConfig__.prefix.Index;
-        if (key === indexKey) {
-            // Model.session.topGetter = self;
-            // Model.session.filterKey = "";
-            return parseInt(self._index);
-        } else {
-            return __ModelProto__.get.apply(self, arguments)
-        }
-    };
-
-    function _extend_DM_get_Index(model) {
-        // if(model._isEach)
-        model.set = $Index_set
-        model.get = $Index_get
-    };
-    return _extend_DM_get_Index;
-}());
-var Arr_sort = Array.prototype.sort;
-
-var _vm_remove = __ViewModelProto__.remove;
-var _eachVM_remove = function() {
+//each - VM的onremove事件
+var _eachVM_onremove = function() {
     var self = this;
     var arrayViewModel = self._arrayViewModel;
+    //对Model做相应的重新排列
     var model = self.getModel();
     var parentModel = model._parentModel;
     var arrayModelsMap = parentModel._childModels._
-    var arrayBaseKey = $.lst(model._prefix, ".");
-    var data = parentModel.get(arrayBaseKey);
-    var oldIndex = parseInt(_split_laveStr);
-    var arrayViewModel = self._arrayViewModel;
-    var remover = arrayViewModel[--arrayViewModel.len];
-    var result = (remover.remove = _vm_remove).call(remover);
-    $.sp.call(data, oldIndex, 1);
-    var keyBuilder = arrayBaseKey ? function(index) {
-            return arrayBaseKey + "." + index;
-        } : function(index) {
-            return String(index);
-        };
+    var oldIndex = parseInt(model._prefix);
+    //获取数据，更改ArrayModel队列元素的下标
+    var data = parentModel.get();
+
+    //挂起停止更新
+    //当前移除的Model放入队列末尾，具体的_prefix在insert时在做决定
+    model.__hangup();
+
     $.E($.s(data), function(value, index) {
-        var currentModel = arrayModelsMap[keyBuilder(index)];
-        currentModel._database = value;
-        currentModel._touchOff();
-    }, oldIndex);
-    parentModel._touchOff(keyBuilder("length"));
-    return result;
+        var currentModel = arrayModelsMap[String(index)];
+        //往前挪
+        arrayModelsMap[currentModel._prefix = String(index - 1)] = currentModel;
+    }, oldIndex + 1);
+    //清除指定的数据
+    $.sp.call(data, oldIndex, 1);
+
+    //移除VM并排队到队尾作为备用
+    arrayViewModel.splice(oldIndex, 1);
+
+    //废弃的VM和model暂时不同在一起，在insert时再统一
+    $.p(arrayViewModel, self);
+
+    //不应该偷懒直接使用touchOff，因为上一级可能还有绑定到数组内部的key，必须冒泡更新
+    parentModel.set(data);
 }
 
 V.rt("#each", function(handle, index, parentHandle) {
@@ -3578,6 +3557,7 @@ V.rt("#each", function(handle, index, parentHandle) {
     var comment_endeach_id = parentHandle.childNodes[index + 3].id; //eachHandle --> eachComment --> endeachHandle --> endeachComment
     var trigger;
 
+    var arrayModel;
     trigger = {
         // smartTrigger:$NULL,
         // key:$NULL,
@@ -3589,7 +3569,7 @@ V.rt("#each", function(handle, index, parentHandle) {
                 arrViewModels = allArrViewModels[id];
             if (!arrViewModels) { //第一次初始化，创建最一层最近的Model来模拟ArrayModel
                 arrViewModels = allArrViewModels[id] = [];
-                proxyModel.model.buildModelByKey(arrDataHandle_Key);
+                arrayModel = proxyModel.model.buildModelByKey(arrDataHandle_Key);
             }
             var showed_vi_len = arrViewModels.len,
                 new_data_len = data ? data.length : 0,
@@ -3648,10 +3628,12 @@ V.rt("#each", function(handle, index, parentHandle) {
 
                 if (showed_vi_len > new_data_len) { /*  Remove*/
                     $.E($.s(arrViewModels), function(eachViewModel) {
-
-                        (eachViewModel.remove = _vm_remove).call(eachViewModel);
                         //挂起停止更新
                         eachViewModel.getModel().__hangup();
+                        //onremove的效益发生在通过vm的remove来影响数据的改变，并做一定的优化，避免大量的更新
+                        eachViewModel.onremove = $UNDEFINED;
+                        //这里的remove是通过数据改变来影响vm，因此要溢出onremove函数
+                        eachViewModel.remove();
                     }, new_data_len);
                 } else { /*  Insert*/
                     //undefined null false "" 0 ...
@@ -3662,6 +3644,7 @@ V.rt("#each", function(handle, index, parentHandle) {
                             //TODO:if too mush vi will be create, maybe asyn
                             var viewModel = arrViewModels[index];
                             var newPrefix = arrDataHandle_Key + "." + index;
+                            var strIndex = String(index);
                             //VM不存在，新建
                             if (!viewModel) {
                                 eachModuleConstructor( /*eachItemData*/ $UNDEFINED, {
@@ -3670,16 +3653,19 @@ V.rt("#each", function(handle, index, parentHandle) {
                                         vm._arrayViewModel = arrViewModels;
                                     },
                                     callback: function(vm) {
+                                        if (!arrayModel._childModels._[index]) {
+                                            arrayModel.__buildChildModel(strIndex);
+                                        }
                                         proxyModel.shelter(vm, newPrefix); //+"."+index //reset arrViewModel's model
                                     }
                                 });
                             } else {
                                 var model = viewModel.getModel();
-                                model.__hangdown();
-                                model._database = eachItemData;
-                                model._touchOff();
+                                model.__hangdown({
+                                    pk: strIndex
+                                });
                             }
-                            viewModel.remove = _eachVM_remove;
+                            viewModel.onremove = _eachVM_onremove;
                             //自带的inser，针对each做特殊优化
                             var currentTopNode = viewModel.topNode();
 
