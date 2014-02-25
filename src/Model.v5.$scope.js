@@ -86,8 +86,10 @@
                 console.error("$Index is read only.");
             },
             get: function(model, key) {
-                $.lst(model._prefix, ".")
-                return _split_laveStr;
+                if (key = model._prefix) {
+                    $.lst(key, ".")
+                    return _split_laveStr;
+                }
             }
         },
         "$Path": {

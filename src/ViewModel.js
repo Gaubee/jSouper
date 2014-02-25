@@ -279,7 +279,6 @@ var __ViewModelProto__ = ViewModel.prototype = {
     remove: function() {
         var self = this,
             el = self._packingBag;
-        // debugger
         if (self._canRemoveAble) {
             var handleNodeTree = self.handleNodeTree,
                 NodeList = self.NodeList,
@@ -303,26 +302,10 @@ var __ViewModelProto__ = ViewModel.prototype = {
             self.topNode(el);
 
             self._canRemoveAble = $FALSE; //Has being recovered into the _packingBag,can't no be remove again. --> it should be insert
-            /*if (self._isEach) {
-                // 排队到队位作为备用
-                self._arrayViewModel.splice(self.model._index, 1)
-                $.p(self._arrayViewModel, self);
-
-                //相应的DM以及数据也要做重新排队
-                self.model.lineUp();
-            }*/
-            self.onremove && self.onremove()
+            
         }
         return self;
     },
-    // get: function get() {
-    //     var dm = this.model;
-    //     return dm.get.apply(dm, arguments /*$.s(arguments)*/ );
-    // },
-    // set: function set() {
-    //     var dm = this.model;
-    //     return dm.set.apply(dm, arguments /*$.s(arguments)*/ )
-    // },
     topNode: function(newCurrentTopNode) {
         var self = this,
             handleNodeTree = self.handleNodeTree,
@@ -370,27 +353,6 @@ var __ViewModelProto__ = ViewModel.prototype = {
             })
         })
     },
-    // _buildSmart: function(sKey) {
-    //     var self = this,
-    //         model = self.model,
-    //         smartTriggers = self._smartTriggers;
-    //     model.get(sKey);
-    //     var baseKey = Model.session.filterKey,
-    //         topGetterTriggerKeys = Model.session.topGetter && Model.session.topGetter._triggerKeys,
-    //         smartTrigger = new SmartTriggerHandle(
-    //             baseKey || (baseKey = ""), //match key
-
-    //             function(smartTriggerSet) {
-    //                 self.touchOff(sKey);
-    //             }, { //TEMP data
-    //                 viewModel: self,
-    //                 dm_id: model.id,
-    //                 sourceKey: sKey
-    //             }
-    //         );
-    //     $.p(smartTriggers, smartTrigger);
-    //     topGetterTriggerKeys && smartTrigger.bind(topGetterTriggerKeys); // topGetterTriggerKeys.push(baseKey, smartTrigger);
-    // },
     teleporter: function(viewModel, telporterName) {
         var self = this;
         (telporterName === $UNDEFINED) && (telporterName = "index");
@@ -408,18 +370,6 @@ var __ViewModelProto__ = ViewModel.prototype = {
         }
         return self;
     },
-    // collect: function() {
-    //     var self = this;
-    //     var model = self.model;
-    //     model.collect.apply(model, arguments);
-    //     return self;
-    // },
-    // subset: function() {
-    //     var self = this;
-    //     var model = self.model;
-    //     model.subset.apply(model, arguments);
-    //     return self;
-    // },
     /*
      * 获取代理后面真正的Model
      */

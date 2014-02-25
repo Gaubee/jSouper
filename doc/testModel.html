@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+
+<head>
+    <title>app - jSouper</title>
+    <script type="text/javascript" src="../build/jSouper.debug.js">
+    </script>
+
+</head>
+
+<body>
+    <xmp type="template" name="test">
+        <div>
+            My name is
+            <input type="text" bind-input="{{'name'}}" bind-value="{{name}}">{{name}}
+            <button event-click="{{'$Top.$Private.removeItem'}}">删除</button>
+        </div>
+    </xmp>
+</body>
+
+</html>
+<script type="text/javascript">
+jSouper.ready(function(argument) {
+
+    console.info("开始数据节点的压力测试");
+    var database = new Model;
+    console.profile("400Model");
+    console.time("400Model")
+    for (var i = 0; i < 400; i += 1) {
+        database.buildModelByKey(String(i));
+    }
+    console.timeEnd("400Model")
+    console.profileEnd("400Model");
+
+    console.info("开始VM创建的压力测试");
+    var vms = [];
+    console.profile("400ViewModel");
+    console.time("400ViewModel")
+    for (var i = 0; i < 400; i += 1) {
+        vms.push(jSouper.modules["test"]().append(document.body))
+    }
+    console.timeEnd("400ViewModel")
+    console.profileEnd("400ViewModel");
+
+    
+    var innerHTML = document.body.innerHTML;
+    document.body.innerHTML = "";
+    console.time("批处理node");
+    document.body.innerHTML = innerHTML;
+    console.timeEnd("批处理node");
+})
+</script>

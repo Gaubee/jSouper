@@ -140,6 +140,7 @@ var __ModelProto__ = Model.prototype = {
         }
 
         //获取数据的最高层存储区，由上向下更新
+        //TODO:新版本v5中这部分可大量优化
         var result = _getTopInfoByKey(self, key), //Leader:find the model matched by key
             finallyRunStacks = Model.session.finallyRunStacks,
             result_dm = result.model,
@@ -209,29 +210,33 @@ var __ModelProto__ = Model.prototype = {
     buildModelByKey: function(key) {
         var self = this;
         var result,
+            childModels = self._childModels
             //寻址的过程中可能找到自己的子model
             resultChilds = [];
         if (key) {
-            $.e(self._childModels, function(childModel) {
-                var prefixKey = childModel._prefix;
-                var _continue = $FALSE;
-                //prefixKey == key
-                if (prefixKey === key) {
-                    result = childModel;
-                }
-                //prefixKey > key
-                else if (prefixKey.indexOf(key + ".") === 0) {
-                    $.p(resultChilds, childModel);
-                    _continue = $FLASE;
-                }
-                //key > prefixKey
-                else if (key.indexOf(prefixKey + ".") === 0) {
-                    result = childModel.buildModelByKey(key.substr(prefixKey.length + 1));
-                } else {
-                    _continue = $TRUE;
-                }
-                return _continue;
-            });
+            //TODO:将prefixKey按长度进行缓存，多级缓存，用内存换取效率
+            if (!(result = childModels._[key])) {
+                $.E(childModels, function(childModel) {
+                    var prefixKey = childModel._prefix;
+                    var _continue = $FALSE;
+                    //prefixKey == key
+                    if (prefixKey === key) {
+                        result = childModel;
+                    }
+                    //prefixKey > key
+                    else if (prefixKey.indexOf(key + ".") === 0) {
+                        $.p(resultChilds, childModel);
+                        _continue = $FLASE;
+                    }
+                    //key > prefixKey
+                    else if (key.indexOf(prefixKey + ".") === 0) {
+                        result = childModel.buildModelByKey(key.substr(prefixKey.length + 1));
+                    } else {
+                        _continue = $TRUE;
+                    }
+                    return _continue;
+                });
+            }
             //如果这个key与其它分支不同一路，则开辟新的分支
             if (!result) {
                 result = self.__buildChildModel(key);
@@ -250,9 +255,6 @@ var __ModelProto__ = Model.prototype = {
         //从回收区获取一个Model或者直接生成一个新的子Model，绑定一系列关系
         var childModel = abandonedModels.pop() || new Model;
         childModel.__follow(self, key);
-        childModel._parentModel = self;
-
-        $.p(self._childModels, childModel);
         // TODO:聚拢关于这个key的父Model
         // self.sock(key);
         return childModel;
@@ -312,6 +314,7 @@ var __ModelProto__ = Model.prototype = {
             i = childModels.length - 1;
         var prefix,
             childResult;
+        _dm_force_update += 1;
         if (key) {
             /*
              * self：触发当前Model所携带的触发器
@@ -338,18 +341,19 @@ var __ModelProto__ = Model.prototype = {
             var nodeKey;
             if (jointKey) { //key是多层次寻址
                 //所寻找到的子Model
-                while (nodeKey = $.st(_split_laveStr, ".")) {
-                    if (childModels._[jointKey]) {
-                        break;
+                if (!childModels._[jointKey]) {
+                    while (nodeKey = $.st(_split_laveStr, ".")) {
+                        if (childModels._[jointKey]) {
+                            break;
+                        }
+                        jointKey += "." + nodeKey;
                     }
-                    jointKey += "." + nodeKey;
+                    jointKey += "." + _split_laveStr;
                 }
-                jointKey += "." + _split_laveStr;
             } else { //非多层次寻址
                 jointKey = key
             }
             //若能找到对应的Model，则向下触发
-            _dm_force_update += 1;
             if (childModel = childModels._[jointKey]) {
                 //更新数据源，不适用set方法来优化效率
                 childModel._database = self.get(jointKey);
@@ -370,7 +374,6 @@ var __ModelProto__ = Model.prototype = {
                     }
                 };
             }
-            _dm_force_update -= 1;
         } else {
             //key为$This（空）的话直接触发所有，无需break
             triggerKeys.forIn(function(triggerCollection, triggerKey) {
@@ -380,12 +383,11 @@ var __ModelProto__ = Model.prototype = {
             });
 
             for (; childModel = childModels[i]; i--) {
-                _dm_force_update += 1;
                 childResult = childModel.set(self.get(childModel._prefix))
-                _dm_force_update -= 1;
             };
         }
 
+        _dm_force_update -= 1;
         return {
             key: key
         }
@@ -397,6 +399,41 @@ var __ModelProto__ = Model.prototype = {
         remover = this.remove(remover);
         //将Model放入回收区回收利用
         remover && $.p(abandonedModels, remover);
+    },
+    /*
+     * 挂起当前model，与父Model分离，暂停更新
+     */
+    __hangup: function() {
+        var self = this;
+        var TEMP = self.TEMP || (self.TEMP = {});
+        if (!TEMP.hangup) {
+            var parentModel = self._parentModel;
+
+            var prefixKey = self._prefix;
+            TEMP.hangup = {
+                pm: parentModel,
+                pk: prefixKey
+            }
+            var childModels = parentModel._childModels;
+            childModels._[self._prefix] = $UNDEFINED;
+            childModels.splice($.iO(childModels, self), 1);
+            self._parentModel = self._prefix = $UNDEFINED;
+        }
+    },
+    /*
+     * 取消挂起状态，重新与父Model结合同步更新
+     */
+    __hangdown: function() {
+        var self = this;
+        //首先TEMP.hangup属性不能为空
+        var hangupInfo = self.TEMP && self.TEMP.hangup;
+        if (hangupInfo) {
+            var childModels = hangupInfo.pm._childModels;
+            (childModels._[self._prefix = hangupInfo.pk] = self)._parentModel = hangupInfo.pm;
+            $.p(childModels, self);
+            self.TEMP.hangup = $NULL;
+            self.touchOff();
+        }
     },
     /*
      * 将指定Model移除数据树，使得独立，旗下的子Model也要跟着移除
@@ -413,14 +450,19 @@ var __ModelProto__ = Model.prototype = {
             var parentModel = remover._parentModel;
             if (parentModel) {
                 var childModels = parentModel._childModels;
-                childModels._[childModels._prefix] = $UNDEFINED;
+                childModels._[remover._prefix] = $UNDEFINED;
                 childModels.splice($.iO(childModels, remover), 1);
-                remover.TEMP = remover._parentModel = childModels._prefix = $UNDEFINED;
+                remover.TEMP = remover._parentModel = remover._prefix = $UNDEFINED;
             }
             $.E($.s(remover._childModels), function(childModel) {
                 childModel.remove();
             });
         }
+        self._triggerKeys.forIn(function(triggerCollection, triggerKey) {
+            $.E($.s(triggerCollection), function(smartTriggerHandle) {
+                smartTriggerHandle.unbind(triggerCollection);
+            })
+        });
         return remover;
     },
     /*
