@@ -399,7 +399,7 @@ doc = document,
                 target = _mix(target, extendObj);
             }
             return target;
-        },
+        }
     },
     //空函数，用于绑定对象到该原型链上并生成返回子对象
     _Object_create_noop = function() {},
@@ -2098,8 +2098,11 @@ function View(arg, vmName) {
     // console.log(vmName)
     _buildHandler(self);
     _buildTrigger(self);
-    
+
     V._scansVMInit(arg.node, vmName);
+
+    //缓存DOM工厂生产流水线
+    _DOMFactory(self);
     return function(data, opction) {
         var id = $.uid();
         var finallyRunStacks = Model.session.finallyRunStacks;
@@ -2210,7 +2213,6 @@ function _buildHandler(self) {
         }
     });
 };
-var _attrRegExp = /(\S+)=["']?((?:.(?!["']?\s+(?:\S+)=|[>"']))+.)["']?/g;
 var ignoreTagNameMap = {};
 $.fI("script|pre|template|style|link".split("|"), function(value, key) {
     ignoreTagNameMap[value] = ignoreTagNameMap[value.toUpperCase()] = $TRUE;
@@ -2238,8 +2240,7 @@ function _buildTrigger(self) {
             if (ignoreTagNameMap[handle.tag]) {
                 return $FALSE;
             }
-            // var attrs = nodeHTMLStr.match(_attrRegExp);
-            $.E($.s(node.attributes)/*.reverse()*/, function(attr, i) {
+            $.E($.s(node.attributes) /*.reverse()*/ , function(attr, i) {
                 var value = attr.value,
                     name = attr.name;
                 if (_templateMatchRule.test(value)) {
@@ -2293,28 +2294,23 @@ function _buildTrigger(self) {
     });
 };
 
-//
-
-function pushById(arr, item) {
-    arr[item.id] = item;
-    return item;
-};
-
-function _create(self, data, isAttribute) { //data maybe basedata or model
-    //save newDOM  without the most top of parentNode -- change with append!!
-    var NodeList_of_ViewModel = {},
-        topNode = $.c(self.handleNodeTree);
+function _DOMFactory(self) {
+    var NodeList = self.NodeList = {},
+        topNode = self.handleNodeTree /*$.c(self.handleNodeTree)*/ ;
+    //将id按数组存储，加速循环速度
+    var nodeListIds = NodeList._ = [];
     topNode.currentNode = fragment("body");
-    pushById(NodeList_of_ViewModel, topNode);
+    pushById(NodeList, topNode, nodeListIds);
 
-    var catchNodes = [];
+
+    var catchNodes = self._catchNodes = [];
     var catchNodesStr = "";
     _traversal(topNode, function(handle, index, parentNode) {
-        handle = pushById(NodeList_of_ViewModel, $.c(handle));
+        handle = pushById(NodeList, handle, nodeListIds);
         if (!handle.ignore) {
             var _unknownElementAttribute = handle._unEleAttr;
             if (_unknownElementAttribute) { //HTMLUnknownElement
-                currentNode = doc.createElement(handle.tag);
+                /*currentNode = doc.createElement(handle.tag);
                 $.E(_unknownElementAttribute, function(attrName) {
                     // console.log("setAttribute:", attrName, " : ", _unknownElementAttribute._[attrName])
                     //直接使用赋值的话，非标准属性只会变成property而不是Attribute
@@ -2325,7 +2321,7 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
                 var cssText = _unknownElementAttribute._["style"];
                 if (cssText) {
                     currentNode.style.cssText = cssText;
-                }
+                }*/
             } else if ("nodeStr" in handle) {
                 if (handle.type === "text") {
                     var currentNode = doc.createTextNode(handle.nodeStr);
@@ -2355,11 +2351,35 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
             //ignore Node's childNodes will be ignored too.
             //just create an instance
             _traversal(handle, function(handle) {
-                pushById(NodeList_of_ViewModel, $.c(handle));
+                $.p(nodeListIds, handle.id)
+                pushById(NodeList, handle, nodeListIds);
             });
             return $FALSE
         }
     });
+    self.catchNodesStr = catchNodesStr
+}
+
+function pushById(hashSet, item, arr) {
+    var id = item.id
+    if (!hashSet[id]) {
+        hashSet[id] = item;
+        $.p(arr, id);
+    }
+    return item;
+};
+
+function _create(self, data, isAttribute) { //data maybe basedata or model
+
+    var catchNodes = self._catchNodes;
+    var catchNodesStr = self.catchNodesStr;
+
+    var NodeList = self.NodeList;
+    var NodeList_of_ViewModel = {};
+    $.E(NodeList._, function(hanldeNode_id) {
+        //将节点进行包裹，使用原型读取
+        NodeList_of_ViewModel[hanldeNode_id] = $.c(NodeList[hanldeNode_id]);
+    })
 
     //createNode
     var nodeCollections = $.D.cs("<div>" + catchNodesStr + "</div>");
@@ -2372,8 +2392,22 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
         var parentNode = parentHandle.currentNode;
         var currentHandle = NodeList_of_ViewModel[nodeInfo.currentId];
         var currentNode = currentHandle.currentNode;
-        if (!currentNode) {
-            currentNode = currentHandle.currentNode = nodeCollections.firstChild;
+        var _unknownElementAttribute = currentHandle._unEleAttr;
+        if (_unknownElementAttribute) {
+            currentNode = doc.createElement(handle.tag);
+            $.E(_unknownElementAttribute, function(attrName) {
+                // console.log("setAttribute:", attrName, " : ", _unknownElementAttribute._[attrName])
+                //直接使用赋值的话，非标准属性只会变成property而不是Attribute
+                // currentNode[attrName] = _unknownElementAttribute._[attrName];
+                currentNode.setAttribute(attrName, _unknownElementAttribute._[attrName]);
+            })
+            //set Style
+            var cssText = _unknownElementAttribute._["style"];
+            if (cssText) {
+                currentNode.style.cssText = cssText;
+            }
+        } else if (!currentNode) {
+            currentNode = nodeCollections.firstChild;
             if (currentHandle.tagDeep) {
                 switch (currentHandle.tagDeep) {
                     case 3:
@@ -2385,8 +2419,11 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
                         nodeCollections.removeChild(nodeCollections.firstChild);
                 }
             }
+        } else { // if(currentNode.nodeType===3) 文本节点、script节点等直接拷贝
+            currentNode = $.D.cl(currentNode);
         }
-        $.D.ap(parentNode, currentNode);
+        if (!currentNode) debugger
+        $.D.ap(parentNode, currentHandle.currentNode = currentNode);
         if (currentNode.nodeType === 1) {
             $.p(queryList, currentNode);
             queryMap[$.hashCode(currentNode)] = currentHandle;
@@ -3094,8 +3131,8 @@ var placeholder = {
             node || (node = doc);
             //想解析子模块
             var xmps = $.s(node.getElementsByTagName("xmp"));
-            Array.prototype.push.apply(xmps, node.getElementsByTagName(V.namespace + "xmp"));
-            $.e(xmps, function(tplNode) {
+            Array.prototype.push.apply(xmps, $.s(node.getElementsByTagName(V.namespace + "xmp")));
+            $.E(xmps, function(tplNode) {
                 var type = tplNode.getAttribute("type");
                 var name = tplNode.getAttribute("name");
                 if (name) {
@@ -3696,7 +3733,7 @@ V.rt("", function(handle, index, parentHandle) {
         key = textHandle.node.data,
         trigger = {
             key: ".", //const trigger
-            bubble: $TRUE,
+            bubble: $TRUE
         };
     //作为一个textNode节点来显示字符串
     if (parentHandle.type !== "handle") { //as textHandle

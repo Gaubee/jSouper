@@ -4,7 +4,7 @@ V.rt("", function(handle, index, parentHandle) {
         key = textHandle.node.data,
         trigger = {
             key: ".", //const trigger
-            bubble: $TRUE,
+            bubble: $TRUE
         };
     //作为一个textNode节点来显示字符串
     if (parentHandle.type !== "handle") { //as textHandle

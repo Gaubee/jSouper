@@ -375,7 +375,7 @@ doc = document,
                 target = _mix(target, extendObj);
             }
             return target;
-        },
+        }
     },
     //空函数，用于绑定对象到该原型链上并生成返回子对象
     _Object_create_noop = function() {},

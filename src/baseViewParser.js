@@ -152,8 +152,8 @@ var placeholder = {
             node || (node = doc);
             //想解析子模块
             var xmps = $.s(node.getElementsByTagName("xmp"));
-            Array.prototype.push.apply(xmps, node.getElementsByTagName(V.namespace + "xmp"));
-            $.e(xmps, function(tplNode) {
+            Array.prototype.push.apply(xmps, $.s(node.getElementsByTagName(V.namespace + "xmp")));
+            $.E(xmps, function(tplNode) {
                 var type = tplNode.getAttribute("type");
                 var name = tplNode.getAttribute("name");
                 if (name) {
