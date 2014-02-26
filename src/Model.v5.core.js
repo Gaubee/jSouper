@@ -16,6 +16,7 @@ function Model(baseData) {
     //因为Model可能因为多余而被销毁，所以直接使用引用是不可靠的，用标实获取全局集合中对象才是最实时且正确的对象
     Model._instances[self.id = $.uid()] = self;
 
+
     //不对baseData做特殊处理，支持任意类型包括空类型的数据，且数据类型可任意更改
     self._database = baseData;
 
@@ -163,7 +164,7 @@ var __ModelProto__ = Model.prototype = {
                 };
             } else { //argumentLen >= 1
                 //find Object by the key-dot-path and change it
-                if (_dm_force_update || nObj !== self.get(key)) {
+                if (_dm_force_update || $.isO(nObj) || nObj !== self.get(key)) {
                     //[@Gaubee/blog/issues/45](https://github.com/Gaubee/blog/issues/45)
                     var database = self._database || (self._database = {}),
                         sObj,
@@ -194,7 +195,7 @@ var __ModelProto__ = Model.prototype = {
                             (self._database = {})[_split_laveStr] = nObj
                         }
                     }
-                } else if (!$.isO(nObj)) { //no any change, if instanceof Object and ==,just run touchOff
+                } else {
                     return;
                 }
             }
@@ -210,7 +211,7 @@ var __ModelProto__ = Model.prototype = {
     buildModelByKey: function(key) {
         var self = this;
         var result,
-            childModels = self._childModels
+            childModels = self._childModels,
             //寻址的过程中可能找到自己的子model
             resultChilds = [];
         if (key) {
@@ -226,7 +227,7 @@ var __ModelProto__ = Model.prototype = {
                     //prefixKey > key
                     else if (prefixKey.indexOf(key + ".") === 0) {
                         $.p(resultChilds, childModel);
-                        _continue = $FLASE;
+                        _continue = $FALSE;
                     }
                     //key > prefixKey
                     else if (key.indexOf(prefixKey + ".") === 0) {
@@ -348,7 +349,7 @@ var __ModelProto__ = Model.prototype = {
                         }
                         jointKey += "." + nodeKey;
                     }
-                    jointKey += "." + _split_laveStr;
+                    nodeKey || (jointKey += "." + _split_laveStr);
                 }
             } else { //非多层次寻址
                 jointKey = key
@@ -437,7 +438,7 @@ var __ModelProto__ = Model.prototype = {
         }
     },
     /*
-     * 将指定Model移除数据树，使得独立，旗下的子Model也要跟着移除
+     * 将指定Model移除数据树，使得独立，旗下的子Model也会跟着离开原有的数据树
      * TODO:根据key进行remove
      */
     remove: function(remover) {
@@ -455,15 +456,15 @@ var __ModelProto__ = Model.prototype = {
                 childModels.splice($.iO(childModels, remover), 1);
                 remover.TEMP = remover._parentModel = remover._prefix = $UNDEFINED;
             }
-            $.E($.s(remover._childModels), function(childModel) {
-                childModel.remove();
-            });
+            // $.E($.s(remover._childModels), function(childModel) {
+            //     childModel.remove();
+            // });
         }
-        self._triggerKeys.forIn(function(triggerCollection, triggerKey) {
-            $.E($.s(triggerCollection), function(smartTriggerHandle) {
-                smartTriggerHandle.unbind(triggerCollection);
-            })
-        });
+        // self._triggerKeys.forIn(function(triggerCollection, triggerKey) {
+        //     $.E($.s(triggerCollection), function(smartTriggerHandle) {
+        //         smartTriggerHandle.unbind(triggerCollection);
+        //     })
+        // });
         return remover;
     },
     /*
@@ -472,8 +473,11 @@ var __ModelProto__ = Model.prototype = {
      */
     __follow: function(model, key) {
         var self = this;
-        self.remove();
-        self._parentModel = model;
+        //TODO：有待优化，内部的结构是一条龙生成不会有多余的Model节点，所以可以不进行remove
+        if (self._parentModel !== model) {
+            self.remove();
+            self._parentModel = model;
+        }
         self._prefix = key;
         self._database = model.get(key);
         $.p(model._childModels, self);

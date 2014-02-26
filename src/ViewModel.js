@@ -31,15 +31,24 @@ function _addAttr(viewModel, node, attrJson) {
         var triggerTable = viewModel._triggers._;
         $.E(attrViewModel._triggers, function(key) {
             var triggerContainer = triggerTable[key];
+            var smartTriggers = viewModel.model._smartTriggers
             if (!triggerContainer) {
-                ViewModel._buildSmart(viewModel, key);
+                // ViewModel._buildSmart(viewModel, key);//.rebuild();
                 triggerContainer = triggerTable[key] = [];
                 $.p(viewModel._triggers, key);
                 $.p(result, key);
+                var smartkeyTrigger = ViewModel._buildSmart(viewModel, key)
+                $.p(smartTriggers, smartTriggers._[key] = smartkeyTrigger);
+            } else {
+                smartkeyTrigger = smartTriggers._[key];
             }
             $.us(triggerContainer, attrTrigger);
+            //强制更新
+            smartkeyTrigger.rebuild($TRUE);
         });
     });
+    // viewModel.model.rebuildTree();
+    // viewModel.model.touchOff();
     return result;
 };
 
@@ -100,14 +109,42 @@ function ViewModel(handleNodeTree, NodeList, triggerTable, model) {
 //_buildSmartTriggers接口，
 ViewModel._buildSmartTriggers = function(viewModel, sKey) {
     var smartTriggers = [];
+    smartTriggers._ = {};
     $.E(viewModel._triggers, function(sKey) {
-        $.p(smartTriggers, ViewModel._buildSmart(viewModel, sKey));
+        $.p(smartTriggers, smartTriggers._[sKey] = ViewModel._buildSmart(viewModel, sKey));
     });
     return smartTriggers;
 }
+//VM通用的重建接口
+var _smartTriggerHandle_rebuild = function(forceUpdate) {
+    var smartTrigger = this;
+    var TEMP = smartTrigger.TEMP;
+    var viewModel = TEMP.vM;
+    var router_result = viewModel.model.$router(TEMP.sK);
+    var topGetter = router_result.model,
+        matchKey = router_result.key || "";
+    var currentTopGetter = TEMP.md;
+    if (topGetter !== currentTopGetter) {
+        TEMP.md = topGetter
+        if (currentTopGetter) {
+            smartTrigger.unbind(currentTopGetter._triggerKeys)
+        }
+        if (topGetter) {
+            smartTrigger.matchKey = matchKey;
+            smartTrigger.bind(topGetter._triggerKeys);
+            // finallyRun.register(viewModel._id + TEMP.sK, function() {
+            //因为Model是惰性生成的，因此在Model存在的情况下已经可以进行更新DOM节点了
+            smartTrigger.event(topGetter._triggerKeys)
+            // });
+        }
+    }
+    if (forceUpdate && topGetter) {
+        smartTrigger.event(topGetter._triggerKeys)
+    }
+};
 //_buildSmart接口
 ViewModel._buildSmart = function(viewModel, sKey) {
-    smartTrigger = new SmartTriggerHandle(
+    var smartTrigger = new SmartTriggerHandle(
         sKey || "", //match key
         vm_buildSmart_event, //VM通用的触发函数
         { //TEMP data
@@ -115,8 +152,11 @@ ViewModel._buildSmart = function(viewModel, sKey) {
             sK: sKey
         }
     );
+    smartTrigger.rebuild = _smartTriggerHandle_rebuild;
+    // viewModel._triggers._[sKey]._ = smartTrigger;
     return smartTrigger;
 }
+
 var vm_buildSmart_event = function(smartTriggerSet) {
     var TEMP = this.TEMP;
     TEMP.vM.touchOff(TEMP.sK);

@@ -35,6 +35,15 @@ function ProxyModel(entrust, model) {
 };
 
 var __ProxyModelProto__ = ProxyModel.prototype = {
+    queryElement: function(matchFun) {
+        var self = this;
+        matchFun = _buildQueryMatchFun(matchFun);
+        var result = self.entrust._queryElement(matchFun);
+        $.E(self._childProxyModel, function(proxyModel) {
+            result.push.apply(result, proxyModel.queryElement(matchFun));
+        });
+        return result;
+    },
     //收留独立的代理层为model中的一份子，必要时会为其开辟新的子model块
     shelter: function(proxyModel, key) {
         var self = this;
@@ -84,26 +93,7 @@ var __ProxyModelProto__ = ProxyModel.prototype = {
         if (model) {
             //重新定位触发器位置
             $.E(self._smartTriggers, function(smartTrigger) {
-                var TEMP = smartTrigger.TEMP;
-                var viewModel = TEMP.vM;
-                var router_result = viewModel.model.$router(TEMP.sK);
-                var topGetter = router_result.model,
-                    matchKey = router_result.key || "";
-                var currentTopGetter = TEMP.md;
-                if (topGetter !== currentTopGetter) {
-                    TEMP.md = topGetter
-                    if (currentTopGetter) {
-                        smartTrigger.unbind(currentTopGetter._triggerKeys)
-                    }
-                    if (topGetter) {
-                        smartTrigger.matchKey = matchKey;
-                        smartTrigger.bind(topGetter._triggerKeys);
-                        // finallyRun.register(viewModel._id + TEMP.sK, function() {
-                        //因为Model是惰性生成的，因此在Model存在的情况下已经可以进行更新DOM节点了
-                        smartTrigger.event(topGetter._triggerKeys)
-                        // });
-                    }
-                }
+                smartTrigger.rebuild();
             });
             //递归重建
             $.E(self._childProxyModel, function(proxyModel) {
@@ -126,3 +116,78 @@ $.E(["set", "get", "touchOff"], function(handleName) {
         }
     }
 });
+/*
+ * 增加ProxyModel的数据操作的功能
+ */
+
+var __setTool = {
+    //可用做forEach
+    map: $.map,
+    //可用做remove
+    filter: $.filter,
+    push: function( /*baseArr*/ ) {
+        var args = $.s(arguments),
+            result = $.s(args.shift());
+        Array.prototype.push.apply(result, args);
+        return result;
+    },
+    pop: function(baseArr) {
+        baseArr = $.s(baseArr);
+        baseArr.pop();
+        return baseArr;
+    },
+    _boolAvator: _placeholder(),
+    toggle: function(baser, toggler) {
+        if ($.isA(baser) || ($.isO(baser) && typeof baser.length === "number" && (baser = $.s(baser)))) { //数组型或类数组型
+            var index = baser.indexOf(toggler);
+            index === -1 ? baser.push(toggler) : baser.splice(index, 1);
+        } else if ($.isS(baser)) { //字符串型
+            baser.indexOf(toggler) === -1 ? baser += toggler : (baser = baser.replace(toggler, ""));
+        } else { //其余都用Boolean型处理
+            if ((baser instanceof Boolean) && baser.hasOwnProperty(__setTool._boolAvator)) {
+                baser = baser[__setTool._boolAvator];
+            } else {
+                var boolBaser = new Boolean(!baser);
+                boolBaser[__setTool._boolAvator] = baser;
+                baser = boolBaser;
+            }
+        }
+        return baser;
+    }
+};
+
+function __setToolFun(type) {
+    var handle = __setTool[type];
+    return function(key_of_object) {
+        var self = this.model;
+        if (self) {
+            var result,
+                args = $.s(arguments);
+            args[0] = self.get(key_of_object);
+            result = handle.apply($NULL, args);
+            self.set(key_of_object, result)
+            return result
+        }
+    }
+}
+
+$.fI(__setTool, function(handle, key) {
+    __ProxyModelProto__[key] = __setToolFun(key);
+});
+
+__ProxyModelProto__.mix = function(key_of_obj) {
+    //mix Data 合并数据
+    //TODO:复合操作，直接移动到ViewModel层，Model层只提供最基本的get、set
+    var self = this.model;
+    if (self) {
+        var result,
+            args = $.s(arguments);
+        args.shift();
+        if (args.length) { //arguments>=2
+            args.unshift(self.get(key_of_obj));
+            result = _jSouperBase.extend.apply($NULL, args);
+            self.set(key_of_obj, result);
+        }
+        return result;
+    }
+}

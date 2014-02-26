@@ -42,7 +42,9 @@ SmartTriggerHandle.prototype = {
             STS_Collection.splice(index, 1);
         }
         return self;
-    }
+    },
+    //由实例自定义的路由接口，用于实现自己定位
+    rebuild: $.noop
 };
 
 /*
