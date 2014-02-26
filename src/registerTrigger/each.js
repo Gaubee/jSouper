@@ -141,9 +141,11 @@ V.rt("#each", function(handle, index, parentHandle) {
                                         vm._arrayViewModel = arrViewModels;
                                     },
                                     callback: function(vm) {
-                                        if (!arrayModel._childModels._[index]) {
-                                            arrayModel.__buildChildModel(strIndex);
-                                        }
+                                        //PS:暂时牺牲效率
+                                        //TODO:实现prefix的多级缓存
+                                        // if (!arrayModel._childModels._[index]) {
+                                        //     arrayModel.__buildChildModel(strIndex);
+                                        // }
                                         proxyModel.shelter(vm, newPrefix); //+"."+index //reset arrViewModel's model
                                     }
                                 });

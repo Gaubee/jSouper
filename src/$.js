@@ -278,7 +278,9 @@ doc = document,
             },
             //insertBefore
             iB: function(parentNode, insertNode, beforNode) {
+                try{
                 parentNode.insertBefore(insertNode, beforNode || $NULL);
+            }catch(e){debugger}
             },
             //往节点末尾推入节点集合
             ap: function(parentNode, node) { //append

@@ -80,7 +80,7 @@
     /*
      * 自定义字段的set、get
      */
-    Model._defineKeyMap = {
+    var defineKeyMap = Model._defineKeyMap = {
         "$Index": {
             set: function() {
                 console.error("$Index is read only.");
@@ -118,7 +118,7 @@
             defineKey = remainingKey;
             remainingKey = $FALSE;
         }
-        var definer = Model._defineKeyMap[defineKey];
+        var definer = defineKeyMap[defineKey];
         if (definer) {
             result.definer = definer
             result.key = remainingKey
@@ -183,5 +183,19 @@
         buildModelByKey = __ModelProto__.buildModelByKey = function(key) {
             var router_result = Model.$router(this, key);
             return _buildModelByKey.call(router_result.model, router_result.key);
-        }
+        };
+
+    Model.configPrefix = function(prefixConfig) {
+        var systemPrefix = __ModelConfig__.prefix
+        $.fI(prefixConfig, function(newKey, index) {
+            var oldKey = systemPrefix[index];
+            var keyMap = (routerMap[oldKey] && routerMap) || (defineKeyMap[oldKey] && defineKeyMap);
+            if (keyMap) {
+                keyMap[newKey] = keyMap[oldKey];
+                keyMap[oldKey] = $UNDEFINED;
+            }
+            systemPrefix[index] = newKey;
+        })
+    }
+
 }());

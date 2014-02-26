@@ -280,7 +280,9 @@ doc = document,
             },
             //insertBefore
             iB: function(parentNode, insertNode, beforNode) {
+                try{
                 parentNode.insertBefore(insertNode, beforNode || $NULL);
+            }catch(e){debugger}
             },
             //往节点末尾推入节点集合
             ap: function(parentNode, node) { //append
@@ -847,7 +849,9 @@ SmartTriggerHandle.prototype = {
             STS_Collection.splice(index, 1);
         }
         return self;
-    }
+    },
+    //由实例自定义的路由接口，用于实现自己定位
+    rebuild: $.noop
 };
 
 /*
@@ -959,6 +963,7 @@ function Model(baseData) {
     //存储在全局集合中，方便跨Model访问，有些情况需要通过全局集合来获取
     //因为Model可能因为多余而被销毁，所以直接使用引用是不可靠的，用标实获取全局集合中对象才是最实时且正确的对象
     Model._instances[self.id = $.uid()] = self;
+
 
     //不对baseData做特殊处理，支持任意类型包括空类型的数据，且数据类型可任意更改
     self._database = baseData;
@@ -1107,7 +1112,7 @@ var __ModelProto__ = Model.prototype = {
                 };
             } else { //argumentLen >= 1
                 //find Object by the key-dot-path and change it
-                if (_dm_force_update || nObj !== self.get(key)) {
+                if (_dm_force_update || $.isO(nObj) || nObj !== self.get(key)) {
                     //[@Gaubee/blog/issues/45](https://github.com/Gaubee/blog/issues/45)
                     var database = self._database || (self._database = {}),
                         sObj,
@@ -1138,7 +1143,7 @@ var __ModelProto__ = Model.prototype = {
                             (self._database = {})[_split_laveStr] = nObj
                         }
                     }
-                } else if (!$.isO(nObj)) { //no any change, if instanceof Object and ==,just run touchOff
+                } else {
                     return;
                 }
             }
@@ -1154,7 +1159,7 @@ var __ModelProto__ = Model.prototype = {
     buildModelByKey: function(key) {
         var self = this;
         var result,
-            childModels = self._childModels
+            childModels = self._childModels,
             //寻址的过程中可能找到自己的子model
             resultChilds = [];
         if (key) {
@@ -1170,7 +1175,7 @@ var __ModelProto__ = Model.prototype = {
                     //prefixKey > key
                     else if (prefixKey.indexOf(key + ".") === 0) {
                         $.p(resultChilds, childModel);
-                        _continue = $FLASE;
+                        _continue = $FALSE;
                     }
                     //key > prefixKey
                     else if (key.indexOf(prefixKey + ".") === 0) {
@@ -1292,7 +1297,7 @@ var __ModelProto__ = Model.prototype = {
                         }
                         jointKey += "." + nodeKey;
                     }
-                    jointKey += "." + _split_laveStr;
+                    nodeKey || (jointKey += "." + _split_laveStr);
                 }
             } else { //非多层次寻址
                 jointKey = key
@@ -1381,7 +1386,7 @@ var __ModelProto__ = Model.prototype = {
         }
     },
     /*
-     * 将指定Model移除数据树，使得独立，旗下的子Model也要跟着移除
+     * 将指定Model移除数据树，使得独立，旗下的子Model也会跟着离开原有的数据树
      * TODO:根据key进行remove
      */
     remove: function(remover) {
@@ -1399,15 +1404,15 @@ var __ModelProto__ = Model.prototype = {
                 childModels.splice($.iO(childModels, remover), 1);
                 remover.TEMP = remover._parentModel = remover._prefix = $UNDEFINED;
             }
-            $.E($.s(remover._childModels), function(childModel) {
-                childModel.remove();
-            });
+            // $.E($.s(remover._childModels), function(childModel) {
+            //     childModel.remove();
+            // });
         }
-        self._triggerKeys.forIn(function(triggerCollection, triggerKey) {
-            $.E($.s(triggerCollection), function(smartTriggerHandle) {
-                smartTriggerHandle.unbind(triggerCollection);
-            })
-        });
+        // self._triggerKeys.forIn(function(triggerCollection, triggerKey) {
+        //     $.E($.s(triggerCollection), function(smartTriggerHandle) {
+        //         smartTriggerHandle.unbind(triggerCollection);
+        //     })
+        // });
         return remover;
     },
     /*
@@ -1416,8 +1421,11 @@ var __ModelProto__ = Model.prototype = {
      */
     __follow: function(model, key) {
         var self = this;
-        self.remove();
-        self._parentModel = model;
+        //TODO：有待优化，内部的结构是一条龙生成不会有多余的Model节点，所以可以不进行remove
+        if (self._parentModel !== model) {
+            self.remove();
+            self._parentModel = model;
+        }
         self._prefix = key;
         self._database = model.get(key);
         $.p(model._childModels, self);
@@ -1652,7 +1660,7 @@ var _dm_force_update = 0;
     /*
      * 自定义字段的set、get
      */
-    Model._defineKeyMap = {
+    var defineKeyMap = Model._defineKeyMap = {
         "$Index": {
             set: function() {
                 console.error("$Index is read only.");
@@ -1690,7 +1698,7 @@ var _dm_force_update = 0;
             defineKey = remainingKey;
             remainingKey = $FALSE;
         }
-        var definer = Model._defineKeyMap[defineKey];
+        var definer = defineKeyMap[defineKey];
         if (definer) {
             result.definer = definer
             result.key = remainingKey
@@ -1755,7 +1763,21 @@ var _dm_force_update = 0;
         buildModelByKey = __ModelProto__.buildModelByKey = function(key) {
             var router_result = Model.$router(this, key);
             return _buildModelByKey.call(router_result.model, router_result.key);
-        }
+        };
+
+    Model.configPrefix = function(prefixConfig) {
+        var systemPrefix = __ModelConfig__.prefix
+        $.fI(prefixConfig, function(newKey, index) {
+            var oldKey = systemPrefix[index];
+            var keyMap = (routerMap[oldKey] && routerMap) || (defineKeyMap[oldKey] && defineKeyMap);
+            if (keyMap) {
+                keyMap[newKey] = keyMap[oldKey];
+                keyMap[oldKey] = $UNDEFINED;
+            }
+            systemPrefix[index] = newKey;
+        })
+    }
+
 }());
 
 /*
@@ -1795,6 +1817,15 @@ function ProxyModel(entrust, model) {
 };
 
 var __ProxyModelProto__ = ProxyModel.prototype = {
+    queryElement: function(matchFun) {
+        var self = this;
+        matchFun = _buildQueryMatchFun(matchFun);
+        var result = self.entrust._queryElement(matchFun);
+        $.E(self._childProxyModel, function(proxyModel) {
+            result.push.apply(result, proxyModel.queryElement(matchFun));
+        });
+        return result;
+    },
     //收留独立的代理层为model中的一份子，必要时会为其开辟新的子model块
     shelter: function(proxyModel, key) {
         var self = this;
@@ -1844,26 +1875,7 @@ var __ProxyModelProto__ = ProxyModel.prototype = {
         if (model) {
             //重新定位触发器位置
             $.E(self._smartTriggers, function(smartTrigger) {
-                var TEMP = smartTrigger.TEMP;
-                var viewModel = TEMP.vM;
-                var router_result = viewModel.model.$router(TEMP.sK);
-                var topGetter = router_result.model,
-                    matchKey = router_result.key || "";
-                var currentTopGetter = TEMP.md;
-                if (topGetter !== currentTopGetter) {
-                    TEMP.md = topGetter
-                    if (currentTopGetter) {
-                        smartTrigger.unbind(currentTopGetter._triggerKeys)
-                    }
-                    if (topGetter) {
-                        smartTrigger.matchKey = matchKey;
-                        smartTrigger.bind(topGetter._triggerKeys);
-                        // finallyRun.register(viewModel._id + TEMP.sK, function() {
-                        //因为Model是惰性生成的，因此在Model存在的情况下已经可以进行更新DOM节点了
-                        smartTrigger.event(topGetter._triggerKeys)
-                        // });
-                    }
-                }
+                smartTrigger.rebuild();
             });
             //递归重建
             $.E(self._childProxyModel, function(proxyModel) {
@@ -1886,6 +1898,81 @@ $.E(["set", "get", "touchOff"], function(handleName) {
         }
     }
 });
+/*
+ * 增加ProxyModel的数据操作的功能
+ */
+
+var __setTool = {
+    //可用做forEach
+    map: $.map,
+    //可用做remove
+    filter: $.filter,
+    push: function( /*baseArr*/ ) {
+        var args = $.s(arguments),
+            result = $.s(args.shift());
+        Array.prototype.push.apply(result, args);
+        return result;
+    },
+    pop: function(baseArr) {
+        baseArr = $.s(baseArr);
+        baseArr.pop();
+        return baseArr;
+    },
+    _boolAvator: _placeholder(),
+    toggle: function(baser, toggler) {
+        if ($.isA(baser) || ($.isO(baser) && typeof baser.length === "number" && (baser = $.s(baser)))) { //数组型或类数组型
+            var index = baser.indexOf(toggler);
+            index === -1 ? baser.push(toggler) : baser.splice(index, 1);
+        } else if ($.isS(baser)) { //字符串型
+            baser.indexOf(toggler) === -1 ? baser += toggler : (baser = baser.replace(toggler, ""));
+        } else { //其余都用Boolean型处理
+            if ((baser instanceof Boolean) && baser.hasOwnProperty(__setTool._boolAvator)) {
+                baser = baser[__setTool._boolAvator];
+            } else {
+                var boolBaser = new Boolean(!baser);
+                boolBaser[__setTool._boolAvator] = baser;
+                baser = boolBaser;
+            }
+        }
+        return baser;
+    }
+};
+
+function __setToolFun(type) {
+    var handle = __setTool[type];
+    return function(key_of_object) {
+        var self = this.model;
+        if (self) {
+            var result,
+                args = $.s(arguments);
+            args[0] = self.get(key_of_object);
+            result = handle.apply($NULL, args);
+            self.set(key_of_object, result)
+            return result
+        }
+    }
+}
+
+$.fI(__setTool, function(handle, key) {
+    __ProxyModelProto__[key] = __setToolFun(key);
+});
+
+__ProxyModelProto__.mix = function(key_of_obj) {
+    //mix Data 合并数据
+    //TODO:复合操作，直接移动到ViewModel层，Model层只提供最基本的get、set
+    var self = this.model;
+    if (self) {
+        var result,
+            args = $.s(arguments);
+        args.shift();
+        if (args.length) { //arguments>=2
+            args.unshift(self.get(key_of_obj));
+            result = _jSouperBase.extend.apply($NULL, args);
+            self.set(key_of_obj, result);
+        }
+        return result;
+    }
+}
 
 // make an Object-Constructor to Model-Extend-Object-Constructor
 var _modelExtend = Model.extend = function(extendsName, extendsObjConstructor) {
@@ -2277,7 +2364,8 @@ function _DOMFactory(self) {
         topNode = self.handleNodeTree /*$.c(self.handleNodeTree)*/ ;
     //将id按数组存储，加速循环速度
     var nodeListIds = NodeList._ = [];
-    topNode.currentNode = fragment("body");
+    NodeList._T = topNode.id;
+    // topNode.currentNode = fragment("body");
     pushById(NodeList, topNode, nodeListIds);
 
 
@@ -2357,7 +2445,10 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
     $.E(NodeList._, function(hanldeNode_id) {
         //将节点进行包裹，使用原型读取
         NodeList_of_ViewModel[hanldeNode_id] = $.c(NodeList[hanldeNode_id]);
-    })
+    });
+    //生成顶层存储区
+    NodeList_of_ViewModel[NodeList._T].currentNode = fragment("body");
+
 
     //createNode
     var nodeCollections = $.D.cs("<div>" + catchNodesStr + "</div>");
@@ -2372,7 +2463,7 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
         var currentNode = currentHandle.currentNode;
         var _unknownElementAttribute = currentHandle._unEleAttr;
         if (_unknownElementAttribute) {
-            currentNode = doc.createElement(handle.tag);
+            currentNode = doc.createElement(currentHandle.tag);
             $.E(_unknownElementAttribute, function(attrName) {
                 // console.log("setAttribute:", attrName, " : ", _unknownElementAttribute._[attrName])
                 //直接使用赋值的话，非标准属性只会变成property而不是Attribute
@@ -2449,15 +2540,24 @@ function _addAttr(viewModel, node, attrJson) {
         var triggerTable = viewModel._triggers._;
         $.E(attrViewModel._triggers, function(key) {
             var triggerContainer = triggerTable[key];
+            var smartTriggers = viewModel.model._smartTriggers
             if (!triggerContainer) {
-                ViewModel._buildSmart(viewModel, key);
+                // ViewModel._buildSmart(viewModel, key);//.rebuild();
                 triggerContainer = triggerTable[key] = [];
                 $.p(viewModel._triggers, key);
                 $.p(result, key);
+                var smartkeyTrigger = ViewModel._buildSmart(viewModel, key)
+                $.p(smartTriggers, smartTriggers._[key] = smartkeyTrigger);
+            } else {
+                smartkeyTrigger = smartTriggers._[key];
             }
             $.us(triggerContainer, attrTrigger);
+            //强制更新
+            smartkeyTrigger.rebuild($TRUE);
         });
     });
+    // viewModel.model.rebuildTree();
+    // viewModel.model.touchOff();
     return result;
 };
 
@@ -2518,14 +2618,42 @@ function ViewModel(handleNodeTree, NodeList, triggerTable, model) {
 //_buildSmartTriggers接口，
 ViewModel._buildSmartTriggers = function(viewModel, sKey) {
     var smartTriggers = [];
+    smartTriggers._ = {};
     $.E(viewModel._triggers, function(sKey) {
-        $.p(smartTriggers, ViewModel._buildSmart(viewModel, sKey));
+        $.p(smartTriggers, smartTriggers._[sKey] = ViewModel._buildSmart(viewModel, sKey));
     });
     return smartTriggers;
 }
+//VM通用的重建接口
+var _smartTriggerHandle_rebuild = function(forceUpdate) {
+    var smartTrigger = this;
+    var TEMP = smartTrigger.TEMP;
+    var viewModel = TEMP.vM;
+    var router_result = viewModel.model.$router(TEMP.sK);
+    var topGetter = router_result.model,
+        matchKey = router_result.key || "";
+    var currentTopGetter = TEMP.md;
+    if (topGetter !== currentTopGetter) {
+        TEMP.md = topGetter
+        if (currentTopGetter) {
+            smartTrigger.unbind(currentTopGetter._triggerKeys)
+        }
+        if (topGetter) {
+            smartTrigger.matchKey = matchKey;
+            smartTrigger.bind(topGetter._triggerKeys);
+            // finallyRun.register(viewModel._id + TEMP.sK, function() {
+            //因为Model是惰性生成的，因此在Model存在的情况下已经可以进行更新DOM节点了
+            smartTrigger.event(topGetter._triggerKeys)
+            // });
+        }
+    }
+    if (forceUpdate && topGetter) {
+        smartTrigger.event(topGetter._triggerKeys)
+    }
+};
 //_buildSmart接口
 ViewModel._buildSmart = function(viewModel, sKey) {
-    smartTrigger = new SmartTriggerHandle(
+    var smartTrigger = new SmartTriggerHandle(
         sKey || "", //match key
         vm_buildSmart_event, //VM通用的触发函数
         { //TEMP data
@@ -2533,8 +2661,11 @@ ViewModel._buildSmart = function(viewModel, sKey) {
             sK: sKey
         }
     );
+    smartTrigger.rebuild = _smartTriggerHandle_rebuild;
+    // viewModel._triggers._[sKey]._ = smartTrigger;
     return smartTrigger;
 }
+
 var vm_buildSmart_event = function(smartTriggerSet) {
     var TEMP = this.TEMP;
     TEMP.vM.touchOff(TEMP.sK);
@@ -3668,9 +3799,11 @@ V.rt("#each", function(handle, index, parentHandle) {
                                         vm._arrayViewModel = arrViewModels;
                                     },
                                     callback: function(vm) {
-                                        if (!arrayModel._childModels._[index]) {
-                                            arrayModel.__buildChildModel(strIndex);
-                                        }
+                                        //PS:暂时牺牲效率
+                                        //TODO:实现prefix的多级缓存
+                                        // if (!arrayModel._childModels._[index]) {
+                                        //     arrayModel.__buildChildModel(strIndex);
+                                        // }
                                         proxyModel.shelter(vm, newPrefix); //+"."+index //reset arrViewModel's model
                                     }
                                 });
@@ -5174,7 +5307,7 @@ if (typeof module === "object" && module && typeof module.exports === "object") 
     var _dm_normal_get = __ModelProto__.get
 
     // 带收集功能的DM-get
-    var _dm_collect_get = function() {
+    var _dm_collect_get = function(key) {
         var self = this;
         var result = _dm_normal_get.apply(self, arguments)
 
@@ -5183,10 +5316,12 @@ if (typeof module === "object" && module && typeof module.exports === "object") 
         /*
          * 存储相关的依赖信息
          * 保存的都是Model顶部的信息，不使用最临近，因为临近的可能有同prefix的Model，
+         * TODO：新版本的可以使用最临近
          * 会导致保存的信息片面，或者易损
          */
         //获取最顶层的信息
-        var keyInfo = self.getTopModel(Model.session.filterKey);
+        var router_result = Model.$router(self, key);
+        var keyInfo = Model.getTopInfoByKey(router_result.model, router_result.key);
         _current_collect_layer && $.p(_current_collect_layer, {
             //rely object
             dm_id: keyInfo.model.id,
@@ -5236,7 +5371,7 @@ if (typeof module === "object" && module && typeof module.exports === "object") 
             }
 
             //获取顶层信息
-            var keyInfo = dm.getTopModel(key);
+            var keyInfo = Model.getTopInfoByKey(dm, key);
             var dm_id = keyInfo.model.id
             var key = keyInfo.key;
             //保存最近一层依赖
@@ -5280,7 +5415,7 @@ if (typeof module === "object" && module && typeof module.exports === "object") 
         var observerObjCollect = observerCache[self.id]
         if (observerObjCollect) {
             var key = result.key
-            var observerObjs = /*observerObjCollect[""]||*/observerObjCollect[key];
+            var observerObjs = /*observerObjCollect[""]||*/ observerObjCollect[key];
             if (!observerObjs) {
                 while (!observerObjs) {
                     key = $.lst(key, ".");

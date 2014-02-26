@@ -218,7 +218,8 @@ function _DOMFactory(self) {
         topNode = self.handleNodeTree /*$.c(self.handleNodeTree)*/ ;
     //将id按数组存储，加速循环速度
     var nodeListIds = NodeList._ = [];
-    topNode.currentNode = fragment("body");
+    NodeList._T = topNode.id;
+    // topNode.currentNode = fragment("body");
     pushById(NodeList, topNode, nodeListIds);
 
 
@@ -298,7 +299,10 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
     $.E(NodeList._, function(hanldeNode_id) {
         //将节点进行包裹，使用原型读取
         NodeList_of_ViewModel[hanldeNode_id] = $.c(NodeList[hanldeNode_id]);
-    })
+    });
+    //生成顶层存储区
+    NodeList_of_ViewModel[NodeList._T].currentNode = fragment("body");
+
 
     //createNode
     var nodeCollections = $.D.cs("<div>" + catchNodesStr + "</div>");
@@ -313,7 +317,7 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
         var currentNode = currentHandle.currentNode;
         var _unknownElementAttribute = currentHandle._unEleAttr;
         if (_unknownElementAttribute) {
-            currentNode = doc.createElement(handle.tag);
+            currentNode = doc.createElement(currentHandle.tag);
             $.E(_unknownElementAttribute, function(attrName) {
                 // console.log("setAttribute:", attrName, " : ", _unknownElementAttribute._[attrName])
                 //直接使用赋值的话，非标准属性只会变成property而不是Attribute

@@ -21,7 +21,7 @@
     var _dm_normal_get = __ModelProto__.get
 
     // 带收集功能的DM-get
-    var _dm_collect_get = function() {
+    var _dm_collect_get = function(key) {
         var self = this;
         var result = _dm_normal_get.apply(self, arguments)
 
@@ -30,10 +30,12 @@
         /*
          * 存储相关的依赖信息
          * 保存的都是Model顶部的信息，不使用最临近，因为临近的可能有同prefix的Model，
+         * TODO：新版本的可以使用最临近
          * 会导致保存的信息片面，或者易损
          */
         //获取最顶层的信息
-        var keyInfo = self.getTopModel(Model.session.filterKey);
+        var router_result = Model.$router(self, key);
+        var keyInfo = Model.getTopInfoByKey(router_result.model, router_result.key);
         _current_collect_layer && $.p(_current_collect_layer, {
             //rely object
             dm_id: keyInfo.model.id,
@@ -83,7 +85,7 @@
             }
 
             //获取顶层信息
-            var keyInfo = dm.getTopModel(key);
+            var keyInfo = Model.getTopInfoByKey(dm, key);
             var dm_id = keyInfo.model.id
             var key = keyInfo.key;
             //保存最近一层依赖
@@ -127,7 +129,7 @@
         var observerObjCollect = observerCache[self.id]
         if (observerObjCollect) {
             var key = result.key
-            var observerObjs = /*observerObjCollect[""]||*/observerObjCollect[key];
+            var observerObjs = /*observerObjCollect[""]||*/ observerObjCollect[key];
             if (!observerObjs) {
                 while (!observerObjs) {
                     key = $.lst(key, ".");
