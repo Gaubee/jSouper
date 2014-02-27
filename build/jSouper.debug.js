@@ -1869,8 +1869,8 @@ var __ProxyModelProto__ = ProxyModel.prototype = {
     follow: function(model, key) {
         var self = this;
         if (model instanceof Model) {
-            var model = model.buildModelByKey(key);
-            self.combine(model);
+            var currentModel = model.buildModelByKey(key);
+            self.combine(currentModel);
             self.rebuildTree();
         }
     },
@@ -1895,15 +1895,15 @@ var __ProxyModelProto__ = ProxyModel.prototype = {
         var self = this;
         var model = self.model;
         if (model) {
-            //重新定位触发器位置
-            $.E(self._smartTriggers, function(smartTrigger) {
-                smartTrigger.rebuild();
-            });
             //递归重建
             $.E(self._childProxyModel, function(proxyModel) {
                 //为“被收留者”重新定位到正确的Model，并重定位触发器位置
                 proxyModel.follow(model, proxyModel._prefix);
             })
+            //重新定位触发器位置
+            $.E(self._smartTriggers, function(smartTrigger) {
+                smartTrigger.rebuild();
+            });
         }
     }
 };
