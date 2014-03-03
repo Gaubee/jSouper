@@ -99,9 +99,9 @@
             get: function(model) {
                 var result = model._prefix;
                 var next;
-                while (next = model._parentModel) {
+                while ((next = model._parentModel) && next._prefix) {
                     model = next;
-                    result = model._prefix + result ? ("." + result) : "";
+                    result = model._prefix + (result ? ("." + result) : "");
                 }
                 return result;
             }

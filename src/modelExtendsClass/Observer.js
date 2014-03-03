@@ -123,28 +123,33 @@
     }
 
     var _dm_normal_touchOff = __ModelProto__.touchOff;
-    __ModelProto__.touchOff = function() {
+    __ModelProto__.touchOff = function(key) {
         var self = this;
-        var result = _dm_normal_touchOff.apply(self, arguments)
+        var result = _dm_normal_touchOff.call(self, key)
         var observerObjCollect = observerCache[self.id]
         if (observerObjCollect) {
-            var key = result.key
+            //这边key不使用touchOff返回的key，因为可能因为改变的对象是数组而导致touchOff的key变短了，从而无法获取到正确的依赖
+            key || (key = "");
             var observerObjs = /*observerObjCollect[""]||*/ observerObjCollect[key];
-            if (!observerObjs) {
-                while (!observerObjs) {
-                    key = $.lst(key, ".");
-                    if (key !== false) {
-                        observerObjs = observerObjCollect[key];
-                    } else {
-                        break;
+            do {
+                if (!observerObjs) {
+                    while (!observerObjs) {
+                        key = $.lst(key, ".");
+                        if (key !== false) {
+                            observerObjs = observerObjCollect[key];
+                        } else {
+                            observerObjs = observerObjCollect[_split_laveStr] || observerObjCollect[""];
+                            break;
+                        }
                     }
                 }
-            }
-            observerObjs && $.E(observerObjs, function(observerObj, abandon_index) {
-                var model = Model.get(observerObj.dm_id);
-                //直接使用touchOff无法触发自动更新
-                model.touchOff(observerObj.dm_key)
-            })
+                observerObjs && $.E(observerObjs, function(observerObj, abandon_index) {
+                    var model = Model.get(observerObj.dm_id);
+                    //直接使用touchOff无法触发自动更新
+                    model.touchOff(observerObj.dm_key)
+                });
+                observerObjs = $NULL;
+            } while (key)
         }
         return result;
     }

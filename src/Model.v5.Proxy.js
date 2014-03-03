@@ -54,6 +54,9 @@ var __ProxyModelProto__ = ProxyModel.prototype = {
             proxyModel._prefix = key /*|| ""*/ ;
             $.p(self._childProxyModel, proxyModel);
             proxyModel.follow(self.model, key);
+            /*//私有Model跟着触发更新
+            var privateModel = proxyModel.model._privateModel;
+            privateModel && privateModel.touchOff();*/
         }
     },
     //和指定的Model进行合并，吸附在指定Model上
@@ -68,6 +71,7 @@ var __ProxyModelProto__ = ProxyModel.prototype = {
             var currentModel = model.buildModelByKey(key);
             self.combine(currentModel);
             self.rebuildTree();
+            self.onfollow && self.onfollow();
         }
     },
     $router: function(key) {

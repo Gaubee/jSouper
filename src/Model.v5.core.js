@@ -245,6 +245,9 @@ var __ModelProto__ = Model.prototype = {
                 resultChilds.length && $.E(resultChilds, function(result_child) {
                     result_child.__follow(result, result_child._prefix.substr(key.length + 1))
                 });
+            } else {
+                //如果已经存在，确保数据源正确
+                result._database = self.get(key);
             }
         } else {
             result = self;
@@ -386,6 +389,8 @@ var __ModelProto__ = Model.prototype = {
             for (; childModel = childModels[i]; i--) {
                 childResult = childModel.set(self.get(childModel._prefix))
             };
+            /*//私有Model跟着触发更新
+            self._privateModel && self._privateModel.touchOff();*/
         }
 
         _dm_force_update -= 1;
