@@ -2520,9 +2520,10 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
                 }
             }
         } else { // if(currentNode.nodeType===3) 文本节点、script节点等直接拷贝
+            // console.log(currentNode.tagName);
             currentNode = $.D.cl(currentNode);
         }
-        if (!currentNode) debugger
+        // if (!currentNode) debugger
         $.D.ap(parentNode, currentHandle.currentNode = currentNode);
         if (currentNode.nodeType === 1) {
             $.p(queryList, currentNode);
@@ -3188,10 +3189,12 @@ var placeholder = {
             //字符串、script标签
             var quotedString = [];
             var scriptNodeString = [];
+            var styleNodeString = [];
             var start_ns = "<" + V.namespace;
             var end_ns = "</" + V.namespace;
             var Placeholder = "_" + Math.random(),
                 ScriptPlaceholder = "_" + Math.random(),
+                StylePlaceholder = "_" + Math.random(),
                 //备份字符串与script、XMP标签
                 htmlStr = htmlStr.replace(QuotedString, function(qs) {
                     quotedString.push(qs)
@@ -3199,6 +3202,9 @@ var placeholder = {
                 }).replace(ScriptNodeString, function(sns) {
                     scriptNodeString.push(sns);
                     return ScriptPlaceholder;
+                }).replace(StyleNodeString, function(sns) {
+                    styleNodeString.push(sns);
+                    return StylePlaceholder;
                 })
                 //为无命名空间的标签加上前缀
                 .replace(/<[\/]{0,1}([\w:]+)/g, function(html, tag) {
@@ -3208,8 +3214,10 @@ var placeholder = {
                     }
                     return html;
                 })
-                //回滚字符串与script、XMP标签
-                .replace(RegExp(ScriptPlaceholder, "g"), function(p) {
+                //回滚字符串与style、script、XMP标签
+                .replace(RegExp(StylePlaceholder, "g"), function(p) {
+                    return styleNodeString.shift();
+                }).replace(RegExp(ScriptPlaceholder, "g"), function(p) {
                     return scriptNodeString.shift();
                 }).replace(RegExp(Placeholder, "g"), function(p) {
                     return quotedString.shift();
@@ -4874,6 +4882,7 @@ var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
 	// SingleQuotedString = /'(?:\.|(\\\')|[^\''\n])*'/g, //单引号字符串
 	QuotedString = /"(?:\.|(\\\")|[^\""\n])*"|'(?:\.|(\\\')|[^\''\n])*'/g, //引号字符串
 	ScriptNodeString = /<script[^>]*>([\s\S]*?)<\/script>/gi,
+	StyleNodeString = /<style[^>]*>([\s\S]*?)<\/style>/gi,
     XmpNodeString = /<xmp[^>]*>([\s\S]*?)<\/xmp>/gi,
 	templateHandles = {};
 $.fI(V.handles, function(handleFun, handleName) {
@@ -4932,14 +4941,19 @@ $.E(_unary_operator_list, function(operator) {
 var parse = function(str) {
 		var quotedString = [];
 		var scriptNodeString = [];
+		var styleNodeString = [];
 		var Placeholder = "_" + Math.random(),
 			ScriptPlaceholder = "_" + Math.random(),
+			StylePlaceholder = "_" + Math.random(),
 			str = str.replace(QuotedString, function(qs) {
 				quotedString.push(qs)
 				return Placeholder;
 			}).replace(ScriptNodeString,function (sns) {
 				scriptNodeString.push(sns);
 				return ScriptPlaceholder;
+			}).replace(StyleNodeString,function  (sns) {
+				styleNodeString.push(sns);
+				return StylePlaceholder;
 			}),
 			result = str.replace(newTemplateMatchReg, function(matchStr, innerStr, index) {
 				innerStr = innerStr.replace(/&gt;/g, ">").replace(/&lt;/g, "<").replace(/&amp;/g, "&") //Semantic confusion with HTML
@@ -4963,7 +4977,9 @@ var parse = function(str) {
 				}
 			})
 
-			result = result.replace(RegExp(ScriptPlaceholder, "g"),function(p) {
+			result = result.replace(RegExp(StylePlaceholder, "g"),function(p) {
+				return styleNodeString.shift();
+			}).replace(RegExp(ScriptPlaceholder, "g"),function(p) {
 				return scriptNodeString.shift();
 			}).replace(RegExp(Placeholder, "g"), function(p) {
 				return quotedString.shift();

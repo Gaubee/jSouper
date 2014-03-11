@@ -343,9 +343,10 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
                 }
             }
         } else { // if(currentNode.nodeType===3) 文本节点、script节点等直接拷贝
+            // console.log(currentNode.tagName);
             currentNode = $.D.cl(currentNode);
         }
-        if (!currentNode) debugger
+        // if (!currentNode) debugger
         $.D.ap(parentNode, currentHandle.currentNode = currentNode);
         if (currentNode.nodeType === 1) {
             $.p(queryList, currentNode);

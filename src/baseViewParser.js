@@ -69,10 +69,12 @@ var placeholder = {
             //字符串、script标签
             var quotedString = [];
             var scriptNodeString = [];
+            var styleNodeString = [];
             var start_ns = "<" + V.namespace;
             var end_ns = "</" + V.namespace;
             var Placeholder = "_" + Math.random(),
                 ScriptPlaceholder = "_" + Math.random(),
+                StylePlaceholder = "_" + Math.random(),
                 //备份字符串与script、XMP标签
                 htmlStr = htmlStr.replace(QuotedString, function(qs) {
                     quotedString.push(qs)
@@ -80,6 +82,9 @@ var placeholder = {
                 }).replace(ScriptNodeString, function(sns) {
                     scriptNodeString.push(sns);
                     return ScriptPlaceholder;
+                }).replace(StyleNodeString, function(sns) {
+                    styleNodeString.push(sns);
+                    return StylePlaceholder;
                 })
                 //为无命名空间的标签加上前缀
                 .replace(/<[\/]{0,1}([\w:]+)/g, function(html, tag) {
@@ -89,8 +94,10 @@ var placeholder = {
                     }
                     return html;
                 })
-                //回滚字符串与script、XMP标签
-                .replace(RegExp(ScriptPlaceholder, "g"), function(p) {
+                //回滚字符串与style、script、XMP标签
+                .replace(RegExp(StylePlaceholder, "g"), function(p) {
+                    return styleNodeString.shift();
+                }).replace(RegExp(ScriptPlaceholder, "g"), function(p) {
                     return scriptNodeString.shift();
                 }).replace(RegExp(Placeholder, "g"), function(p) {
                     return quotedString.shift();
