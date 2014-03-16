@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+
+<head>
+    <title>app - jSouper</title>
+    <script type="text/javascript" src="../build/jSouper.debug.js">
+    </script>
+
+</head>
+
+<body>
+    <div id="test">
+        <h1 id="a">你好！{{name}}</h1>
+    </div>
+    <xmp type="template" name="cc">
+        <h2 id="c">你也好：{{#each peoples}}{{name}}{{/each}}</h2>
+    </xmp>
+</body>
+
+</html>
+<script type="text/javascript">
+jSouper.ready(function(argument) {
+
+    console.group("创建主VM");
+    jSouper.app({
+        Id: "test",
+        Data: {
+            name: "Gaubee"
+        }
+    });
+    console.log(document.getElementById('a').innerText === "你好！Gaubee");
+    console.groupEnd("创建主VM");
+
+    console.group("创建子VM");
+    cc = jSouper.modules["cc"]();
+    cc.append(document.body);
+    App.shelter(cc, "child");
+    console.log(document.getElementById('c').innerText === "你也好：");
+    console.groupEnd("创建子VM");
+
+    setTimeout(function() {
+        console.group("更改子VM的数据");
+        App.set("child.peoples", [{
+            name: "Bangeel"
+        }, {
+            name: "Angular"
+        }]);
+        console.log(document.getElementById('c').innerText === "你也好：BangeelAngular");
+        console.groupEnd("更改子VM的数据");
+    }, 400);
+
+});
+</script>

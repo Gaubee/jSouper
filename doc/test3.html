@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+
+<head>
+    <title>app - jSouper</title>
+    <script type="text/javascript" src="../build/jSouper.debug.js">
+    </script>
+
+</head>
+<div id="app">
+    结果：{{#teleporter 'test'}}
+</div>
+<xmp type="template" name="test">
+    <h1 id="test">{{$This}}</h1>
+    {{#> 'test_child','$This'}}
+    <ul>
+        {{#each $Top.m}}
+        <li class="ul_item">{{n}}</li>
+        {{/each}}
+    </ul>
+</xmp>
+<xmp type="template" name="test_child">
+    <h1 id="test_child">{{$Top.g.h}}</h1>
+    <ol>
+        {{#each $Top.l}}
+        <li class="ol_item">{{$This}}</li>
+        {{/each}}
+    </ol>
+</xmp>
+
+<body>
+</body>
+
+</html>
+<script type="text/javascript">
+jSouper.ready(function(argument) {
+
+    console.group("创建主VM");
+    jSouper.app({
+        Id: "app",
+        Data: {
+            a: {
+                b: "c"
+            },
+            d: {
+                e: {
+                    f: "ff"
+                }
+            },
+            g: {
+                h: "i"
+            },
+            j: "kkk",
+            l: [1, 2, 3, 4, 5],
+            m:[{n:1}, {n:2}, {n:3}, {n:4}, {n:5}]
+        }
+    });
+    console.groupEnd("创建主VM");
+    console.group("创建值VM");
+    test = jSouper.modules["test"]();
+    console.groupEnd("创建值VM");
+
+    console.group("显示子VM");
+    App.teleporter(test, "test")
+    console.log(document.getElementById("test"))
+    console.log(document.getElementById("test_child"))
+    console.groupEnd("显示子VM");
+
+    setTimeout(function(argument) {
+        console.group("绑定子VM");
+        App.shelter(test, "a.b")
+        console.log(document.getElementById("test").innerHTML === App.get(test.model._prefix))
+        console.log(document.getElementById("test_child").innerHTML === App.get("g.h"))
+        console.groupEnd("绑定子VM");
+    }, 300)
+
+    setTimeout(function(argument) {
+        console.group("重新绑定子VM，进入更深的子层");
+        App.shelter(test, "d.e.f")
+        console.log(document.getElementById("test").innerHTML === App.get(test.model._prefix))
+        App.set("g.h", "ii")
+        console.log(document.getElementById("test_child").innerHTML === App.get("g.h"))
+        App.model.pop("l")
+        App.model.pop("m")
+        console.log(document.getElementsByClassName('ol_item').length === App.get("l").length);
+        console.log(document.getElementsByClassName('ul_item').length === App.get("m").length);
+        console.groupEnd("重新绑定子VM，进入更深的子层");
+    }, 600)
+
+
+    setTimeout(function(argument) {
+        console.group("重新绑定子VM，进入更浅的子层");
+        App.shelter(test, "j")
+        console.log(document.getElementById("test").innerHTML === App.get(test.model._prefix))
+        App.set("g.h", "iii")
+        console.log(document.getElementById("test_child").innerHTML === App.get("g.h"))
+        App.model.pop("l")
+        App.model.pop("m")
+        console.log(document.getElementsByClassName('ol_item').length === App.get("l").length);
+        console.log(document.getElementsByClassName('ul_item').length === App.get("m").length);
+        console.groupEnd("重新绑定子VM，进入更浅的子层");
+    }, 900)
+
+
+});
+</script>
