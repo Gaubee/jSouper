@@ -1,6 +1,7 @@
 var _testDIV = fragment(), //$.D.cl(shadowDIV),
     _getAttrOuter = function(attrVM) {
         var NodeList = attrVM.NodeList;
+        var topNode = attrVM.topNode();
         var result;
         //单个结果节点
         var single = $TRUE;
@@ -8,13 +9,15 @@ var _testDIV = fragment(), //$.D.cl(shadowDIV),
         $.E(attrVM.handleNodeTree.childNodes, function(handle) {
             if (handle.type === "text") {
                 var nodeHandle = NodeList[handle.id];
-                var data = nodeHandle._data || nodeHandle.currentNode.data;
+                var currentNode = nodeHandle.currentNode;
+                if (currentNode.parentNode === topNode) {
+                    var data = nodeHandle._data || currentNode.data;
+                }
                 single ? (result = data) : (result += data);
                 single = $FALSE;
             }
         });
 
-        console.log(result);
         return result
     };
 // _getAttrOuter = Function("n", "n=n.topNode();n=n." + (("textContent" in _testDIV) ? "textContent" : "innerText") + "||'';console.log(n);return n;");
