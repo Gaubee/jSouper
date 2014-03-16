@@ -46,8 +46,8 @@ var _statusEventCache = {},
 		}
 		return value;
 	},
-	statusListerAttribute = function(key, currentNode, parserNode, vi /*, dm_id*/ ) {
-		var attrOuter = _getAttrOuter(parserNode);
+	statusListerAttribute = function(key, currentNode, attrVM, vi /*, dm_id*/ ) {
+		var attrOuter = _getAttrOuter(attrVM);
 		$.st(key, "-"); //"status - eventName-..."
 		var statusInfos = _split_laveStr,
 			eventName = $.st(statusInfos, "-") || statusInfos, //Multi-event binding

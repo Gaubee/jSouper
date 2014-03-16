@@ -1,6 +1,6 @@
 var _elementCache = {},
-	eventListerAttribute = function(key, currentNode, parserNode, vi /*, dm_id*/ ,handle, triggerTable) {
-		var attrOuter = _getAttrOuter(parserNode),
+	eventListerAttribute = function(key, currentNode, attrVM, vi /*, dm_id*/ ,handle, triggerTable) {
+		var attrOuter = _getAttrOuter(attrVM),
 			eventInfos = key.replace("event-", "").toLowerCase().split("-"),
 			eventName = eventInfos.shift(), //Multi-event binding
 			elementHashCode = $.hashCode(currentNode, "event" + eventInfos.join("-"));

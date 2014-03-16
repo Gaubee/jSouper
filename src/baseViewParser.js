@@ -88,7 +88,7 @@ var placeholder = {
                 })
                 //为无命名空间的标签加上前缀
                 .replace(/<[\/]{0,1}([\w:]+)/g, function(html, tag) {
-                    //排除：带命名空间、独立标签
+                    //排除：带命名空间、独立标签、特殊节点
                     if (tag.indexOf(":") === -1 && "|area|br|col|embed|hr|img|input|link|meta|param|".indexOf("|" + tag.toLowerCase() + "|") === -1) {
                         html = (html.charAt(1) === "/" ? end_ns : start_ns) + tag;
                     }

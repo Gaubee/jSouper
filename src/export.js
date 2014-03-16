@@ -74,7 +74,7 @@ var _jSouperBase = {
         if (App) {
             var appName = userConfig.Var;
             var template = jSouper.parseNode(App, "App")(userConfig.Data); //App.getAttribute("template-data")//json or url or configable
-            // template.set(HVP_config.Data);
+            jSouper.App = template;
             App.innerHTML = "";
             template.append(App);
             if ( /*!appName || */ appName == userConfig.Id || appName in global) {

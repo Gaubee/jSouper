@@ -2158,7 +2158,7 @@ draggable
                     $.E(attrViewModel._triggers, function(key) { //touchoff all triggers
                         attrViewModel.touchOff(key);
                     });
-                    _attributeHandle(attrKey, currentNode, attrViewModel.topNode(), viewModel, /*model.id,*/ handle, triggerTable);
+                    _attributeHandle(attrKey, currentNode, attrViewModel/*.topNode()*/, viewModel, /*model.id,*/ handle, triggerTable);
                     // model.remove(attrViewModel); //?
                 }
             }
@@ -3208,7 +3208,7 @@ var placeholder = {
                 })
                 //为无命名空间的标签加上前缀
                 .replace(/<[\/]{0,1}([\w:]+)/g, function(html, tag) {
-                    //排除：带命名空间、独立标签
+                    //排除：带命名空间、独立标签、特殊节点
                     if (tag.indexOf(":") === -1 && "|area|br|col|embed|hr|img|input|link|meta|param|".indexOf("|" + tag.toLowerCase() + "|") === -1) {
                         html = (html.charAt(1) === "/" ? end_ns : start_ns) + tag;
                     }
@@ -3889,30 +3889,30 @@ V.rt("", function(handle, index, parentHandle) {
     if (parentHandle.type !== "handle") { //as textHandle
         if ($.isSWrap(key)) { // single String
             trigger.event = function(NodeList_of_ViewModel, model) {
-                NodeList_of_ViewModel[textHandleId].currentNode.data = key.substring(1, key.length - 1);
+                var handleNode = NodeList_of_ViewModel[textHandleId];
+                handleNode._data = handleNode.currentNode.data = key.substring(1, key.length - 1);
                 //trigger.event = $.noop;
             };
         } else if ($.isStoN(key)) { // single Number
             trigger.event = function(NodeList_of_ViewModel, model) {
-                NodeList_of_ViewModel[textHandleId].currentNode.data = parseFloat(key);
+                var handleNode = NodeList_of_ViewModel[textHandleId];
+                handleNode._data = handleNode.currentNode.data = parseFloat(key);
                 //trigger.event = $.noop;
             };
         } else { //String for databese by key
             trigger.key = key;
             trigger.event = function(NodeList_of_ViewModel, model, /* triggerBy,*/ isAttr /*, vi*/ ) { //call by ViewModel's Node
                 var data = model.get(key),
-                    nodeHandle = NodeList_of_ViewModel[textHandleId],
-                    currentNode = nodeHandle.currentNode;
+                    nodeHandle = NodeList_of_ViewModel[textHandleId];
                 if (isAttr) {
-                    //IE浏览器直接编译，故不需要转义，其他浏览器需要以字符串绑定到属性中。需要转义，否则会出现引号冲突
+                    //字符串事件：IE浏览器直接编译，故不需要转义，其他浏览器需要以字符串绑定到属性中。需要转义，否则会出现引号冲突
                     if (isAttr.key.indexOf("on") === 0 && !_isIE) {
                         data = String(data).replace(/"/g, '\\"').replace(/'/g, "\\'");
                     }
                 }
                 // data = String(data);
                 if (nodeHandle._data !== data) {
-                    nodeHandle._data = data;
-                    currentNode.data = data === $UNDEFINED ? "" : data;
+                    nodeHandle._data = nodeHandle.currentNode.data = (data === $UNDEFINED ? "" : data);
                 }
             }
         }
@@ -4409,73 +4409,92 @@ V.rt("#with", function(handle, index, parentHandle) {
 	}
 	return trigger;
 });
-var _testDIV = fragment(),//$.D.cl(shadowDIV),
-	_getAttrOuter = Function("n", "return n." + (("textContent" in _testDIV) ? "textContent" : "innerText") + "||''");
+var _testDIV = fragment(), //$.D.cl(shadowDIV),
+    _getAttrOuter = function(attrVM) {
+        var NodeList = attrVM.NodeList;
+        var result;
+        //单个结果节点
+        var single = $TRUE;
+        //属性VM不支持Element节点，可直接变量出textNode
+        $.E(attrVM.handleNodeTree.childNodes, function(handle) {
+            if (handle.type === "text") {
+                var nodeHandle = NodeList[handle.id];
+                var data = nodeHandle._data || nodeHandle.currentNode.data;
+                single ? (result = data) : (result += data);
+                single = $FALSE;
+            }
+        });
+
+        console.log(result);
+        return result
+    };
+// _getAttrOuter = Function("n", "n=n.topNode();n=n." + (("textContent" in _testDIV) ? "textContent" : "innerText") + "||'';console.log(n);return n;");
 
 var _AttributeHandleEvent = {
-	event: function(key, currentNode, parserNode) { //on开头的事件绑定，IE需要绑定Function类型，现代浏览器绑定String类型（_AttributeHandleEvent.com）
-		var attrOuter = _getAttrOuter(parserNode);
-		try {
-			var attrOuterEvent = Function(attrOuter); //尝试编译String类型数据
-		} catch (e) {
-			attrOuterEvent = $.noop; //失败使用空函数替代
-		}
-		currentNode.setAttribute(key, attrOuterEvent);
-	},
-	style: function(key, currentNode, parserNode) {
-		var attrOuter = _getAttrOuter(parserNode);
-		currentNode.style.setAttribute('cssText', attrOuter);
-	},
-	com: function(key, currentNode, parserNode) {
-		var attrOuter = _getAttrOuter(parserNode);
-		if (currentNode.getAttribute(key) !== attrOuter) {
-			currentNode.setAttribute(key, attrOuter)
-		}
-	},
-	dir: function(key, currentNode, parserNode) {
-		var attrOuter = _getAttrOuter(parserNode);
-		if (currentNode[key] !== attrOuter) {
-			currentNode[key] = attrOuter;
-		}
-	},
-	bool: function(key, currentNode, parserNode) {
-		var attrOuter = _booleanFalseRegExp(_getAttrOuter(parserNode));
-		if (attrOuter) { // currentNode.setAttribute(key, key);
-			currentNode[key] = key;
-		} else { // currentNode.removeAttribute(key);
-			currentNode[key] = $FALSE;
-		}
-	},
-	// checked:self.bool,
-	radio: function(key, currentNode, parserNode) { //radio checked
-		var attrOuter = _getAttrOuter(parserNode);
-		if (attrOuter === currentNode.value) {
-			currentNode[key] = attrOuter;
-		}
-	}
+    event: function(key, currentNode, attrVM) { //on开头的事件绑定，IE需要绑定Function类型，现代浏览器绑定String类型（_AttributeHandleEvent.com）
+        var attrOuter = _getAttrOuter(attrVM);
+        try {
+            var attrOuterEvent = Function(attrOuter); //尝试编译String类型数据
+        } catch (e) {
+            attrOuterEvent = $.noop; //失败使用空函数替代
+        }
+        currentNode.setAttribute(key, attrOuterEvent);
+    },
+    style: function(key, currentNode, attrVM) {
+        var attrOuter = _getAttrOuter(attrVM);
+        currentNode.style.setAttribute('cssText', attrOuter);
+    },
+    com: function(key, currentNode, attrVM) {
+        var attrOuter = _getAttrOuter(attrVM);
+        if (currentNode.getAttribute(key) !== attrOuter) {
+            currentNode.setAttribute(key, attrOuter)
+        }
+    },
+    dir: function(key, currentNode, attrVM) {
+        var attrOuter = _getAttrOuter(attrVM);
+        if (currentNode[key] !== attrOuter) {
+            currentNode[key] = attrOuter;
+        }
+    },
+    bool: function(key, currentNode, attrVM) {
+        var attrOuter = _booleanFalseRegExp(_getAttrOuter(attrVM));
+        if (attrOuter) { // currentNode.setAttribute(key, key);
+            currentNode[key] = key;
+        } else { // currentNode.removeAttribute(key);
+            currentNode[key] = $FALSE;
+        }
+    },
+    // checked:self.bool,
+    radio: function(key, currentNode, attrVM) { //radio checked
+        var attrOuter = _getAttrOuter(attrVM);
+        if (attrOuter === currentNode.value) {
+            currentNode[key] = attrOuter;
+        }
+    }
 };
 var __bool = _AttributeHandleEvent.checked = _AttributeHandleEvent.bool;
 if (_isIE) {
-	var __radio = _AttributeHandleEvent.radio;
-	_AttributeHandleEvent.radio = function(key, currentNode, parserNode) {
-		var attrOuter = _booleanFalseRegExp(_getAttrOuter(parserNode));
-		if (attrOuter === currentNode.value) {
-			currentNode.defaultChecked = attrOuter;
-		} else {
-			currentNode.defaultChecked = $FALSE;
-		}
-		(this._attributeHandle = __radio)(key, currentNode, parserNode);
-	}
-	_AttributeHandleEvent.checked = function(key, currentNode, parserNode) {
-		var attrOuter = _booleanFalseRegExp(_getAttrOuter(parserNode));
-		if (attrOuter) {
-			currentNode.defaultChecked = attrOuter;
-		} else {
-			currentNode.defaultChecked = $FALSE;
-		}
-		(this._attributeHandle = __bool)(key, currentNode, parserNode);
-	}
+    var __radio = _AttributeHandleEvent.radio;
+    _AttributeHandleEvent.radio = function(key, currentNode, attrVM) {
+        var attrOuter = _booleanFalseRegExp(_getAttrOuter(attrVM));
+        if (attrOuter === currentNode.value) {
+            currentNode.defaultChecked = attrOuter;
+        } else {
+            currentNode.defaultChecked = $FALSE;
+        }
+        (this._attributeHandle = __radio)(key, currentNode, attrVM);
+    }
+    _AttributeHandleEvent.checked = function(key, currentNode, attrVM) {
+        var attrOuter = _booleanFalseRegExp(_getAttrOuter(attrVM));
+        if (attrOuter) {
+            currentNode.defaultChecked = attrOuter;
+        } else {
+            currentNode.defaultChecked = $FALSE;
+        }
+        (this._attributeHandle = __bool)(key, currentNode, attrVM);
+    }
 }
+
 var _boolAssignment = " checked selected disabled readonly multiple defer declare noresize nowrap noshade compact truespeed async typemustmatch open novalidate ismap default seamless autoplay controls loop muted reversed scoped autofocus required formnovalidate editable draggable hidden "
 /*for ie fix*/
 + "defaultSelected ";
@@ -4490,21 +4509,25 @@ V.ra(function(attrKey) {
 		case "radio":
 			(attrKey === "checked") && (result = _AttributeHandleEvent.radio)
 			break
-		case "select-one":
-			/selected|defaultSelected/.test(attrKey) && (result = _AttributeHandleEvent.select)
-			break
+		// case "select-one":
+		// 	/selected|defaultSelected/.test(attrKey) && (result = _AttributeHandleEvent.select)
+		// 	break
 	}
 	return result;
 })
 var _dirAssignment = " className value ";
 V.ra(function(attrKey){
 	return _dirAssignment.indexOf(" "+attrKey+" ")!==-1;
-}, function() {
+}, function(attrKey, element) {
+	console.log(attrKey, element);
+	if (element.tagName===(V.namespace+"select").toUpperCase()) {
+		return _AttributeHandleEvent.select;
+	}
 	return _AttributeHandleEvent.dir;
 })
 var _elementCache = {},
-	eventListerAttribute = function(key, currentNode, parserNode, vi /*, dm_id*/ ,handle, triggerTable) {
-		var attrOuter = _getAttrOuter(parserNode),
+	eventListerAttribute = function(key, currentNode, attrVM, vi /*, dm_id*/ ,handle, triggerTable) {
+		var attrOuter = _getAttrOuter(attrVM),
 			eventInfos = key.replace("event-", "").toLowerCase().split("-"),
 			eventName = eventInfos.shift(), //Multi-event binding
 			elementHashCode = $.hashCode(currentNode, "event" + eventInfos.join("-"));
@@ -4575,7 +4598,7 @@ var _formCache = {},
 					var _init_finallyRun = DM_finallyRun[_init_hashCode] = function() {
 						var options = currentNode.options
 						if (options.length) {
-							//待存在options后，则进行初始化bind-form的值
+							//待存在options后，则进行初始化bind-input的值
 							//并确保只运行一次。
 							DM_finallyRun[_init_hashCode] = $FALSE;
 							var value = [];
@@ -4626,9 +4649,9 @@ var _formCache = {},
 		},
 		"textarea": __text
 	},
-	formListerAttribute = function(key, currentNode, parserNode, vi, /*dm_id,*/ handle, triggerTable) {
-		var attrOuter = _getAttrOuter(parserNode),
-			eventNameHashCode = $.hashCode(currentNode, "bind-form");
+	formListerAttribute = function(key, currentNode, attrVM, vi, /*dm_id,*/ handle, triggerTable) {
+		var attrOuter = _getAttrOuter(attrVM),
+			eventNameHashCode = $.hashCode(currentNode, "bind-input");
 			// console.log(attrOuter)
 		if (handle[eventNameHashCode] !== attrOuter) {
 			// console.log(handle[eventNameHashCode], attrOuter, arguments)
@@ -4700,13 +4723,88 @@ V.ra(function(attrKey){
 },function () {
 	return _event_by_fun&&_AttributeHandleEvent.event;
 })
-_AttributeHandleEvent.select = function(key, currentNode, parserNode, vi) { //select selected
-	var attrOuter = _getAttrOuter(parserNode),
-		data = vi.get(attrOuter),
-		selectHashCode = $.hashCode(currentNode, "selected"),
+// _AttributeHandleEvent.select = function(key, currentNode, attrVM, vi) { //select selected
+// 	var attrOuter = _getAttrOuter(attrVM),
+// 		data = vi.get(attrOuter),
+// 		selectHashCode = $.hashCode(currentNode, "selected"),
+// 		options = currentNode.options;
+// 	currentNode[selectHashCode] = attrOuter;
+// 	// console.log(attrOuter, selectHashCode)
+// 	if ($.isA(data)) {
+// 		if (currentNode.multiple) {
+// 			$.E(options, function(optionNode) {
+// 				optionNode.selected = ($.iO(data, optionNode.value) !== -1)
+// 			})
+// 		}else{
+// 			$.e(options, function(optionNode) {
+// 				if(optionNode.selected = ($.iO(data, optionNode.value) !== -1)){
+// 					return $FALSE
+// 				}
+// 			})
+// 		}
+// 	} else {
+// 		$.E(options, function(optionNode) {
+// 			optionNode.selected = (data === optionNode.value)
+// 		})
+// 	}
+// }
+// var _triggersEach = V.triggers["#each"];
+// V.rt("#each", function(handle, index, parentHandle) {
+// 	var trigger = _triggersEach(handle, index, parentHandle);
+// 	if (parentHandle.type === "element" && parentHandle.node.tagName === "SELECT") {
+// 		if (_isIE) {
+// 			//IE需要强制触发相关于option的属性来强制使其渲染更新DOM
+// 			//使用clone的节点问题？是否和clone出来的HTML5节点的问题一样？
+// 			var _ieFix_triggerEvent = trigger.event;
+// 			trigger.event = function(NodeList_of_ViewModel, model, /*eventTrigger,*/ isAttr, viewModel_ID) {
+// 				var result = _ieFix_triggerEvent.apply(this, arguments);
+// 				var currentNode_options = NodeList_of_ViewModel[parentHandle.id].currentNode.options;
+// 				currentNode_options.length += 1;
+// 				currentNode_options.length -= 1;
+// 				return result;
+// 			}
+// 		}
+// 		//数组的赋值与绑定相关联，实时更新绑定值。
+// 		var _triggerEvent = trigger.event;
+// 		trigger.event = function(NodeList_of_ViewModel, model, /*eventTrigger,*/ isAttr, viewModel_ID) {
+// 			var result = _triggerEvent.apply(this, arguments);
+// 			var currentNode = NodeList_of_ViewModel[parentHandle.id].currentNode,
+// 				selectHashCode = $.hashCode(currentNode, "selected"),
+// 				touchKey = currentNode[selectHashCode],
+// 				DM_finallyRun = Model.finallyRun;
+// 			// console.log(touchKey);
+// 			if (touchKey) { //value-map
+// 				var finallyRun;
+// 				if (!(finallyRun = DM_finallyRun[selectHashCode])) {
+// 					DM_finallyRun(DM_finallyRun[selectHashCode] = finallyRun = function() {
+// 						finallyRun.model.touchOff(finallyRun.touchKey)
+// 						DM_finallyRun[selectHashCode] = $FALSE;
+// 					})
+// 				}
+// 				finallyRun.model = model;
+// 				finallyRun.touchKey = touchKey;
+// 			}else{
+// 				//如果没有指定绑定的selected值，那么为bind-from配置默认选中值
+// 				var _init_hashCode = $.hashCode(currentNode, "init"),
+// 					_init_finallyRun = DM_finallyRun[_init_hashCode];
+// 				if(_init_finallyRun&&!_init_finallyRun._inQuene){
+// 					DM_finallyRun(_init_finallyRun)
+// 					_init_finallyRun._inQuene = $TRUE;
+// 				}
+// 			}
+// 			return result;
+// 		}
+// 	}
+// 	return trigger;
+// })
+
+_AttributeHandleEvent.select = function(key, currentNode, attrVM, vi) { //select selected
+	// var attrOuter = _getAttrOuter(attrVM);
+	// 	if (currentNode[key] !== attrOuter) {
+	// 		currentNode[key] = attrOuter;
+	// 	}
+	var data = _getAttrOuter(attrVM),
 		options = currentNode.options;
-	currentNode[selectHashCode] = attrOuter;
-	// console.log(attrOuter, selectHashCode)
 	if ($.isA(data)) {
 		if (currentNode.multiple) {
 			$.E(options, function(optionNode) {
@@ -4725,55 +4823,6 @@ _AttributeHandleEvent.select = function(key, currentNode, parserNode, vi) { //se
 		})
 	}
 }
-var _triggersEach = V.triggers["#each"];
-V.rt("#each", function(handle, index, parentHandle) {
-	var trigger = _triggersEach(handle, index, parentHandle);
-	if (parentHandle.type === "element" && parentHandle.node.tagName === "SELECT") {
-		if (_isIE) {
-			//IE需要强制触发相关于option的属性来强制使其渲染更新DOM
-			//使用clone的节点问题？是否和clone出来的HTML5节点的问题一样？
-			var _ieFix_triggerEvent = trigger.event;
-			trigger.event = function(NodeList_of_ViewModel, model, /*eventTrigger,*/ isAttr, viewModel_ID) {
-				var result = _ieFix_triggerEvent.apply(this, arguments);
-				var currentNode_options = NodeList_of_ViewModel[parentHandle.id].currentNode.options;
-				currentNode_options.length += 1;
-				currentNode_options.length -= 1;
-				return result;
-			}
-		}
-		//数组的赋值与绑定相关联，实时更新绑定值。
-		var _triggerEvent = trigger.event;
-		trigger.event = function(NodeList_of_ViewModel, model, /*eventTrigger,*/ isAttr, viewModel_ID) {
-			var result = _triggerEvent.apply(this, arguments);
-			var currentNode = NodeList_of_ViewModel[parentHandle.id].currentNode,
-				selectHashCode = $.hashCode(currentNode, "selected"),
-				touchKey = currentNode[selectHashCode],
-				DM_finallyRun = Model.finallyRun;
-			// console.log(touchKey);
-			if (touchKey) { //value-map
-				var finallyRun;
-				if (!(finallyRun = DM_finallyRun[selectHashCode])) {
-					DM_finallyRun(DM_finallyRun[selectHashCode] = finallyRun = function() {
-						finallyRun.model.touchOff(finallyRun.touchKey)
-						DM_finallyRun[selectHashCode] = $FALSE;
-					})
-				}
-				finallyRun.model = model;
-				finallyRun.touchKey = touchKey;
-			}else{
-				//如果没有指定绑定的selected值，那么为bind-from配置默认选中值
-				var _init_hashCode = $.hashCode(currentNode, "init"),
-					_init_finallyRun = DM_finallyRun[_init_hashCode];
-				if(_init_finallyRun&&!_init_finallyRun._inQuene){
-					DM_finallyRun(_init_finallyRun)
-					_init_finallyRun._inQuene = $TRUE;
-				}
-			}
-			return result;
-		}
-	}
-	return trigger;
-})
 Model.config.prefix.Get = "$GET";
 var _statusEventCache = {},
 	_statusEvent = {
@@ -4822,8 +4871,8 @@ var _statusEventCache = {},
 		}
 		return value;
 	},
-	statusListerAttribute = function(key, currentNode, parserNode, vi /*, dm_id*/ ) {
-		var attrOuter = _getAttrOuter(parserNode);
+	statusListerAttribute = function(key, currentNode, attrVM, vi /*, dm_id*/ ) {
+		var attrOuter = _getAttrOuter(attrVM);
 		$.st(key, "-"); //"status - eventName-..."
 		var statusInfos = _split_laveStr,
 			eventName = $.st(statusInfos, "-") || statusInfos, //Multi-event binding
@@ -5215,7 +5264,7 @@ var _jSouperBase = {
         if (App) {
             var appName = userConfig.Var;
             var template = jSouper.parseNode(App, "App")(userConfig.Data); //App.getAttribute("template-data")//json or url or configable
-            // template.set(HVP_config.Data);
+            jSouper.App = template;
             App.innerHTML = "";
             template.append(App);
             if ( /*!appName || */ appName == userConfig.Id || appName in global) {

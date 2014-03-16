@@ -12,9 +12,9 @@ V.ra(function(attrKey) {
 		case "radio":
 			(attrKey === "checked") && (result = _AttributeHandleEvent.radio)
 			break
-		case "select-one":
-			/selected|defaultSelected/.test(attrKey) && (result = _AttributeHandleEvent.select)
-			break
+		// case "select-one":
+		// 	/selected|defaultSelected/.test(attrKey) && (result = _AttributeHandleEvent.select)
+		// 	break
 	}
 	return result;
 })

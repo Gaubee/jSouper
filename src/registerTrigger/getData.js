@@ -10,30 +10,30 @@ V.rt("", function(handle, index, parentHandle) {
     if (parentHandle.type !== "handle") { //as textHandle
         if ($.isSWrap(key)) { // single String
             trigger.event = function(NodeList_of_ViewModel, model) {
-                NodeList_of_ViewModel[textHandleId].currentNode.data = key.substring(1, key.length - 1);
+                var handleNode = NodeList_of_ViewModel[textHandleId];
+                handleNode._data = handleNode.currentNode.data = key.substring(1, key.length - 1);
                 //trigger.event = $.noop;
             };
         } else if ($.isStoN(key)) { // single Number
             trigger.event = function(NodeList_of_ViewModel, model) {
-                NodeList_of_ViewModel[textHandleId].currentNode.data = parseFloat(key);
+                var handleNode = NodeList_of_ViewModel[textHandleId];
+                handleNode._data = handleNode.currentNode.data = parseFloat(key);
                 //trigger.event = $.noop;
             };
         } else { //String for databese by key
             trigger.key = key;
             trigger.event = function(NodeList_of_ViewModel, model, /* triggerBy,*/ isAttr /*, vi*/ ) { //call by ViewModel's Node
                 var data = model.get(key),
-                    nodeHandle = NodeList_of_ViewModel[textHandleId],
-                    currentNode = nodeHandle.currentNode;
+                    nodeHandle = NodeList_of_ViewModel[textHandleId];
                 if (isAttr) {
-                    //IE浏览器直接编译，故不需要转义，其他浏览器需要以字符串绑定到属性中。需要转义，否则会出现引号冲突
+                    //字符串事件：IE浏览器直接编译，故不需要转义，其他浏览器需要以字符串绑定到属性中。需要转义，否则会出现引号冲突
                     if (isAttr.key.indexOf("on") === 0 && !_isIE) {
                         data = String(data).replace(/"/g, '\\"').replace(/'/g, "\\'");
                     }
                 }
                 // data = String(data);
                 if (nodeHandle._data !== data) {
-                    nodeHandle._data = data;
-                    currentNode.data = data === $UNDEFINED ? "" : data;
+                    nodeHandle._data = nodeHandle.currentNode.data = (data === $UNDEFINED ? "" : data);
                 }
             }
         }

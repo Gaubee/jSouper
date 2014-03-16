@@ -40,7 +40,7 @@ var _formCache = {},
 					var _init_finallyRun = DM_finallyRun[_init_hashCode] = function() {
 						var options = currentNode.options
 						if (options.length) {
-							//待存在options后，则进行初始化bind-form的值
+							//待存在options后，则进行初始化bind-input的值
 							//并确保只运行一次。
 							DM_finallyRun[_init_hashCode] = $FALSE;
 							var value = [];
@@ -91,9 +91,9 @@ var _formCache = {},
 		},
 		"textarea": __text
 	},
-	formListerAttribute = function(key, currentNode, parserNode, vi, /*dm_id,*/ handle, triggerTable) {
-		var attrOuter = _getAttrOuter(parserNode),
-			eventNameHashCode = $.hashCode(currentNode, "bind-form");
+	formListerAttribute = function(key, currentNode, attrVM, vi, /*dm_id,*/ handle, triggerTable) {
+		var attrOuter = _getAttrOuter(attrVM),
+			eventNameHashCode = $.hashCode(currentNode, "bind-input");
 			// console.log(attrOuter)
 		if (handle[eventNameHashCode] !== attrOuter) {
 			// console.log(handle[eventNameHashCode], attrOuter, arguments)
