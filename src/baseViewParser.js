@@ -96,7 +96,7 @@ var _string_placeholder = {
              */
             var start_ns = "<" + V.namespace;
             var end_ns = "</" + V.namespace;
-            //备份字符串与script、XMP标签
+            //备份字符串与style、script、XMP标签
 
             htmlStr = _string_placeholder.save(QuotedString, htmlStr);
             htmlStr = _string_placeholder.save(ScriptNodeString, htmlStr);
@@ -114,6 +114,10 @@ var _string_placeholder = {
             //顶层模板语言解析到底层模板语言
             htmlStr = parse(htmlStr);
 
+            //回滚字符串与style、script、XMP标签
+            htmlStr = _string_placeholder.release(StyleNodeString, htmlStr);
+            htmlStr = _string_placeholder.release(ScriptNodeString, htmlStr);
+            htmlStr = _string_placeholder.release(QuotedString, htmlStr);
 
             //使用浏览器默认解析力解析标签树，保证HTML的松语意
             _shadowBody.innerHTML = htmlStr;
@@ -123,53 +127,6 @@ var _string_placeholder = {
             //到时候innerHTML就取不到完整的模板语法了，只留下DOM结构的残骸
             V._scansView(_shadowBody);
 
-            // //提取所有文本节点，特殊标签（script、style等）除外
-            // //将文本节点尝试当成模板语意进行解析，保存在insertNodesHTML中
-            // //扫描过程中不宜对节点进行操作，因此缓存完后统一处理
-            // var insertBefore = [];
-            // _traversal(_shadowBody, function(node, index, parentNode) {
-            //     if (node.nodeType === 1 && ignoreTagNameMap[node.tagName]) {
-            //         return $FALSE;
-            //     }
-            //     if (node.nodeType === 3) { //text Node
-            //         $.p(insertBefore, {
-            //             baseNode: node,
-            //             parentNode: parentNode,
-            //             insertNodesHTML: parseRule(node.data)
-            //         });
-            //     }
-            // });
-            // //统一处理模板语意
-            // $.e(insertBefore, function(item, i) {
-            //     var node = item.baseNode,
-            //         parentNode = item.parentNode,
-            //         insertNodesHTML = item.insertNodesHTML;
-            //     if (node.data === insertNodesHTML) {
-            //         //普通文本做简单处理即可
-            //         node.data = insertNodesHTML.replace(/^[\s\n]\s*/, ' ');
-            //     } else {
-            //         //使用浏览器默认功能，将XML转化为JS-Object，TODO：有待优化，应该直接使用JSON进行转化
-            //         shadowDIV.innerHTML = $.trim(insertNodesHTML); //optimization
-            //         //Using innerHTML rendering is complete immediate operation DOM, 
-            //         //innerHTML otherwise covered again, the node if it is not, 
-            //         //then memory leaks, IE can not get to the full node.
-            //         $.e(shadowDIV.childNodes, function(refNode) {
-            //             //现代浏览器XMP标签中，空格和回车总是不过滤的显示，和浏览器默认效果不一致，手动格式化
-            //             if (refNode.nodeType === 3) {
-            //                 refNode.data = refNode.data.replace(/^[\s\n]\s*/, ' ');
-            //             }
-            //             //将模板语意节点插入
-            //             $.D.iB(parentNode, refNode, node)
-            //         })
-            //         $.D.rC(parentNode, node);
-            //     }
-            // });
-            //when re-rendering,select node's child will be filter by ``` _shadowBody.innerHTML = _shadowBody.innerHTML;```
-
-            //回滚字符串与style、script、XMP标签
-            result = _string_placeholder.release(StyleNodeString, result);
-            result = _string_placeholder.release(ScriptNodeString, result);
-            result = _string_placeholder.release(QuotedString, result);
             return new ElementHandle(_shadowBody);
         },
         _scansView: function(node, vmName) {
@@ -308,7 +265,3 @@ var _build_expression = function(expression) {
 
     return Expression.set(expression, _build_str, varsSet);
 };
-setTimeout(function() {
-
-    console.log(_build_expression('a + b.c * "str" + a["str"] + a[b] +2'));
-}, 800);

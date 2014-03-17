@@ -6,63 +6,25 @@ V.rt("", function(handle, index, parentHandle) {
             key: ".", //const trigger
             bubble: $TRUE
         };
-    //作为一个textNode节点来显示字符串
-    if (parentHandle.type !== "handle") { //as textHandle
-        // if ($.isSWrap(key)) { // single String
-        //     trigger.event = function(NodeList_of_ViewModel, model) {
-        //         var handleNode = NodeList_of_ViewModel[textHandleId];
-        //         handleNode._data = handleNode.currentNode.data = key.substring(1, key.length - 1);
-        //         //trigger.event = $.noop;
-        //     };
-        // } else if ($.isStoN(key)) { // single Number
-        //     trigger.event = function(NodeList_of_ViewModel, model) {
-        //         var handleNode = NodeList_of_ViewModel[textHandleId];
-        //         handleNode._data = handleNode.currentNode.data = parseFloat(key);
-        //         //trigger.event = $.noop;
-        //     };
-        // } else { //String for databese by key
-        trigger.key = key;
-        trigger.event = function(NodeList_of_ViewModel, model, /* triggerBy,*/ isAttr /*, vi*/ ) { //call by ViewModel's Node
-            var data = Expression.get(key).foo(model),//model.get(key),
-                nodeHandle = NodeList_of_ViewModel[textHandleId],
-                currentNode = nodeHandle.currentNode;
 
-            if (isAttr) {
-                //字符串事件：IE浏览器直接编译，故不需要转义，其他浏览器需要以字符串绑定到属性中。需要转义，否则会出现引号冲突
-                if (isAttr.key.indexOf("on") === 0 && currentNode.hasOwnProperty(isAttr.key) && !_isIE) {
-                    data = String(data).replace(/"/g, '\\"').replace(/'/g, "\\'");
-                }
-            }
-            // data = String(data);
-            if (nodeHandle._data !== data) {
-                nodeHandle._data = currentNode.data = (data === $UNDEFINED ? "" : data);
+    var expression = Expression.get(key);
+    //没有触发关键字的话则是当成纯字符串
+    trigger.key = expression.keys.length ? expression.keys : "."
+
+    trigger.event = function(NodeList_of_ViewModel, model, /* triggerBy,*/ isAttr /*, vi*/ ) { //call by ViewModel's Node
+        var data = expression.foo(model),
+            nodeHandle = NodeList_of_ViewModel[textHandleId],
+            currentNode = nodeHandle.currentNode;
+
+        if (isAttr) {
+            //字符串事件：IE浏览器直接编译，故不需要转义，其他浏览器需要以字符串绑定到属性中。需要转义，否则会出现引号冲突
+            if (isAttr.key.indexOf("on") === 0 && currentNode.hasOwnProperty(isAttr.key) && !_isIE) {
+                data = String(data).replace(/"/g, '\\"').replace(/'/g, "\\'");
             }
         }
-        // }
-        //作为一个handle的参数
-    } else { //as stringHandle
-        if ($.isSWrap(key)) { // single String
-            trigger = { //const 
-                key: ".", //const trigger
-                bubble: $TRUE,
-                event: function(NodeList_of_ViewModel, model) {
-                    NodeList_of_ViewModel[this.handleId]._data = key.substr(1, key.length - 2);
-                    //trigger.event = $.noop;
-                }
-            };
-        } else if ($.isStoN(key)) { // single Number
-            trigger.event = function(NodeList_of_ViewModel, model) {
-                NodeList_of_ViewModel[this.handleId]._data = parseFloat(key);
-                //trigger.event = $.noop;
-            };
-        } else { //String for databese by key
-            trigger = {
-                key: key,
-                bubble: $TRUE,
-                event: function(NodeList_of_ViewModel, model) {
-                    NodeList_of_ViewModel[this.handleId]._data = model.get(key);
-                }
-            };
+        // data = String(data);
+        if (nodeHandle._data !== data) {
+            nodeHandle._data = currentNode.data = (data === $UNDEFINED ? "" : data);
         }
     }
     return trigger;
