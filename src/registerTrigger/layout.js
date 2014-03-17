@@ -26,12 +26,13 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
         }
         //如果模板的名称的值改变，销毁原有的vm
         var layoutViewModel = AllLayoutViewModel[id];
-        if (new_templateHandle_name) {
+        var key = NodeList_of_ViewModel[dataHandle_id]._data;
+        if (new_templateHandle_name && key) {
             if (layoutViewModel && layoutViewModel.vmName !== new_templateHandle_name) {
                 layoutViewModel = layoutViewModel.destroy(); //layoutViewModel=null
             }
             if (!layoutViewModel) {
-                var key = NodeList_of_ViewModel[dataHandle_id]._data;
+                console.error(key);
                 module($UNDEFINED, {
                     onInit: function(vm) {
                         //加锁，放置callback前的finallyRun引发的
@@ -46,7 +47,7 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
             }
         }
 
-        if (!layoutViewModel._canRemoveAble) { //canInsertAble
+        if (layoutViewModel && !layoutViewModel._canRemoveAble) { //canInsertAble
             layoutViewModel.insert(NodeList_of_ViewModel[comment_layout_id].currentNode);
         }
         return layoutViewModel;

@@ -144,7 +144,7 @@
                         }
                     }
                     if (!definer) {
-                        key ? (args[0] = key) : $.sp.call(args, 0, 1)
+                        /*(args[0] = key||"");//*/key ? (args[0] = key) : $.sp.call(args, 0, 1)
                         result = _set.apply(self, args);
                     }
                 }
@@ -170,7 +170,7 @@
                         }
                     }
                     if (!definer) {
-                        key ? (args[0] = key) : $.sp.call(args, 0, 1)
+                        /*(args[0] = key||"");//*/key ? (args[0] = key) : $.sp.call(args, 0, 1)
                         result = _get.apply(self, args);
                     }
                 }

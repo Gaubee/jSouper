@@ -1751,7 +1751,7 @@ var _dm_force_update = 0;
                         }
                     }
                     if (!definer) {
-                        key ? (args[0] = key) : $.sp.call(args, 0, 1)
+                        /*(args[0] = key||"");//*/key ? (args[0] = key) : $.sp.call(args, 0, 1)
                         result = _set.apply(self, args);
                     }
                 }
@@ -1777,7 +1777,7 @@ var _dm_force_update = 0;
                         }
                     }
                     if (!definer) {
-                        key ? (args[0] = key) : $.sp.call(args, 0, 1)
+                        /*(args[0] = key||"");//*/key ? (args[0] = key) : $.sp.call(args, 0, 1)
                         result = _get.apply(self, args);
                     }
                 }
@@ -1831,6 +1831,9 @@ function ProxyModel(entrust, model) {
     //Model层的prefix是代表数据结构上的
     // self._prefix
 
+    //保存父级的PM，用来作用域寻址
+    // self._parentPM
+
     //来自委托对象的触发器集合，需要委托对象实现静态_buildSmartTriggers接口
     self._smartTriggers = EntrustConstructor._buildSmartTriggers(entrust);
     /*
@@ -1858,9 +1861,14 @@ var __ProxyModelProto__ = ProxyModel.prototype = {
         var self = this;
         //校准参数，proxyModel为ProxyModel对象，而不是VM或者PM对象
         (proxyModel instanceof self.EntrustConstructor) && (proxyModel = proxyModel.model);
+        if (self instanceof ViewModel) {
+            debugger
+        };
         if (proxyModel instanceof ProxyModel) {
             //标记为“被收留者”
+            proxyModel._parentPM = self;
             proxyModel._prefix = key /*|| ""*/ ;
+            // console.log("_prefix:", key);
             $.p(self._childProxyModel, proxyModel);
             proxyModel.follow(self.model, key);
             /*//私有Model跟着触发更新
@@ -1920,7 +1928,7 @@ var __ProxyModelProto__ = ProxyModel.prototype = {
  * 为ProxyModel拓展Model类的功能
  */
 
-$.E(["set", "get", "touchOff"], function(handleName) {
+$.E([ /*"set", "get", */ "touchOff"], function(handleName) {
     __ProxyModelProto__[handleName] = function() {
         var self = this;
         var model = self.model;
@@ -1929,6 +1937,102 @@ $.E(["set", "get", "touchOff"], function(handleName) {
         }
     }
 });
+
+/*
+ * 路由寻址ProxyModel
+ */
+(function(argument) {
+
+    var routerMap = ProxyModel._routerMap = {
+        //VM中的作用域按xmp范围来算，也就是一个xmp就算是一个function
+        "$Caller": function(pmodel, key) {
+            return pmodel._parentPM;
+        },
+        "$App": function(pmodel, key) {
+            return jSouper.App && jSouper.App.model;
+        }
+    };
+    //根据带routerKey的字符串进行查找并生成model
+    ProxyModel.$router = function(pmodel, key) {
+        var result = {
+            pmodel: pmodel,
+            key: key //|| ""
+        };
+        if (key) {
+            var routerKey = $.st(key, ".");
+            //及时缓存剩余的键值
+            var remainingKey = _split_laveStr;
+            if (!routerKey) {
+                routerKey = remainingKey;
+                remainingKey = $FALSE;
+            }
+            var routerHandle = routerMap[routerKey];
+            if (routerHandle) {
+                pmodel = routerHandle(pmodel, remainingKey /*过滤后的key*/ );
+                if (pmodel) { //递归路由
+                    result = ProxyModel.$router(pmodel, remainingKey)
+                } else { //找不到
+                    result.pmodel = pmodel;
+                    result.key = remainingKey;
+                }
+            }
+        }
+        return result;
+    };
+    /*
+     * 为ProxyModel拓展Model类set、get的功能
+     */
+    var _set = __ProxyModelProto__.set = function(key, obj) {
+        var self = this,
+            args = arguments /*$.s(arguments)*/ ,
+            model = self.model,
+            result;
+        if (model) {
+            if (args.length > 1) {
+                //查找关键字匹配的Model
+                var router_result = ProxyModel.$router(self, key);
+                if (router_result.pmodel) {
+                    key = router_result.key;
+                    key ? (args[0] = key) : $.sp.call(args, 0, 1)
+                    if (self !== router_result.pmodel) {
+                        self = router_result.pmodel;
+                        result = _set.apply(self, args);
+                    } else {
+                        result = model.set.apply(model, args);
+                    }
+                }
+            } else { //one argument
+                result = model.set(key);
+            }
+        }
+        return result
+    };
+    var _get = __ProxyModelProto__.get = function(key) {
+        var self = this,
+            args = arguments /*$.s(arguments)*/ ,
+            model = self.model,
+            result;
+        if (model) {
+            if (args.length > 0) {
+                //查找关键字匹配的Model
+                var router_result = ProxyModel.$router(self, key);
+                if (router_result.pmodel) {
+                    key = router_result.key;
+                    key ? (args[0] = key) : $.sp.call(args, 0, 1)
+                    if (self !== router_result.pmodel) {
+                        self = router_result.pmodel;
+                        result = _get.apply(self, args);
+                    } else {
+                        result = model.get.apply(model, args);
+                    }
+                }
+            } else {
+                result = model.get();
+            }
+        }
+        return result;
+    };
+}());
 /*
  * 增加ProxyModel的数据操作的功能
  */
@@ -4193,12 +4297,13 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
         }
         //如果模板的名称的值改变，销毁原有的vm
         var layoutViewModel = AllLayoutViewModel[id];
-        if (new_templateHandle_name) {
+        var key = NodeList_of_ViewModel[dataHandle_id]._data;
+        if (new_templateHandle_name && key) {
             if (layoutViewModel && layoutViewModel.vmName !== new_templateHandle_name) {
                 layoutViewModel = layoutViewModel.destroy(); //layoutViewModel=null
             }
             if (!layoutViewModel) {
-                var key = NodeList_of_ViewModel[dataHandle_id]._data;
+                console.error(key);
                 module($UNDEFINED, {
                     onInit: function(vm) {
                         //加锁，放置callback前的finallyRun引发的
@@ -4213,7 +4318,7 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
             }
         }
 
-        if (!layoutViewModel._canRemoveAble) { //canInsertAble
+        if (layoutViewModel && !layoutViewModel._canRemoveAble) { //canInsertAble
             layoutViewModel.insert(NodeList_of_ViewModel[comment_layout_id].currentNode);
         }
         return layoutViewModel;
@@ -4288,8 +4393,13 @@ var _operator_handle_builder = function(handle, index, parentHandle) {
     if (parentHandle.type !== "handle") { //as textHandle
         trigger.event = function(NodeList_of_ViewModel /*, model, triggerBy, isAttr, vi*/ ) { //call by ViewModel's Node
             var result = _tryToNumber(NodeList_of_ViewModel[firstParameter_id]._data) + _tryToNumber(secondParameter ? NodeList_of_ViewModel[secondParameter.id]._data : 0),
-                currentNode = NodeList_of_ViewModel[textHandle_id].currentNode;
-            currentNode.data = result;
+                textHandle = NodeList_of_ViewModel[textHandle_id],
+                currentNode = textHandle.currentNode;
+            if (currentNode) {
+                currentNode.data = result;
+            } else {
+                textHandle._data = result
+            }
         }
     } else {
         trigger.event = function(NodeList_of_ViewModel /*, model, triggerBy, isAttr, vi*/ ) { //call by ViewModel's Node

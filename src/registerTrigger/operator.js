@@ -16,8 +16,13 @@ var _operator_handle_builder = function(handle, index, parentHandle) {
     if (parentHandle.type !== "handle") { //as textHandle
         trigger.event = function(NodeList_of_ViewModel /*, model, triggerBy, isAttr, vi*/ ) { //call by ViewModel's Node
             var result = _tryToNumber(NodeList_of_ViewModel[firstParameter_id]._data) + _tryToNumber(secondParameter ? NodeList_of_ViewModel[secondParameter.id]._data : 0),
-                currentNode = NodeList_of_ViewModel[textHandle_id].currentNode;
-            currentNode.data = result;
+                textHandle = NodeList_of_ViewModel[textHandle_id],
+                currentNode = textHandle.currentNode;
+            if (currentNode) {
+                currentNode.data = result;
+            } else {
+                textHandle._data = result
+            }
         }
     } else {
         trigger.event = function(NodeList_of_ViewModel /*, model, triggerBy, isAttr, vi*/ ) { //call by ViewModel's Node
