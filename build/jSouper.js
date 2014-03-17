@@ -3641,27 +3641,6 @@ V.rh("", function(handle, index, parentHandle) {
 		}
 	}// else {console.log("ignore:",textHandle) if (textHandle) {textHandle.ignore = $TRUE; } }  //==> ignore Node's childNodes will be ignored too.
 });
-V.rh("@", function(handle, index, parentHandle) {
-	var textHandle = handle.childNodes[0];
-	var i = 0;
-	do {
-		i += 1;
-		var nextHandle = parentHandle.childNodes[index + i];
-	} while (nextHandle && nextHandle.ignore);
-	if (textHandle) { //textNode as Placeholder
-
-		$.iA(parentHandle.childNodes, handle, textHandle);
-		//Node position calibration
-		//no "$.insert" Avoid sequence error
-
-		return function(NodeList_of_ViewModel) {
-			var nextNodeInstance = nextHandle && NodeList_of_ViewModel[nextHandle.id].currentNode,
-				textNodeInstance = NodeList_of_ViewModel[textHandle.id].currentNode,
-				parentNodeInstance = NodeList_of_ViewModel[parentHandle.id].currentNode
-				parentNodeInstance&&$.D.iB(parentNodeInstance, textNodeInstance, nextNodeInstance); //Manually insert node
-		}
-	}
-});
 V.rh("/if", V.rh("#else", V.rh("#if", placeholderHandle)));
 var _include_display_arguments = {};
 function _include_display(show_or_hidden, NodeList_of_ViewModel, model, /*triggerBy,*/ viewModel_ID) {
@@ -3706,22 +3685,6 @@ V.rh("#>", V.rh("#layout", function(handle, index, parentHandle) {
 	handle.display = _layout_display; //Custom rendering function
 	_commentPlaceholder(handle, parentHandle);
 }));
-var _operator_handle  = function(handle, index, parentHandle) {
-	var textHandle = handle.childNodes[0].childNodes[0];
-	if (parentHandle.type !== "handle") {
-		if (textHandle) {
-			$.iA(parentHandle.childNodes, handle, textHandle);
-			return $.noop;
-		}
-	}
-},
-_operator_list = "+ - * / % == === != !== > < >= <= && || ^ >> << & |".split(" ");
-$.E(_operator_list, function(operator) {
-	V.rh(operator, _operator_handle)
-});
-V.rh("&lt;",V.handles["<"]);
-V.rh("&gt;",V.handles[">"]);
-
 function _teleporter_display(show_or_hidden, NodeList_of_ViewModel, model, /*triggerBy,*/ viewModel_ID) {
     var handle = this;
     var placeholderHandle = $.lI(handle.childNodes);
@@ -3759,10 +3722,6 @@ V.rh("#teleporter", function(handle, index, parentHandle) {
     _commentPlaceholder(handle, parentHandle);
 });
 
-var _unary_operator_list = "! ~ -".split(" ");// ++ --
-$.E(_unary_operator_list, function(operator) {
-	V.rh(operator, _operator_handle)
-});
 var _with_display = function(show_or_hidden, NodeList_of_ViewModel, model, triggerBy, viewModel_ID) {
     var handle = this,
         parentHandle = handle.parentNode,
@@ -3817,61 +3776,9 @@ V.rh("#with", function(handle, index, parentHandle) {
 });
 V.rh("/with", placeholderHandle);
 
-V.rt("#define", function(handle, index, parentHandle) {
-    var handleChilds = handle.childNodes,
-        statusKeyHandleId = handleChilds[0].id,
-        textHandle_id = handleChilds[0].childNodes[0].id,
-        valueHandleId = handleChilds[1].id,
-        trigger = {
-            bubble: $TRUE,
-            name: "define"
-        };
-    // console.log(handle.childNodes[0].parentNode, handle.parentNode)
-
-    if (parentHandle.type !== "handle") { //as textHandle
-        trigger.event = function(NodeList_of_ViewModel, model /*, triggerBy*/ , isAttr, viewModel_ID) { //call by ViewModel's Node
-            var key = NodeList_of_ViewModel[statusKeyHandleId]._data,
-                result = NodeList_of_ViewModel[valueHandleId]._data,
-                currentNode = NodeList_of_ViewModel[textHandle_id].currentNode,
-                uid_hash = viewModel_ID + key,
-                viewModel = V._instances[viewModel_ID],
-                finallyRun;
-            // console.log(key,":",result,viewModel.id);
-            if (key !== $UNDEFINED) {
-                if (!(finallyRun = Model.finallyRun[uid_hash])) {
-                    Model.finallyRun.register(uid_hash, Model.finallyRun[uid_hash] = finallyRun = function() {
-                        viewModel = finallyRun.viewModel
-                        //已经被remove的VI，就不应该触发define
-                        // if (viewModel._canRemoveAble) {
-                        viewModel.set(finallyRun.key, finallyRun.result)
-                        // }
-                        delete Model.finallyRun[uid_hash]/* = $FALSE;*/ //can push into finally quene
-                    })
-                }
-                finallyRun.viewModel = viewModel
-                finallyRun.key = key
-                finallyRun.result = result
-            }
-            result = String(result);
-            // if (currentNode.data !== result) {
-            //     currentNode.data = result;
-            // }
-        }
-    } else {
-        trigger.event = function(NodeList_of_ViewModel, model /*, triggerBy*/ , isAttr, viewModel_ID) { //call by ViewModel's Node
-            var key = NodeList_of_ViewModel[statusKeyHandleId]._data,
-                result = NodeList_of_ViewModel[valueHandleId]._data;
-
-            Model.finallyRun(function() {
-                console.log(key, result)
-                //key!==$UNDEFINED&&model.set(key,result)
-            }, 0)
-            NodeList_of_ViewModel[this.handleId]._data = result;
-        }
-    }
-
-    return trigger;
-});
+//等于直接定义一个Observer-getter对象
+//语法：
+//{{#= "key1",expression}}
 
 //each - VM的onremove事件
 var _eachVM_onremove = function() {
@@ -4087,27 +3994,6 @@ V.rt("", function(handle, index, parentHandle) {
     return trigger;
 });
 
-V.rt("@", function(handle, index, parentHandle) {
-	var textHandle = handle.childNodes[0],
-		textHandleId = textHandle.id,
-		key = textHandle.node.data,
-		trigger = { //const 
-			key: key, //const trigger
-			bubble: $TRUE
-		};
-
-	if (parentHandle.type !== "handle") { //as textHandle
-		trigger.event = function(NodeList_of_ViewModel, model) {
-			//trigger but no bind data
-			NodeList_of_ViewModel[textHandleId].currentNode.data = key;
-		}
-	} else {
-		trigger.event = function(NodeList_of_ViewModel, model) {
-			NodeList_of_ViewModel[this.handleId]._data = key;
-		}
-	}
-	return trigger;
-});
 V.rt("#if", function(handle, index, parentHandle) {
     // console.log(handle)
     var id = handle.id,
@@ -4398,67 +4284,6 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
     return trigger;
 }));
 
-V.rt("!", V.rt("nega", function(handle, index, parentHandle) { //Negate
-	var nageteHandlesId = handle.childNodes[0].id,
-		trigger;
-	trigger = {
-		// key:"",//default key === ""
-		bubble: $TRUE,
-		event: function(NodeList_of_ViewModel, model) {
-			NodeList_of_ViewModel[this.handleId]._data = !NodeList_of_ViewModel[nageteHandlesId]._data; //first value
-		}
-	}
-	return trigger;
-}));
-var _tryToNumberHash = _placeholder("tTN");
-var _tryToNumber = global[_tryToNumberHash] = function(str) {
-    if ($.isStoN(str)) {
-        str = parseFloat(str);
-    }
-    return str
-}
-var _operator_handle_builder = function(handle, index, parentHandle) {
-    var firstParameter_id = handle.childNodes[0].id,
-        textHandle_id = handle.childNodes[0].childNodes[0].id,
-        secondParameter = handle.childNodes[1],
-        trigger = {
-            bubble: true //build in global,can't use $TRUE
-        };
-    // console.log(handle.childNodes[0].parentNode, handle.parentNode)
-    if (parentHandle.type !== "handle") { //as textHandle
-        trigger.event = function(NodeList_of_ViewModel /*, model, triggerBy, isAttr, vi*/ ) { //call by ViewModel's Node
-            var result = _tryToNumber(NodeList_of_ViewModel[firstParameter_id]._data) + _tryToNumber(secondParameter ? NodeList_of_ViewModel[secondParameter.id]._data : 0),
-                textHandle = NodeList_of_ViewModel[textHandle_id],
-                currentNode = textHandle.currentNode;
-            if (currentNode) {
-                currentNode.data = result;
-            } else {
-                textHandle._data = result
-            }
-        }
-    } else {
-        trigger.event = function(NodeList_of_ViewModel /*, model, triggerBy, isAttr, vi*/ ) { //call by ViewModel's Node
-            var result = _tryToNumber(NodeList_of_ViewModel[firstParameter_id]._data) + _tryToNumber(secondParameter ? NodeList_of_ViewModel[secondParameter.id]._data : 0);
-            NodeList_of_ViewModel[this.handleId]._data = result;
-        }
-    }
-
-    return trigger;
-}
-var _operator_handle_build_str = String(_operator_handle_builder),
-    _operator_handle_build_arguments = _operator_handle_build_str.match(/\(([\w\W]+?)\)/)[1],
-    _operator_handle_build_str = _operator_handle_build_str.substring(_operator_handle_build_str.indexOf("{") + 1, _operator_handle_build_str.length - 1),
-    _operator_handle_build_factory = function(operator) {
-        var result = _operator_handle_build_str.replace(/\+/g, operator).replace(/_tryToNumber/g, _tryToNumberHash);
-        result = Function(_operator_handle_build_arguments, result);
-        return result
-    };
-$.E(_operator_list, function(operator) {
-    V.rt(operator, _operator_handle_build_factory(operator))
-});
-V.rt("&lt;", V.triggers["<"]);
-V.rt("&gt;", V.triggers[">"]);
-
 V.rt("#teleporter", function(handle, index, parentHandle) {
     var teleporterNameHandle = handle.childNodes[0];
     var booleanHandle = handle.childNodes[1];
@@ -4502,38 +4327,6 @@ V.rt("#teleporter", function(handle, index, parentHandle) {
     return trigger;
 });
 
-var _unary_operator_handle_builder = function(handle, index, parentHandle){
-	var firstParameter_id = handle.childNodes[0].id,
-		textHandle_id = handle.childNodes[0].childNodes[0].id,
-		trigger = {
-			bubble: true//build in global,can't use $TRUE
-		};
-
-	if (parentHandle.type !== "handle") { //as textHandle
-		trigger.event = function(NodeList_of_ViewModel /*, model, triggerBy, isAttr, vi*/ ) { //call by ViewModel's Node
-			var result =  +NodeList_of_ViewModel[firstParameter_id]._data,
-				currentNode = NodeList_of_ViewModel[textHandle_id].currentNode;
-			currentNode.data = result;
-		}
-	} else {
-		trigger.event = function(NodeList_of_ViewModel /*, model, triggerBy, isAttr, vi*/ ) { //call by ViewModel's Node
-			var result =  +NodeList_of_ViewModel[firstParameter_id]._data;
-			NodeList_of_ViewModel[this.handleId]._data = result;
-		}
-	}
-
-	return trigger;
-}
-var _unary_operator_handle_build_str = String(_unary_operator_handle_builder),
-	_unary_operator_handle_build_arguments = _unary_operator_handle_build_str.match(/\(([\w\W]+?)\)/)[1],
-	_unary_operator_handle_build_str = _unary_operator_handle_build_str.substring(_unary_operator_handle_build_str.indexOf("{")+1,_unary_operator_handle_build_str.length-1),
-	_unary_operator_handle_build_factory = function(operator) {
-		var result= Function(_unary_operator_handle_build_arguments, _unary_operator_handle_build_str.replace(/\+/g, operator))
-		return result
-	};
-$.E(_unary_operator_list, function(operator) {
-	V.rt(operator, _unary_operator_handle_build_factory(operator))
-});
 V.rt("#with", function(handle, index, parentHandle) {
 	// console.log(handle)
 	var id = handle.id,
