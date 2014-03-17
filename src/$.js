@@ -144,6 +144,12 @@ doc = document,
             return index !== -1 && str.substring(0, index);
         },
 
+        //相当于str.split(..)[0]
+        stf: function(str, splitKey) { //split first
+            var result = $.st(str, splitKey);
+            return result === $FALSE ? _split_laveStr : result;
+        },
+
         //清空两边字符串
         trim: function(str) {
             str = String(str).replace(/^\s\s*/, '')
@@ -278,9 +284,11 @@ doc = document,
             },
             //insertBefore
             iB: function(parentNode, insertNode, beforNode) {
-                try{
-                parentNode.insertBefore(insertNode, beforNode || $NULL);
-            }catch(e){debugger}
+                try {
+                    parentNode.insertBefore(insertNode, beforNode || $NULL);
+                } catch (e) {
+                    debugger
+                }
             },
             //往节点末尾推入节点集合
             ap: function(parentNode, node) { //append

@@ -146,6 +146,12 @@ doc = document,
             return index !== -1 && str.substring(0, index);
         },
 
+        //相当于str.split(..)[0]
+        stf: function(str, splitKey) { //split first
+            var result = $.st(str, splitKey);
+            return result === $FALSE ? _split_laveStr : result;
+        },
+
         //清空两边字符串
         trim: function(str) {
             str = String(str).replace(/^\s\s*/, '')
@@ -280,9 +286,11 @@ doc = document,
             },
             //insertBefore
             iB: function(parentNode, insertNode, beforNode) {
-                try{
-                parentNode.insertBefore(insertNode, beforNode || $NULL);
-            }catch(e){debugger}
+                try {
+                    parentNode.insertBefore(insertNode, beforNode || $NULL);
+                } catch (e) {
+                    debugger
+                }
             },
             //往节点末尾推入节点集合
             ap: function(parentNode, node) { //append
@@ -391,6 +399,50 @@ doc = document,
             }
         }
     };
+
+//将字符串反转义
+var charIndexBuggy = "a" [0] != "a";
+var Escapes = {
+    92: "\\\\",
+    34: '\\"',
+    8: "\\b",
+    12: "\\f",
+    10: "\\n",
+    13: "\\r",
+    9: "\\t"
+};
+var quote = function(value) {
+    var result = '"',
+        index = 0,
+        length = value.length,
+        useCharIndex = !charIndexBuggy || length > 10;
+    var symbols = useCharIndex && (charIndexBuggy ? value.split("") : value);
+    for (; index < length; index++) {
+        var charCode = value.charCodeAt(index);
+        // If the character is a control character, append its Unicode or
+        // shorthand escape sequence; otherwise, append the character as-is.
+        switch (charCode) {
+            case 8:
+            case 9:
+            case 10:
+            case 12:
+            case 13:
+            case 34:
+            case 92:
+                result += Escapes[charCode];
+                break;
+            default:
+                if (charCode < 32) {
+                    result += unicodePrefix + toPaddedString(2, charCode.toString(16));
+                    break;
+                }
+                result += useCharIndex ? symbols[index] : value.charAt(index);
+        }
+    }
+    return result + '"';
+};
+
+stringifyStr = quote;
 
 var
 //事件缓存区
@@ -3067,7 +3119,8 @@ $.E(["shelter", "set", "get"], function(handleName) {
 /*
  * parse function
  */
-var _removeNodes = _isIE ? $.noop/*function() {//IE 不能回收节点，会导致子节点被销毁
+var _removeNodes = _isIE ? $.noop
+/*function() {//IE 不能回收节点，会导致子节点被销毁
 		//@大城小胖 http://fins.iteye.com/blog/172263
 		var d = $.D.cl(shadowDIV);
 		return function(n) {
@@ -3076,89 +3129,105 @@ var _removeNodes = _isIE ? $.noop/*function() {//IE 不能回收节点，会导�
 				d.innerHTML = '';
 			// }
 		}
-	}() */: function(n) {
-		// if (n && n.parentNode && n.tagName != 'BODY') {
-			$.E(n, function(nodeToDelete){
-				delete nodeToDelete.parentNode.removeChild(nodeToDelete);
-			})
-		// }
-	},
-	_parse = function(node) { //get all childNodes
-		var result = [],
-			GC_node = [];
-		for (var i = 0, child_node, childNodes = node.childNodes; child_node = childNodes[i]; i += 1) {
-			switch (child_node.nodeType) {
-				case 3:
-					if ($.trim(child_node.data)) {
-						$.p(result, new TextHandle(child_node))
-					}
-					break;
-				case 1:
-					if (child_node.getAttribute(_handle_type_argument_name) === "handle") {
-						var handleName = child_node.getAttribute("handle");
-						if (handleName !== $NULL) {
-							$.p(result, new TemplateHandle(handleName, child_node))
-						}
-						// delete child_node.parentNode.removeChild(child_node);
-						$.p(GC_node, child_node);
-					} else {
-						$.p(result, new ElementHandle(child_node))
-					}
-					break;
-			}
-		}
-		// $.E(GC_node, _removeNode)
-		_removeNodes(GC_node);
-		return result;
-	};
+	}() */
+: function(n) {
+        // if (n && n.parentNode && n.tagName != 'BODY') {
+        $.E(n, function(nodeToDelete) {
+            delete nodeToDelete.parentNode.removeChild(nodeToDelete);
+        })
+        // }
+    },
+    //模拟浏览器渲染空格的方式
+    _trim_but_space = function(str) {
+        str = String(str).replace(/^[\s\n]\s*/, ' ')
+        var ws = /\s/,
+            i = str.length;
+        while (ws.test(str.charAt(--i)));
+        return str.slice(0, i + 1) + (i < str.length ? " " : "");
+    },
+    _parse = function(node) { //get all childNodes
+        var result = [],
+            GC_node = [];
+        for (var i = 0, child_node, childNodes = node.childNodes; child_node = childNodes[i]; i += 1) {
+            switch (child_node.nodeType) {
+                case 3:
+                    var node_data = child_node.data
+                    if ($.trim(node_data)) {
+                        var parseRes = parseRule(node_data);
+                        if ($.isA(parseRes)) {
+                            $.E(parseRes, function(parseItem) {
+                                console.log(parseItem);
+                                if ($.isO(parseItem)) {
+                                    $.p(result, new TemplateHandle(parseItem))
+                                } else if ($.trim(parseItem)) {
+                                    $.p(result, new TextHandle(doc.createTextNode(_trim_but_space(parseItem))));
+                                }
+                            });
+                        } else {
+                            //现代浏览器XMP标签中，空格和回车总是不过滤的显示，和IE浏览器默认效果不一致，手动格式化
+                            node.data = _trim_but_space(node_data);
+                            $.p(result, new TextHandle(child_node))
+                        }
+                    }
+                    break;
+                case 1:
+                    $.p(result, new ElementHandle(child_node))
+                    break;
+            }
+        }
+        // $.E(GC_node, _removeNode)
+        _removeNodes(GC_node);
+        return result;
+    };
 
 /*
  * Handle constructor
  */
 
 function Handle(type, opction) {
-	var self = this;
-	if (!(self instanceof Handle)) {
-		return new Handle(type, opction);
-	}
-	if (type) {
-		self.type = type;
-	}
-	$.fI(opction, function(val, key) {
-		self[key] = val;
-	});
+    var self = this;
+    if (!(self instanceof Handle)) {
+        return new Handle(type, opction);
+    }
+    if (type) {
+        self.type = type;
+    }
+    $.fI(opction, function(val, key) {
+        self[key] = val;
+    });
 };
 Handle.init = function(self, weights) {
-	self.id = $.uid(); //weights <= 1
-	if (weights < 2) return;
-	self._controllers = []; //weights <= 2
-	self._controllers[$TRUE] = []; //In the #if block scope
-	self._controllers[$FALSE] = []; //In the #else block scope
-	if (weights < 3) return;
-	self._triggers = []; //weights <= 3
+    self.id = $.uid(); //weights <= 1
+    if (weights < 2) return;
+    self._controllers = []; //weights <= 2
+    self._controllers[$TRUE] = []; //In the #if block scope
+    self._controllers[$FALSE] = []; //In the #else block scope
+    if (weights < 3) return;
+    self._triggers = []; //weights <= 3
 };
 Handle.prototype = {
-	nodeType: 0,
-	ignore: $FALSE, //ignore Handle --> no currentNode
-	display: $FALSE, //function of show or hidden DOM
-	childNodes: [],
-	parentNode: $NULL,
-	type: "handle"
+    nodeType: 0,
+    ignore: $FALSE, //ignore Handle --> no currentNode
+    display: $FALSE, //function of show or hidden DOM
+    childNodes: [],
+    parentNode: $NULL,
+    type: "handle"
 };
 
 /*
  * TemplateHandle constructor
  */
 
-function TemplateHandle(handleName, node) {
-	var self = this;
-	self.handleName = $.trim(handleName);
-	self.childNodes = _parse(node);
-	Handle.init(self, 3);
+function TemplateHandle(handle_obj) {
+    var self = this;
+    self.handleInfo = handle_obj;
+    self.handleName = $.trim(handle_obj.handleName);
+    self.childNodes = [];
+    Handle.init(self, 3);
 };
 TemplateHandle.prototype = Handle("handle", {
-	ignore: $TRUE,
-	nodeType: 1
+    ignore: $TRUE,
+    nodeType: 1
 })
 
 /*
@@ -3166,13 +3235,13 @@ TemplateHandle.prototype = Handle("handle", {
  */
 
 function ElementHandle(node) {
-	var self = this;
-	self.node = node;
-	self.childNodes = _parse(node);
-	Handle.init(self, 3);
+    var self = this;
+    self.node = node;
+    self.childNodes = _parse(node);
+    Handle.init(self, 3);
 };
 ElementHandle.prototype = Handle("element", {
-	nodeType: 1
+    nodeType: 1
 })
 
 /*
@@ -3180,12 +3249,12 @@ ElementHandle.prototype = Handle("element", {
  */
 
 function TextHandle(node) {
-	var self = this;
-	self.node = node;
-	Handle.init(self, 2);
+    var self = this;
+    self.node = node;
+    Handle.init(self, 2);
 };
 TextHandle.prototype = Handle("text", {
-	nodeType: 3
+    nodeType: 3
 })
 
 /*
@@ -3193,66 +3262,96 @@ TextHandle.prototype = Handle("text", {
  */
 
 function CommentHandle(node) {
-	var self = this;
-	self.node = node;
-	Handle.init(self, 1);
+    var self = this;
+    self.node = node;
+    Handle.init(self, 1);
 };
 CommentHandle.prototype = Handle("comment", {
-	nodeType: 8
+    nodeType: 8
 })
+
 /*
  * parse rule
  * 底层解析器，类Lisp语法规则，易于解析
  */
-var placeholder = {
-    "<": "&lt;",
-    ">": "&gt;",
-    "{": _placeholder(),
-    "(": _placeholder(),
-    ")": _placeholder(),
-    "}": _placeholder()
-},
-    _Rg = function(s) {
-        return RegExp(s, "g")
+
+// DoubleQuotedString = /"(?:\.|(\\\")|[^\""\n])*"/g, //双引号字符串
+// SingleQuotedString = /'(?:\.|(\\\')|[^\''\n])*'/g, //单引号字符串
+var QuotedString = /"(?:\.|(\\\")|[^\""\n])*"|'(?:\.|(\\\')|[^\''\n])*'/g, //引号字符串
+    ScriptNodeString = /<script[^>]*>([\s\S]*?)<\/script>/gi,
+    StyleNodeString = /<style[^>]*>([\s\S]*?)<\/style>/gi;
+// XmpNodeString = /<xmp[^>]*>([\s\S]*?)<\/xmp>/gi,
+
+//用于抽离字符串的中特定的字符来避免解析，完成后可以回退这些字符串
+var _string_placeholder = {
+    save: function(regExp_placeholder, str) {
+        var map = this.maps[regExp_placeholder] = {
+            ph: _placeholder("_v"),
+            strs: []
+        };
+        var strings = map.strs;
+        var placeholder = map.ph;
+        str = str.replace(regExp_placeholder, function(matchStr) {
+            $.p(strings, matchStr);
+            return placeholder;
+        });
+        return str;
     },
-    placeholderReg = {
-        "<": /</g,
-        ">": />/g,
-        "/{": /\\\{/g,
-        "{": _Rg(placeholder["{"]),
-        "/(": /\\\(/g,
-        "(": _Rg(placeholder["("]),
-        "/)": /\\\)/g,
-        ")": _Rg(placeholder[")"]),
-        "/}": /\\\}/g,
-        "}": _Rg(placeholder["}"])
-    }, _head = /\{([\w\W]*?)\(/g,
-    _footer = /\)[\s]*\}/g,
+    maps: {},
+    release: function(regExp_placeholder, str) {
+        if (this.maps.hasOwnProperty(regExp_placeholder)) {
+            var map = this.maps[regExp_placeholder];
+            var strings = map.strs;
+            var placeholder = map.ph;
+            str = str.replace(RegExp(placeholder, "g"), function(ph) {
+                return strings.shift();
+            })
+        };
+        return str;
+    }
+},
+    // _head = /\{([\w\W]*?)\(/g,
+    // _footer = /\)\}/g, ///\)[\s]*\}/g,
+    _matchRule = /\{([\w\W]*?)\(([\w\W]*?)\)\}/, ///\{[\w\W]*?\([\w\W]*?\)[\s]*\}/,
     _handle_type_argument_name = _placeholder("handle-"),
+    /*
+     * 将模板语法解析成数组节点
+     */
     parseRule = function(str) {
         var _handle_type_tagName;
+        var expression_ph = _placeholder("json");
+        var expression_strs = [];
         var parseStr = str
-            .replace(/</g, placeholder["<"])
-            .replace(/>/g, placeholder[">"])
-            .replace(placeholderReg["/{"], placeholder["{"])
-            .replace(placeholderReg["/("], placeholder["("])
-            .replace(placeholderReg["/)"], placeholder[")"])
-            .replace(placeholderReg["/}"], placeholder["}"])
-        // .replace(_head, "<span type='handle' handle='$1'>")
-        .replace(_head, function(match, handleName) {
-            // console.log(arguments,"<span "+_handle_type_argument_name+"='handle' handle='"+handleName+"'>")
-            _handle_type_tagName = "span";
-            return "<span " + _handle_type_argument_name + "='handle' handle='" + handleName + "'>";
-        })
-        // .replace(_footer, "</span>")
-        .replace(_footer, "</" + _handle_type_tagName + ">")
-            .replace(placeholderReg["{"], "{")
-            .replace(placeholderReg["("], "(")
-            .replace(placeholderReg[")"], ")")
-            .replace(placeholderReg["}"], "}");
+        //模拟HTML转义
+        .replace(/&gt;/g, ">")
+            .replace(/&lt;/g, "<")
+            .replace(/&amp;/g, "&")
+            .replace(/&quot;/g, '"')
+            .replace(/&apos;/g, "'")
+            .replace(_matchRule, function(match, handleName, expression) {
+                $.p(expression_strs, {
+                    nodeType: 1,
+                    handleName: handleName,
+                    expression: expression
+                });
+                return expression_ph;
+            });
+
+        //模拟js字符串的转义
+        parseStr = parseStr.replace(/\\(\W)/g, "$1");
+        //带模板语法的，转化成Array
+        if (expression_strs.length) {
+
+            parseStr = parseStr.split(expression_ph);
+            for (var i = 1; i < parseStr.length; i += 2) {
+                parseStr.splice(i, 0, expression_strs.shift());
+            }
+            if (!$.trim(parseStr[0])) {
+                parseStr.shift();
+            };
+        }
         return parseStr;
     },
-    _matchRule = /\{[\w\W]*?\([\w\W]*?\)[\s]*\}/,
     /*
      * expores function
      */
@@ -3267,43 +3366,26 @@ var placeholder = {
             /*
              * 将所有HTML标签加上命名空间，不让浏览器解析默认语言
              */
-            //将可能误导解析的元素全部排除
-            //字符串、script标签
-            var quotedString = [];
-            var scriptNodeString = [];
-            var styleNodeString = [];
             var start_ns = "<" + V.namespace;
             var end_ns = "</" + V.namespace;
-            var Placeholder = "_" + Math.random(),
-                ScriptPlaceholder = "_" + Math.random(),
-                StylePlaceholder = "_" + Math.random(),
-                //备份字符串与script、XMP标签
-                htmlStr = htmlStr.replace(QuotedString, function(qs) {
-                    quotedString.push(qs)
-                    return Placeholder;
-                }).replace(ScriptNodeString, function(sns) {
-                    scriptNodeString.push(sns);
-                    return ScriptPlaceholder;
-                }).replace(StyleNodeString, function(sns) {
-                    styleNodeString.push(sns);
-                    return StylePlaceholder;
-                })
-                //为无命名空间的标签加上前缀
-                .replace(/<[\/]{0,1}([\w:]+)/g, function(html, tag) {
-                    //排除：带命名空间、独立标签、特殊节点
-                    if (tag.indexOf(":") === -1 && "|area|br|col|embed|hr|img|input|link|meta|param|".indexOf("|" + tag.toLowerCase() + "|") === -1) {
-                        html = (html.charAt(1) === "/" ? end_ns : start_ns) + tag;
-                    }
-                    return html;
-                })
-                //回滚字符串与style、script、XMP标签
-                .replace(RegExp(StylePlaceholder, "g"), function(p) {
-                    return styleNodeString.shift();
-                }).replace(RegExp(ScriptPlaceholder, "g"), function(p) {
-                    return scriptNodeString.shift();
-                }).replace(RegExp(Placeholder, "g"), function(p) {
-                    return quotedString.shift();
-                });
+            //备份字符串与script、XMP标签
+
+            htmlStr = _string_placeholder.save(QuotedString, htmlStr);
+            htmlStr = _string_placeholder.save(ScriptNodeString, htmlStr);
+            htmlStr = _string_placeholder.save(StyleNodeString, htmlStr);
+
+            //为无命名空间的标签加上前缀
+            htmlStr.replace(/<[\/]{0,1}([\w:]+)/g, function(html, tag) {
+                //排除：带命名空间、独立标签、特殊节点
+                if (tag.indexOf(":") === -1 && "|area|br|col|embed|hr|img|input|link|meta|param|".indexOf("|" + tag.toLowerCase() + "|") === -1) {
+                    html = (html.charAt(1) === "/" ? end_ns : start_ns) + tag;
+                }
+                return html;
+            });
+
+            //顶层模板语言解析到底层模板语言
+            htmlStr = parse(htmlStr);
+
 
             //使用浏览器默认解析力解析标签树，保证HTML的松语意
             _shadowBody.innerHTML = htmlStr;
@@ -3313,48 +3395,53 @@ var placeholder = {
             //到时候innerHTML就取不到完整的模板语法了，只留下DOM结构的残骸
             V._scansView(_shadowBody);
 
-            //提取所有文本节点，特殊标签（script、style等）除外
-            //将文本节点尝试当成模板语意进行解析，保存在insertNodesHTML中
-            //扫描过程中不宜对节点进行操作，因此缓存完后统一处理
-            var insertBefore = [];
-            _traversal(_shadowBody, function(node, index, parentNode) {
-                if (node.nodeType === 1 && ignoreTagNameMap[node.tagName]) {
-                    return $FALSE;
-                }
-                if (node.nodeType === 3) { //text Node
-                    $.p(insertBefore, {
-                        baseNode: node,
-                        parentNode: parentNode,
-                        insertNodesHTML: parseRule(node.data)
-                    });
-                }
-            });
-            //统一处理模板语意
-            $.e(insertBefore, function(item, i) {
-                var node = item.baseNode,
-                    parentNode = item.parentNode,
-                    insertNodesHTML = item.insertNodesHTML;
-                if (node.data === insertNodesHTML) {
-                    //普通文本做简答处理即可
-                    node.data = insertNodesHTML.replace(/^[\s\n]\s*/, ' ');
-                } else {
-                    //使用浏览器默认功能，将XML转化为JS-Object，TODO：有待优化，应该直接使用JSON进行转化
-                    shadowDIV.innerHTML = $.trim(insertNodesHTML); //optimization
-                    //Using innerHTML rendering is complete immediate operation DOM, 
-                    //innerHTML otherwise covered again, the node if it is not, 
-                    //then memory leaks, IE can not get to the full node.
-                    $.e(shadowDIV.childNodes, function(refNode) {
-                        //现代浏览器XMP标签中，空格和回车总是不过滤的显示，和浏览器默认效果不一致，手动格式化
-                        if (refNode.nodeType === 3) {
-                            refNode.data = refNode.data.replace(/^[\s\n]\s*/, ' ');
-                        }
-                        //将模板语意节点插入
-                        $.D.iB(parentNode, refNode, node)
-                    })
-                    $.D.rC(parentNode, node);
-                }
-            });
+            // //提取所有文本节点，特殊标签（script、style等）除外
+            // //将文本节点尝试当成模板语意进行解析，保存在insertNodesHTML中
+            // //扫描过程中不宜对节点进行操作，因此缓存完后统一处理
+            // var insertBefore = [];
+            // _traversal(_shadowBody, function(node, index, parentNode) {
+            //     if (node.nodeType === 1 && ignoreTagNameMap[node.tagName]) {
+            //         return $FALSE;
+            //     }
+            //     if (node.nodeType === 3) { //text Node
+            //         $.p(insertBefore, {
+            //             baseNode: node,
+            //             parentNode: parentNode,
+            //             insertNodesHTML: parseRule(node.data)
+            //         });
+            //     }
+            // });
+            // //统一处理模板语意
+            // $.e(insertBefore, function(item, i) {
+            //     var node = item.baseNode,
+            //         parentNode = item.parentNode,
+            //         insertNodesHTML = item.insertNodesHTML;
+            //     if (node.data === insertNodesHTML) {
+            //         //普通文本做简单处理即可
+            //         node.data = insertNodesHTML.replace(/^[\s\n]\s*/, ' ');
+            //     } else {
+            //         //使用浏览器默认功能，将XML转化为JS-Object，TODO：有待优化，应该直接使用JSON进行转化
+            //         shadowDIV.innerHTML = $.trim(insertNodesHTML); //optimization
+            //         //Using innerHTML rendering is complete immediate operation DOM, 
+            //         //innerHTML otherwise covered again, the node if it is not, 
+            //         //then memory leaks, IE can not get to the full node.
+            //         $.e(shadowDIV.childNodes, function(refNode) {
+            //             //现代浏览器XMP标签中，空格和回车总是不过滤的显示，和浏览器默认效果不一致，手动格式化
+            //             if (refNode.nodeType === 3) {
+            //                 refNode.data = refNode.data.replace(/^[\s\n]\s*/, ' ');
+            //             }
+            //             //将模板语意节点插入
+            //             $.D.iB(parentNode, refNode, node)
+            //         })
+            //         $.D.rC(parentNode, node);
+            //     }
+            // });
             //when re-rendering,select node's child will be filter by ``` _shadowBody.innerHTML = _shadowBody.innerHTML;```
+
+            //回滚字符串与style、script、XMP标签
+            result = _string_placeholder.release(StyleNodeString, result);
+            result = _string_placeholder.release(ScriptNodeString, result);
+            result = _string_placeholder.release(QuotedString, result);
             return new ElementHandle(_shadowBody);
         },
         _scansView: function(node, vmName) {
@@ -3441,6 +3528,62 @@ var placeholder = {
         // Proto: DynamicComputed /*Proto*/ ,
         Model: Model
     };
+
+
+//存储表达式字符，达成复用
+
+var Expression = {
+    //存储表达式解析结果
+    _: {},
+    set: function(expression, build_str, varsSet) {
+        return (Expression._[expression] = {
+            foo: Function(build_str)(),
+            keys: varsSet
+        });
+    },
+    get: function(expression) {
+        expression = $.trim(expression);
+        return Expression._[expression] || _build_expression(expression);
+    }
+},
+    //JS对象的获取
+    _obj_get_reg = /([a-zA-Z_?.$][\w?.$]*)/g;
+//编译模板中的表达式
+var _build_expression = function(expression) {
+    //不支持直接Object和Array取值：{a:"a"}或者[1,2]
+    //目前暂时支持hash取值，等Path对象完善后才能优化触发hash取值
+    //TODO:引入heightline的解析方式
+    var _build_str;
+    var string_sets = [];
+    var varsSet = [];
+    var varsMap = {};
+    expression = $.trim(expression);
+    //备份字符串，避免解析
+    var result = expression.replace(QuotedString, function(matchStr) {
+        var str_ph = _placeholder("_s");
+        $.p(string_sets, matchStr);
+        return "@";
+    });
+    //解析表达式中的对象
+    result = result.replace(_obj_get_reg, function(matchVar) {
+        if (!varsMap.hasOwnProperty(matchVar)) {
+            varsMap[matchVar] = $TRUE;
+            $.p(varsSet, matchVar);
+        }
+        return "vm.get(" + stringifyStr(matchVar) + ")";
+    });
+    //回滚备份的字符串
+    result = result.replace(/\@/g, function() {
+        return string_sets.shift();
+    });
+    _build_str = "return function(vm){try{return (" + result + ")}catch(e){console&&console.error(e)}}"
+
+    return Expression.set(expression, _build_str, varsSet);
+};
+setTimeout(function() {
+
+    console.log(_build_expression('a + b.c * "str" + a["str"] + a[b] +2'));
+}, 800);
 
 var _commentPlaceholder = function(handle, parentHandle, commentText) {
 	var handleName = handle.handleName,
@@ -3532,7 +3675,7 @@ V.rh("/each", placeholderHandle);
 V.rh("", function(handle, index, parentHandle) {
 	var textHandle = handle.childNodes[0];
 	if (!textHandle) {//{()} 无参数
-		textHandle = $.p(handle.childNodes,new TextHandle(doc.createTextNode("")))
+		$.p(handle.childNodes,textHandle = new TextHandle(doc.createTextNode("")))
 	}
 	// 校准类型
 	textHandle.asArg = $TRUE;
@@ -3962,44 +4105,44 @@ V.rt("#each", function(handle, index, parentHandle) {
 V.rt("", function(handle, index, parentHandle) {
     var textHandle = handle.childNodes[0],
         textHandleId = textHandle.id,
-        key = textHandle.node.data,
+        key = handle.handleInfo.expression, //textHandle.node.data,
         trigger = {
             key: ".", //const trigger
             bubble: $TRUE
         };
     //作为一个textNode节点来显示字符串
     if (parentHandle.type !== "handle") { //as textHandle
-        if ($.isSWrap(key)) { // single String
-            trigger.event = function(NodeList_of_ViewModel, model) {
-                var handleNode = NodeList_of_ViewModel[textHandleId];
-                handleNode._data = handleNode.currentNode.data = key.substring(1, key.length - 1);
-                //trigger.event = $.noop;
-            };
-        } else if ($.isStoN(key)) { // single Number
-            trigger.event = function(NodeList_of_ViewModel, model) {
-                var handleNode = NodeList_of_ViewModel[textHandleId];
-                handleNode._data = handleNode.currentNode.data = parseFloat(key);
-                //trigger.event = $.noop;
-            };
-        } else { //String for databese by key
-            trigger.key = key;
-            trigger.event = function(NodeList_of_ViewModel, model, /* triggerBy,*/ isAttr /*, vi*/ ) { //call by ViewModel's Node
-                var data = model.get(key),
-                    nodeHandle = NodeList_of_ViewModel[textHandleId],
-                    currentNode = nodeHandle.currentNode;
+        // if ($.isSWrap(key)) { // single String
+        //     trigger.event = function(NodeList_of_ViewModel, model) {
+        //         var handleNode = NodeList_of_ViewModel[textHandleId];
+        //         handleNode._data = handleNode.currentNode.data = key.substring(1, key.length - 1);
+        //         //trigger.event = $.noop;
+        //     };
+        // } else if ($.isStoN(key)) { // single Number
+        //     trigger.event = function(NodeList_of_ViewModel, model) {
+        //         var handleNode = NodeList_of_ViewModel[textHandleId];
+        //         handleNode._data = handleNode.currentNode.data = parseFloat(key);
+        //         //trigger.event = $.noop;
+        //     };
+        // } else { //String for databese by key
+        trigger.key = key;
+        trigger.event = function(NodeList_of_ViewModel, model, /* triggerBy,*/ isAttr /*, vi*/ ) { //call by ViewModel's Node
+            var data = Expression.get(key).foo(model),//model.get(key),
+                nodeHandle = NodeList_of_ViewModel[textHandleId],
+                currentNode = nodeHandle.currentNode;
 
-                if (isAttr) {
-                    //字符串事件：IE浏览器直接编译，故不需要转义，其他浏览器需要以字符串绑定到属性中。需要转义，否则会出现引号冲突
-                    if (isAttr.key.indexOf("on") === 0 && currentNode.hasOwnProperty(isAttr.key) && !_isIE) {
-                        data = String(data).replace(/"/g, '\\"').replace(/'/g, "\\'");
-                    }
-                }
-                // data = String(data);
-                if (nodeHandle._data !== data) {
-                    nodeHandle._data = currentNode.data = (data === $UNDEFINED ? "" : data);
+            if (isAttr) {
+                //字符串事件：IE浏览器直接编译，故不需要转义，其他浏览器需要以字符串绑定到属性中。需要转义，否则会出现引号冲突
+                if (isAttr.key.indexOf("on") === 0 && currentNode.hasOwnProperty(isAttr.key) && !_isIE) {
+                    data = String(data).replace(/"/g, '\\"').replace(/'/g, "\\'");
                 }
             }
+            // data = String(data);
+            if (nodeHandle._data !== data) {
+                nodeHandle._data = currentNode.data = (data === $UNDEFINED ? "" : data);
+            }
         }
+        // }
         //作为一个handle的参数
     } else { //as stringHandle
         if ($.isSWrap(key)) { // single String
@@ -4281,7 +4424,6 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
                 layoutViewModel = layoutViewModel.destroy(); //layoutViewModel=null
             }
             if (!layoutViewModel) {
-                console.error(key);
                 module($UNDEFINED, {
                     onInit: function(vm) {
                         //加锁，放置callback前的finallyRun引发的
@@ -5020,204 +5162,40 @@ V.ra("style",function () {
 	return _isIE&&_AttributeHandleEvent.style;
 })
 var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
-	// DoubleQuotedString = /"(?:\.|(\\\")|[^\""\n])*"/g, //双引号字符串
-	// SingleQuotedString = /'(?:\.|(\\\')|[^\''\n])*'/g, //单引号字符串
-	QuotedString = /"(?:\.|(\\\")|[^\""\n])*"|'(?:\.|(\\\')|[^\''\n])*'/g, //引号字符串
-	ScriptNodeString = /<script[^>]*>([\s\S]*?)<\/script>/gi,
-	StyleNodeString = /<style[^>]*>([\s\S]*?)<\/style>/gi,
-    XmpNodeString = /<xmp[^>]*>([\s\S]*?)<\/xmp>/gi,
-	templateHandles = {};
+    templateHandles = {};
 $.fI(V.handles, function(handleFun, handleName) {
-	var result = $TRUE
-	if (handleName.charAt(0) === "/") {
-		result = $FALSE //no arguments
-	}
-	templateHandles[handleName] = result
+    var result = $TRUE
+    if (handleName.charAt(0) === "/") {
+        result = $FALSE //no arguments
+    }
+    templateHandles[handleName] = result
 });
-/*{
-	"#if": $TRUE,
-	"#else": $FALSE, //no arguments
-	"/if": $FALSE,
-	"@": $TRUE,
-	"#each": $TRUE,
-	"/each": $FALSE,
-	"#with": $TRUE,
-	"/with": $TRUE,
-	"HTML": $TRUE,
-	"#>": $TRUE,
-	"#layout": $TRUE,
-	"define": $TRUE
-}*/
-var templateOperatorNum = {
-	"@": 1
-	// , "!": 1
-	// , "~": 1
-	// , "++": 1
-	// , "--": 1
-	// , "+": 2
-	// , "-": 2
-	// , "*": 2
-	// , "/": 2
-	// , "&&": 2
-	// , "||": 2
-	// , "&": 2
-	// , "|": 2
-	// , "=": 2
-	// , "==": 2
-	// , "===": 2
-	// , "!=": 2
-	// , "!==": 2
-	// , "%": 2
-	// , "^": 2
-	// , ">": 2
-	// , "<": 2
-	// , ">>": 2
-	// , "<<": 2
-}
-$.E(_operator_list, function(operator) {
-	templateOperatorNum[operator] = 2;
-});
-$.E(_unary_operator_list, function(operator) {
-	templateOperatorNum[operator] = 1;
-});
-var parse = function(str) {
-		var quotedString = [];
-		var scriptNodeString = [];
-		var styleNodeString = [];
-		var Placeholder = "_" + Math.random(),
-			ScriptPlaceholder = "_" + Math.random(),
-			StylePlaceholder = "_" + Math.random(),
-			str = str.replace(QuotedString, function(qs) {
-				quotedString.push(qs)
-				return Placeholder;
-			}).replace(ScriptNodeString,function (sns) {
-				scriptNodeString.push(sns);
-				return ScriptPlaceholder;
-			}).replace(StyleNodeString,function  (sns) {
-				styleNodeString.push(sns);
-				return StylePlaceholder;
-			}),
-			result = str.replace(newTemplateMatchReg, function(matchStr, innerStr, index) {
-				innerStr = innerStr.replace(/&gt;/g, ">").replace(/&lt;/g, "<").replace(/&amp;/g, "&") //Semantic confusion with HTML
-				var fun_name = $.trim(innerStr).split(" ")[0];
-				if (fun_name in templateHandles) {
-					if (templateHandles[fun_name]) {
-						var args = innerStr.replace(fun_name, "").split(","),
-							result = "{" + fun_name + "(";
-						$.E(args, function(arg) {
-							if (arg = $.trim(arg)) {
-								result += parseIte(parseArg(arg));
-							}
-						});
-						result += ")}"
-						return result;
-					} else {
-						return "{" + fun_name + "()}";
-					}
-				} else {
-					return parseIte(parseArg($.trim(innerStr))); //"{(" + innerStr + ")}";
-				}
-			})
 
-			result = result.replace(RegExp(StylePlaceholder, "g"),function(p) {
-				return styleNodeString.shift();
-			}).replace(RegExp(ScriptPlaceholder, "g"),function(p) {
-				return scriptNodeString.shift();
-			}).replace(RegExp(Placeholder, "g"), function(p) {
-				return quotedString.shift();
-			}).replace(/\{\@\(\{\(([\w\W]+?)\)\}\)\}/g, function(matchStr, matchKey) {
-				return "{@(" + matchKey + ")}";
-			});
-		return result
-	},
-	parseArg = function(argStr) {
-		var allStack = [],
-			inner = $TRUE;
-		argStr.replace(/\(([\W\w]+?)\)/, function(matchSliceArgStr, sliceArgStr, index) {
-			inner = $FALSE;
-			var stack = parseStr(argStr.substr(0, index));
-			allStack.push.apply(allStack, stack);
-			$.p(allStack, {
-				type: "arg",
-				value: sliceArgStr,
-				parse: parseIte(parseArg(sliceArgStr))
-			})
-			stack = parseStr(argStr.substring(index + matchSliceArgStr.length));
-			allStack.push.apply(allStack, stack);
-		});
-		if (inner) {
-			allStack.push.apply(allStack, parseStr(argStr));
-		}
-		return allStack;
-	},
-	parseStr = function(sliceArgStr) {
-		var stack = [],
-			pointer = 0;
-		sliceArgStr.replace(/([^\w$\(\)]+)/g, function(matchOperator, operator, index, str) { //([\W]+)
-			operator = $.trim(operator);
-			if (operator && operator !== ".") {
-				$.p(stack, {
-					type: "arg",
-					value: str.substring(pointer, index)
-				});
-				$.p(stack, {
-					type: "ope",
-					value: operator,
-					num: templateOperatorNum[operator] || 0
-				});
-				pointer = index + matchOperator.length;
-			}
-			return matchOperator;
-		});
-		if (stack.length && !stack[0].value) {
-			stack.splice(0, 1);
-		}
-		if (sliceArgStr.length - pointer) {
-			$.p(stack, {
-				type: "arg",
-				value: sliceArgStr.substring(pointer, sliceArgStr.length)
-			})
-		}
-		return stack;
-	},
-	parseIte = function(arr) {
-		var result = "";
-		$.E(arr, function(block, index) {
-			if (block.type === "arg") {
-				!block.parse && (block.parse = "{(" + block.value + ")}");
-			}
-			if (!block.value) {
-				block.ignore = $TRUE;
-			}
-		});
-		$.E(arr, function(block, index) {
-			if (block.type === "ope") {
-				var prev = arr[index - 1],
-					next = arr[index + 1];
-				if (block.num === 1) {
-					if (prev && prev.type === "arg") { //a++
-						block.parse = "{$" + block.value + "(" + prev.parse + ")}";
-						prev.ignore = $TRUE;
-					} else { //++a
-						next.parse = "{" + block.value + "(" + next.parse + ")}"
-						block.ignore = $TRUE;
-					}
-				} else if (block.num === 2) {
-					next.parse = "{" + block.value + "(" + prev.parse + next.parse + ")}"
-					prev.ignore = $TRUE;
-					block.ignore = $TRUE;
-				} else {
-					throw "Unknown type:" + block.value
-				}
-			}
-		});
-		$.E(arr, function(block) {
-			if (!block.ignore) {
-				result += block.parse;
-			}
-		});
-		return result; //arr;
-	};
+var parse = function(str) {
+
+    result = str.replace(newTemplateMatchReg, function(matchStr, innerStr, index) {
+        innerStr = $.trim(innerStr);
+        //获取前缀标识
+        var fun_name = $.stf(innerStr, " ");
+        var result;
+        //如果是，则进行标志
+        if (templateHandles.hasOwnProperty(fun_name)) {
+            if (templateHandles[fun_name]) { //可带参数的解析式
+                var expression = $.trim(innerStr.replace(fun_name, ""));
+                result = "{" + fun_name + "(" + expression + ")}";
+            } else { //不可带参数的解析式
+                result = "{" + fun_name + "()}";
+            }
+        } else {
+            result = "{(" + $.trim(innerStr) + ")}"; //"{(" + innerStr + ")}";
+        }
+        console.log(result);
+        return result;
+    });
+
+    return result;
+};
+
 /*
  * user defined handle function like Handlebarsjs
  */
@@ -5287,6 +5265,7 @@ registerHandle("HTML",function () {
 var _jSouperBase = {
     //暴露基本的工具集合，给拓展组件使用
     $: $,
+    // JSON: JSON,
     $JS: new Model(global),
     isViewModel: function(vm) {
         return vm instanceof ViewModel;
@@ -5329,11 +5308,11 @@ var _jSouperBase = {
     },
     parseStr: function(htmlStr, name) {
         // V._currentParser = name;
-        return V.parse(parse(htmlStr), name)
+        return V.parse(htmlStr, name)
     },
     parseNode: function(htmlNode, name) {
         // V._currentParser = name;
-        return V.parse(parse(htmlNode.innerHTML), name)
+        return V.parse(htmlNode.innerHTML, name)
     },
     parse: function(html, name) {
         if ($.isO(html)) {

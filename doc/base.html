@@ -18,8 +18,8 @@
 	<xmp id="jSouperApp">
 		<fieldset>
 			<legend>表单双向绑定</legend>
-			<input placeholder="Enter a number" bind-form="{{'num_one'}}" value="{{num_one}}">
-			<input placeholder="Enter a number" bind-form="{{'num_two'}}" value="{{num_two}}">
+			<input placeholder="Enter a number" bind-input="{{'num_one'}}" value="{{num_one}}">
+			<input placeholder="Enter a number" bind-input="{{'num_two'}}" value="{{num_two}}">
 		</fieldset>
 		<fieldset>
 			<legend>条件语句</legend>
@@ -35,34 +35,34 @@
 			<legend>循环语句</legend>
 			多次同时绑定一个表单不会冲突
 			<br>
-			<input type="radio" bind-form="{{'radio_result'}}" bind-checked="{{radio_result}}" name="radio3" value="normal">
+			<input type="radio" bind-input="{{'radio_result'}}" bind-checked="{{radio_result}}" name="radio3" value="normal">
 			normal
-			<input type="radio" bind-form="{{'radio_result'}}" bind-checked="{{radio_result}}" name="radio3" value="make disable">
+			<input type="radio" bind-input="{{'radio_result'}}" bind-checked="{{radio_result}}" name="radio3" value="make disable">
 			make disable
-			<input type="radio" bind-form="{{'radio_result'}}" bind-checked="{{radio_result}}" name="radio3" value="hehe">
+			<input type="radio" bind-input="{{'radio_result'}}" bind-checked="{{radio_result}}" name="radio3" value="hehe">
 			hehe
 			<hr>
 
 			{{#each radios}}
-				<input type="radio" bind-form="{{'$PARENT.radio_result'}}" bind-checked="{{$PARENT.radio_result}}" name="radio1" bind-value="{{$THIS}}">{{$THIS}}
+				<input type="radio" bind-input="{{'$PARENT.radio_result'}}" bind-checked="{{$PARENT.radio_result}}" name="radio1" bind-value="{{$THIS}}">{{$THIS}}
 			{{/each}}
 			<hr>
 
-			<input type="radio" bind-form="{{'radio_result'}}" bind-checked="{{radio_result}}" name="radio4" value="normal">
+			<input type="radio" bind-input="{{'radio_result'}}" bind-checked="{{radio_result}}" name="radio4" value="normal">
 			normal
-			<input type="radio" bind-form="{{'radio_result'}}" bind-checked="{{radio_result}}" name="radio4" value="make disable">
+			<input type="radio" bind-input="{{'radio_result'}}" bind-checked="{{radio_result}}" name="radio4" value="make disable">
 			make disable
-			<input type="radio" bind-form="{{'radio_result'}}" bind-checked="{{radio_result}}" name="radio4" value="hehe">
+			<input type="radio" bind-input="{{'radio_result'}}" bind-checked="{{radio_result}}" name="radio4" value="hehe">
 			hehe
 			<hr>
 
 			{{#each radios}}
-				<input type="radio" bind-form="{{'$PARENT.radio_result'}}" bind-checked="{{$PARENT.radio_result}}" name="radio2" bind-value="{{$THIS}}">{{$THIS}}
+				<input type="radio" bind-input="{{'$PARENT.radio_result'}}" bind-checked="{{$PARENT.radio_result}}" name="radio2" bind-value="{{$THIS}}">{{$THIS}}
 			{{/each}}
 			<hr>
 
 			<p>result: {{radio_result}}</p>
-			<input id="radio_input" type="text" bind-value="{{radio_result}}" bind-form="{{'radio_result'}}" bind-disabled="{{radio_result=='make disable'}}">
+			<input id="radio_input" type="text" bind-value="{{radio_result}}" bind-input="{{'radio_result'}}" bind-disabled="{{radio_result=='make disable'}}">
 		</fieldset>
 		<fieldset>
 			<legend>运算符</legend>

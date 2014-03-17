@@ -2,7 +2,7 @@
 V.rh("", function(handle, index, parentHandle) {
 	var textHandle = handle.childNodes[0];
 	if (!textHandle) {//{()} 无参数
-		textHandle = $.p(handle.childNodes,new TextHandle(doc.createTextNode("")))
+		$.p(handle.childNodes,textHandle = new TextHandle(doc.createTextNode("")))
 	}
 	// 校准类型
 	textHandle.asArg = $TRUE;

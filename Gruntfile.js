@@ -12,7 +12,9 @@ module.exports = function(grunt) {
     //define tasks
     grunt.registerTask('server', ['connect:server', 'watch']);
 
-    var baseFile = ['src/$.js',
+    var baseFile = [
+        'src/$.js',
+        'src/json.js',
         'src/event.js',
         'src/SmartTrigger_for_Model.js',
 
@@ -31,7 +33,8 @@ module.exports = function(grunt) {
         'src/registerHandle/*.js',
         'src/registerTrigger/*.js',
         'src/registerAttributeHandle/*.js',
-        'src/templateParse.v1.js',
+        // 'src/templateParse.v1.js',
+        'src/templateParse.v3.js',
 
         'src/registerHandle.js',
         'src/export.js',
@@ -48,7 +51,7 @@ module.exports = function(grunt) {
         src: '',
         //文件合并
         concat: {
-        	//调试版本，
+            //调试版本，
             debug: {
                 src: debugFile,
                 dest: 'build/jSouper.debug.js'
@@ -60,7 +63,7 @@ module.exports = function(grunt) {
             }
         },
         wrap: {
-        	//大闭包包裹
+            //大闭包包裹
             basic: {
                 src: ['build/jSouper.js'],
                 dest: 'build/jSouper.js',
@@ -113,7 +116,7 @@ module.exports = function(grunt) {
             },
             js: {
                 files: ['src/*.js', 'src/**/*.js'],
-                tasks: ['concat', 'wrap', 'uglify'] //,'closure-compiler'
+                tasks: ['concat' , 'wrap', 'uglify' ] //,'closure-compiler'
             }
         }
 

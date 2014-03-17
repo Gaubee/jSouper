@@ -32,7 +32,6 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
                 layoutViewModel = layoutViewModel.destroy(); //layoutViewModel=null
             }
             if (!layoutViewModel) {
-                console.error(key);
                 module($UNDEFINED, {
                     onInit: function(vm) {
                         //加锁，放置callback前的finallyRun引发的

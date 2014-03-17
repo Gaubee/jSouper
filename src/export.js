@@ -4,6 +4,7 @@
 var _jSouperBase = {
     //暴露基本的工具集合，给拓展组件使用
     $: $,
+    // JSON: JSON,
     $JS: new Model(global),
     isViewModel: function(vm) {
         return vm instanceof ViewModel;
@@ -46,11 +47,11 @@ var _jSouperBase = {
     },
     parseStr: function(htmlStr, name) {
         // V._currentParser = name;
-        return V.parse(parse(htmlStr), name)
+        return V.parse(htmlStr, name)
     },
     parseNode: function(htmlNode, name) {
         // V._currentParser = name;
-        return V.parse(parse(htmlNode.innerHTML), name)
+        return V.parse(htmlNode.innerHTML, name)
     },
     parse: function(html, name) {
         if ($.isO(html)) {

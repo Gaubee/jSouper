@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>新版本的View层表达式语法解析</title>
+    <script type="text/javascript" src="../build/jSouper.debug.js"></script>
+    <script type="text/javascript">
+    jSouper.ready(function() {
+        jSouper.app({
+            Id: "jSouperApp",
+            Data: {
+                a: 'a',
+                b: {
+                    bb: [5, 4, 3, 2, 1]
+                },
+                c: true
+            }
+        })
+    });
+    </script>
+</head>
+
+<body>
+    <div id="jSouperApp">
+    a:{{a}}
+    <br>
+    b.bb:{{b.bb}}
+    <br>
+    </div>
+</body>
+
+</html>
+
+<script type="text/javascript">
+</script>
