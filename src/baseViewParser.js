@@ -215,14 +215,25 @@ var _string_placeholder = {
     };
 
 
+var _noop_expression_foo = function() {
+    return []
+};
 //存储表达式字符，达成复用
-
 var Expression = {
     //存储表达式解析结果
     _: {},
     set: function(expression, build_str, varsSet) {
+        var foo = _noop_expression_foo;
+        try {
+            foo = Function(build_str)()
+        } catch (e) {
+            console.group('expression error:');
+            console.error(expression);
+            console.error(e.message);
+            console.groupEnd('expression error:')
+        }
         return (Expression._[expression] = {
-            foo: Function(build_str)(),
+            foo: foo,
             keys: varsSet
         });
     },
@@ -261,7 +272,48 @@ var _build_expression = function(expression) {
     result = result.replace(/\@/g, function() {
         return string_sets.shift();
     });
-    _build_str = "return function(vm){try{return (" + result + ")}catch(e){console&&console.error(e)}}"
-
+    _build_str = "return function(vm){try{return [" + result + "]}catch(e){var c=this.console;if(c){c.error(e);}}}"
+    console.dir(_build_str);
     return Expression.set(expression, _build_str, varsSet);
 };
+
+// var echarMap = {
+//     '"': '"',
+//     "'": "'",
+//     "(": ")",
+//     "[": "]",
+//     "{": "}",
+//     ")": "(",
+//     "]": "[",
+//     "}": "{"
+// }
+// var _cut_expression = function(expression) {
+//     var result = [];
+//     var index = 0;
+//     var first_expression = "";
+//     var echarts = [];
+//     var i = 0;
+//     for (var i = 0, len = expression.length, charItem, n_charItem, l_charItem; i < len; i += 1) {
+//         charItem = expression.charAt(i);
+//         n_charItem = echarMap[charItem];
+//         l_charItem = $.lI(echarts);
+//         if ((l_charItem === '"' || l_charItem === "'") && n_charItem !== l_charItem) {
+//             continue;
+//         }
+//         if (n_charItem) {
+//             if (l_charItem === n_charItem) {
+//                 echarts.pop();
+//             } else {
+//                 $.p(echarts, charItem);
+//             }
+//         }
+//         console.log(echarts, charItem)
+//         if (!echarts.length && charItem === ",") {
+//             $.p(result, expression.substring(index, i));
+//             //跳过","
+//             index = i + 1;
+//         }
+//     };
+//     $.p(result, expression.substr(index));
+//     return result;
+// }

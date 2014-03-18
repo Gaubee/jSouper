@@ -31,10 +31,17 @@
     b.bb.1:{{b.bb.1>b.bb.2}}
     <br>
     <input bind-input="{{'b.bb.1'}}" value="{{b.bb.1}}" />
+    <input bind-input="{{'a'}}" value="{{a}}" />
     <br>
     {{#if a=="a"}}a=="a"{{#else}}a!="a"{{/if}}
     <br>
+    {{#layout "xmp","a"}}
+    {{#layout "xmp","a",a==="a"}}
+    <br>
     </div>
+    <xmp type="template" name="xmp">
+        <h2>hello {{$This}}</h2>
+    </xmp>
 </body>
 
 </html>

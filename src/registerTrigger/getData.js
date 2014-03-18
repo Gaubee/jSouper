@@ -12,7 +12,7 @@ V.rt("", function(handle, index, parentHandle) {
     trigger.key = expression.keys.length ? expression.keys : "."
 
     trigger.event = function(NodeList_of_ViewModel, model, /* triggerBy,*/ isAttr /*, vi*/ ) { //call by ViewModel's Node
-        var data = expression.foo(model),
+        var data = expression.foo(model)[0],
             nodeHandle = NodeList_of_ViewModel[textHandleId],
             currentNode = nodeHandle.currentNode;
 

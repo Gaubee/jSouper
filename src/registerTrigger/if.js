@@ -1,6 +1,5 @@
 V.rt("#if", function(handle, index, parentHandle) {
     // console.log(handle)
-    debugger
     var id = handle.id,
         ignoreHandleType = /handle|comment/,
         expression = Expression.get(handle.handleInfo.expression),
@@ -39,7 +38,7 @@ V.rt("#if", function(handle, index, parentHandle) {
         // key:"",//default is ""
         event: function(NodeList_of_ViewModel, model, /*triggerBy,*/ isAttr, viewModel_ID) {
             //要显示的类型，true为if-else，false为else-endif
-            var conditionVal = expression.foo(model),//NodeList_of_ViewModel[conditionHandleId]._data,
+            var conditionVal = expression.foo(model)[0],//NodeList_of_ViewModel[conditionHandleId]._data,
                 parentNode = NodeList_of_ViewModel[parentHandleId].currentNode,
                 markHandleId = comment_else_id, //if(true)
                 markHandle; //default is undefined --> insertBefore === appendChild
