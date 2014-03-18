@@ -31,10 +31,10 @@ function ProxyModel(entrust, model) {
      * 存储Model对象
      * 这里只是单向存储model实例，model只存储触发器。不管你pm对象
      */
-    if (model) {
+    // if (model) {
         model instanceof Model || (model = Model(model));
         self.follow(model)
-    }
+    // }
 };
 
 var __ProxyModelProto__ = ProxyModel.prototype = {

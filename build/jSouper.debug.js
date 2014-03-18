@@ -1894,10 +1894,10 @@ function ProxyModel(entrust, model) {
      * 存储Model对象
      * 这里只是单向存储model实例，model只存储触发器。不管你pm对象
      */
-    if (model) {
+    // if (model) {
         model instanceof Model || (model = Model(model));
         self.follow(model)
-    }
+    // }
 };
 
 var __ProxyModelProto__ = ProxyModel.prototype = {
@@ -3905,7 +3905,8 @@ V.rt("#each", function(handle, index, parentHandle) {
     var expression = Expression.get(handle.handleInfo.expression);
     // var expressionStrArr = _cut_expression(handle.handleInfo.expression);
     var arrDataHandle_Key = $.stf(handle.handleInfo.expression, ",");
-    if (arrDataHandle_Key.match(_obj_get_reg).length !== 1) {
+    var _match_result = arrDataHandle_Key.match(_obj_get_reg);
+    if (!_match_result || _match_result.length !== 1 || _match_result[0] !== arrDataHandle_Key) {
         //非简单式，不实现绑定
         arrDataHandle_Key = false;
     }
@@ -3934,7 +3935,11 @@ V.rt("#each", function(handle, index, parentHandle) {
                 arrViewModels = allArrViewModels[id];
             if (!arrViewModels) { //第一次初始化，创建最一层最近的Model来模拟ArrayModel
                 arrViewModels = allArrViewModels[id] = [];
-                arrayModel = proxyModel.model.buildModelByKey(arrDataHandle_Key);
+                if (arrDataHandle_Key) {
+                    arrayModel = proxyModel.model.buildModelByKey(arrDataHandle_Key);
+                } else {
+                    arrayModel = new Model(data);
+                }
             }
             var showed_vi_len = arrViewModels.len,
                 new_data_len = data ? data.length : 0,
@@ -4025,8 +4030,16 @@ V.rt("#each", function(handle, index, parentHandle) {
                                         if (arrDataHandle_Key) {
                                             proxyModel.shelter(vm, arrDataHandle_Key + "." + index); //+"."+index //reset arrViewModel's model
                                         } else {
-                                            proxyModel.model = new Model;
-                                            proxyModel.set(eachItemData)
+                                            var _proxyModel = vm.model;
+                                            _proxyModel._parentPM = proxyModel;
+                                            _proxyModel._prefix = strIndex;
+                                            _proxyModel.follow(arrayModel, strIndex);
+                                            // _debugger.Protocol();
+                                            console.log(viewModel_ID, index);
+                                            finallyRun.register("each" + viewModel_ID + "_" + index, function(argument) {
+                                                console.info(viewModel_ID, arrayModel._database, vm._id,vm.get("$Caller.$Caller.$Caller.$Path"));
+                                                _proxyModel.touchOff();
+                                            })
                                         }
                                     }
                                 });

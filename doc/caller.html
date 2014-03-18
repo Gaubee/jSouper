@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>$Caller作用域功能测试</title>
+    <script type="text/javascript" src="../build/jSouper.debug.js">
+    {
+    	Id:"jSouperApp",
+    	Data:{
+    		title:"test $Caller",
+    		a:{
+    			b:"??"
+    		}
+    	}
+    }
+    </script>
+</head>
+<body>
+<xmp id="jSouperApp">
+{{#> 'cl',"$This.a.b"}}</xmp>
+</body>
+<xmp type="template" name="cl">
+	{{$Top.title}}|
+	{{$Path}}
+	<br>
+	{{#each ["cl",1,2,"cs"]}}
+	<br>
+	{{$This}}|{{$Path}}|{{$Caller.$Path}}
+	{{#> 'cl.cl'}}
+	{{/each}}
+</xmp>
+<xmp type="template" name="cl.cl">
+	<h3>
+		{{$Path}}
+		<br>
+		{{$Caller.$Path}}
+		<br>
+		{{#each [1,2,3]}}
+		{{$This}}
+		{{$Caller.$Caller.$Caller.$Path}}
+		<br>
+		{{/each}}
+	</h3>
+</xmp>
+<xmp type="template" name="cl.cl.cl"></xmp>
+</html>
