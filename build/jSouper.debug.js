@@ -4287,43 +4287,53 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
                 routerResult = $.noop;
                 return;
             case 1: //单参数，第二参数默认为"$This"
-                routerResult = trigger_1;
+                routerResult = _layout_trigger_1;
                 break;
             case 2:
-                routerResult = trigger_2;
+                routerResult = _layout_trigger_2;
                 break;
             default: // case 3: //带条件表达式的参数
-                routerResult = trigger_3_more;
+                routerResult = _layout_trigger_3_more;
                 break;
         }
+        trigger.handle_id = id;
+        trigger.layout_id = comment_layout_id;
+        trigger.expression = expression;
         return (trigger.event = routerResult).apply(trigger, arguments);
     }
     var trigger = {
         // cache_tpl_name:$UNDEFINED,
-        key: ".",
+        key: expression.keys.length ? expression.keys : ".",
         event: triggerRouter
     }
-    var trigger_1 = function(NodeList_of_ViewModel, proxyModel, isAttr, viewModel_ID) {
-        var handleArgs = expression.foo(proxyModel);
-        $.p(handleArgs, __ModelConfig__.prefix.This);
-        return _layout_trigger_common(NodeList_of_ViewModel, proxyModel, viewModel_ID, handleArgs, id, comment_layout_id);
-    }
-    var trigger_2 = function(NodeList_of_ViewModel, proxyModel, isAttr, viewModel_ID) {
-        var handleArgs = expression.foo(proxyModel);
-        return _layout_trigger_common(NodeList_of_ViewModel, proxyModel, viewModel_ID, handleArgs, id, comment_layout_id);
-    }
-    var trigger_3_more = function(NodeList_of_ViewModel, proxyModel, isAttr, viewModel_ID) {
-        var handleArgs = expression.foo(proxyModel);
-        var isShow = handleArgs.splice(2, 1)[0];
-        var AllLayoutViewModel = V._instances[viewModel_ID]._ALVI,
-            layoutViewModel = AllLayoutViewModel[id];
-        if (isShow) {
-            layoutViewModel = _layout_trigger_common(NodeList_of_ViewModel, proxyModel, viewModel_ID, handleArgs, id, comment_layout_id);
-        } else {
-            if (layoutViewModel) {
-                layoutViewModel._canRemoveAble && layoutViewModel.remove();
-            }
-            /*else if (!_simulationInitVm) {
+    return trigger;
+}));
+
+var _layout_trigger_1 = function(NodeList_of_ViewModel, proxyModel, isAttr, viewModel_ID) {
+    var self = this;
+    var handleArgs = self.expression.foo(proxyModel);
+    $.p(handleArgs, __ModelConfig__.prefix.This);
+    return _layout_trigger_common.call(self, NodeList_of_ViewModel, proxyModel, viewModel_ID, handleArgs);
+}
+var _layout_trigger_2 = function(NodeList_of_ViewModel, proxyModel, isAttr, viewModel_ID) {
+    var self = this;
+    var handleArgs = self.expression.foo(proxyModel);
+    return _layout_trigger_common.call(self, NodeList_of_ViewModel, proxyModel, viewModel_ID, handleArgs);
+}
+var _layout_trigger_3_more = function(NodeList_of_ViewModel, proxyModel, isAttr, viewModel_ID) {
+    var self = this;
+    var handleArgs = self.expression.foo(proxyModel);
+    var isShow = handleArgs.splice(2, 1)[0];
+    console.info(isShow);
+    var AllLayoutViewModel = V._instances[viewModel_ID]._ALVI,
+        layoutViewModel = AllLayoutViewModel[self.handle_id];
+    if (isShow) {
+        layoutViewModel = _layout_trigger_common.call(self, NodeList_of_ViewModel, proxyModel, viewModel_ID, handleArgs);
+    } else {
+        if (layoutViewModel) {
+            layoutViewModel._canRemoveAble && layoutViewModel.remove();
+        }
+        /*else if (!_simulationInitVm) {
                     //强制运行一次getter，因为vm没有初始化
                     //如果是初始化条件又依赖于其内部（Observer等），恐怕无法自动触发
                     //所以这里手动地简单模拟一次layoutViewModel已经初始化的情况
@@ -4338,12 +4348,14 @@ V.rt("#>", V.rt("#layout", function(handle, index, parentHandle) {
                         model.get(key);
                     })
                 }*/
-        }
-        return layoutViewModel;
     }
-    return trigger;
-}));
+    return layoutViewModel;
+}
 var _layout_trigger_common = function(NodeList_of_ViewModel, proxyModel, viewModel_ID, handleArgs, handle_id, comment_layout_id) {
+    var self = this;
+    var handle_id = self.handle_id;
+    var comment_layout_id = self.layout_id;
+
     var vm = V._instances[viewModel_ID];
     //VM所存储的集合
     var AllLayoutViewModel = vm._ALVI;
