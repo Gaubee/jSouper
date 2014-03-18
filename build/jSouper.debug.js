@@ -3535,9 +3535,15 @@ var Expression = {
         expression = $.trim(expression);
         return Expression._[expression] || _build_expression(expression);
     }
-},
-    //JS对象的获取
-    _obj_get_reg = /([a-zA-Z_?.$][\w?.$]*)/g;
+};
+//JS对象的获取
+var _obj_get_reg = /([a-zA-Z_?.$][\w?.$]*)/g;
+var _const_obj = {
+    "true": $TRUE,
+    "false": $TRUE,
+    "null": $TRUE,
+    "this": $TRUE
+}
 //编译模板中的表达式
 var _build_expression = function(expression) {
     //不支持直接Object和Array取值：{a:"a"}或者[1,2]
@@ -3556,11 +3562,13 @@ var _build_expression = function(expression) {
     });
     //解析表达式中的对象
     result = result.replace(_obj_get_reg, function(matchVar) {
-        if (!varsMap.hasOwnProperty(matchVar)) {
+        debugger
+        if (!varsMap.hasOwnProperty(matchVar) && !_const_obj[matchVar]) {
             varsMap[matchVar] = $TRUE;
             $.p(varsSet, matchVar);
+            return "vm.get(" + stringifyStr(matchVar) + ")";
         }
-        return "vm.get(" + stringifyStr(matchVar) + ")";
+        return matchVar;
     });
     //回滚备份的字符串
     result = result.replace(/\@/g, function() {
