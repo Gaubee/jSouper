@@ -40,7 +40,7 @@ var _string_placeholder = {
 },
     // _head = /\{([\w\W]*?)\(/g,
     // _footer = /\)\}/g, ///\)[\s]*\}/g,
-    _matchRule = /\{([\w\W]*?)\(([\w\W]*?)\)\}/, ///\{[\w\W]*?\([\w\W]*?\)[\s]*\}/,
+    _matchRule = /\{([\w\W]*?)\(([\w\W]*?)\)\}/g, ///\{[\w\W]*?\([\w\W]*?\)[\s]*\}/,
     _handle_type_argument_name = _placeholder("handle-"),
     /*
      * 将模板语法解析成数组节点

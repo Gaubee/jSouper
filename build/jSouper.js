@@ -3312,7 +3312,7 @@ var _string_placeholder = {
 },
     // _head = /\{([\w\W]*?)\(/g,
     // _footer = /\)\}/g, ///\)[\s]*\}/g,
-    _matchRule = /\{([\w\W]*?)\(([\w\W]*?)\)\}/, ///\{[\w\W]*?\([\w\W]*?\)[\s]*\}/,
+    _matchRule = /\{([\w\W]*?)\(([\w\W]*?)\)\}/g, ///\{[\w\W]*?\([\w\W]*?\)[\s]*\}/,
     _handle_type_argument_name = _placeholder("handle-"),
     /*
      * 将模板语法解析成数组节点
@@ -3996,9 +3996,10 @@ V.rt("", function(handle, index, parentHandle) {
 
 V.rt("#if", function(handle, index, parentHandle) {
     // console.log(handle)
+    debugger
     var id = handle.id,
         ignoreHandleType = /handle|comment/,
-        conditionHandleId = handle.childNodes[0].id,
+        expression = Expression.get(handle.handleInfo.expression),
         parentHandleId = parentHandle.id,
 
         comment_else_id, //#if inserBefore #else
@@ -4034,7 +4035,7 @@ V.rt("#if", function(handle, index, parentHandle) {
         // key:"",//default is ""
         event: function(NodeList_of_ViewModel, model, /*triggerBy,*/ isAttr, viewModel_ID) {
             //要显示的类型，true为if-else，false为else-endif
-            var conditionVal = NodeList_of_ViewModel[conditionHandleId]._data,
+            var conditionVal = expression.foo(model),//NodeList_of_ViewModel[conditionHandleId]._data,
                 parentNode = NodeList_of_ViewModel[parentHandleId].currentNode,
                 markHandleId = comment_else_id, //if(true)
                 markHandle; //default is undefined --> insertBefore === appendChild
