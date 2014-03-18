@@ -134,7 +134,6 @@ V.rt("#each", function(handle, index, parentHandle) {
                     }, new_data_len);
                 } else { /*  Insert*/
                     //undefined null false "" 0 ...
-                    debugger
                     if (data) {
                         var fragment = $.D.cl(fr);
                         var elParentNode = comment_endeach_node.parentNode;

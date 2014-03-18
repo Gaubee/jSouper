@@ -38,7 +38,7 @@ var _removeNodes = _isIE ? $.noop
                         var parseRes = parseRule(node_data);
                         if ($.isA(parseRes)) {
                             $.E(parseRes, function(parseItem) {
-                                console.log(parseItem);
+                                // console.log(parseItem);
                                 if ($.isO(parseItem)) {
                                     $.p(result, new TemplateHandle(parseItem))
                                 } else if ($.trim(parseItem)) {

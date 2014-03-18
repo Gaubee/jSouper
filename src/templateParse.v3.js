@@ -26,7 +26,6 @@ var parse = function(str) {
         } else {
             result = "{(" + $.trim(innerStr) + ")}"; //"{(" + innerStr + ")}";
         }
-        console.log(result);
         return result;
     });
 

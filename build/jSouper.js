@@ -149,7 +149,11 @@ doc = document,
         //相当于str.split(..)[0]
         stf: function(str, splitKey) { //split first
             var result = $.st(str, splitKey);
-            return result === $FALSE ? _split_laveStr : result;
+            if (result === $FALSE) {
+                result = _split_laveStr;
+                _split_laveStr = $FALSE;
+            }
+            return result;
         },
 
         //清空两边字符串
@@ -1290,7 +1294,7 @@ var __ModelProto__ = Model.prototype = {
             __arrayData;
 
         //简单的判定是否可能是数组类型的操作并且可能影响到长度
-        if (/[^\w]\.?length/.test(key) || /[^\w]\.?[\d]+([^\w]\.?|$)/.test(key)) {
+        if (/\.?length/.test(key) || /[^\w]\.?[\d]+([^\w]\.?|$)/.test(key)) {
 
             key.replace(/[^\w]\.?([\d]+)([^\w]\.?|$)/g, function(matchKey, num, endKey, index) {
                 var maybeArrayKey = key.substr(0, index);
@@ -1345,15 +1349,13 @@ var __ModelProto__ = Model.prototype = {
             var nodeKey;
             if (jointKey) { //key是多层次寻址
                 //所寻找到的子Model
-                if (!childModels._[jointKey]) {
-                    while (nodeKey = $.st(_split_laveStr, ".")) {
-                        if (childModels._[jointKey]) {
-                            break;
-                        }
-                        jointKey += "." + nodeKey;
+                do {
+                    if (childModels._[jointKey]) {
+                        break;
                     }
-                    nodeKey || (jointKey += "." + _split_laveStr);
-                }
+                    nodeKey = $.stf(_split_laveStr, ".")
+                    jointKey += "." + nodeKey;
+                } while (_split_laveStr);
             } else { //非多层次寻址
                 jointKey = key
             }
@@ -2457,11 +2459,13 @@ function _buildTrigger(self) {
             if (triggerFactory) {
                 var trigger = triggerFactory(handle, index, parentHandle);
                 if (trigger) {
-                    var key = trigger.key || (trigger.key = "");
+                    var keys = trigger.key || (trigger.key = "");
                     trigger.handleId = trigger.handleId || handle.id;
-                    //unshift list and In order to achieve the trigger can be simulated bubble
-                    $.us((triggerTable[key] || (triggerTable[key] = [])), trigger); //Storage as key -> array
-                    $.p(handle._triggers, trigger); //Storage as array
+                    $.E($.isA(keys) ? keys : [keys], function(key) {
+                        //unshift list and In order to achieve the trigger can be simulated bubble
+                        $.us((triggerTable[key] || (triggerTable[key] = [])), trigger); //Storage as key -> array
+                        $.p(handle._triggers, trigger); //Storage as array
+                    });
                 }
             }
         } else if (handle.type === "element") {
@@ -3156,7 +3160,7 @@ var _removeNodes = _isIE ? $.noop
                         var parseRes = parseRule(node_data);
                         if ($.isA(parseRes)) {
                             $.E(parseRes, function(parseItem) {
-                                console.log(parseItem);
+                                // console.log(parseItem);
                                 if ($.isO(parseItem)) {
                                     $.p(result, new TemplateHandle(parseItem))
                                 } else if ($.trim(parseItem)) {
@@ -3552,7 +3556,7 @@ var _build_expression = function(expression) {
         return string_sets.shift();
     });
     _build_str = "return function(vm){try{return [" + result + "]}catch(e){var c=this.console;if(c){c.error(e);}}}"
-    console.dir(_build_str);
+    // console.dir(_build_str);
     return Expression.set(expression, _build_str, varsSet);
 };
 
@@ -3697,7 +3701,7 @@ V.rh("", function(handle, index, parentHandle) {
 			$.iA(parentHandle.childNodes, handle, textHandle);
 			//Node position calibration
 			//textHandle's parentNode will be rewrited. (by using $.insertAfter)
-			return $.noop;
+			// return $.noop;
 		}
 	}// else {console.log("ignore:",textHandle) if (textHandle) {textHandle.ignore = $TRUE; } }  //==> ignore Node's childNodes will be ignored too.
 });
@@ -3976,7 +3980,6 @@ V.rt("#each", function(handle, index, parentHandle) {
                     }, new_data_len);
                 } else { /*  Insert*/
                     //undefined null false "" 0 ...
-                    debugger
                     if (data) {
                         var fragment = $.D.cl(fr);
                         var elParentNode = comment_endeach_node.parentNode;
@@ -4061,7 +4064,7 @@ V.rt("", function(handle, index, parentHandle) {
             }
         }
         // data = String(data);
-        if (nodeHandle._data !== data) {
+        if (currentNode.data !== String(data)) {
             nodeHandle._data = currentNode.data = (data === $UNDEFINED ? "" : data);
         }
     }
@@ -4574,7 +4577,7 @@ var _dirAssignment = " className value ";
 V.ra(function(attrKey){
 	return _dirAssignment.indexOf(" "+attrKey+" ")!==-1;
 }, function(attrKey, element) {
-	console.log(attrKey, element);
+	// console.log(attrKey, element);
 	if (element.tagName===(V.namespace+"select").toUpperCase()) {
 		return _AttributeHandleEvent.select;
 	}
@@ -5009,7 +5012,6 @@ var parse = function(str) {
         } else {
             result = "{(" + $.trim(innerStr) + ")}"; //"{(" + innerStr + ")}";
         }
-        console.log(result);
         return result;
     });
 

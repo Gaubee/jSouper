@@ -280,7 +280,7 @@ var _build_expression = function(expression) {
         return string_sets.shift();
     });
     _build_str = "return function(vm){try{return [" + result + "]}catch(e){var c=this.console;if(c){c.error(e);}}}"
-    console.dir(_build_str);
+    // console.dir(_build_str);
     return Expression.set(expression, _build_str, varsSet);
 };
 

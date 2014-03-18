@@ -290,7 +290,7 @@ var __ModelProto__ = Model.prototype = {
             __arrayData;
 
         //简单的判定是否可能是数组类型的操作并且可能影响到长度
-        if (/[^\w]\.?length/.test(key) || /[^\w]\.?[\d]+([^\w]\.?|$)/.test(key)) {
+        if (/\.?length/.test(key) || /[^\w]\.?[\d]+([^\w]\.?|$)/.test(key)) {
 
             key.replace(/[^\w]\.?([\d]+)([^\w]\.?|$)/g, function(matchKey, num, endKey, index) {
                 var maybeArrayKey = key.substr(0, index);
@@ -345,15 +345,13 @@ var __ModelProto__ = Model.prototype = {
             var nodeKey;
             if (jointKey) { //key是多层次寻址
                 //所寻找到的子Model
-                if (!childModels._[jointKey]) {
-                    while (nodeKey = $.st(_split_laveStr, ".")) {
-                        if (childModels._[jointKey]) {
-                            break;
-                        }
-                        jointKey += "." + nodeKey;
+                do {
+                    if (childModels._[jointKey]) {
+                        break;
                     }
-                    nodeKey || (jointKey += "." + _split_laveStr);
-                }
+                    nodeKey = $.stf(_split_laveStr, ".")
+                    jointKey += "." + nodeKey;
+                } while (_split_laveStr);
             } else { //非多层次寻址
                 jointKey = key
             }

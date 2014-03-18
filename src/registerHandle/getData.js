@@ -11,7 +11,7 @@ V.rh("", function(handle, index, parentHandle) {
 			$.iA(parentHandle.childNodes, handle, textHandle);
 			//Node position calibration
 			//textHandle's parentNode will be rewrited. (by using $.insertAfter)
-			return $.noop;
+			// return $.noop;
 		}
 	}// else {console.log("ignore:",textHandle) if (textHandle) {textHandle.ignore = $TRUE; } }  //==> ignore Node's childNodes will be ignored too.
 });

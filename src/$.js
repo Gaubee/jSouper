@@ -147,7 +147,11 @@ doc = document,
         //相当于str.split(..)[0]
         stf: function(str, splitKey) { //split first
             var result = $.st(str, splitKey);
-            return result === $FALSE ? _split_laveStr : result;
+            if (result === $FALSE) {
+                result = _split_laveStr;
+                _split_laveStr = $FALSE;
+            }
+            return result;
         },
 
         //清空两边字符串

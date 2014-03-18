@@ -23,7 +23,7 @@ V.rt("", function(handle, index, parentHandle) {
             }
         }
         // data = String(data);
-        if (nodeHandle._data !== data) {
+        if (currentNode.data !== String(data)) {
             nodeHandle._data = currentNode.data = (data === $UNDEFINED ? "" : data);
         }
     }
