@@ -294,6 +294,7 @@ var _build_expression = function(expression) {
 //     "]": "[",
 //     "}": "{"
 // }
+// //将表达式风格成数组
 // var _cut_expression = function(expression) {
 //     var result = [];
 //     var index = 0;

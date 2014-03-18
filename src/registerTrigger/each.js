@@ -34,14 +34,21 @@ var _eachVM_onremove = function() {
 
 V.rt("#each", function(handle, index, parentHandle) {
     var id = handle.id;
-    var arrDataHandle = handle.childNodes[0];
-    var arrDataHandle_id = arrDataHandle.id;
-    var arrDataHandle_Key = arrDataHandle.childNodes[0].node.data;
-    var arrDataHandle_sort = handle.childNodes[1];
-    // console.log(arrDataHandle_sort)
-    if (arrDataHandle_sort.type === "handle") {
-        var arrDataHandle_sort_id = arrDataHandle_sort.id;
+    var expression = Expression.get(handle.handleInfo.expression);
+    // var expressionStrArr = _cut_expression(handle.handleInfo.expression);
+    var arrDataHandle_Key = $.stf(handle.handleInfo.expression, ",");
+    if (arrDataHandle_Key.match(_obj_get_reg).length !== 1) {
+        //非简单式，不实现绑定
+        arrDataHandle_Key = false;
     }
+    // var arrDataHandle = handle.childNodes[0];
+    // var arrDataHandle_id = arrDataHandle.id;
+    // var arrDataHandle_Key = arrDataHandle.childNodes[0].node.data;
+    // var arrDataHandle_sort = handle.childNodes[1];
+
+    // if (arrDataHandle_sort.type === "handle") {
+    //     var arrDataHandle_sort_id = arrDataHandle_sort.id;
+    // }
     var comment_endeach_id = parentHandle.childNodes[index + 3].id; //eachHandle --> eachComment --> endeachHandle --> endeachComment
     var trigger;
 
@@ -49,8 +56,10 @@ V.rt("#each", function(handle, index, parentHandle) {
     trigger = {
         // smartTrigger:$NULL,
         // key:$NULL,
+        key: expression.keys.length ? expression.keys : ".",
         event: function(NodeList_of_ViewModel, proxyModel, /*eventTrigger,*/ isAttr, viewModel_ID) {
-            var data = NodeList_of_ViewModel[arrDataHandle_id]._data,
+            var handleArgs = expression.foo(proxyModel);
+            var data = handleArgs[0], //NodeList_of_ViewModel[arrDataHandle_id]._data,
                 // arrTriggerKey = arrDataHandle_Key + ".length",
                 viewModel = V._instances[viewModel_ID],
                 allArrViewModels = viewModel._AVI,
@@ -66,48 +75,48 @@ V.rt("#each", function(handle, index, parentHandle) {
                 comment_endeach_node = NodeList_of_ViewModel[comment_endeach_id].currentNode;
 
             /*+ Sort*/
-            if (arrDataHandle_sort_id && data) {
-                var sort_handle = NodeList_of_ViewModel[arrDataHandle_sort_id]._data
-                var type = typeof sort_handle
-                if (/function|string/.test(type)) {
-                    var old_sort = $.s(data);
-                    data = data;
-                    try {
-                        if (type === "function") {
-                            data.sort(sort_handle);
-                        } else { //string
-                            sort_handle = $.trim(sort_handle);
-                            if ($.st(sort_handle, " ") === "by") {
-                                var sort_key = $.st($.trim(_split_laveStr), " ");
-                                sort_handle = $.trim(_split_laveStr);
-                                /asc|desc/.test(sort_handle) && data.sort(function(a, b) {
-                                    return a[sort_key] > b[sort_key]
-                                })
-                            }
-                            if (sort_handle === "asc") {
-                                data.sort()
-                            } else if (sort_handle === "desc") {
-                                data.sort().reverse()
-                            }
-                        }
-                    } catch (e) {
-                        throw TypeError("#each-data's type error.")
-                    }
-                    $.E(old_sort, function(value, index) {
-                        if (data[index] !== value) {
-                            var setSort = finallyRun[id];
-                            if (!setSort) {
-                                setSort = finallyRun[id] = function() {
-                                    setSort.vi.set(arrDataHandle_Key, data)
-                                    finallyRun[id] = $NULL;
-                                }
-                                finallyRun(setSort)
-                            }
-                            setSort.vi = viewModel
-                        }
-                    })
-                }
-            }
+            // if (arrDataHandle_sort_id && data) {
+            //     var sort_handle = NodeList_of_ViewModel[arrDataHandle_sort_id]._data
+            //     var type = typeof sort_handle
+            //     if (/function|string/.test(type)) {
+            //         var old_sort = $.s(data);
+            //         data = data;
+            //         try {
+            //             if (type === "function") {
+            //                 data.sort(sort_handle);
+            //             } else { //string
+            //                 sort_handle = $.trim(sort_handle);
+            //                 if ($.st(sort_handle, " ") === "by") {
+            //                     var sort_key = $.st($.trim(_split_laveStr), " ");
+            //                     sort_handle = $.trim(_split_laveStr);
+            //                     /asc|desc/.test(sort_handle) && data.sort(function(a, b) {
+            //                         return a[sort_key] > b[sort_key]
+            //                     })
+            //                 }
+            //                 if (sort_handle === "asc") {
+            //                     data.sort()
+            //                 } else if (sort_handle === "desc") {
+            //                     data.sort().reverse()
+            //                 }
+            //             }
+            //         } catch (e) {
+            //             throw TypeError("#each-data's type error.")
+            //         }
+            //         $.E(old_sort, function(value, index) {
+            //             if (data[index] !== value) {
+            //                 var setSort = finallyRun[id];
+            //                 if (!setSort) {
+            //                     setSort = finallyRun[id] = function() {
+            //                         setSort.vi.set(arrDataHandle_Key, data)
+            //                         finallyRun[id] = $NULL;
+            //                     }
+            //                     finallyRun(setSort)
+            //                 }
+            //                 setSort.vi = viewModel
+            //             }
+            //         })
+            //     }
+            // }
             /*- Sort*/
             /*+ Insert Remove*/
 
@@ -125,13 +134,13 @@ V.rt("#each", function(handle, index, parentHandle) {
                     }, new_data_len);
                 } else { /*  Insert*/
                     //undefined null false "" 0 ...
+                    debugger
                     if (data) {
                         var fragment = $.D.cl(fr);
                         var elParentNode = comment_endeach_node.parentNode;
                         $.E($.s(data), function(eachItemData, index) {
                             //TODO:if too mush vi will be create, maybe asyn
                             var viewModel = arrViewModels[index];
-                            var newPrefix = arrDataHandle_Key + "." + index;
                             var strIndex = String(index);
                             //VM不存在，新建
                             if (!viewModel) {
@@ -146,7 +155,12 @@ V.rt("#each", function(handle, index, parentHandle) {
                                         // if (!arrayModel._childModels._[index]) {
                                         //     arrayModel.__buildChildModel(strIndex);
                                         // }
-                                        proxyModel.shelter(vm, newPrefix); //+"."+index //reset arrViewModel's model
+                                        if (arrDataHandle_Key) {
+                                            proxyModel.shelter(vm, arrDataHandle_Key + "." + index); //+"."+index //reset arrViewModel's model
+                                        } else {
+                                            proxyModel.model = new Model;
+                                            proxyModel.set(eachItemData)
+                                        }
                                     }
                                 });
                             } else {
