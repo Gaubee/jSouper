@@ -167,9 +167,8 @@ V.rt("#each", function(handle, index, parentHandle) {
                                             _proxyModel._prefix = strIndex;
                                             _proxyModel.follow(arrayModel, strIndex);
                                             // _debugger.Protocol();
-                                            console.log(viewModel_ID, index);
                                             finallyRun.register("each" + viewModel_ID + "_" + index, function(argument) {
-                                                console.info(viewModel_ID, arrayModel._database, vm._id,vm.get("$Caller.$Caller.$Caller.$Path"));
+                                                _proxyModel.rebuildTree();
                                                 _proxyModel.touchOff();
                                             })
                                         }

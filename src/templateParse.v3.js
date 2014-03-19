@@ -10,7 +10,7 @@ $.fI(V.handles, function(handleFun, handleName) {
 
 var parse = function(str) {
 
-    result = str.replace(newTemplateMatchReg, function(matchStr, innerStr, index) {
+    var result = str.replace(newTemplateMatchReg, function(matchStr, innerStr, index) {
         innerStr = $.trim(innerStr);
         //获取前缀标识
         var fun_name = $.stf(innerStr, " ");

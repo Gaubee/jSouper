@@ -3,15 +3,15 @@
  */
 var _removeNodes = _isIE ? $.noop
 /*function() {//IE 不能回收节点，会导致子节点被销毁
-		//@大城小胖 http://fins.iteye.com/blog/172263
-		var d = $.D.cl(shadowDIV);
-		return function(n) {
-			// if (n && n.tagName != 'BODY') {
-				d.appendChild(n);
-				d.innerHTML = '';
-			// }
-		}
-	}() */
+        //@大城小胖 http://fins.iteye.com/blog/172263
+        var d = $.D.cl(shadowDIV);
+        return function(n) {
+            // if (n && n.tagName != 'BODY') {
+                d.appendChild(n);
+                d.innerHTML = '';
+            // }
+        }
+    }() */
 : function(n) {
         // if (n && n.parentNode && n.tagName != 'BODY') {
         $.E(n, function(nodeToDelete) {
@@ -25,7 +25,7 @@ var _removeNodes = _isIE ? $.noop
         var ws = /\s/,
             i = str.length;
         while (ws.test(str.charAt(--i)));
-        return str.slice(0, i + 1) + (i < str.length ? " " : "");
+        return str.slice(0, i + 1) + (i < str.length - 1 ? " " : "");
     },
     _parse = function(node) { //get all childNodes
         var result = [],

@@ -32,8 +32,8 @@ function ProxyModel(entrust, model) {
      * 这里只是单向存储model实例，model只存储触发器。不管你pm对象
      */
     // if (model) {
-        model instanceof Model || (model = Model(model));
-        self.follow(model)
+    model instanceof Model || (model = Model(model));
+    self.follow(model)
     // }
 };
 
@@ -75,7 +75,11 @@ var __ProxyModelProto__ = ProxyModel.prototype = {
     //进入指定的Model或者其的key指定的下属中
     follow: function(model, key) {
         var self = this;
-        if (model instanceof Model) {
+        var router_result = ProxyModel.$router(self, key);
+        key = router_result.key;
+        self = router_result.pmodel;
+
+        if (self && (model instanceof Model)) {
             var currentModel = model.buildModelByKey(key);
             self.combine(currentModel);
             self.rebuildTree();
@@ -87,6 +91,12 @@ var __ProxyModelProto__ = ProxyModel.prototype = {
             model = self.model,
             result;
         if (model) {
+           
+            result = ProxyModel.$router(self, key);
+            if (result.pmodel) {
+                model = result.pmodel.model;
+                key = result.key || "";
+            }
             result = Model.$router(model, key);
         } else {
             result = {

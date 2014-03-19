@@ -268,9 +268,11 @@ var _build_expression = function(expression) {
     });
     //解析表达式中的对象
     result = result.replace(_obj_get_reg, function(matchVar) {
-        if (!varsMap.hasOwnProperty(matchVar) && !_const_obj[matchVar]) {
-            varsMap[matchVar] = $TRUE;
-            $.p(varsSet, matchVar);
+        if (!_const_obj[matchVar]) {
+            if (!varsMap.hasOwnProperty(matchVar)) {
+                varsMap[matchVar] = $TRUE;
+                $.p(varsSet, matchVar);
+            }
             return "vm.get(" + stringifyStr(matchVar) + ")";
         }
         return matchVar;
@@ -279,7 +281,7 @@ var _build_expression = function(expression) {
     result = result.replace(/\@/g, function() {
         return string_sets.shift();
     });
-    _build_str = "return function(vm){try{return [" + result + "]}catch(e){var c=this.console;if(c){c.error(e);}}}"
+    _build_str = "return function(vm){try{return [" + result + "]}catch(e){/*debugger;var c=window.console;if(c){c.error(e);}*/return [];}}"
     // console.dir(_build_str);
     return Expression.set(expression, _build_str, varsSet);
 };

@@ -40,4 +40,4 @@ var quote = function(value) {
     return result + '"';
 };
 
-stringifyStr = quote;
+var stringifyStr = quote;

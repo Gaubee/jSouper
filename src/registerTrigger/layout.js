@@ -57,7 +57,7 @@ var _layout_trigger_3_more = function(NodeList_of_ViewModel, proxyModel, isAttr,
     var self = this;
     var handleArgs = self.expression.foo(proxyModel);
     var isShow = handleArgs.splice(2, 1)[0];
-    console.info(isShow);
+    // console.info(isShow);
     var AllLayoutViewModel = V._instances[viewModel_ID]._ALVI,
         layoutViewModel = AllLayoutViewModel[self.handle_id];
     if (isShow) {

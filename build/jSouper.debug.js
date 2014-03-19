@@ -468,7 +468,7 @@ var quote = function(value) {
     return result + '"';
 };
 
-stringifyStr = quote;
+var stringifyStr = quote;
 
 var
 //事件缓存区
@@ -1895,8 +1895,8 @@ function ProxyModel(entrust, model) {
      * 这里只是单向存储model实例，model只存储触发器。不管你pm对象
      */
     // if (model) {
-        model instanceof Model || (model = Model(model));
-        self.follow(model)
+    model instanceof Model || (model = Model(model));
+    self.follow(model)
     // }
 };
 
@@ -1938,7 +1938,11 @@ var __ProxyModelProto__ = ProxyModel.prototype = {
     //进入指定的Model或者其的key指定的下属中
     follow: function(model, key) {
         var self = this;
-        if (model instanceof Model) {
+        var router_result = ProxyModel.$router(self, key);
+        key = router_result.key;
+        self = router_result.pmodel;
+
+        if (self && (model instanceof Model)) {
             var currentModel = model.buildModelByKey(key);
             self.combine(currentModel);
             self.rebuildTree();
@@ -1950,6 +1954,12 @@ var __ProxyModelProto__ = ProxyModel.prototype = {
             model = self.model,
             result;
         if (model) {
+           
+            result = ProxyModel.$router(self, key);
+            if (result.pmodel) {
+                model = result.pmodel.model;
+                key = result.key || "";
+            }
             result = Model.$router(model, key);
         } else {
             result = {
@@ -3147,15 +3157,15 @@ $.E(["shelter", "set", "get"], function(handleName) {
  */
 var _removeNodes = _isIE ? $.noop
 /*function() {//IE 不能回收节点，会导致子节点被销毁
-		//@大城小胖 http://fins.iteye.com/blog/172263
-		var d = $.D.cl(shadowDIV);
-		return function(n) {
-			// if (n && n.tagName != 'BODY') {
-				d.appendChild(n);
-				d.innerHTML = '';
-			// }
-		}
-	}() */
+        //@大城小胖 http://fins.iteye.com/blog/172263
+        var d = $.D.cl(shadowDIV);
+        return function(n) {
+            // if (n && n.tagName != 'BODY') {
+                d.appendChild(n);
+                d.innerHTML = '';
+            // }
+        }
+    }() */
 : function(n) {
         // if (n && n.parentNode && n.tagName != 'BODY') {
         $.E(n, function(nodeToDelete) {
@@ -3169,7 +3179,7 @@ var _removeNodes = _isIE ? $.noop
         var ws = /\s/,
             i = str.length;
         while (ws.test(str.charAt(--i)));
-        return str.slice(0, i + 1) + (i < str.length ? " " : "");
+        return str.slice(0, i + 1) + (i < str.length - 1 ? " " : "");
     },
     _parse = function(node) { //get all childNodes
         var result = [],
@@ -3566,9 +3576,11 @@ var _build_expression = function(expression) {
     });
     //解析表达式中的对象
     result = result.replace(_obj_get_reg, function(matchVar) {
-        if (!varsMap.hasOwnProperty(matchVar) && !_const_obj[matchVar]) {
-            varsMap[matchVar] = $TRUE;
-            $.p(varsSet, matchVar);
+        if (!_const_obj[matchVar]) {
+            if (!varsMap.hasOwnProperty(matchVar)) {
+                varsMap[matchVar] = $TRUE;
+                $.p(varsSet, matchVar);
+            }
             return "vm.get(" + stringifyStr(matchVar) + ")";
         }
         return matchVar;
@@ -3577,7 +3589,7 @@ var _build_expression = function(expression) {
     result = result.replace(/\@/g, function() {
         return string_sets.shift();
     });
-    _build_str = "return function(vm){try{return [" + result + "]}catch(e){var c=this.console;if(c){c.error(e);}}}"
+    _build_str = "return function(vm){try{return [" + result + "]}catch(e){/*debugger;var c=window.console;if(c){c.error(e);}*/return [];}}"
     // console.dir(_build_str);
     return Expression.set(expression, _build_str, varsSet);
 };
@@ -4035,9 +4047,8 @@ V.rt("#each", function(handle, index, parentHandle) {
                                             _proxyModel._prefix = strIndex;
                                             _proxyModel.follow(arrayModel, strIndex);
                                             // _debugger.Protocol();
-                                            console.log(viewModel_ID, index);
                                             finallyRun.register("each" + viewModel_ID + "_" + index, function(argument) {
-                                                console.info(viewModel_ID, arrayModel._database, vm._id,vm.get("$Caller.$Caller.$Caller.$Path"));
+                                                _proxyModel.rebuildTree();
                                                 _proxyModel.touchOff();
                                             })
                                         }
@@ -4362,7 +4373,7 @@ var _layout_trigger_3_more = function(NodeList_of_ViewModel, proxyModel, isAttr,
     var self = this;
     var handleArgs = self.expression.foo(proxyModel);
     var isShow = handleArgs.splice(2, 1)[0];
-    console.info(isShow);
+    // console.info(isShow);
     var AllLayoutViewModel = V._instances[viewModel_ID]._ALVI,
         layoutViewModel = AllLayoutViewModel[self.handle_id];
     if (isShow) {
@@ -4609,15 +4620,16 @@ V.ra(function(attrKey) {
 	return result;
 })
 var _dirAssignment = " className value ";
-V.ra(function(attrKey){
-	return _dirAssignment.indexOf(" "+attrKey+" ")!==-1;
+V.ra(function(attrKey) {
+    return _dirAssignment.indexOf(" " + attrKey + " ") !== -1;
 }, function(attrKey, element) {
-	// console.log(attrKey, element);
-	if (element.tagName===(V.namespace+"select").toUpperCase()) {
-		return _AttributeHandleEvent.select;
-	}
-	return _AttributeHandleEvent.dir;
+    console.log(attrKey, element);
+    if (element.tagName === "select".toUpperCase()) {
+        return _AttributeHandleEvent.select;
+    }
+    return _AttributeHandleEvent.dir;
 })
+
 var _elementCache = {},
 	eventListerAttribute = function(key, currentNode, attrVM, vi /*, dm_id*/ ,handle, triggerTable) {
 		var attrOuter = _getAttrOuter(attrVM),
@@ -5031,7 +5043,7 @@ $.fI(V.handles, function(handleFun, handleName) {
 
 var parse = function(str) {
 
-    result = str.replace(newTemplateMatchReg, function(matchStr, innerStr, index) {
+    var result = str.replace(newTemplateMatchReg, function(matchStr, innerStr, index) {
         innerStr = $.trim(innerStr);
         //获取前缀标识
         var fun_name = $.stf(innerStr, " ");
