@@ -91,7 +91,7 @@ var __ProxyModelProto__ = ProxyModel.prototype = {
             model = self.model,
             result;
         if (model) {
-           
+
             result = ProxyModel.$router(self, key);
             if (result.pmodel) {
                 model = result.pmodel.model;
@@ -300,12 +300,18 @@ __ProxyModelProto__.mix = function(key_of_obj) {
     if (self) {
         var result,
             args = $.s(arguments);
-        args.shift();
-        if (args.length) { //arguments>=2
-            args.unshift(self.get(key_of_obj));
-            result = _jSouperBase.extend.apply($NULL, args);
-            self.set(key_of_obj, result);
+        switch (args.length) {
+            case 0:
+                return;
+            case 1:
+                key_of_obj = "";
+                break;
+            default:
+                args.shift();
         }
+        args.unshift(self.get(key_of_obj));
+        result = _jSouperBase.extend.apply($NULL, args);
+        self.set(key_of_obj, result);
         return result;
     }
 }

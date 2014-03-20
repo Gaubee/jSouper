@@ -54,6 +54,18 @@
 		<label>{{value}}
 		<input type="radio" bind-input="{{'$Caller.myvalue'}}" checked="{{$Caller.myvalue}}" value="{{url}}" name="url"></label>
 		{{/each}}
+		<hr>
+		{{#> "模块名称"}}
+		{{#> "模块名称","$This"}}
+		{{#> "模块名称","$This",true}}
+		{{#> "模块名称","$This",true,({
+			"content":"textarea的内容是没有声明同步 ，只是声明表单内容反向绑定"
+		})}}
+		<hr>
+		<div>
+			<!-- {{#teleporter "我的传送点"}} -->
+			<hr>
+		</div>
     </xmp>
 
 	<xmp type="template" name="模块名称">
@@ -62,6 +74,7 @@
 			<content>
 				<p>{{content}}</p>
 				<textarea bind-input="{{'content'}}">随便输入</textarea>
+				{{test}}
 			</content>
 		</fieldset>
 	</xmp>
@@ -81,5 +94,17 @@ jSouper.ready(function() {
 	var myfirstvm = jSouper.modules["模块名称"]();
 	App.shelter(myfirstvm);
 	myfirstvm.append(document.body);
+
+	//--------------
+
+	var module = jSouper.parse("<hr><b>{{bb}}</b><br>");
+	var vm1 = module({bb:"手动解析的模板1"});
+	vm1.append(document.body);
+
+	jSouper.parse("<xmp type='template' name='tmpl2'><b>{{bb}}</b><hr><xmp>")
+	var vm2 = jSouper.modules["tmpl2"]({bb:"手动解析的模板2"})
+	vm2.append(document.body);
+
+	// App.teleporter(jSouper.modules["模块名称"]());
 })
 </script>
