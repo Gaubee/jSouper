@@ -49,24 +49,58 @@ var _string_placeholder = {
         var _handle_type_tagName;
         var expression_ph = _placeholder("json");
         var expression_strs = [];
+
+        //备份字符串
+        // str = _string_placeholder.save(QuotedString, str);
+        var _str_ph = _placeholder("_s");
+        var _release_ph_reg = new RegExp(_str_ph + "[\\d]+" + _str_ph, "g");
+        var _release_ph_foo = function(str) {
+            return str.replace(_release_ph_reg, function(matchPh) {
+                return _str_maps[matchPh];
+            })
+        }
+        var _str_maps = {};
+        var index = 0;
+        str = str.replace(QuotedString, function(matchStr) {
+            index += 1;
+            var key = _str_ph + index + _str_ph;
+            _str_maps[key] = matchStr;
+            return key;
+        });
+
+        var EscapeString = /\\(\W)/g;
+        //备份转义字符
+        str = _string_placeholder.save(EscapeString, str);
+
         var parseStr = str
         //模拟HTML转义
-        .replace(/&gt;/g, ">")
-            .replace(/&lt;/g, "<")
-            .replace(/&amp;/g, "&")
-            .replace(/&quot;/g, '"')
-            .replace(/&apos;/g, "'")
-            .replace(_matchRule, function(match, handleName, expression) {
-                $.p(expression_strs, {
-                    nodeType: 1,
-                    handleName: handleName,
-                    expression: expression
-                });
-                return expression_ph;
+        // .replace(/&gt;/g, ">")
+        // .replace(/&lt;/g, "<")
+        // .replace(/&amp;/g, "&")
+        // .replace(/&quot;/g, '"')
+        // .replace(/&apos;/g, "'")
+        .replace(_matchRule, function(match, handleName, expression) {
+            handleName = _release_ph_foo($.trim(handleName));
+            if (!V.handles[handleName]) {
+                throw "Can't find handle:" + handleName;
+            }
+            $.p(expression_strs, {
+                nodeType: 1,
+                handleName: handleName,
+                expression: _release_ph_foo(expression)
             });
+            return expression_ph;
+        });
+
+        //还原转义字符
+        parseStr = _string_placeholder.release(EscapeString, parseStr);
+        //还原字符串
+        // parseStr = _string_placeholder.release(QuotedString, parseStr);
+        parseStr = _release_ph_foo(parseStr);
 
         //模拟js字符串的转义
-        parseStr = parseStr.replace(/\\(\W)/g, "$1");
+        parseStr = parseStr.replace(EscapeString, "$1");
+
         //带模板语法的，转化成Array
         if (expression_strs.length) {
 
@@ -246,9 +280,12 @@ var Expression = {
 var _obj_get_reg = /([a-zA-Z_?.$][\w?.$]*)/g;
 var _const_obj = {
     "true": $TRUE,
+    "NaN": $TRUE,
     "false": $TRUE,
     "null": $TRUE,
-    "this": $TRUE
+    "window": $TRUE
+    /*,
+    "this": $TRUE*/
 }
 //编译模板中的表达式
 var _build_expression = function(expression) {
@@ -268,7 +305,7 @@ var _build_expression = function(expression) {
     });
     //解析表达式中的对象
     result = result.replace(_obj_get_reg, function(matchVar) {
-        if (!_const_obj[matchVar]) {
+        if (!_const_obj[matchVar] && matchVar.indexOf("window.")) {
             if (!varsMap.hasOwnProperty(matchVar)) {
                 varsMap[matchVar] = $TRUE;
                 $.p(varsSet, matchVar);
@@ -281,6 +318,7 @@ var _build_expression = function(expression) {
     result = result.replace(/\@/g, function() {
         return string_sets.shift();
     });
+    console.info(result);
     _build_str = "return function(vm){try{return [" + result + "]}catch(e){/*debugger;var c=window.console;if(c){c.error(e);}*/return [];}}"
     // console.dir(_build_str);
     return Expression.set(expression, _build_str, varsSet);

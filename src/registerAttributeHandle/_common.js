@@ -61,6 +61,8 @@ var _AttributeHandleEvent = {
         var attrOuter = _getAttrOuter(attrVM);
         if (attrOuter === currentNode.value) {
             currentNode[key] = attrOuter;
+        }else{
+            currentNode[key] = $FALSE;
         }
     }
 };

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>入门帮助介绍</title>
+    <script type="text/javascript" src="../build/jSouper.js"></script>
+    <script type="text/javascript">
+    jSouper.ready(function() {
+        jSouper.app({
+            Id: "jSouperApp",
+            Data: {
+                title: "Hello jSouper!!"
+            }
+        })
+    });
+    </script>
+</head>
+
+<body>
+    <xmp id="jSouperApp">
+        <h1>{{title}}</h1>
+        <hr>
+        <h2>表达式：</h2>
+        <br>\{\{a\}\}:{{a}}
+        <br>"{{a+b.c}}":{{a+b.c}}
+        <br>"{{b['c']}}":{{b['c']}}
+        <br>{{window.Math.random()}}
+        <h3>属性绑定</h3>
+        <a href="http://{{myvalue||'about:blank'}}?_={{window.Math.random()}}">{{myvalue}}</a>
+        <input value="{{myvalue}}" bind-input="{{'myvalue'}}">
+        <select value="{{myvalue}}" bind-input="{{'myvalue'}}">
+            <option value="">-?-</option>
+            <option value="baidu.com">百度</option>
+            <option value="yinyuetai.com">音悦台</option>
+            <option value="youku.com">优酷</option>
+        </select>
+        <h3>条件分支</h3>
+        {{#if myvalue=='github.com'}} 很高兴您能访问Github {{#else}} 请输入“github.com”，您输入：{{myvalue}} {{/if}}
+        <h3>循环语句</h3>
+		{{#each [
+			{
+				"url":"baidu.com",
+				"value":"百度"
+			},
+			{
+				"url":"yinyuetai.com",
+				"value":"音悦台"
+			},
+			{
+				"url":"youku.com",
+				"value":"优酷"
+			}
+		]}}
+		<label>{{value}}
+		<input type="radio" bind-input="{{'$Caller.myvalue'}}" checked="{{$Caller.myvalue}}" value="{{url}}" name="url"></label>
+		{{/each}}
+    </xmp>
+
+	<xmp type="template" name="模块名称">
+		<fieldset>
+			<legend>{{title}}</legend>
+			<content>
+				<p>{{content}}</p>
+				<textarea bind-input="{{'content'}}">随便输入</textarea>
+			</content>
+		</fieldset>
+	</xmp>
+</body>
+
+</html>
+
+<script type="text/javascript">
+jSouper.ready(function() {
+    App.set("a", 1);
+    App.set("b.c", 2);
+    setInterval(function() {
+        App.set("a", App.get("a") + App.get("b.c"));
+        App.set("b.c", App.get("a") + App.get("b.c"));
+    }, 1000);
+
+	var myfirstvm = jSouper.modules["模块名称"]();
+	App.shelter(myfirstvm);
+	myfirstvm.append(document.body);
+})
+</script>

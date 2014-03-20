@@ -33,7 +33,7 @@ var _removeNodes = _isIE ? $.noop
         for (var i = 0, child_node, childNodes = node.childNodes; child_node = childNodes[i]; i += 1) {
             switch (child_node.nodeType) {
                 case 3:
-                    var node_data = child_node.data
+                    var node_data = child_node.data;
                     if ($.trim(node_data)) {
                         var parseRes = parseRule(node_data);
                         if ($.isA(parseRes)) {
