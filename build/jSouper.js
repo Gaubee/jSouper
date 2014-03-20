@@ -3185,7 +3185,7 @@ var _removeNodes = _isIE ? $.noop
                             });
                         } else {
                             //现代浏览器XMP标签中，空格和回车总是不过滤的显示，和IE浏览器默认效果不一致，手动格式化
-                            node.data = _trim_but_space(node_data);
+                            child_node.data = _trim_but_space(node_data);
                             $.p(result, new TextHandle(child_node))
                         }
                     }
@@ -4294,7 +4294,9 @@ function _runScript(node) {
 }
 var _include_lock = {};
 V.rt("#include", function(handle, index, parentHandle) {
-    var templateHandle_id = handle.childNodes[0].id;
+    // var templateHandle_id = handle.childNodes[0].id;
+
+    var expression = Expression.get(handle.handleInfo.expression);
 
     //base on layout
     var trigger = V.triggers["#layout"](handle, index, parentHandle);
@@ -4304,8 +4306,11 @@ V.rt("#include", function(handle, index, parentHandle) {
     var _event = trigger.event;
     var _uid = $.uid();
     trigger.event = function(NodeList_of_ViewModel, model, /*eventTrigger,*/ isAttr, viewModel_ID) {
-        var url = NodeList_of_ViewModel[templateHandle_id]._data;
+        var handleArgs = expression.foo(model);
+        var url = handleArgs[0];
+        // var url = NodeList_of_ViewModel[templateHandle_id]._data;
         var args = arguments
+        
         if (!_include_lock[_uid]) {
             _include_lock[_uid] = $TRUE;
             if (!V.modules[url]) {
@@ -4464,6 +4469,7 @@ var _layout_trigger_common = function(NodeList_of_ViewModel, proxyModel, viewMod
             layoutViewModel.insert(NodeList_of_ViewModel[comment_layout_id].currentNode);
         }
     }
+    return layoutViewModel;
 }
 
 V.rt("#teleporter", function(handle, index, parentHandle) {
@@ -4517,7 +4523,7 @@ V.rt("#teleporter", function(handle, index, parentHandle) {
                 //placeholder comment node
                 ph: NodeList_of_ViewModel[placeholderHandle.id].currentNode,
                 display: $TRUE
-            })
+            });
 
             if (handleArgs.length > 1) { //有显示控制项，类似layout
                 console.log(handleArgs, teleporter);

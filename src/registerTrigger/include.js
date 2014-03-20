@@ -50,7 +50,9 @@ function _runScript(node) {
 }
 var _include_lock = {};
 V.rt("#include", function(handle, index, parentHandle) {
-    var templateHandle_id = handle.childNodes[0].id;
+    // var templateHandle_id = handle.childNodes[0].id;
+
+    var expression = Expression.get(handle.handleInfo.expression);
 
     //base on layout
     var trigger = V.triggers["#layout"](handle, index, parentHandle);
@@ -60,8 +62,11 @@ V.rt("#include", function(handle, index, parentHandle) {
     var _event = trigger.event;
     var _uid = $.uid();
     trigger.event = function(NodeList_of_ViewModel, model, /*eventTrigger,*/ isAttr, viewModel_ID) {
-        var url = NodeList_of_ViewModel[templateHandle_id]._data;
+        var handleArgs = expression.foo(model);
+        var url = handleArgs[0];
+        // var url = NodeList_of_ViewModel[templateHandle_id]._data;
         var args = arguments
+        
         if (!_include_lock[_uid]) {
             _include_lock[_uid] = $TRUE;
             if (!V.modules[url]) {

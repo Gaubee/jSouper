@@ -47,7 +47,7 @@ var _removeNodes = _isIE ? $.noop
                             });
                         } else {
                             //现代浏览器XMP标签中，空格和回车总是不过滤的显示，和IE浏览器默认效果不一致，手动格式化
-                            node.data = _trim_but_space(node_data);
+                            child_node.data = _trim_but_space(node_data);
                             $.p(result, new TextHandle(child_node))
                         }
                     }

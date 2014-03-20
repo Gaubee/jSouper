@@ -127,4 +127,5 @@ var _layout_trigger_common = function(NodeList_of_ViewModel, proxyModel, viewMod
             layoutViewModel.insert(NodeList_of_ViewModel[comment_layout_id].currentNode);
         }
     }
+    return layoutViewModel;
 }
