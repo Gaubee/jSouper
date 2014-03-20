@@ -318,7 +318,6 @@ var _build_expression = function(expression) {
     result = result.replace(/\@/g, function() {
         return string_sets.shift();
     });
-    console.info(result);
     _build_str = "return function(vm){try{return [" + result + "]}catch(e){/*debugger;var c=window.console;if(c){c.error(e);}*/return [];}}"
     // console.dir(_build_str);
     return Expression.set(expression, _build_str, varsSet);

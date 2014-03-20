@@ -63,7 +63,10 @@
 		})}}
 		<hr>
 		<div>
-			<!-- {{#teleporter "我的传送点"}} -->
+			<p>这是传送进来的：</p>
+			{{#teleporter "我的传送点1"}}
+			<label><input type="checkbox" bind-input="{{'show_tp_2'}}">显示传送进来的VM：</label>
+			{{#teleporter "我的传送点2",show_tp_2}}
 			<hr>
 		</div>
     </xmp>
@@ -78,6 +81,11 @@
 			</content>
 		</fieldset>
 	</xmp>
+	<script type="text/vm" name="模块名称">
+		function  (vm) {
+			vm.set("content","VM:"+vm._id+"初始化了\n"+vm.get("content"))
+		}
+	</script>
 </body>
 
 </html>
@@ -105,6 +113,13 @@ jSouper.ready(function() {
 	var vm2 = jSouper.modules["tmpl2"]({bb:"手动解析的模板2"})
 	vm2.append(document.body);
 
-	// App.teleporter(jSouper.modules["模块名称"]());
-})
+	App.teleporter(jSouper.modules["模块名称"]({
+		title:"数据是独立的",
+		content:"因为没有通过使用shelter API来声明数据源的共享"
+	}),"我的传送点1");
+	App.teleporter(jSouper.modules["模块名称"]({
+		title:"数据是独立的",
+		content:"因为没有通过使用shelter API来声明数据源的共享"
+	}),"我的传送点2");
+});
 </script>
