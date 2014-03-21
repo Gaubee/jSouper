@@ -3341,6 +3341,12 @@ var _string_placeholder = {
         var _handle_type_tagName;
         var expression_ph = _placeholder("json");
         var expression_strs = [];
+        str = str.replace(/&gt;/g, ">")
+            .replace(/&lt;/g, "<")
+            .replace(/&amp;/g, "&")
+            .replace(/&quot;/g, '"')
+            .replace(/&apos;/g, "'");
+
 
         //备份字符串
         // str = _string_placeholder.save(QuotedString, str);
@@ -5119,9 +5125,16 @@ $.fI(V.handles, function(handleFun, handleName) {
 var parse = function(str) {
 
     var result = str.replace(newTemplateMatchReg, function(matchStr, innerStr, index) {
-        innerStr = $.trim(innerStr);
+        innerStr = $.trim(innerStr)
+            .replace(/&gt;/g, ">")
+            .replace(/&lt;/g, "<")
+            .replace(/&amp;/g, "&")
+            .replace(/&quot;/g, '"')
+            .replace(/&apos;/g, "'");
+
         //获取前缀标识
         var fun_name = $.stf(innerStr, " ");
+
         var result;
         //如果是，则进行标志
         if (templateHandles.hasOwnProperty(fun_name)) {

@@ -11,9 +11,16 @@ $.fI(V.handles, function(handleFun, handleName) {
 var parse = function(str) {
 
     var result = str.replace(newTemplateMatchReg, function(matchStr, innerStr, index) {
-        innerStr = $.trim(innerStr);
+        innerStr = $.trim(innerStr)
+            .replace(/&gt;/g, ">")
+            .replace(/&lt;/g, "<")
+            .replace(/&amp;/g, "&")
+            .replace(/&quot;/g, '"')
+            .replace(/&apos;/g, "'");
+
         //获取前缀标识
         var fun_name = $.stf(innerStr, " ");
+
         var result;
         //如果是，则进行标志
         if (templateHandles.hasOwnProperty(fun_name)) {
