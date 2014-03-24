@@ -52,16 +52,13 @@ var __ProxyModelProto__ = ProxyModel.prototype = {
         var self = this;
         //校准参数，proxyModel为ProxyModel对象，而不是VM或者PM对象
         (proxyModel instanceof self.EntrustConstructor) && (proxyModel = proxyModel.model);
-        if (self instanceof ViewModel) {
-            debugger
-        };
         if (proxyModel instanceof ProxyModel) {
             //标记为“被收留者”
             proxyModel._parentPM = self;
             proxyModel._prefix = key /*|| ""*/ ;
             // console.log("_prefix:", key);
             $.p(self._childProxyModel, proxyModel);
-            proxyModel.follow(self.model, key);
+            proxyModel._followPM(self, key);
             /*//私有Model跟着触发更新
             var privateModel = proxyModel.model._privateModel;
             privateModel && privateModel.touchOff();*/
@@ -84,6 +81,25 @@ var __ProxyModelProto__ = ProxyModel.prototype = {
             self.combine(currentModel);
             self.rebuildTree();
             self.onfollow && self.onfollow();
+        }
+    },
+    _followPM: function(pmodel, key) {
+        var self = this;
+        var router_result = ProxyModel.$router(pmodel, key);
+        key = router_result.key;
+        pmodel = router_result.pmodel;
+        if (pmodel) {
+            self.follow(pmodel.model, key);
+        }
+    },
+    //PM版的Model路由构造器
+    buildModelByKey: function(key) {
+        var self = this;
+        var router_result = ProxyModel.$router(self, key);
+        key = router_result.key;
+        self = router_result.pmodel;
+        if (self) {
+            return self.model.buildModelByKey(key);
         }
     },
     $router: function(key) {
@@ -145,6 +161,15 @@ $.E([ /*"set", "get", */ "touchOff"], function(handleName) {
 (function(argument) {
 
     var routerMap = ProxyModel._routerMap = {
+        "$Private": function(pmodel, key) {
+            var _privateVM = V.parse("")();
+
+            function _innerPrivateRouter(pmodel, key) {
+                return pmodel._ppModel || (pmodel._ppModel = new ProxyModel(_privateVM, new Model));
+            };
+            routerMap.$Private = _innerPrivateRouter;
+            return _innerPrivateRouter(pmodel, key)
+        },
         //VM中的作用域按xmp范围来算，也就是一个xmp就算是一个function
         "$Caller": function(pmodel, key) {
             return pmodel._parentPM;
@@ -197,7 +222,11 @@ $.E([ /*"set", "get", */ "touchOff"], function(handleName) {
                     key ? (args[0] = key) : $.sp.call(args, 0, 1)
                     if (self !== router_result.pmodel) {
                         self = router_result.pmodel;
-                        result = _set.apply(self, args);
+                        if (self instanceof Model) {
+                            result = self.set.apply(self, args);
+                        } else {
+                            result = _set.apply(self, args);
+                        }
                     } else {
                         result = model.set.apply(model, args);
                     }
@@ -222,7 +251,11 @@ $.E([ /*"set", "get", */ "touchOff"], function(handleName) {
                     key ? (args[0] = key) : $.sp.call(args, 0, 1)
                     if (self !== router_result.pmodel) {
                         self = router_result.pmodel;
-                        result = _get.apply(self, args);
+                        if (self instanceof Model) {
+                            result = self.get.apply(self, args);
+                        } else {
+                            result = _get.apply(self, args);
+                        }
                     } else {
                         result = model.get.apply(model, args);
                     }
@@ -277,8 +310,8 @@ var __setTool = {
 function __setToolFun(type) {
     var handle = __setTool[type];
     return function(key_of_object) {
-        var self = this.model;
-        if (self) {
+        var self = this;
+        if (self.model) {
             var result,
                 args = $.s(arguments);
             args[0] = self.get(key_of_object);
@@ -296,8 +329,8 @@ $.fI(__setTool, function(handle, key) {
 __ProxyModelProto__.mix = function(key_of_obj) {
     //mix Data 合并数据
     //TODO:复合操作，直接移动到ViewModel层，Model层只提供最基本的get、set
-    var self = this.model;
-    if (self) {
+    var self = this;
+    if (self.model) {
         var result,
             args = $.s(arguments);
         switch (args.length) {

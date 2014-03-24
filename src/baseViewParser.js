@@ -49,12 +49,6 @@ var _string_placeholder = {
         var _handle_type_tagName;
         var expression_ph = _placeholder("json");
         var expression_strs = [];
-        str = str.replace(/&gt;/g, ">")
-            .replace(/&lt;/g, "<")
-            .replace(/&amp;/g, "&")
-            .replace(/&quot;/g, '"')
-            .replace(/&apos;/g, "'");
-
 
         //备份字符串
         // str = _string_placeholder.save(QuotedString, str);
@@ -143,7 +137,7 @@ var _string_placeholder = {
             htmlStr = _string_placeholder.save(StyleNodeString, htmlStr);
 
             //为无命名空间的标签加上前缀
-            htmlStr.replace(/<[\/]{0,1}([\w:]+)/g, function(html, tag) {
+            htmlStr = htmlStr.replace(/<[\/]{0,1}([\w:]+)/g, function(html, tag) {
                 //排除：带命名空间、独立标签、特殊节点
                 if (tag.indexOf(":") === -1 && "|area|br|col|embed|hr|img|input|link|meta|param|".indexOf("|" + tag.toLowerCase() + "|") === -1) {
                     html = (html.charAt(1) === "/" ? end_ns : start_ns) + tag;
@@ -165,6 +159,7 @@ var _string_placeholder = {
             //递归过滤
             //在ElementHandle(_shadowBody)前扫描，因为在ElementHandle会将模板语法过滤掉
             //到时候innerHTML就取不到完整的模板语法了，只留下DOM结构的残骸
+            // if(htmlStr.indexOf("selectHidden")>-1){alert(htmlStr);alert(_shadowBody.innerHTML)}
             V._scansView(_shadowBody);
 
             return new ElementHandle(_shadowBody);

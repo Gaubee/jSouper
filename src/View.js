@@ -59,7 +59,8 @@ function View(arg, vmName) {
             }
         }
 
-        vi.model._privateModel && vi.model._privateModel.touchOff();
+        var privateModel = vi.model._ppModel;
+        privateModel && privateModel.touchOff();
 
         return vi
     }
@@ -178,10 +179,10 @@ function _buildTrigger(self) {
                 handle.nodeStr = nodeHTMLStr;
             }
             if (_isHTMLUnknownElement(handle.tag)) {
-
+                //保存非绑定式的属性
                 (handle._unEleAttr = [])._ = {};
                 //save attributes
-                $.E(node.attributes, function(attr) {
+                $.E($.s(node.attributes), function(attr) {
                     //fix IE
                     var name = attr.name;
                     var value = node.getAttribute(name);
@@ -191,7 +192,7 @@ function _buildTrigger(self) {
                     }
                     //boolean\tabIndex should be save
                     //style shoule be handle alone
-                    if (name && value !== $NULL && value !== "" && name !== "style") {
+                    if (name && value !== $NULL && value !== "" /*&& name !== "style"*/ ) {
                         // console.log(name,value);
                         //be an Element, attribute's name may be diffrend;
                         name = (_isIE ? IEfix[name] : _unkonwnElementFix[name]) || name;
@@ -200,10 +201,13 @@ function _buildTrigger(self) {
                         // console.log("saveAttribute:", name, " : ", value, "(" + name + ")");
                     }
                 });
+                //当style格式有问题时，可能带表达式，IE系列必须加前缀才能实现避免解析。
+                //这里的保存只是保持写在style中的正常样式，非绑定格式
                 //save style
                 var cssText = node.style.cssText;
                 if (cssText) {
-                    handle._unEleAttr._["style"] = cssText;
+                    console.log(cssText);
+                    handle._unEleAttr._.style = cssText;
                 }
             }
         } else if (handle.type === "comment") { //Comment

@@ -1677,9 +1677,9 @@ var _dm_force_update = 0;
      * 路由寻址Model
      */
     var routerMap = Model._routerMap = {
-        "$Private": function(model, key) {
-            return model._privateModel || (model._privateModel = new Model);
-        },
+        // "$Private": function(model, key) {
+        //     return model._privateModel || (model._privateModel = new Model);
+        // },
         "$Js": function(model, key) {
             return _jSouperBase.$JS;
         },
@@ -1915,16 +1915,13 @@ var __ProxyModelProto__ = ProxyModel.prototype = {
         var self = this;
         //校准参数，proxyModel为ProxyModel对象，而不是VM或者PM对象
         (proxyModel instanceof self.EntrustConstructor) && (proxyModel = proxyModel.model);
-        if (self instanceof ViewModel) {
-            debugger
-        };
         if (proxyModel instanceof ProxyModel) {
             //标记为“被收留者”
             proxyModel._parentPM = self;
             proxyModel._prefix = key /*|| ""*/ ;
             // console.log("_prefix:", key);
             $.p(self._childProxyModel, proxyModel);
-            proxyModel.follow(self.model, key);
+            proxyModel._followPM(self, key);
             /*//私有Model跟着触发更新
             var privateModel = proxyModel.model._privateModel;
             privateModel && privateModel.touchOff();*/
@@ -1947,6 +1944,25 @@ var __ProxyModelProto__ = ProxyModel.prototype = {
             self.combine(currentModel);
             self.rebuildTree();
             self.onfollow && self.onfollow();
+        }
+    },
+    _followPM: function(pmodel, key) {
+        var self = this;
+        var router_result = ProxyModel.$router(pmodel, key);
+        key = router_result.key;
+        pmodel = router_result.pmodel;
+        if (pmodel) {
+            self.follow(pmodel.model, key);
+        }
+    },
+    //PM版的Model路由构造器
+    buildModelByKey: function(key) {
+        var self = this;
+        var router_result = ProxyModel.$router(self, key);
+        key = router_result.key;
+        self = router_result.pmodel;
+        if (self) {
+            return self.model.buildModelByKey(key);
         }
     },
     $router: function(key) {
@@ -2008,6 +2024,15 @@ $.E([ /*"set", "get", */ "touchOff"], function(handleName) {
 (function(argument) {
 
     var routerMap = ProxyModel._routerMap = {
+        "$Private": function(pmodel, key) {
+            var _privateVM = V.parse("")();
+
+            function _innerPrivateRouter(pmodel, key) {
+                return pmodel._ppModel || (pmodel._ppModel = new ProxyModel(_privateVM, new Model));
+            };
+            routerMap.$Private = _innerPrivateRouter;
+            return _innerPrivateRouter(pmodel, key)
+        },
         //VM中的作用域按xmp范围来算，也就是一个xmp就算是一个function
         "$Caller": function(pmodel, key) {
             return pmodel._parentPM;
@@ -2060,7 +2085,11 @@ $.E([ /*"set", "get", */ "touchOff"], function(handleName) {
                     key ? (args[0] = key) : $.sp.call(args, 0, 1)
                     if (self !== router_result.pmodel) {
                         self = router_result.pmodel;
-                        result = _set.apply(self, args);
+                        if (self instanceof Model) {
+                            result = self.set.apply(self, args);
+                        } else {
+                            result = _set.apply(self, args);
+                        }
                     } else {
                         result = model.set.apply(model, args);
                     }
@@ -2085,7 +2114,11 @@ $.E([ /*"set", "get", */ "touchOff"], function(handleName) {
                     key ? (args[0] = key) : $.sp.call(args, 0, 1)
                     if (self !== router_result.pmodel) {
                         self = router_result.pmodel;
-                        result = _get.apply(self, args);
+                        if (self instanceof Model) {
+                            result = self.get.apply(self, args);
+                        } else {
+                            result = _get.apply(self, args);
+                        }
                     } else {
                         result = model.get.apply(model, args);
                     }
@@ -2140,8 +2173,8 @@ var __setTool = {
 function __setToolFun(type) {
     var handle = __setTool[type];
     return function(key_of_object) {
-        var self = this.model;
-        if (self) {
+        var self = this;
+        if (self.model) {
             var result,
                 args = $.s(arguments);
             args[0] = self.get(key_of_object);
@@ -2159,8 +2192,8 @@ $.fI(__setTool, function(handle, key) {
 __ProxyModelProto__.mix = function(key_of_obj) {
     //mix Data 合并数据
     //TODO:复合操作，直接移动到ViewModel层，Model层只提供最基本的get、set
-    var self = this.model;
-    if (self) {
+    var self = this;
+    if (self.model) {
         var result,
             args = $.s(arguments);
         switch (args.length) {
@@ -2410,7 +2443,8 @@ function View(arg, vmName) {
             }
         }
 
-        vi.model._privateModel && vi.model._privateModel.touchOff();
+        var privateModel = vi.model._ppModel;
+        privateModel && privateModel.touchOff();
 
         return vi
     }
@@ -2529,10 +2563,10 @@ function _buildTrigger(self) {
                 handle.nodeStr = nodeHTMLStr;
             }
             if (_isHTMLUnknownElement(handle.tag)) {
-
+                //保存非绑定式的属性
                 (handle._unEleAttr = [])._ = {};
                 //save attributes
-                $.E(node.attributes, function(attr) {
+                $.E($.s(node.attributes), function(attr) {
                     //fix IE
                     var name = attr.name;
                     var value = node.getAttribute(name);
@@ -2542,7 +2576,7 @@ function _buildTrigger(self) {
                     }
                     //boolean\tabIndex should be save
                     //style shoule be handle alone
-                    if (name && value !== $NULL && value !== "" && name !== "style") {
+                    if (name && value !== $NULL && value !== "" /*&& name !== "style"*/ ) {
                         // console.log(name,value);
                         //be an Element, attribute's name may be diffrend;
                         name = (_isIE ? IEfix[name] : _unkonwnElementFix[name]) || name;
@@ -2551,10 +2585,13 @@ function _buildTrigger(self) {
                         // console.log("saveAttribute:", name, " : ", value, "(" + name + ")");
                     }
                 });
+                //当style格式有问题时，可能带表达式，IE系列必须加前缀才能实现避免解析。
+                //这里的保存只是保持写在style中的正常样式，非绑定格式
                 //save style
                 var cssText = node.style.cssText;
                 if (cssText) {
-                    handle._unEleAttr._["style"] = cssText;
+                    console.log(cssText);
+                    handle._unEleAttr._.style = cssText;
                 }
             }
         } else if (handle.type === "comment") { //Comment
@@ -2741,7 +2778,7 @@ function _addAttr(viewModel, node, attrJson) {
                 $.E(attrViewModel._triggers, function(key) { //touchoff all triggers
                     attrViewModel.touchOff(key);
                 });
-                _attributeHandle(attrKey, node, /*_shadowDIV*/ attrViewModel.topNode(), viewModel, /*model.id,*/ handle, triggerTable);
+                _attributeHandle(attrKey, node, /*_shadowDIV*/ attrViewModel, viewModel, /*model.id,*/ handle, triggerTable);
                 // model.remove(attrViewModel); //?
             }
         }
@@ -3363,12 +3400,6 @@ var _string_placeholder = {
         var _handle_type_tagName;
         var expression_ph = _placeholder("json");
         var expression_strs = [];
-        str = str.replace(/&gt;/g, ">")
-            .replace(/&lt;/g, "<")
-            .replace(/&amp;/g, "&")
-            .replace(/&quot;/g, '"')
-            .replace(/&apos;/g, "'");
-
 
         //备份字符串
         // str = _string_placeholder.save(QuotedString, str);
@@ -3457,7 +3488,7 @@ var _string_placeholder = {
             htmlStr = _string_placeholder.save(StyleNodeString, htmlStr);
 
             //为无命名空间的标签加上前缀
-            htmlStr.replace(/<[\/]{0,1}([\w:]+)/g, function(html, tag) {
+            htmlStr = htmlStr.replace(/<[\/]{0,1}([\w:]+)/g, function(html, tag) {
                 //排除：带命名空间、独立标签、特殊节点
                 if (tag.indexOf(":") === -1 && "|area|br|col|embed|hr|img|input|link|meta|param|".indexOf("|" + tag.toLowerCase() + "|") === -1) {
                     html = (html.charAt(1) === "/" ? end_ns : start_ns) + tag;
@@ -3479,6 +3510,7 @@ var _string_placeholder = {
             //递归过滤
             //在ElementHandle(_shadowBody)前扫描，因为在ElementHandle会将模板语法过滤掉
             //到时候innerHTML就取不到完整的模板语法了，只留下DOM结构的残骸
+            // if(htmlStr.indexOf("selectHidden")>-1){alert(htmlStr);alert(_shadowBody.innerHTML)}
             V._scansView(_shadowBody);
 
             return new ElementHandle(_shadowBody);
@@ -3997,7 +4029,7 @@ V.rt("#each", function(handle, index, parentHandle) {
             if (!arrViewModels) { //第一次初始化，创建最一层最近的Model来模拟ArrayModel
                 arrViewModels = allArrViewModels[id] = [];
                 if (arrDataHandle_Key) {
-                    arrayModel = proxyModel.model.buildModelByKey(arrDataHandle_Key);
+                    arrayModel = proxyModel.buildModelByKey(arrDataHandle_Key);
                 } else {
                     arrayModel = new Model(data);
                 }
@@ -4647,7 +4679,7 @@ var _AttributeHandleEvent = {
     },
     style: function(key, currentNode, attrVM) {
         var attrOuter = _getAttrOuter(attrVM);
-        currentNode.style.setAttribute('cssText', attrOuter);
+        currentNode.style.cssText = attrOuter;
     },
     com: function(key, currentNode, attrVM) {
         var attrOuter = _getAttrOuter(attrVM);
@@ -4674,7 +4706,7 @@ var _AttributeHandleEvent = {
         var attrOuter = _getAttrOuter(attrVM);
         if (attrOuter === currentNode.value) {
             currentNode[key] = attrOuter;
-        }else{
+        } else {
             currentNode[key] = $FALSE;
         }
     }
@@ -4727,7 +4759,7 @@ V.ra(function(attrKey) {
     return _dirAssignment.indexOf(" " + attrKey + " ") !== -1;
 }, function(attrKey, element) {
     console.log(attrKey, element);
-    if (element.tagName === "select".toUpperCase()) {
+    if (element.tagName === (V.namespave + "select").toUpperCase()) {
         return _AttributeHandleEvent.select;
     }
     return _AttributeHandleEvent.dir;
@@ -5131,9 +5163,10 @@ V.ra(function(attrKey) {
 }, function(attrKey) {
 	return statusListerAttribute;
 })
-V.ra("style",function () {
-	return _isIE&&_AttributeHandleEvent.style;
+V.ra("style", function() {
+    return _isIE && _AttributeHandleEvent.style;
 })
+
 var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
     templateHandles = {};
 $.fI(V.handles, function(handleFun, handleName) {

@@ -16,9 +16,9 @@
      * 路由寻址Model
      */
     var routerMap = Model._routerMap = {
-        "$Private": function(model, key) {
-            return model._privateModel || (model._privateModel = new Model);
-        },
+        // "$Private": function(model, key) {
+        //     return model._privateModel || (model._privateModel = new Model);
+        // },
         "$Js": function(model, key) {
             return _jSouperBase.$JS;
         },

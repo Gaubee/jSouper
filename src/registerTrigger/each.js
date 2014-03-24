@@ -68,7 +68,7 @@ V.rt("#each", function(handle, index, parentHandle) {
             if (!arrViewModels) { //第一次初始化，创建最一层最近的Model来模拟ArrayModel
                 arrViewModels = allArrViewModels[id] = [];
                 if (arrDataHandle_Key) {
-                    arrayModel = proxyModel.model.buildModelByKey(arrDataHandle_Key);
+                    arrayModel = proxyModel.buildModelByKey(arrDataHandle_Key);
                 } else {
                     arrayModel = new Model(data);
                 }

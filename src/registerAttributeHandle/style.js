@@ -1,3 +1,3 @@
-V.ra("style",function () {
-	return _isIE&&_AttributeHandleEvent.style;
+V.ra("style", function() {
+    return _isIE && _AttributeHandleEvent.style;
 })

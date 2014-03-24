@@ -34,7 +34,7 @@ var _AttributeHandleEvent = {
     },
     style: function(key, currentNode, attrVM) {
         var attrOuter = _getAttrOuter(attrVM);
-        currentNode.style.setAttribute('cssText', attrOuter);
+        currentNode.style.cssText = attrOuter;
     },
     com: function(key, currentNode, attrVM) {
         var attrOuter = _getAttrOuter(attrVM);
@@ -61,7 +61,7 @@ var _AttributeHandleEvent = {
         var attrOuter = _getAttrOuter(attrVM);
         if (attrOuter === currentNode.value) {
             currentNode[key] = attrOuter;
-        }else{
+        } else {
             currentNode[key] = $FALSE;
         }
     }

@@ -24,7 +24,7 @@ function _addAttr(viewModel, node, attrJson) {
                 $.E(attrViewModel._triggers, function(key) { //touchoff all triggers
                     attrViewModel.touchOff(key);
                 });
-                _attributeHandle(attrKey, node, /*_shadowDIV*/ attrViewModel.topNode(), viewModel, /*model.id,*/ handle, triggerTable);
+                _attributeHandle(attrKey, node, /*_shadowDIV*/ attrViewModel, viewModel, /*model.id,*/ handle, triggerTable);
                 // model.remove(attrViewModel); //?
             }
         }
