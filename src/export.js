@@ -12,7 +12,17 @@ var _jSouperBase = {
     isModel: function(m) {
         return m instanceof Model;
     },
-
+    dispatchEvent: function(element, ev) {
+        if (element.dispatchEvent) {
+            if (ev && typeof ev === "string") {
+                var ev = document.createEvent("HTMLEvents");
+                ev.initEvent(eventName, true, false);
+            }
+            element.dispatchEvent(ev);
+        } else {
+            element.fireEvent(eventName);
+        }
+    },
     queryHandle: function(node) {
         return ViewModel.queryList._[$.hashCode(node)];
     },
