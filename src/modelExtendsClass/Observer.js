@@ -19,6 +19,7 @@
 
     // 原始的DM-get方法
     var _dm_normal_get = __ModelProto__.get
+    var _dm_normal_set = __ModelProto__.set
 
     // 带收集功能的DM-get
     var _dm_collect_get = function(key) {
@@ -44,6 +45,14 @@
         return result;
     }
 
+    // 带个隔离功能的set，确保set中的get不会影响到监听的值
+    var _dm_split_set = function() {
+        $.p(_get_collect_stack, []);
+        var result = _dm_normal_set.apply(this, arguments)
+        _get_collect_stack.pop();
+        return result;
+    }
+
     // 用于搜集依赖的堆栈数据集
     var _get_collect_stack = []
 
@@ -59,6 +68,7 @@
              * dm collect get mode
              */
             __ModelProto__.get = _dm_collect_get;
+            __ModelProto__.set = _dm_split_set;
 
             //生成一层收集层
             $.p(_get_collect_stack, [])
@@ -110,6 +120,7 @@
             //确保是最后一层的了再恢复
             if (_get_collect_stack.length === 0) {
                 __ModelProto__.get = _dm_normal_get;
+                __ModelProto__.set = _dm_normal_set;
             }
 
             return result;
@@ -143,7 +154,7 @@
                         }
                     }
                 }
-                observerObjs && $.E(observerObjs, function(observerObj, abandon_index) {
+                observerObjs && $.E($.s(observerObjs), function(observerObj, abandon_index) {
                     var model = Model.get(observerObj.dm_id);
                     //直接使用touchOff无法触发自动更新
                     model.touchOff(observerObj.dm_key)
