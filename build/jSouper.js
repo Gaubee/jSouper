@@ -3613,6 +3613,7 @@ var _const_obj = {
     "NaN": $TRUE,
     "false": $TRUE,
     "null": $TRUE,
+    "new": $TRUE,
     "window": $TRUE
     /*,
     "this": $TRUE*/
@@ -4006,11 +4007,17 @@ V.rt("#each", function(handle, index, parentHandle) {
                 arrViewModels = allArrViewModels[id];
             if (!arrViewModels) { //第一次初始化，创建最一层最近的Model来模拟ArrayModel
                 arrViewModels = allArrViewModels[id] = [];
-                if (arrDataHandle_Key) {
-                    arrayModel = proxyModel.buildModelByKey(arrDataHandle_Key);
-                } else {
-                    arrayModel = new Model(data);
+            }
+            if (arrDataHandle_Key) {
+                if (arrayModel && arrayModel.get() !== proxyModel.get(arrDataHandle_Key)) {
+                    arrayModel = $NULL;
+                    var _rebuild = $TRUE
                 }
+                if (!arrayModel) {
+                    arrayModel = proxyModel.buildModelByKey(arrDataHandle_Key);
+                }
+            } else {
+                arrayModel = new Model(data);
             }
             var showed_vi_len = arrViewModels.len,
                 new_data_len = data ? data.length : 0,
@@ -4118,6 +4125,11 @@ V.rt("#each", function(handle, index, parentHandle) {
                                 model.__hangdown({
                                     pk: strIndex
                                 });
+                                if (_rebuild) {
+                                    // $.E(arrViewModels,function  (eachVM) {
+                                    // });
+                                    proxyModel.shelter(viewModel,arrDataHandle_Key + "." + index)
+                                }
                             }
                             viewModel.onremove = _eachVM_onremove;
                             //自带的inser，针对each做特殊优化

@@ -284,6 +284,7 @@ var _const_obj = {
     "NaN": $TRUE,
     "false": $TRUE,
     "null": $TRUE,
+    "new": $TRUE,
     "window": $TRUE
     /*,
     "this": $TRUE*/
