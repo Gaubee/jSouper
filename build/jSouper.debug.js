@@ -5298,11 +5298,13 @@ var _jSouperBase = {
     isModel: function(m) {
         return m instanceof Model;
     },
-    dispatchEvent: function(element, ev) {
+    dispatchEvent: function(element, eventName) {
         if (element.dispatchEvent) {
-            if (ev && typeof ev === "string") {
+            if (eventName && typeof eventName === "string") {
                 var ev = document.createEvent("HTMLEvents");
                 ev.initEvent(eventName, true, false);
+            }else{
+                ev = eventName;
             }
             element.dispatchEvent(ev);
         } else {
