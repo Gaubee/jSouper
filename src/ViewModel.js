@@ -213,6 +213,8 @@ function _moveChild(self, el) {
             })
         }
     });
+
+    self.oninsert && self.oninsert();
 };
 
 //根据AttrJson创建索引函数
