@@ -4078,7 +4078,7 @@ V.rt("custom_tag", function(handle, index, parentHandle){
 	        	customTagCode = customTagCode.replace(/\$\{([\w\W]+?)\}/g,function(matchStr,attributeName){
 	        		return customTagNode[attributeName];
 	        	});
-	        	jSouper.parseStr(customTagCode)($UNDEFINED,{
+	        	jSouper.parseStr(customTagCode,"custom_tag-"+id+"-"+uuid)($UNDEFINED,{
 	                onInit: function(vm) {
 	                    //加锁，放置callback前的finallyRun引发的
 	                    customTagVm = AllCustomTagVM[customTagNodeId] = vm;
