@@ -2945,6 +2945,8 @@ function _moveChild(self, el) {
             })
         }
     });
+
+    self.oninsert && self.oninsert();
 };
 
 //根据AttrJson创建索引函数
@@ -3485,11 +3487,17 @@ var _string_placeholder = {
             //使用浏览器默认解析力解析标签树，保证HTML的松语意
             _shadowBody.innerHTML = htmlStr;
 
+            //抽取代码模板
+            V._scansCustomTags(_shadowBody);
+
             //递归过滤
             //在ElementHandle(_shadowBody)前扫描，因为在ElementHandle会将模板语法过滤掉
             //到时候innerHTML就取不到完整的模板语法了，只留下DOM结构的残骸
             // if(htmlStr.indexOf("selectHidden")>-1){alert(htmlStr);alert(_shadowBody.innerHTML)}
             V._scansView(_shadowBody);
+
+            //编译代码模板
+            V._buildCustomTags(_shadowBody);
 
             return new ElementHandle(_shadowBody);
         },
@@ -3535,9 +3543,91 @@ var _string_placeholder = {
                             console.error(e);
                         }
                     }
+                }else if (type === "text/tag") {//代码模板
+                    //临时编译临时使用
+                    //而且仅仅只能在页面解析就需要定义完整，因为是代码模板
+                    if (name) {
+                        V.customTags[name.toLowerCase()] = scriptNode.text;
+                    }else{
+                        console.error("the name of custom tag could not empty!");
+                    }
                 }
             });
             return node;
+        },
+        _scansCustomTags:function (node) {
+            node || (node = doc);
+            //想解析子模块
+            var xmps = $.s(node.getElementsByTagName("xmp"));
+            Array.prototype.push.apply(xmps, $.s(node.getElementsByTagName(V.namespace + "xmp")));
+            $.E(xmps, function(tplNode) {
+                var type = tplNode.getAttribute("type");
+                var name = tplNode.getAttribute("name");
+                if (name) {
+                    if (type === "tag") {
+                        V.customTags[name.toLowerCase()] = $.trim(tplNode.innerHTML);
+                        $.D.rm(tplNode);
+                    }
+                }else{
+                    console.error("the name of custom tag could not empty!");
+                }
+            });
+
+            $.e(node.getElementsByTagName("script"), function(scriptNode) {
+                var type = scriptNode.getAttribute("type");
+                var name = scriptNode.getAttribute("name");
+                if (type === "text/tag") {//代码模板
+                    //临时编译临时使用
+                    //而且仅仅只能在页面解析就需要定义完整，因为是代码模板
+                    if (name) {
+                        V.customTags[name.toLowerCase()] = $.trim(scriptNode.text);
+                    }else{
+                        console.error("the name of custom tag could not empty!");
+                    }
+                }
+            });
+            return node;
+        },
+        _buildCustomTags:function (node) {
+            node || (node = doc);
+            _traversal(node,function(currentNode,index,parentNode){
+                if (currentNode.nodeType===1) {
+                    var tagName = currentNode.tagName.toLowerCase();
+                    if(!$.st(tagName,V.namespace)){
+                        tagName = _split_laveStr;
+                    }
+                    if(V.customTags[tagName]){
+                        var node_id = $.uid();
+
+
+                        var nodeInfo = {
+                            tagName:tagName,
+                            innerHTML:currentNode.innerHTML
+                        };
+                        $.E($.s(currentNode.attributes), function(attr) {
+                            //fix IE
+                            var name = attr.name;
+                            var name_bak = name;
+                            var value = currentNode.getAttribute(name);
+                            if (value === $NULL || value === "") { //fix IE6-8 is dif
+                                name = _isIE && IEfix[name];
+                                value = name && currentNode.getAttribute(name);
+                            }
+                            //boolean\tabIndex should be save
+                            //style shoule be handle alone
+                            if (name && value !== $NULL && value !== "" /*&& name !== "style"*/ ) {
+                                // console.log(name,value);
+                                //be an Element, attribute's name may be diffrend;
+                                name = (_isIE ? IEfix[name] : _unkonwnElementFix[name]) || name;
+                                nodeInfo[name_bak] = value;
+                            }
+                        });
+
+                        V._customTagNode[node_id] = nodeInfo;
+                        $.D.re(parentNode,$.D.cs(parse("{{custom_tag '"+tagName+"','"+node_id+"'}}")),currentNode);
+                    }
+                }
+            });
         },
         parse: function(htmlStr, name) {
             // $.p(V._currentParsers, name);
@@ -3569,6 +3659,8 @@ var _string_placeholder = {
         attrHandles: [],
         modules: {},
         modulesInit: {},
+        customTags: {},
+        _customTagNode: {},
         attrModules: {},
         eachModules: {},
         withModules: {},
@@ -3711,6 +3803,10 @@ var _commentPlaceholder = function(handle, parentHandle, commentText) {
 var placeholderHandle = function(handle, index, parentHandle) {
 	var commentHandle = _commentPlaceholder(handle, parentHandle);
 };
+V.rh("custom_tag", function(handle, index, parentHandle) {
+	handle.display = _layout_display; //Custom rendering function
+	_commentPlaceholder(handle, parentHandle);
+});
 V.rh("#define", function(handle, index, parentHandle) {
 	if(parentHandle.type !== "handle"){
 		$.iA(parentHandle.childNodes,handle,handle.childNodes[0].childNodes[0]);
@@ -3934,6 +4030,46 @@ V.rh("#with", function(handle, index, parentHandle) {
 });
 V.rh("/with", placeholderHandle);
 
+var AllCustomTagVM = {};
+V.rt("custom_tag", function(handle, index, parentHandle){
+    // console.log(handle)
+    var id = handle.id,
+        childNodes = handle.childNodes,
+        expression = Expression.get(handle.handleInfo.expression),
+        comment_layout_id = parentHandle.childNodes[index + 1].id; //eachHandle --> eachComment --> endeachHandle --> endeachComment
+	var handleArgs = expression.foo();
+	var customTagName = handleArgs[0];
+	var customTagNodeId = handleArgs[1];
+	var uuid = $.uid();
+    var trigger = {
+        // cache_tpl_name:$UNDEFINED,
+        key: ".",
+        event: function(NodeList_of_ViewModel, proxyModel, /*eventTrigger,*/ isAttr, viewModel_ID){
+        	var customTagVm = AllCustomTagVM[customTagNodeId];
+        	if (!customTagVm) {
+	        	var customTagCode = V.customTags[customTagName];
+	        	var customTagNode = V._customTagNode[customTagNodeId];
+	        	customTagCode = customTagCode.replace(/\$\{([\w\W]+?)\}/g,function(matchStr,attributeName){
+	        		return customTagNode[attributeName];
+	        	});
+	        	jSouper.parseStr(customTagCode)($UNDEFINED,{
+	                onInit: function(vm) {
+	                    //加锁，放置callback前的finallyRun引发的
+	                    customTagVm = AllCustomTagVM[customTagNodeId] = vm;
+	                },
+	                callback: function(vm) {
+	                    proxyModel.shelter(vm, "");
+	                }
+	        	});
+        	}
+	        //显示layoutViewModel
+	        if (customTagVm && !customTagVm._canRemoveAble) { //canInsertAble
+	            customTagVm.insert(NodeList_of_ViewModel[comment_layout_id].currentNode);
+	        }
+        }
+    }
+    return trigger;
+});
 //等于直接定义一个Observer-getter对象
 //语法：
 //{{#= "key1",expression}}
@@ -4748,7 +4884,6 @@ var _dirAssignment = " className value ";
 V.ra(function(attrKey) {
     return _dirAssignment.indexOf(" " + attrKey + " ") !== -1;
 }, function(attrKey, element) {
-    console.log(attrKey, element);
     if (element.tagName === (V.namespave + "select").toUpperCase()) {
         return _AttributeHandleEvent.select;
     }

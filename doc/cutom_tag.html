@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+
+<head>
+    <title>Custom Tag - jSouper</title>
+    <script type="text/javascript" src="../build/jSouper.debug.js">
+    {
+        Id:"jSouperApp",
+        Data:{
+            qin:"ehhehe"
+        }
+    }
+    </script>
+
+</head>
+
+<body>
+    <div id="jSouperApp">
+        <xmp type="tag" name="cc">
+            <div class=${tagName}>
+            <input value="${value}" bind-input="${bind-input}">
+                cc:${innerHTML}
+            </div>
+        </xmp>
+        <cc bind-input="{{'qin'}}" value="{{qin}}">????{{qin}}????</cc>
+    </div>
+</body>
+
+</html>
