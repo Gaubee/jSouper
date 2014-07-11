@@ -20,13 +20,30 @@
             <input value="${value}" bind-input="${bind-input}">
                 cc:${innerHTML}
             </div>
+        </xmp>
+        <xmp type="tag" name="div">
+            <div title="divdivdiv">
+            __________
+            ${innerHTML}
+            ----------
+            </div>
+        </xmp>
+        <xmp type="tag" name="img">
+            <p><img title="${src}" bind-src="${src}"></p>
             <script type="text/vm">
                 function(vm){
-                    console.log("init VM");
+                    imgNode = vm.queryElement({
+                        tagName:"IMG"
+                    })[0];
+                    if (!imgNode.src) {
+                        //如果bind-src没有符合绑定的书写格式来解析的话，说明它可能是非绑定的图片链接
+                        imgNode.src = imgNode.getAttribute("bind-src");
+                    }
                 }
             </script>
         </xmp>
         <cc bind-input="{{'qin'}}" value="{{qin}}">????{{qin}}????</cc>
+        <div><img src="http://localhost:2222/images/roll1.jpg"/></div>
     </div>
 </body>
 

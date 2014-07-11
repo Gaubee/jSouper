@@ -266,13 +266,14 @@ var _string_placeholder = {
             _traversal(node,function(currentNode,index,parentNode){
                 if (currentNode.nodeType===1) {
                     var tagName = currentNode.tagName.toLowerCase();
-                    if(!$.st(tagName,V.namespace)){
-                        tagName = _split_laveStr;
+                    if(tagName.indexOf(V.namespace)===0){
+                        tagName = tagName.substr(V.namespace.length)
+                    }
+                    if (V._isCustonTagNodeLock[tagName]===$TRUE) {
+                        return
                     }
                     if(V.customTags[tagName]){
                         var node_id = $.uid();
-
-
                         var nodeInfo = {
                             tagName:tagName,
                             innerHTML:currentNode.innerHTML
@@ -334,6 +335,7 @@ var _string_placeholder = {
         modulesInit: {},
         customTags: {},
         _customTagNode: {},
+        _isCustonTagNodeLock: {},
         attrModules: {},
         eachModules: {},
         withModules: {},

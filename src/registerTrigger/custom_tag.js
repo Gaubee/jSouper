@@ -16,11 +16,17 @@ V.rt("custom_tag", function(handle, index, parentHandle){
         	var customTagVm = AllCustomTagVM[customTagNodeId];
         	if (!customTagVm) {
 	        	var customTagCode = V.customTags[customTagName];
-	        	var customTagNode = V._customTagNode[customTagNodeId];
+	        	var customTagNodeInfo = V._customTagNode[customTagNodeId];
 	        	customTagCode = customTagCode.replace(/\$\{([\w\W]+?)\}/g,function(matchStr,attributeName){
-	        		return customTagNode[attributeName];
+	        		return customTagNodeInfo[attributeName];
 	        	});
-	        	jSouper.parseStr(customTagCode,"custom_tag-"+id+"-"+uuid)($UNDEFINED,{
+	        	//锁定标签，避免死循环解析
+	        	// console.log("lock ",customTagNodeInfo.tagName);
+	        	V._isCustonTagNodeLock[customTagNodeInfo.tagName] = true;
+	        	var module = jSouper.parseStr(customTagCode,"custom_tag-"+id+"-"+uuid);
+	        	//解锁
+	        	V._isCustonTagNodeLock[customTagNodeInfo.tagName] = false;
+	        	module($UNDEFINED,{
 	                onInit: function(vm) {
 	                    //加锁，放置callback前的finallyRun引发的
 	                    customTagVm = AllCustomTagVM[customTagNodeId] = vm;
