@@ -3562,6 +3562,9 @@ var _string_placeholder = {
             Array.prototype.push.apply(xmps, $.s(node.getElementsByTagName(V.namespace + "xmp")));
             $.E(xmps, function(tplNode) {
                 var type = tplNode.getAttribute("type");
+                if (type!=="tag") {
+                    return
+                }
                 var name = tplNode.getAttribute("name");
                 if (name) {
                     if (type === "tag") {
@@ -3576,14 +3579,15 @@ var _string_placeholder = {
             $.e(node.getElementsByTagName("script"), function(scriptNode) {
                 var type = scriptNode.getAttribute("type");
                 var name = scriptNode.getAttribute("name");
-                if (type === "text/tag") {//代码模板
-                    //临时编译临时使用
-                    //而且仅仅只能在页面解析就需要定义完整，因为是代码模板
-                    if (name) {
-                        V.customTags[name.toLowerCase()] = $.trim(scriptNode.text);
-                    }else{
-                        console.error("the name of custom tag could not empty!");
-                    }
+                if (type !== "text/tag") {//代码模板
+                    return
+                }
+                //临时编译临时使用
+                //而且仅仅只能在页面解析就需要定义完整，因为是代码模板
+                if (name) {
+                    V.customTags[name.toLowerCase()] = $.trim(scriptNode.text);
+                }else{
+                    console.error("the name of custom tag could not empty!");
                 }
             });
             return node;
