@@ -18,12 +18,12 @@ V.rt("custom_tag", function(handle, index, parentHandle){
 	        	var customTagCode = V.customTags[customTagName];
 	        	var customTagNodeInfo = V._customTagNode[customTagNodeId];
 	        	customTagCode = customTagCode.replace(/\$\{([\w\W]+?)\}/g,function(matchStr,attributeName){
-	        		return customTagNodeInfo[attributeName];
+	        		return customTagNodeInfo[attributeName]||"";
 	        	});
 	        	//锁定标签，避免死循环解析
 	        	// console.log("lock ",customTagNodeInfo.tagName);
 	        	V._isCustonTagNodeLock[customTagNodeInfo.tagName] = true;
-	        	var module = jSouper.parseStr(customTagCode,"custom_tag-"+id+"-"+uuid);
+	        	var module = V.modules[customTagCode]||(V.modules[customTagCode] = jSouper.parseStr(customTagCode,"custom_tag-"+id+"-"+uuid));
 	        	//解锁
 	        	V._isCustonTagNodeLock[customTagNodeInfo.tagName] = false;
 	        	module($UNDEFINED,{
