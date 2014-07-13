@@ -1,4 +1,3 @@
-var AllCustomTagVM = {};
 V.rt("custom_tag", function(handle, index, parentHandle){
     // console.log(handle)
     var id = handle.id,
@@ -9,27 +8,32 @@ V.rt("custom_tag", function(handle, index, parentHandle){
 	var customTagName = handleArgs[0];
 	var customTagNodeId = handleArgs[1];
 	var uuid = $.uid();
+	var customTagCode;
     var trigger = {
         // cache_tpl_name:$UNDEFINED,
         key: ".",
         event: function(NodeList_of_ViewModel, proxyModel, /*eventTrigger,*/ isAttr, viewModel_ID){
-        	var customTagVm = AllCustomTagVM[customTagNodeId];
+        	var AllCustomTagVM = V._instances[viewModel_ID]._CVI;
+        	var customTagVm = AllCustomTagVM[id];
         	if (!customTagVm) {
-	        	var customTagCode = V.customTags[customTagName];
+        		//初始化编译标签
 	        	var customTagNodeInfo = V._customTagNode[customTagNodeId];
-	        	customTagCode = customTagCode.replace(/\$\{([\w\W]+?)\}/g,function(matchStr,attributeName){
-	        		return customTagNodeInfo[attributeName]||"";
-	        	});
+        		if (!customTagCode) {
+		        	customTagCode = V.customTags[customTagName];
+		        	customTagCode = customTagCode.replace(/\$\{([\w\W]+?)\}/g,function(matchStr,attributeName){
+		        		return customTagNodeInfo[attributeName]||"";
+		        	});
+        		}
 	        	//锁定标签，避免死循环解析
 	        	// console.log("lock ",customTagNodeInfo.tagName);
 	        	V._isCustonTagNodeLock[customTagNodeInfo.tagName] = true;
-	        	var module = V.modules[customTagCode]||(V.modules[customTagCode] = jSouper.parseStr(customTagCode,"custom_tag-"+id+"-"+uuid));
+	        	var module = V.customTagModules[customTagCode]||(V.customTagModules[customTagCode] = jSouper.parseStr(customTagCode,"custom_tag-"+id+"-"+uuid));
 	        	//解锁
 	        	V._isCustonTagNodeLock[customTagNodeInfo.tagName] = false;
 	        	module($UNDEFINED,{
 	                onInit: function(vm) {
 	                    //加锁，放置callback前的finallyRun引发的
-	                    customTagVm = AllCustomTagVM[customTagNodeId] = vm;
+	                    customTagVm = AllCustomTagVM[id] = vm;
 	                },
 	                callback: function(vm) {
 	                    proxyModel.shelter(vm, "");

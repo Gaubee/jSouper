@@ -56,6 +56,7 @@ V.rh("#each", function(handle, index, parentHandle) {
         throw SyntaxError("#each can't find close-tag(/each).");
     }
     parentHandle.childNodes.splice(index + 1, endIndex - index - 1); //Pulled out
+    console.log(eachModuleHandle);
     V.eachModules[handle.id] = View(eachModuleHandle, "each-" + handle.id + "-" + handle.eh_id); //Compiled into new View module
 
     handle.display = _each_display; //Custom rendering function

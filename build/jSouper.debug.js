@@ -2827,6 +2827,7 @@ function ViewModel(handleNodeTree, NodeList, triggerTable, model) {
     self._AVI = {};
     self._ALVI = {};
     self._WVI = {};
+    self._CVI = {};
     self._teleporters = {};
     // self._arrayViewModel = $NULL;
 
@@ -3692,6 +3693,7 @@ var _string_placeholder = {
         attrModules: {},
         eachModules: {},
         withModules: {},
+        customTagModules: {},
         _instances: {},
 
         // Proto: DynamicComputed /*Proto*/ ,
@@ -3831,8 +3833,24 @@ var _commentPlaceholder = function(handle, parentHandle, commentText) {
 var placeholderHandle = function(handle, index, parentHandle) {
 	var commentHandle = _commentPlaceholder(handle, parentHandle);
 };
+function _customTag_display(show_or_hidden, NodeList_of_ViewModel, model, /*triggerBy,*/ viewModel_ID) {
+	var handle = this,
+		customTagVm = V._instances[viewModel_ID]._CVI[handle.id];
+	if (!customTagVm) {
+		return;
+	}
+	//get comment_endeach_id
+	var commentPlaceholderElement = NodeList_of_ViewModel[$.lI(handle.childNodes).id].currentNode;
+	if (show_or_hidden) {
+		if(!customTagVm._canRemoveAble){//can-insert-able
+			customTagVm.insert(commentPlaceholderElement);
+		}
+	} else {
+		customTagVm.remove();
+	}
+};
 V.rh("custom_tag", function(handle, index, parentHandle) {
-	handle.display = _layout_display; //Custom rendering function
+	handle.display = _customTag_display; //Custom rendering function
 	_commentPlaceholder(handle, parentHandle);
 });
 V.rh("#define", function(handle, index, parentHandle) {
@@ -3899,6 +3917,7 @@ V.rh("#each", function(handle, index, parentHandle) {
         throw SyntaxError("#each can't find close-tag(/each).");
     }
     parentHandle.childNodes.splice(index + 1, endIndex - index - 1); //Pulled out
+    console.log(eachModuleHandle);
     V.eachModules[handle.id] = View(eachModuleHandle, "each-" + handle.id + "-" + handle.eh_id); //Compiled into new View module
 
     handle.display = _each_display; //Custom rendering function
@@ -4058,7 +4077,6 @@ V.rh("#with", function(handle, index, parentHandle) {
 });
 V.rh("/with", placeholderHandle);
 
-var AllCustomTagVM = {};
 V.rt("custom_tag", function(handle, index, parentHandle){
     // console.log(handle)
     var id = handle.id,
@@ -4069,27 +4087,32 @@ V.rt("custom_tag", function(handle, index, parentHandle){
 	var customTagName = handleArgs[0];
 	var customTagNodeId = handleArgs[1];
 	var uuid = $.uid();
+	var customTagCode;
     var trigger = {
         // cache_tpl_name:$UNDEFINED,
         key: ".",
         event: function(NodeList_of_ViewModel, proxyModel, /*eventTrigger,*/ isAttr, viewModel_ID){
-        	var customTagVm = AllCustomTagVM[customTagNodeId];
+        	var AllCustomTagVM = V._instances[viewModel_ID]._CVI;
+        	var customTagVm = AllCustomTagVM[id];
         	if (!customTagVm) {
-	        	var customTagCode = V.customTags[customTagName];
+        		//初始化编译标签
 	        	var customTagNodeInfo = V._customTagNode[customTagNodeId];
-	        	customTagCode = customTagCode.replace(/\$\{([\w\W]+?)\}/g,function(matchStr,attributeName){
-	        		return customTagNodeInfo[attributeName]||"";
-	        	});
+        		if (!customTagCode) {
+		        	customTagCode = V.customTags[customTagName];
+		        	customTagCode = customTagCode.replace(/\$\{([\w\W]+?)\}/g,function(matchStr,attributeName){
+		        		return customTagNodeInfo[attributeName]||"";
+		        	});
+        		}
 	        	//锁定标签，避免死循环解析
 	        	// console.log("lock ",customTagNodeInfo.tagName);
 	        	V._isCustonTagNodeLock[customTagNodeInfo.tagName] = true;
-	        	var module = V.modules[customTagCode]||(V.modules[customTagCode] = jSouper.parseStr(customTagCode,"custom_tag-"+id+"-"+uuid));
+	        	var module = V.customTagModules[customTagCode]||(V.customTagModules[customTagCode] = jSouper.parseStr(customTagCode,"custom_tag-"+id+"-"+uuid));
 	        	//解锁
 	        	V._isCustonTagNodeLock[customTagNodeInfo.tagName] = false;
 	        	module($UNDEFINED,{
 	                onInit: function(vm) {
 	                    //加锁，放置callback前的finallyRun引发的
-	                    customTagVm = AllCustomTagVM[customTagNodeId] = vm;
+	                    customTagVm = AllCustomTagVM[id] = vm;
 	                },
 	                callback: function(vm) {
 	                    proxyModel.shelter(vm, "");

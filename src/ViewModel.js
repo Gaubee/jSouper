@@ -73,6 +73,7 @@ function ViewModel(handleNodeTree, NodeList, triggerTable, model) {
     self._AVI = {};
     self._ALVI = {};
     self._WVI = {};
+    self._CVI = {};
     self._teleporters = {};
     // self._arrayViewModel = $NULL;
 

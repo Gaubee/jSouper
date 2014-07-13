@@ -339,6 +339,7 @@ var _string_placeholder = {
         attrModules: {},
         eachModules: {},
         withModules: {},
+        customTagModules: {},
         _instances: {},
 
         // Proto: DynamicComputed /*Proto*/ ,
