@@ -3833,10 +3833,13 @@ var _commentPlaceholder = function(handle, parentHandle, commentText) {
 var placeholderHandle = function(handle, index, parentHandle) {
 	var commentHandle = _commentPlaceholder(handle, parentHandle);
 };
+var _customTag_display_arguments = {};
 function _customTag_display(show_or_hidden, NodeList_of_ViewModel, model, /*triggerBy,*/ viewModel_ID) {
 	var handle = this,
-		customTagVm = V._instances[viewModel_ID]._CVI[handle.id];
+		id = handle.id,
+		customTagVm = V._instances[viewModel_ID]._CVI[id];
 	if (!customTagVm) {
+		_customTag_display_arguments[id] = arguments;
 		return;
 	}
 	//get comment_endeach_id
@@ -3917,7 +3920,7 @@ V.rh("#each", function(handle, index, parentHandle) {
         throw SyntaxError("#each can't find close-tag(/each).");
     }
     parentHandle.childNodes.splice(index + 1, endIndex - index - 1); //Pulled out
-    console.log(eachModuleHandle);
+    // console.log(eachModuleHandle);
     V.eachModules[handle.id] = View(eachModuleHandle, "each-" + handle.id + "-" + handle.eh_id); //Compiled into new View module
 
     handle.display = _each_display; //Custom rendering function
@@ -4122,6 +4125,10 @@ V.rt("custom_tag", function(handle, index, parentHandle){
 	        //显示layoutViewModel
 	        if (customTagVm && !customTagVm._canRemoveAble) { //canInsertAble
 	            customTagVm.insert(NodeList_of_ViewModel[comment_layout_id].currentNode);
+	        }
+            var _display_args = _customTag_display_arguments[id];
+	        if (_display_args) {
+                _customTag_display.apply(handle, _display_args);
 	        }
         }
     }

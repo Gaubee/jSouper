@@ -1,7 +1,10 @@
+var _customTag_display_arguments = {};
 function _customTag_display(show_or_hidden, NodeList_of_ViewModel, model, /*triggerBy,*/ viewModel_ID) {
 	var handle = this,
-		customTagVm = V._instances[viewModel_ID]._CVI[handle.id];
+		id = handle.id,
+		customTagVm = V._instances[viewModel_ID]._CVI[id];
 	if (!customTagVm) {
+		_customTag_display_arguments[id] = arguments;
 		return;
 	}
 	//get comment_endeach_id

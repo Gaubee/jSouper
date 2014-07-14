@@ -44,6 +44,10 @@ V.rt("custom_tag", function(handle, index, parentHandle){
 	        if (customTagVm && !customTagVm._canRemoveAble) { //canInsertAble
 	            customTagVm.insert(NodeList_of_ViewModel[comment_layout_id].currentNode);
 	        }
+            var _display_args = _customTag_display_arguments[id];
+	        if (_display_args) {
+                _customTag_display.apply(handle, _display_args);
+	        }
         }
     }
     return trigger;
