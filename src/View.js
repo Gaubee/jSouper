@@ -116,6 +116,23 @@ var _unkonwnElementFix = {
     // "class": "className"
 };
 
+var _svgNS = {
+    xlink:"http://www.w3.org/1999/xlink"
+};
+var _svgTag = {};
+var _svgTagStr = "svg image rect circle ellipse line polyline polygon path filter feBlend feColorMatrix feComponentTransfer feComposite feConvolveMatrix feDiffuseLighting feDisplacementMap feFlood feGaussianBlur feImage feMerge feMorphology feOffset feSpecularLighting feTile feTurbulence feDistantLight fePointLight feSpotLight defs feGaussianBlur linearGradient radialGradient";
+var _isSvgElement = (function () {
+    var __svgElementTag = {};
+    $.E(_svgTagStr.split(" "), function(tagName, index){
+        var lowerTagName = tagName.toLowerCase();
+        __svgElementTag[lowerTagName] = $TRUE;
+        _svgTag[lowerTagName] = tagName;
+    });
+    return function (tagName) {
+        return __svgElementTag[tagName];
+    }
+}());
+
 function _buildHandler(self) {
     var handles = self._handles;
     var handleNodeTree = self.handleNodeTree;
@@ -136,7 +153,7 @@ function _buildHandler(self) {
 var ignoreTagNameMap = {};
 $.fI("script|pre|template|style|link".split("|"), function(value, key) {
     ignoreTagNameMap[value] = ignoreTagNameMap[value.toUpperCase()] = $TRUE;
-})
+});
 
 function _buildTrigger(self) {
     var triggerTable = self._triggerTable;
@@ -165,7 +182,8 @@ function _buildTrigger(self) {
             $.E($.s(node.attributes) /*.reverse()*/ , function(attr, i) {
                 var value = attr.value,
                     name = attr.name;
-                if (_templateMatchRule.test(value)) {
+                //模板语言或者底层语言皆可触发绑定
+                if (_templateMatchRule.test(value)||_matchRule.test(value)) {
                     attributeHandle(name, value, node, handle, triggerTable);
                     node.removeAttribute(name);
                 }
@@ -178,9 +196,13 @@ function _buildTrigger(self) {
             } else {
                 handle.nodeStr = nodeHTMLStr;
             }
+            //svg 属于 HTMLUnknownElement
             if (_isHTMLUnknownElement(handle.tag)) {
                 //保存非绑定式的属性
-                (handle._unEleAttr = [])._ = {};
+                var eleAttr = [];
+                eleAttr._ = {};
+                handle._isSvg = _isSvgElement(handle.tag);
+                handle._unEleAttr = eleAttr;
                 //save attributes
                 $.E($.s(node.attributes), function(attr) {
                     //fix IE
@@ -196,8 +218,17 @@ function _buildTrigger(self) {
                         // console.log(name,value);
                         //be an Element, attribute's name may be diffrend;
                         name = (_isIE ? IEfix[name] : _unkonwnElementFix[name]) || name;
-                        $.p(handle._unEleAttr, name);
-                        handle._unEleAttr._[name] = value;
+                        var ns = $.st(name,":");
+                        handle._isSvg&&console.log(name);
+                        if (handle._isSvg&&ns) {
+                            name = _split_laveStr;
+                            value = {
+                                ns:_svgNS[ns]||null,
+                                v:value
+                            }
+                        }
+                        $.p(eleAttr, name);
+                        eleAttr._[name] = value;
                         // console.log("saveAttribute:", name, " : ", value, "(" + name + ")");
                     }
                 });
@@ -206,8 +237,8 @@ function _buildTrigger(self) {
                 //save style
                 var cssText = node.style.cssText;
                 if (cssText) {
-                    console.log(cssText);
-                    handle._unEleAttr._.style = cssText;
+                    // console.log(cssText);
+                    eleAttr._.style = cssText;
                 }
             }
         } else if (handle.type === "comment") { //Comment
@@ -323,13 +354,28 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
         var currentNode = currentHandle.currentNode;
         var _unknownElementAttribute = currentHandle._unEleAttr;
         if (_unknownElementAttribute) {
-            currentNode = doc.createElement(currentHandle.tag);
-            $.E(_unknownElementAttribute, function(attrName) {
-                // console.log("setAttribute:", attrName, " : ", _unknownElementAttribute._[attrName])
-                //直接使用赋值的话，非标准属性只会变成property而不是Attribute
-                // currentNode[attrName] = _unknownElementAttribute._[attrName];
-                currentNode.setAttribute(attrName, _unknownElementAttribute._[attrName]);
-            })
+            if (currentHandle._isSvg) {
+                debugger
+                currentNode = doc.createElementNS("http://www.w3.org/2000/svg",_svgTag[currentHandle.tag]);
+                $.E(_unknownElementAttribute, function(attrName) {
+                    var _attr_info = _unknownElementAttribute._[attrName];
+                    if (_attr_info.v) {
+                        console.log(_attr_info.ns,attrName,_attr_info.v);
+                        currentNode.setAttributeNS(_attr_info.ns,attrName,_attr_info.v);
+                    }else{
+                        console.log(attrName,_attr_info);
+                        currentNode.setAttribute(attrName, _attr_info);
+                    }
+                });
+            }else{
+                currentNode = doc.createElement(currentHandle.tag);
+                $.E(_unknownElementAttribute, function(attrName) {
+                    // console.log("setAttribute:", attrName, " : ", _unknownElementAttribute._[attrName])
+                    //直接使用赋值的话，非标准属性只会变成property而不是Attribute
+                    // currentNode[attrName] = _unknownElementAttribute._[attrName];
+                    currentNode.setAttribute(attrName, _unknownElementAttribute._[attrName]);
+                });
+            }
             //set Style
             var cssText = _unknownElementAttribute._["style"];
             if (cssText) {

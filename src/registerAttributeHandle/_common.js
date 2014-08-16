@@ -1,24 +1,34 @@
 var _testDIV = fragment(), //$.D.cl(shadowDIV),
     _getAttrOuter = function(attrVM) {
-        var NodeList = attrVM.NodeList;
+        // var NodeList = attrVM.NodeList;
         var topNode = attrVM.topNode();
-        var result;
-        //单个结果节点
-        var single = $TRUE;
-        //属性VM不支持Element节点，可直接变量出textNode
-        $.E(attrVM.handleNodeTree.childNodes, function(handle) {
-            if (handle.type === "text") {
-                var nodeHandle = NodeList[handle.id];
-                var currentNode = nodeHandle.currentNode;
-                if (currentNode.parentNode === topNode) {
-                    var data = nodeHandle._data || currentNode.data;
-                }
-                single ? (result = data) : (result += data);
-                single = $FALSE;
-            }
-        });
+        // var result;
+        // //单个结果节点
+        // var single = $TRUE;
+        // //属性VM不支持Element节点，可直接变量出textNode
+        // $.E(attrVM.handleNodeTree.childNodes, function(handle) {
+        //     if (handle.type === "text") {
+        //         var nodeHandle = NodeList[handle.id];
+        //         var currentNode = nodeHandle.currentNode;
+        //         if (currentNode.parentNode === topNode) {
+        //             var data = nodeHandle._data || currentNode.data;
+        //         }
+        //         single ? (result = data) : (result += data);
+        //         single = $FALSE;
+        //     }
+        // });
 
-        return result
+        // return result
+        if (topNode.hasOwnProperty("innerText")) {
+            _getAttrOuter = function (attrVM) {
+                return attrVM.topNode().innerText;
+            }
+        }else{
+            _getAttrOuter = function (attrVM) {
+                return attrVM.topNode().textContent;
+            }
+        }
+        return _getAttrOuter(attrVM);
     };
 // _getAttrOuter = Function("n", "n=n.topNode();n=n." + (("textContent" in _testDIV) ? "textContent" : "innerText") + "||'';console.log(n);return n;");
 

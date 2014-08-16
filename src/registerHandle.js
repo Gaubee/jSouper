@@ -14,6 +14,7 @@ function registerHandle(handleName, handleFun) {
 			cacheNode = fragment(),//$.D.cl(shadowDIV),
 			trigger,
 			argumentsIdSet = [];
+        var expression = Expression.get(handle.handleInfo.expression);
 		$.E(handleChilds, function(handle_arg) {
 			$.p(argumentsIdSet, handle_arg.id);
 		});
@@ -27,12 +28,13 @@ function registerHandle(handleName, handleFun) {
 					endCommentNode = NodeList_of_ViewModel[endCommentId].currentNode,
 					parentNode = endCommentNode.parentNode,
 					brotherNodes = parentNode.childNodes,
-					argumentsDataSet = [],
+					// argumentsDataSet = [],
 					index = -1;
+				var handleArgs = expression.foo(V._instances[viewModel_ID]);
 
-				for (var i = 0, len = argumentsIdSet.length - 2, handle_arg_data, argumentsDataSet; i < len; i += 1) {
-					$.p(argumentsDataSet,NodeList_of_ViewModel[argumentsIdSet[i]]._data)
-				};
+				// for (var i = 0, len = argumentsIdSet.length - 2, handle_arg_data, argumentsDataSet; i < len; i += 1) {
+				// 	$.p(argumentsDataSet,NodeList_of_ViewModel[argumentsIdSet[i]]._data)
+				// };
 				$.e(brotherNodes, function(node, i) {
 					index = i;
 					if (node === startCommentNode) {
@@ -47,7 +49,7 @@ function registerHandle(handleName, handleFun) {
 					$.D.rC(parentNode, node); //remove
 				}, index);
 
-				cacheNode.innerHTML = handleFun.apply(V._instances[viewModel_ID],argumentsDataSet)
+				cacheNode.innerHTML = handleFun.apply(V._instances[viewModel_ID],handleArgs)
 				$.e(cacheNode.childNodes, function(node, i) {
 					$.D.iB(parentNode, node, endCommentNode);
 				});

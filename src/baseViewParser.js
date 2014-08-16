@@ -117,7 +117,7 @@ var _string_placeholder = {
     /*
      * expores function
      */
-
+    _ignoreNameSpaceTag = "|area|br|col|embed|hr|img|input|link|meta|param|"+_svgTagStr.replace(/\s/g,"|")+"|",
     V = {
         prefix: "bind-",
         namespace: "fix:",
@@ -138,8 +138,8 @@ var _string_placeholder = {
 
             //为无命名空间的标签加上前缀
             htmlStr = htmlStr.replace(/<[\/]{0,1}([\w:]+)/g, function(html, tag) {
-                //排除：带命名空间、独立标签、特殊节点
-                if (tag.indexOf(":") === -1 && "|area|br|col|embed|hr|img|input|link|meta|param|".indexOf("|" + tag.toLowerCase() + "|") === -1) {
+                //排除：带命名空间、独立标签、特殊节点、SVG节点
+                if (tag.indexOf(":") === -1 && _ignoreNameSpaceTag.indexOf("|" + tag.toLowerCase() + "|") === -1) {
                     html = (html.charAt(1) === "/" ? end_ns : start_ns) + tag;
                 }
                 return html;
@@ -276,7 +276,8 @@ var _string_placeholder = {
                         var node_id = $.uid();
                         var nodeInfo = {
                             tagName:tagName,
-                            innerHTML:currentNode.innerHTML
+                            innerHTML:currentNode.innerHTML,
+                            __node__:currentNode
                         };
                         $.E($.s(currentNode.attributes), function(attr) {
                             //fix IE

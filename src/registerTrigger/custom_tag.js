@@ -27,7 +27,14 @@ V.rt("custom_tag", function(handle, index, parentHandle){
 	        	//锁定标签，避免死循环解析
 	        	// console.log("lock ",customTagNodeInfo.tagName);
 	        	V._isCustonTagNodeLock[customTagNodeInfo.tagName] = true;
-	        	var module = V.customTagModules[customTagCode]||(V.customTagModules[customTagCode] = jSouper.parseStr(customTagCode,"custom_tag-"+id+"-"+uuid));
+	        	var module_id = "custom_tag-"+id+"-"+uuid;
+	        	var module = V.customTagModules[customTagCode]||(V.customTagModules[customTagCode] = jSouper.parseStr(customTagCode,module_id));
+	        	var modulesInit = V.modulesInit[module_id];
+	        	if (modulesInit) {
+	        		V.modulesInit[module_id] = function (vm) {
+	        			modulesInit.call(customTagNodeInfo,vm,customTagNodeInfo.__node__);
+	        		}
+	        	}
 	        	//解锁
 	        	V._isCustonTagNodeLock[customTagNodeInfo.tagName] = false;
 	        	module($UNDEFINED,{

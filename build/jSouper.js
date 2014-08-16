@@ -1727,7 +1727,7 @@ var _dm_force_update = 0;
             get: function(model, key) {
                 if (key = model._prefix) {
                     $.lst(key, ".")
-                    return _split_laveStr;
+                    return ~~_split_laveStr;
                 }
             }
         },
@@ -2478,6 +2478,23 @@ var _unkonwnElementFix = {
     // "class": "className"
 };
 
+var _svgNS = {
+    xlink:"http://www.w3.org/1999/xlink"
+};
+var _svgTag = {};
+var _svgTagStr = "svg image rect circle ellipse line polyline polygon path filter feBlend feColorMatrix feComponentTransfer feComposite feConvolveMatrix feDiffuseLighting feDisplacementMap feFlood feGaussianBlur feImage feMerge feMorphology feOffset feSpecularLighting feTile feTurbulence feDistantLight fePointLight feSpotLight defs feGaussianBlur linearGradient radialGradient";
+var _isSvgElement = (function () {
+    var __svgElementTag = {};
+    $.E(_svgTagStr.split(" "), function(tagName, index){
+        var lowerTagName = tagName.toLowerCase();
+        __svgElementTag[lowerTagName] = $TRUE;
+        _svgTag[lowerTagName] = tagName;
+    });
+    return function (tagName) {
+        return __svgElementTag[tagName];
+    }
+}());
+
 function _buildHandler(self) {
     var handles = self._handles;
     var handleNodeTree = self.handleNodeTree;
@@ -2498,7 +2515,7 @@ function _buildHandler(self) {
 var ignoreTagNameMap = {};
 $.fI("script|pre|template|style|link".split("|"), function(value, key) {
     ignoreTagNameMap[value] = ignoreTagNameMap[value.toUpperCase()] = $TRUE;
-})
+});
 
 function _buildTrigger(self) {
     var triggerTable = self._triggerTable;
@@ -2527,7 +2544,8 @@ function _buildTrigger(self) {
             $.E($.s(node.attributes) /*.reverse()*/ , function(attr, i) {
                 var value = attr.value,
                     name = attr.name;
-                if (_templateMatchRule.test(value)) {
+                //模板语言或者底层语言皆可触发绑定
+                if (_templateMatchRule.test(value)||_matchRule.test(value)) {
                     attributeHandle(name, value, node, handle, triggerTable);
                     node.removeAttribute(name);
                 }
@@ -2540,9 +2558,13 @@ function _buildTrigger(self) {
             } else {
                 handle.nodeStr = nodeHTMLStr;
             }
+            //svg 属于 HTMLUnknownElement
             if (_isHTMLUnknownElement(handle.tag)) {
                 //保存非绑定式的属性
-                (handle._unEleAttr = [])._ = {};
+                var eleAttr = [];
+                eleAttr._ = {};
+                handle._isSvg = _isSvgElement(handle.tag);
+                handle._unEleAttr = eleAttr;
                 //save attributes
                 $.E($.s(node.attributes), function(attr) {
                     //fix IE
@@ -2558,8 +2580,17 @@ function _buildTrigger(self) {
                         // console.log(name,value);
                         //be an Element, attribute's name may be diffrend;
                         name = (_isIE ? IEfix[name] : _unkonwnElementFix[name]) || name;
-                        $.p(handle._unEleAttr, name);
-                        handle._unEleAttr._[name] = value;
+                        var ns = $.st(name,":");
+                        handle._isSvg&&console.log(name);
+                        if (handle._isSvg&&ns) {
+                            name = _split_laveStr;
+                            value = {
+                                ns:_svgNS[ns]||null,
+                                v:value
+                            }
+                        }
+                        $.p(eleAttr, name);
+                        eleAttr._[name] = value;
                         // console.log("saveAttribute:", name, " : ", value, "(" + name + ")");
                     }
                 });
@@ -2568,8 +2599,8 @@ function _buildTrigger(self) {
                 //save style
                 var cssText = node.style.cssText;
                 if (cssText) {
-                    console.log(cssText);
-                    handle._unEleAttr._.style = cssText;
+                    // console.log(cssText);
+                    eleAttr._.style = cssText;
                 }
             }
         } else if (handle.type === "comment") { //Comment
@@ -2685,13 +2716,28 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
         var currentNode = currentHandle.currentNode;
         var _unknownElementAttribute = currentHandle._unEleAttr;
         if (_unknownElementAttribute) {
-            currentNode = doc.createElement(currentHandle.tag);
-            $.E(_unknownElementAttribute, function(attrName) {
-                // console.log("setAttribute:", attrName, " : ", _unknownElementAttribute._[attrName])
-                //直接使用赋值的话，非标准属性只会变成property而不是Attribute
-                // currentNode[attrName] = _unknownElementAttribute._[attrName];
-                currentNode.setAttribute(attrName, _unknownElementAttribute._[attrName]);
-            })
+            if (currentHandle._isSvg) {
+                debugger
+                currentNode = doc.createElementNS("http://www.w3.org/2000/svg",_svgTag[currentHandle.tag]);
+                $.E(_unknownElementAttribute, function(attrName) {
+                    var _attr_info = _unknownElementAttribute._[attrName];
+                    if (_attr_info.v) {
+                        console.log(_attr_info.ns,attrName,_attr_info.v);
+                        currentNode.setAttributeNS(_attr_info.ns,attrName,_attr_info.v);
+                    }else{
+                        console.log(attrName,_attr_info);
+                        currentNode.setAttribute(attrName, _attr_info);
+                    }
+                });
+            }else{
+                currentNode = doc.createElement(currentHandle.tag);
+                $.E(_unknownElementAttribute, function(attrName) {
+                    // console.log("setAttribute:", attrName, " : ", _unknownElementAttribute._[attrName])
+                    //直接使用赋值的话，非标准属性只会变成property而不是Attribute
+                    // currentNode[attrName] = _unknownElementAttribute._[attrName];
+                    currentNode.setAttribute(attrName, _unknownElementAttribute._[attrName]);
+                });
+            }
             //set Style
             var cssText = _unknownElementAttribute._["style"];
             if (cssText) {
@@ -3449,7 +3495,7 @@ var _string_placeholder = {
     /*
      * expores function
      */
-
+    _ignoreNameSpaceTag = "|area|br|col|embed|hr|img|input|link|meta|param|"+_svgTagStr.replace(/\s/g,"|")+"|",
     V = {
         prefix: "bind-",
         namespace: "fix:",
@@ -3470,8 +3516,8 @@ var _string_placeholder = {
 
             //为无命名空间的标签加上前缀
             htmlStr = htmlStr.replace(/<[\/]{0,1}([\w:]+)/g, function(html, tag) {
-                //排除：带命名空间、独立标签、特殊节点
-                if (tag.indexOf(":") === -1 && "|area|br|col|embed|hr|img|input|link|meta|param|".indexOf("|" + tag.toLowerCase() + "|") === -1) {
+                //排除：带命名空间、独立标签、特殊节点、SVG节点
+                if (tag.indexOf(":") === -1 && _ignoreNameSpaceTag.indexOf("|" + tag.toLowerCase() + "|") === -1) {
                     html = (html.charAt(1) === "/" ? end_ns : start_ns) + tag;
                 }
                 return html;
@@ -3608,7 +3654,8 @@ var _string_placeholder = {
                         var node_id = $.uid();
                         var nodeInfo = {
                             tagName:tagName,
-                            innerHTML:currentNode.innerHTML
+                            innerHTML:currentNode.innerHTML,
+                            __node__:currentNode
                         };
                         $.E($.s(currentNode.attributes), function(attr) {
                             //fix IE
@@ -4087,7 +4134,14 @@ V.rt("custom_tag", function(handle, index, parentHandle){
 	        	//锁定标签，避免死循环解析
 	        	// console.log("lock ",customTagNodeInfo.tagName);
 	        	V._isCustonTagNodeLock[customTagNodeInfo.tagName] = true;
-	        	var module = V.customTagModules[customTagCode]||(V.customTagModules[customTagCode] = jSouper.parseStr(customTagCode,"custom_tag-"+id+"-"+uuid));
+	        	var module_id = "custom_tag-"+id+"-"+uuid;
+	        	var module = V.customTagModules[customTagCode]||(V.customTagModules[customTagCode] = jSouper.parseStr(customTagCode,module_id));
+	        	var modulesInit = V.modulesInit[module_id];
+	        	if (modulesInit) {
+	        		V.modulesInit[module_id] = function (vm) {
+	        			modulesInit.call(customTagNodeInfo,vm,customTagNodeInfo.__node__);
+	        		}
+	        	}
 	        	//解锁
 	        	V._isCustonTagNodeLock[customTagNodeInfo.tagName] = false;
 	        	module($UNDEFINED,{
@@ -4414,7 +4468,11 @@ V.rt("#if", function(handle, index, parentHandle) {
             //获取PrimitiveValue
             conditionVal && (conditionVal = conditionVal.valueOf());
             //转化为Boolean值
-            conditionVal = !! conditionVal;
+            if (!_booleanFalseRegExp(conditionVal)) {
+                conditionVal = false;
+            }else{
+                conditionVal = !! conditionVal;
+            }
 
             if (NodeList_of_ViewModel[this.handleId]._data !== conditionVal /*|| triggerBy*/ ) {
                 NodeList_of_ViewModel[this.handleId]._data = conditionVal;
@@ -4813,25 +4871,35 @@ V.rt("#with", function(handle, index, parentHandle) {
 });
 var _testDIV = fragment(), //$.D.cl(shadowDIV),
     _getAttrOuter = function(attrVM) {
-        var NodeList = attrVM.NodeList;
+        // var NodeList = attrVM.NodeList;
         var topNode = attrVM.topNode();
-        var result;
-        //单个结果节点
-        var single = $TRUE;
-        //属性VM不支持Element节点，可直接变量出textNode
-        $.E(attrVM.handleNodeTree.childNodes, function(handle) {
-            if (handle.type === "text") {
-                var nodeHandle = NodeList[handle.id];
-                var currentNode = nodeHandle.currentNode;
-                if (currentNode.parentNode === topNode) {
-                    var data = nodeHandle._data || currentNode.data;
-                }
-                single ? (result = data) : (result += data);
-                single = $FALSE;
-            }
-        });
+        // var result;
+        // //单个结果节点
+        // var single = $TRUE;
+        // //属性VM不支持Element节点，可直接变量出textNode
+        // $.E(attrVM.handleNodeTree.childNodes, function(handle) {
+        //     if (handle.type === "text") {
+        //         var nodeHandle = NodeList[handle.id];
+        //         var currentNode = nodeHandle.currentNode;
+        //         if (currentNode.parentNode === topNode) {
+        //             var data = nodeHandle._data || currentNode.data;
+        //         }
+        //         single ? (result = data) : (result += data);
+        //         single = $FALSE;
+        //     }
+        // });
 
-        return result
+        // return result
+        if (topNode.hasOwnProperty("innerText")) {
+            _getAttrOuter = function (attrVM) {
+                return attrVM.topNode().innerText;
+            }
+        }else{
+            _getAttrOuter = function (attrVM) {
+                return attrVM.topNode().textContent;
+            }
+        }
+        return _getAttrOuter(attrVM);
     };
 // _getAttrOuter = Function("n", "n=n.topNode();n=n." + (("textContent" in _testDIV) ? "textContent" : "innerText") + "||'';console.log(n);return n;");
 
@@ -4950,6 +5018,7 @@ var _elementCache = {},
 			wrapEventFun = eventCollection[eventName] = function(e) {
 				//因为事件的绑定是传入事件所在的key，所以外部触发可能只是一个"."类型的字符串
 				//没法自动更新eventFun，只能自动更新eventName，因此eventFun要动态获取
+				var vi = wrapEventFun.vi;
 				var eventFun = vi.get(wrapEventFun.attrOuter) || $.noop;
 				return eventFun.call(this, e, vi)
 			}
@@ -4957,6 +5026,8 @@ var _elementCache = {},
 		}
 		wrapEventFun.eventName = eventName;
 		wrapEventFun.attrOuter = attrOuter;
+		// console.log(vi.get());
+		wrapEventFun.vi = vi;
 	};
 
 V.ra(function(attrKey) {
@@ -5392,6 +5463,7 @@ function registerHandle(handleName, handleFun) {
 			cacheNode = fragment(),//$.D.cl(shadowDIV),
 			trigger,
 			argumentsIdSet = [];
+        var expression = Expression.get(handle.handleInfo.expression);
 		$.E(handleChilds, function(handle_arg) {
 			$.p(argumentsIdSet, handle_arg.id);
 		});
@@ -5405,12 +5477,13 @@ function registerHandle(handleName, handleFun) {
 					endCommentNode = NodeList_of_ViewModel[endCommentId].currentNode,
 					parentNode = endCommentNode.parentNode,
 					brotherNodes = parentNode.childNodes,
-					argumentsDataSet = [],
+					// argumentsDataSet = [],
 					index = -1;
+				var handleArgs = expression.foo(V._instances[viewModel_ID]);
 
-				for (var i = 0, len = argumentsIdSet.length - 2, handle_arg_data, argumentsDataSet; i < len; i += 1) {
-					$.p(argumentsDataSet,NodeList_of_ViewModel[argumentsIdSet[i]]._data)
-				};
+				// for (var i = 0, len = argumentsIdSet.length - 2, handle_arg_data, argumentsDataSet; i < len; i += 1) {
+				// 	$.p(argumentsDataSet,NodeList_of_ViewModel[argumentsIdSet[i]]._data)
+				// };
 				$.e(brotherNodes, function(node, i) {
 					index = i;
 					if (node === startCommentNode) {
@@ -5425,7 +5498,7 @@ function registerHandle(handleName, handleFun) {
 					$.D.rC(parentNode, node); //remove
 				}, index);
 
-				cacheNode.innerHTML = handleFun.apply(V._instances[viewModel_ID],argumentsDataSet)
+				cacheNode.innerHTML = handleFun.apply(V._instances[viewModel_ID],handleArgs)
 				$.e(cacheNode.childNodes, function(node, i) {
 					$.D.iB(parentNode, node, endCommentNode);
 				});
@@ -5638,7 +5711,7 @@ if (typeof module === "object" && module && typeof module.exports === "object") 
     module.exports = jSouper;
 } else {
     if (typeof define === "function" && define.amd) {
-        define("jSouper", [], function() {
+        define("jSouper.core", [], function() {
             return jSouper
         })
     }

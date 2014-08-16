@@ -16,6 +16,7 @@ var _elementCache = {},
 			wrapEventFun = eventCollection[eventName] = function(e) {
 				//因为事件的绑定是传入事件所在的key，所以外部触发可能只是一个"."类型的字符串
 				//没法自动更新eventFun，只能自动更新eventName，因此eventFun要动态获取
+				var vi = wrapEventFun.vi;
 				var eventFun = vi.get(wrapEventFun.attrOuter) || $.noop;
 				return eventFun.call(this, e, vi)
 			}
@@ -23,6 +24,8 @@ var _elementCache = {},
 		}
 		wrapEventFun.eventName = eventName;
 		wrapEventFun.attrOuter = attrOuter;
+		// console.log(vi.get());
+		wrapEventFun.vi = vi;
 	};
 
 V.ra(function(attrKey) {

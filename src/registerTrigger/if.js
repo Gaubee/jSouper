@@ -46,7 +46,11 @@ V.rt("#if", function(handle, index, parentHandle) {
             //获取PrimitiveValue
             conditionVal && (conditionVal = conditionVal.valueOf());
             //转化为Boolean值
-            conditionVal = !! conditionVal;
+            if (!_booleanFalseRegExp(conditionVal)) {
+                conditionVal = false;
+            }else{
+                conditionVal = !! conditionVal;
+            }
 
             if (NodeList_of_ViewModel[this.handleId]._data !== conditionVal /*|| triggerBy*/ ) {
                 NodeList_of_ViewModel[this.handleId]._data = conditionVal;

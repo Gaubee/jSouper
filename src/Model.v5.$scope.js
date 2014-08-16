@@ -88,7 +88,7 @@
             get: function(model, key) {
                 if (key = model._prefix) {
                     $.lst(key, ".")
-                    return _split_laveStr;
+                    return ~~_split_laveStr;
                 }
             }
         },
