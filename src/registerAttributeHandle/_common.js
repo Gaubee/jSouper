@@ -74,6 +74,14 @@ var _AttributeHandleEvent = {
         } else {
             currentNode[key] = $FALSE;
         }
+    },
+    withNS:function (key,currentNode,attrVM) {
+        var ns = $.st(key,":");
+        key = _split_laveStr;
+        var attrOuter = _getAttrOuter(attrVM);
+        if (currentNode.getAttribute(key) !== attrOuter) {
+            currentNode.setAttributeNS(_svgNS[ns]||null,key, attrOuter);
+        }
     }
 };
 var __bool = _AttributeHandleEvent.checked = _AttributeHandleEvent.bool;

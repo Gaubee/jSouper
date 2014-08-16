@@ -2581,7 +2581,6 @@ function _buildTrigger(self) {
                         //be an Element, attribute's name may be diffrend;
                         name = (_isIE ? IEfix[name] : _unkonwnElementFix[name]) || name;
                         var ns = $.st(name,":");
-                        handle._isSvg&&console.log(name);
                         if (handle._isSvg&&ns) {
                             name = _split_laveStr;
                             value = {
@@ -2717,15 +2716,14 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
         var _unknownElementAttribute = currentHandle._unEleAttr;
         if (_unknownElementAttribute) {
             if (currentHandle._isSvg) {
-                debugger
                 currentNode = doc.createElementNS("http://www.w3.org/2000/svg",_svgTag[currentHandle.tag]);
                 $.E(_unknownElementAttribute, function(attrName) {
                     var _attr_info = _unknownElementAttribute._[attrName];
                     if (_attr_info.v) {
-                        console.log(_attr_info.ns,attrName,_attr_info.v);
+                        // console.log(_attr_info.ns,attrName,_attr_info.v);
                         currentNode.setAttributeNS(_attr_info.ns,attrName,_attr_info.v);
                     }else{
-                        console.log(attrName,_attr_info);
+                        // console.log(attrName,_attr_info);
                         currentNode.setAttribute(attrName, _attr_info);
                     }
                 });
@@ -4945,6 +4943,14 @@ var _AttributeHandleEvent = {
         } else {
             currentNode[key] = $FALSE;
         }
+    },
+    withNS:function (key,currentNode,attrVM) {
+        var ns = $.st(key,":");
+        key = _split_laveStr;
+        var attrOuter = _getAttrOuter(attrVM);
+        if (currentNode.getAttribute(key) !== attrOuter) {
+            currentNode.setAttributeNS(_svgNS[ns]||null,key, attrOuter);
+        }
     }
 };
 var __bool = _AttributeHandleEvent.checked = _AttributeHandleEvent.bool;
@@ -5187,6 +5193,12 @@ var _formCache = {},
 V.ra("input", function(attrKey) {
 	return formListerAttribute;
 });
+V.ra(function(attrKey) {
+    return attrKey.indexOf(":") !== -1;
+}, function(attrKey, element) {
+    return _AttributeHandleEvent.withNS;
+})
+
 var _event_by_fun = (function() {
 	var testEvent = Function(""),
 		attrKey = "onclick";
