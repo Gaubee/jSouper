@@ -93,15 +93,16 @@ var _formCache = {},
 	},
 	formListerAttribute = function(key, currentNode, attrVM, vi, /*dm_id,*/ handle, triggerTable) {
 		var attrOuter = _getAttrOuter(attrVM),
-			eventNameHashCode = $.hashCode(currentNode, "bind-input");
+			eventNameHashCode = $.hashCode(currentNode, "bind-"+key);
 			// console.log(attrOuter)
+			// console.log(eventNameHashCode,key,currentNode);
 		if (handle[eventNameHashCode] !== attrOuter) {
 			// console.log(handle[eventNameHashCode], attrOuter, arguments)
 			handle[eventNameHashCode] = attrOuter;
 			var eventNames,
 				eventConfig = _formKey[currentNode.tagName.toLowerCase()];
 			if (!eventConfig) return;
-			var elementHashCode = $.hashCode(currentNode, "form"),
+			var elementHashCode = $.hashCode(currentNode, "form"+key),
 				formCollection,
 				outerFormHandle;
 			if (eventConfig) {
@@ -147,6 +148,8 @@ var _formCache = {},
 			}
 		}
 	};
-V.ra("input", function(attrKey) {
+V.ra(function (attrKey) {
+	return attrKey==="input"||attrKey.indexOf("input-")===0;
+}, function(attrKey) {
 	return formListerAttribute;
 });

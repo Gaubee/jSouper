@@ -100,7 +100,8 @@ var _isHTMLUnknownElement = (function(HUE) {
     if (HUE) {
         result = function(tagName) {
             if (__knownElementTag[tagName] === $UNDEFINED) {
-                __knownElementTag[tagName] = !(doc.createElement(tagName) instanceof HTMLUnknownElement);
+                var _ele = doc.createElement(tagName);
+                __knownElementTag[tagName] = _ele.tagName.toLowerCase()===tagName&&!(_ele instanceof HTMLUnknownElement);
             }
             return !__knownElementTag[tagName];
         }
@@ -197,6 +198,7 @@ function _buildTrigger(self) {
                 handle.nodeStr = nodeHTMLStr;
             }
             //svg 属于 HTMLUnknownElement
+
             if (_isHTMLUnknownElement(handle.tag)) {
                 //保存非绑定式的属性
                 var eleAttr = [];

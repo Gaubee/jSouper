@@ -4,6 +4,42 @@
 		"selected_items":
 		[
 			[
+				"attr",
+				"attrKey"
+			],
+			[
+				"class",
+				"className"
+			],
+			[
+				"inde",
+				"indexOf"
+			],
+			[
+				"tag",
+				"tagName"
+			],
+			[
+				"lo",
+				"lowerTagName"
+			],
+			[
+				"ele",
+				"eleAttr"
+			],
+			[
+				"indx",
+				"indexOf"
+			],
+			[
+				"_is",
+				"_isSvg"
+			],
+			[
+				"hade",
+				"handle"
+			],
+			[
 				"mo",
 				"mobileAgent"
 			],
@@ -62,14 +98,6 @@
 			[
 				"goo",
 				"goods"
-			],
-			[
-				"lo",
-				"loginer"
-			],
-			[
-				"tag",
-				"tag_id"
 			],
 			[
 				"get",
@@ -320,10 +348,6 @@
 				"goods_info"
 			],
 			[
-				"inde",
-				"index"
-			],
-			[
 				"index",
 				"indexOf"
 			],
@@ -490,42 +514,89 @@
 			[
 				"te",
 				"_text_len"
-			],
-			[
-				"sign",
-				"sign_in_url"
-			],
-			[
-				"dat",
-				"dataFormat"
-			],
-			[
-				"fun",
-				"fun	Function"
-			],
-			[
-				"app",
-				"appConfig"
-			],
-			[
-				"fu",
-				"fun	Function"
-			],
-			[
-				"doc",
-				"document"
 			]
 		]
 	},
 	"buffers":
 	[
+		{
+			"file": "src/registerTrigger/if.js",
+			"settings":
+			{
+				"buffer_size": 5089,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "src/View.js",
+			"settings":
+			{
+				"buffer_size": 16779,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "src/registerAttributeHandle/_common.js",
+			"settings":
+			{
+				"buffer_size": 4151,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "src/registerAttributeHandle/input.js",
+			"settings":
+			{
+				"buffer_size": 5170,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "src/registerAttributeHandle/event.js",
+			"settings":
+			{
+				"buffer_size": 1336,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "src/registerAttributeHandle/ns.js",
+			"settings":
+			{
+				"buffer_size": 141,
+				"line_ending": "Windows",
+				"name": "ns.js"
+			}
+		},
+		{
+			"contents": "Searching 155 files for \"attrHandle\" (case sensitive)\n\nE:\\Git\\HTML-ViewParse\\src\\.lib\\jquery.js:\n 1350  \n 1351  	while ( i-- ) {\n 1352: 		Expr.attrHandle[ arr[i] ] = handler;\n 1353  	}\n 1354  }\n ....\n 1832  	}\n 1833  \n 1834: 	var fn = Expr.attrHandle[ name.toLowerCase() ],\n 1835  		// Don't get fooled by Object.prototype properties (jQuery #13807)\n 1836: 		val = fn && hasOwn.call( Expr.attrHandle, name.toLowerCase() ) ?\n 1837  			fn( elem, name, !documentIsHTML ) :\n 1838  			undefined;\n ....\n 1924  	match: matchExpr,\n 1925  \n 1926: 	attrHandle: {},\n 1927  \n 1928  	find: {},\n ....\n 4514  };\n 4515  jQuery.each( jQuery.expr.match.bool.source.match( /\\w+/g ), function( i, name ) {\n 4516: 	var getter = jQuery.expr.attrHandle[ name ] || jQuery.find.attr;\n 4517  \n 4518: 	jQuery.expr.attrHandle[ name ] = getSetInput && getSetAttribute || !ruseDefault.test( name ) ?\n 4519  		function( elem, name, isXML ) {\n 4520: 			var fn = jQuery.expr.attrHandle[ name ],\n 4521  				ret = isXML ?\n 4522  					undefined :\n 4523  					/* jshint eqeqeq: false */\n 4524: 					(jQuery.expr.attrHandle[ name ] = undefined) !=\n 4525  						getter( elem, name, isXML ) ?\n 4526  \n 4527  						name.toLowerCase() :\n 4528  						null;\n 4529: 			jQuery.expr.attrHandle[ name ] = fn;\n 4530  			return ret;\n 4531  		} :\n ....\n 4577  		}\n 4578  	};\n 4579: 	jQuery.expr.attrHandle.id = jQuery.expr.attrHandle.name = jQuery.expr.attrHandle.coords =\n 4580  		// Some attributes are constructed with empty-string values when not defined\n 4581  		function( elem, name, isXML ) {\n\nE:\\Git\\HTML-ViewParse\\src\\baseViewParser.js:\n  318          },\n  319          ra: function(match, handle) {\n  320:             var attrHandle = V.attrHandles[V.attrHandles.length] = {\n  321                  match: $NULL,\n  322                  handle: handle\n  323              }\n  324              if (typeof match === \"function\") {\n  325:                 attrHandle.match = match;\n  326              } else {\n  327:                 attrHandle.match = function(attrKey) {\n  328                      return attrKey === match;\n  329                  }\n  ...\n  332          triggers: {},\n  333          handles: {},\n  334:         attrHandles: [],\n  335          modules: {},\n  336          modulesInit: {},\n\nE:\\Git\\HTML-ViewParse\\src\\registerAttribute.js:\n   73      _AttributeHandle = function(attrKey, element) {\n   74          var assign;\n   75:         var attrHandles = V.attrHandles,\n   76              result;\n   77          if (attrKey.indexOf(\":\")!==-1) {\n   ..\n   79              result = \n   80          }else{\n   81:             $.e(attrHandles, function(attrHandle) {\n   82:                 if (attrHandle.match(attrKey)) {\n   83                      // if (element.type===\"textarea\") {debugger}\n   84:                     result = attrHandle.handle(attrKey, element);\n   85                      return $FALSE\n   86                  }\n\n24 matches across 3 files\n",
+			"settings":
+			{
+				"buffer_size": 2924,
+				"line_ending": "Windows",
+				"name": "Find Results",
+				"scratch": true
+			}
+		},
+		{
+			"file": "src/$.js",
+			"settings":
+			{
+				"buffer_size": 13722,
+				"line_ending": "Windows"
+			}
+		}
 	],
 	"build_system": "",
 	"command_palette":
 	{
-		"height": 362.0,
+		"height": 392.0,
 		"selected_items":
 		[
+			[
+				"js",
+				"Set Syntax: JavaScript"
+			],
 			[
 				"bar",
 				"View: Toggle Side Bar"
@@ -549,10 +620,6 @@
 			[
 				"file",
 				"File: Revert"
-			],
-			[
-				"js",
-				"Set Syntax: JavaScript"
 			],
 			[
 				"html",
@@ -623,7 +690,7 @@
 				"Set Syntax: Markdown"
 			]
 		],
-		"width": 424.0
+		"width": 400.0
 	},
 	"console":
 	{
@@ -645,6 +712,9 @@
 	},
 	"file_history":
 	[
+		"/E/Git/HTML-ViewParse/src/registerAttribute.js",
+		"/E/Git/HTML-ViewParse/src/baseViewParser.js",
+		"/E/Git/HTML-ViewParse/.gitignore",
 		"/E/kp/o2oWebStoreMini/public/pages/personal/evaluation.html",
 		"/E/kp/o2oWebStoreMini/public/pages/mobile/personal/evaluation.html",
 		"/E/kp/o2oWebStoreMini/public/m.admin.html",
@@ -769,20 +839,18 @@
 		"/E/kp/o2oWebStoreMini/public/template/xmp.testing.html",
 		"/E/Git/O2O/node_modules/mongoose/node_modules/mongodb/lib/mongodb/collection/batch/common.js",
 		"/E/kp/o2oWebStoreMini/public/js/tools/xheditor-1.2.1/demos/common.css",
-		"/E/kp/o2oWebStoreMini/public/template/jsouper-ui/src/common.js",
-		"/E/Git/O2O/core/db/.db/data.cache.json",
-		"/E/Git/O2O/node_modules/uns-ccap/addon/jpeglib/jaricom.c",
-		"/E/Git/O2O/node_modules/uns-ccap/addon/jpeglib/README.txt"
+		"/E/kp/o2oWebStoreMini/public/template/jsouper-ui/src/common.js"
 	],
 	"find":
 	{
-		"height": 25.0
+		"height": 34.0
 	},
 	"find_in_files":
 	{
 		"height": 93.0,
 		"where_history":
 		[
+			"E:\\Git\\HTML-ViewParse\\src",
 			"E:\\kp\\o2oWebStoreMini\\public\\Sassproject\\scss",
 			"E:\\Git\\O2O\\server\\RESTAPI",
 			"E:\\Git\\O2O",
@@ -846,6 +914,32 @@
 		"case_sensitive": true,
 		"find_history":
 		[
+			"_formKey",
+			"attrHandle",
+			"_attributeHandle",
+			"_AttributeHandle",
+			"attribute",
+			"_AttributeHandleEvent",
+			"toLowerCase",
+			"setAttributeNS(null",
+			"200",
+			"setAttribute",
+			"polygonNode",
+			"image.",
+			"_isSvg",
+			"handle._unEleAttr",
+			"catchNodesStr",
+			"nodeStr",
+			"catchNodesStr",
+			"_isSvg",
+			"tagDeep",
+			"_isHTMLUnknownElement",
+			"_unEleAttr",
+			"_isHTMLUnknownElement",
+			"<",
+			"createEle",
+			"_isHTMLUnknownElement",
+			"undefined",
 			"home_imgs",
 			"bg_imgs",
 			"mainset",
@@ -947,33 +1041,7 @@
 			"app.req",
 			"this",
 			"cookies",
-			"app",
-			"body",
-			"this",
-			"header",
-			"send",
-			"this.set",
-			"this",
-			"this.set",
-			"set = ",
-			"captcha",
-			"uns-ccap'",
-			"un-ccap",
-			"yield next",
-			"function *",
-			"  ",
-			"koa",
-			"router",
-			"http",
-			"0",
-			"server",
-			"bus_loginer",
-			"time.s_",
-			"s_",
-			"hour",
-			"maxlength",
-			"s_hour",
-			"logistics"
+			"app"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -1013,8 +1081,354 @@
 	"groups":
 	[
 		{
+			"selected": 3,
 			"sheets":
 			[
+				{
+					"buffer": 0,
+					"file": "src/registerTrigger/if.js",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 5089,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								3027,
+								3027
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 7,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "src/View.js",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 16779,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								7950,
+								7950
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 3201.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "src/registerAttributeHandle/_common.js",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 4151,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								3027,
+								3027
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 1110.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "src/registerAttributeHandle/input.js",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 5170,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								3960,
+								3960
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 1688.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "src/registerAttributeHandle/event.js",
+					"semi_transient": true,
+					"settings":
+					{
+						"buffer_size": 1336,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								326,
+								326
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
+					"type": "text"
+				},
+				{
+					"buffer": 5,
+					"file": "src/registerAttributeHandle/ns.js",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 141,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								14,
+								21
+							]
+						],
+						"settings":
+						{
+							"auto_name": "ns.js",
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 4,
+					"type": "text"
+				},
+				{
+					"buffer": 6,
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 2924,
+						"regions":
+						{
+							"match":
+							{
+								"flags": 112,
+								"regions":
+								[
+									[
+										143,
+										153
+									],
+									[
+										240,
+										250
+									],
+									[
+										389,
+										399
+									],
+									[
+										539,
+										549
+									],
+									[
+										719,
+										729
+									],
+									[
+										787,
+										797
+									],
+									[
+										942,
+										952
+									],
+									[
+										1075,
+										1085
+									],
+									[
+										1236,
+										1246
+									],
+									[
+										1344,
+										1354
+									],
+									[
+										1372,
+										1382
+									],
+									[
+										1402,
+										1412
+									],
+									[
+										1681,
+										1691
+									],
+									[
+										1696,
+										1706
+									],
+									[
+										1710,
+										1720
+									],
+									[
+										1907,
+										1917
+									],
+									[
+										1984,
+										1994
+									],
+									[
+										2179,
+										2189
+									],
+									[
+										2410,
+										2420
+									],
+									[
+										2426,
+										2436
+									],
+									[
+										2594,
+										2604
+									],
+									[
+										2616,
+										2626
+									],
+									[
+										2657,
+										2667
+									],
+									[
+										2794,
+										2804
+									]
+								],
+								"scope": ""
+							}
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"detect_indentation": false,
+							"line_numbers": false,
+							"output_tag": 1,
+							"result_base_dir": "",
+							"result_file_regex": "^([A-Za-z\\\\/<].*):$",
+							"result_line_regex": "^ +([0-9]+):",
+							"scroll_past_end": true,
+							"syntax": "Packages/Default/Find Results.hidden-tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 51.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 5,
+					"type": "text"
+				},
+				{
+					"buffer": 7,
+					"file": "src/$.js",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 13722,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								695,
+								695
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 255.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 6,
+					"type": "text"
+				}
 			]
 		}
 	],
