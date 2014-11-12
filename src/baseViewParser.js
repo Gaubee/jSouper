@@ -205,11 +205,14 @@ var _string_placeholder = {
                         }
                     }
                     if (name) {
-                        try {
-                            V.modulesInit[name] = Function("return " + $.trim(scriptNode.text))();
-                            $.D.rm(scriptNode);
-                        } catch (e) {
-                            console.error(e);
+                        var scriptText = $.trim(scriptNode.text);
+                        if (scriptText) {
+                            try {
+                                V.modulesInit[name] = Function("return " + scriptText)();
+                                $.D.rm(scriptNode);
+                            } catch (e) {
+                                console.error(e);
+                            }
                         }
                     }
                 }else if (type === "text/tag") {//代码模板

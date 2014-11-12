@@ -29,6 +29,13 @@
     </xmp>
     <xmp type="template" name="private">
         <div id="private">{{$Private.name}}</div>
+        <div id="private_bool">
+        {{#if $Private.bool}}
+        true!!
+        {{#else}}
+        false!!
+        {{/if}}
+        </div>
     </xmp>
 </body>
 
@@ -108,9 +115,13 @@ jSouper.ready(function(argument) {
 
     console.group("测试$Private私有数据区域")
     vm_private = jSouper.modules["private"]({});
-    vm_private.set("$Private.name", "amaz.....")
+    debugger
+    vm_private.set("$Private.name", "amaz.....");
+    debugger
+    vm_private.set("$Private.bool",true);
     vm_private.append(document.body);
     console.log(vm_private.get("$Private.name"), ":", document.getElementById("private").innerHTML === vm_private.get("$Private.name"));
+    console.log(vm_private.get("$Private.bool")+"!!", ":", document.getElementById("private_bool").innerHTML.indexOf("true!!")!==-1);
     console.groupEnd("测试$Private私有数据区域")
 
 });

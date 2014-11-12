@@ -3583,11 +3583,14 @@ var _string_placeholder = {
                         }
                     }
                     if (name) {
-                        try {
-                            V.modulesInit[name] = Function("return " + $.trim(scriptNode.text))();
-                            $.D.rm(scriptNode);
-                        } catch (e) {
-                            console.error(e);
+                        var scriptText = $.trim(scriptNode.text);
+                        if (scriptText) {
+                            try {
+                                V.modulesInit[name] = Function("return " + scriptText)();
+                                $.D.rm(scriptNode);
+                            } catch (e) {
+                                console.error(e);
+                            }
                         }
                     }
                 }else if (type === "text/tag") {//代码模板
@@ -4105,72 +4108,87 @@ V.rh("#with", function(handle, index, parentHandle) {
 });
 V.rh("/with", placeholderHandle);
 
-V.rt("custom_tag", function(handle, index, parentHandle){
-    // console.log(handle)
-    var id = handle.id,
-        childNodes = handle.childNodes,
-        expression = Expression.get(handle.handleInfo.expression),
-        comment_layout_id = parentHandle.childNodes[index + 1].id; //eachHandle --> eachComment --> endeachHandle --> endeachComment
+V.rt("custom_tag", function(handle, index, parentHandle) {
+	// console.log(handle)
+	var id = handle.id,
+		childNodes = handle.childNodes,
+		expression = Expression.get(handle.handleInfo.expression),
+		comment_layout_id = parentHandle.childNodes[index + 1].id; //eachHandle --> eachComment --> endeachHandle --> endeachComment
 	var handleArgs = expression.foo();
 	var customTagName = handleArgs[0];
 	var customTagNodeId = handleArgs[1];
 	var uuid = $.uid();
 	var customTagCode;
-    var trigger = {
-        // cache_tpl_name:$UNDEFINED,
-        key: ".",
-        event: function(NodeList_of_ViewModel, proxyModel, /*eventTrigger,*/ isAttr, viewModel_ID){
-        	var AllCustomTagVM = V._instances[viewModel_ID]._CVI;
-        	var customTagVm = AllCustomTagVM[id];
-        	if (!customTagVm) {
-        		//初始化编译标签
-	        	var customTagNodeInfo = V._customTagNode[customTagNodeId];
-        		if (!customTagCode) {
-		        	customTagCode = V.customTags[customTagName];
-		        	customTagCode = customTagCode.replace(/\$\{([\w\W]+?)\}/g,function(matchStr,attributeName){
-		        		return customTagNodeInfo[attributeName]||"";
-		        	});
-        		}
-	        	//锁定标签，避免死循环解析
-	        	// console.log("lock ",customTagNodeInfo.tagName);
-	        	V._isCustonTagNodeLock[customTagNodeInfo.tagName] = true;
-	        	var module_id = "custom_tag-"+id+"-"+uuid;
-	        	var module = V.customTagModules[customTagCode]||(V.customTagModules[customTagCode] = jSouper.parseStr(customTagCode,module_id));
-	        	var modulesInit = V.modulesInit[module_id];
-	        	if (modulesInit) {
-	        		V.modulesInit[module_id] = function (vm) {
-	        			modulesInit.call(customTagNodeInfo,vm,customTagNodeInfo.__node__);
-	        		}
-	        	}
-	        	//解锁
-	        	V._isCustonTagNodeLock[customTagNodeInfo.tagName] = false;
-	        	module($UNDEFINED,{
-	                onInit: function(vm) {
-	                    //加锁，放置callback前的finallyRun引发的
-	                    customTagVm = AllCustomTagVM[id] = vm;
-	                },
-	                callback: function(vm) {
-	                    proxyModel.shelter(vm, "");
-	                }
-	        	});
-        	}
-	        //显示layoutViewModel
-	        if (customTagVm && !customTagVm._canRemoveAble) { //canInsertAble
-	            customTagVm.insert(NodeList_of_ViewModel[comment_layout_id].currentNode);
-	        }
-            var _display_args = _customTag_display_arguments[id];
-	        if (_display_args) {
-                _customTag_display.apply(handle, _display_args);
-	        }
-        }
-    }
-    return trigger;
+	var trigger = {
+		// cache_tpl_name:$UNDEFINED,
+		key: ".",
+		event: function(NodeList_of_ViewModel, proxyModel, /*eventTrigger,*/ isAttr, viewModel_ID) {
+			var AllCustomTagVM = V._instances[viewModel_ID]._CVI;
+			var customTagVm = AllCustomTagVM[id];
+			if (!customTagVm) {
+				//初始化编译标签
+				var customTagNodeInfo = V._customTagNode[customTagNodeId];
+				if (!customTagCode) {
+					customTagCode = V.customTags[customTagName];
+					customTagCode = customTagCode.replace(/\$\{__all_attrs__\}/g, function() {
+						var result = ""
+						for (var key in customTagNodeInfo) {
+							if (key === "tagName" || key === "innerHTML" || key === "__node__") {
+								continue;
+							}
+							if (customTagNodeInfo.hasOwnProperty(key)) {
+								result += key + "=" + stringifyStr(customTagNodeInfo[key])+" ";
+							}
+						}
+						return result;
+					});//.replace(/\s\=\"\"/g,"");//浏览器自动补全属性
+					customTagCode = customTagCode.replace(/\$\{([\w\W]+?)\}/g, function(matchStr, attributeName) {
+						return customTagNodeInfo[attributeName] || "";
+					});
+				}
+				//锁定标签，避免死循环解析
+				// console.log("lock ",customTagNodeInfo.tagName);
+				V._isCustonTagNodeLock[customTagNodeInfo.tagName] = true;
+				var module_id = "custom_tag-" + id + "-" + uuid;
+				var module = V.customTagModules[customTagCode] || (V.customTagModules[customTagCode] = jSouper.parseStr(customTagCode, module_id));
+				var modulesInit = V.modulesInit[module_id];
+				if (modulesInit) {
+					V.modulesInit[module_id] = function(vm) {
+						modulesInit.call(customTagNodeInfo, vm, customTagNodeInfo.__node__);
+					}
+				}
+				//解锁
+				V._isCustonTagNodeLock[customTagNodeInfo.tagName] = false;
+				module($UNDEFINED, {
+					onInit: function(vm) {
+						//加锁，放置callback前的finallyRun引发的
+						customTagVm = AllCustomTagVM[id] = vm;
+					},
+					callback: function(vm) {
+						proxyModel.shelter(vm, "");
+					}
+				});
+			}
+			//显示layoutViewModel
+			if (customTagVm && !customTagVm._canRemoveAble) { //canInsertAble
+				customTagVm.insert(NodeList_of_ViewModel[comment_layout_id].currentNode);
+			}
+			var _display_args = _customTag_display_arguments[id];
+			if (_display_args) {
+				_customTag_display.apply(handle, _display_args);
+			}
+		}
+	}
+	return trigger;
 });
 //等于直接定义一个Observer-getter对象
 //语法：
 //{{#= "key1",expression}}
 
 //each - VM的onremove事件
+var _remove_by_inner;
+var _remove_by_inner_id;
+var _remove_by_inner_index;
 var _eachVM_onremove = function() {
     var self = this;
     var arrayViewModel = self._arrayViewModel;
@@ -4196,12 +4214,18 @@ var _eachVM_onremove = function() {
 
     //移除VM并排队到队尾作为备用
     arrayViewModel.splice(oldIndex, 1);
+    arrayViewModel.len -= 1; //减少一个实际对象
 
     //废弃的VM和model暂时不同在一起，在insert时再统一
     $.p(arrayViewModel, self);
 
+    //告知其它使用这个数组的VM，不要重复hangup，而是要把那个对应的VM对象移除到队列末尾
+    _remove_by_inner = $TRUE;
+    _remove_by_inner_id = model.id;
+    _remove_by_inner_index = oldIndex;
     //不应该偷懒直接使用touchOff，因为上一级可能还有绑定到数组内部的key，必须冒泡更新
     parentModel.set(data);
+    _remove_by_inner = $FALSE;
 }
 
 V.rt("#each", function(handle, index, parentHandle) {
@@ -4307,14 +4331,28 @@ V.rt("#each", function(handle, index, parentHandle) {
                 arrViewModels.len = new_data_len; //change immediately,to avoid the `subset` trigger the `rebuildTree`,and than trigger each-trigger again.
 
                 if (showed_vi_len > new_data_len) { /*  Remove*/
-                    $.E($.s(arrViewModels), function(eachViewModel) {
-                        //挂起停止更新
-                        eachViewModel.getModel().__hangup();
-                        //onremove的效益发生在通过vm的remove来影响数据的改变，并做一定的优化，避免大量的更新
-                        eachViewModel.onremove = $UNDEFINED;
-                        //这里的remove是通过数据改变来影响vm，因此要溢出onremove函数
-                        eachViewModel.remove();
-                    }, new_data_len);
+                    if (_remove_by_inner) {
+                        try { //其它数组触发了remove
+                            var _remove_vm = arrViewModels[_remove_by_inner_index]
+                            var _remove_model = _remove_vm.getModel();
+                            if (_remove_by_inner_id === _remove_model.id) {
+                                //找到那个已经被移除的Model，将它的VM移除到队尾
+                                arrViewModels.splice(_remove_by_inner_index, 1);
+                                arrViewModels.push(_remove_vm);
+                                _remove_vm.onremove = $UNDEFINED;
+                                _remove_vm.remove();
+                            }
+                        } catch (e) {}
+                    } else {
+                        $.E($.s(arrViewModels), function(eachViewModel, index) {
+                            //挂起停止更新
+                            eachViewModel.getModel().__hangup();
+                            //onremove的效益发生在通过vm的remove来影响数据的改变，并做一定的优化，避免大量的更新
+                            eachViewModel.onremove = $UNDEFINED;
+                            //这里的remove是通过数据改变来影响vm，因此要溢出onremove函数
+                            eachViewModel.remove();
+                        }, new_data_len);
+                    }
                 } else { /*  Insert*/
                     //undefined null false "" 0 ...
                     if (data) {
@@ -4354,13 +4392,14 @@ V.rt("#each", function(handle, index, parentHandle) {
                                 });
                             } else {
                                 var model = viewModel.getModel();
+                                //但一个数组有多处引用，这个hangedown的有效性只限第一次
                                 model.__hangdown({
                                     pk: strIndex
                                 });
                                 if (_rebuild) {
                                     // $.E(arrViewModels,function  (eachVM) {
                                     // });
-                                    proxyModel.shelter(viewModel,arrDataHandle_Key + "." + index)
+                                    proxyModel.shelter(viewModel, arrDataHandle_Key + "." + index)
                                 }
                             }
                             viewModel.onremove = _eachVM_onremove;
@@ -4387,7 +4426,6 @@ V.rt("#each", function(handle, index, parentHandle) {
     }
     return trigger
 });
-
 V.rt("", function(handle, index, parentHandle) {
     var textHandle = handle.childNodes[0],
         textHandleId = textHandle.id,
@@ -4455,9 +4493,10 @@ V.rt("#if", function(handle, index, parentHandle) {
             $.p(conditionDOM[conditionStatus], child_handle.id);
         }
     }, index); // no (index + 1):scan itself:deep === 0 --> conditionStatus = !conditionStatus;
-
+// console.log(expression.keys.length,expression.keys);
     trigger = {
         // key:"",//default is ""
+        key:expression.keys.length ? expression.keys : "",
         event: function(NodeList_of_ViewModel, model, /*triggerBy,*/ isAttr, viewModel_ID) {
             //要显示的类型，true为if-else，false为else-endif
             var conditionVal = expression.foo(model)[0],//NodeList_of_ViewModel[conditionHandleId]._data,
@@ -4890,7 +4929,7 @@ var _testDIV = fragment(), //$.D.cl(shadowDIV),
         // });
 
         // return result
-        if (topNode.hasOwnProperty("innerText")) {
+        if (topNode.innerText!==$UNDEFINED) {
             _getAttrOuter = function (attrVM) {
                 return attrVM.topNode().innerText;
             }
@@ -4920,7 +4959,10 @@ var _AttributeHandleEvent = {
     com: function(key, currentNode, attrVM) {
         var attrOuter = _getAttrOuter(attrVM);
         if (currentNode.getAttribute(key) !== attrOuter) {
-            currentNode.setAttribute(key, attrOuter)
+            try{
+                currentNode.setAttribute(key, attrOuter)
+            }catch(e){//避免老IE对一些属性的赋值行为报错
+            }
         }
     },
     dir: function(key, currentNode, attrVM) {
@@ -4931,15 +4973,18 @@ var _AttributeHandleEvent = {
     },
     bool: function(key, currentNode, attrVM) {
         var attrOuter = _booleanFalseRegExp(_getAttrOuter(attrVM));
-        if (attrOuter) { // currentNode.setAttribute(key, key);
-            currentNode[key] = key;
-        } else { // currentNode.removeAttribute(key);
-            currentNode[key] = $FALSE;
+        if (attrOuter) {
+            //readonly等属性是要用node.readOnly，大小写不同，所以用setAttribute比较合理
+            currentNode.setAttribute(key,key);
+        } else {
+            //readonly等属性就算set false也是有用，应该直接remove
+            currentNode.removeAttribute(key);
         }
     },
     // checked:self.bool,
     radio: function(key, currentNode, attrVM) { //radio checked
         var attrOuter = _getAttrOuter(attrVM);
+        debugger
         if (attrOuter === currentNode.value) {
             currentNode[key] = attrOuter;
         } else {
@@ -5488,6 +5533,7 @@ function registerHandle(handleName, handleFun) {
 		endCommentId = argumentsIdSet[argumentsIdSet.length-2]
 		trigger = {
 			// key:"",//default key === ""
+			key:expression.keys,
 			bubble: true,
 			event: function(NodeList_of_ViewModel, model, /*triggerBy,*/ isAttr, viewModel_ID) {
 				var startCommentNode = NodeList_of_ViewModel[beginCommentId].currentNode,
@@ -5497,7 +5543,6 @@ function registerHandle(handleName, handleFun) {
 					// argumentsDataSet = [],
 					index = -1;
 				var handleArgs = expression.foo(V._instances[viewModel_ID]);
-
 				// for (var i = 0, len = argumentsIdSet.length - 2, handle_arg_data, argumentsDataSet; i < len; i += 1) {
 				// 	$.p(argumentsDataSet,NodeList_of_ViewModel[argumentsIdSet[i]]._data)
 				// };
@@ -5728,7 +5773,7 @@ if (typeof module === "object" && module && typeof module.exports === "object") 
     module.exports = jSouper;
 } else {
     if (typeof define === "function" && define.amd) {
-        define("jSouper.core", [], function() {
+        define("jSouper_base", [], function() {
             return jSouper
         })
     }

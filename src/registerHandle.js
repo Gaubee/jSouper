@@ -22,6 +22,7 @@ function registerHandle(handleName, handleFun) {
 		endCommentId = argumentsIdSet[argumentsIdSet.length-2]
 		trigger = {
 			// key:"",//default key === ""
+			key:expression.keys,
 			bubble: true,
 			event: function(NodeList_of_ViewModel, model, /*triggerBy,*/ isAttr, viewModel_ID) {
 				var startCommentNode = NodeList_of_ViewModel[beginCommentId].currentNode,
@@ -31,7 +32,6 @@ function registerHandle(handleName, handleFun) {
 					// argumentsDataSet = [],
 					index = -1;
 				var handleArgs = expression.foo(V._instances[viewModel_ID]);
-
 				// for (var i = 0, len = argumentsIdSet.length - 2, handle_arg_data, argumentsDataSet; i < len; i += 1) {
 				// 	$.p(argumentsDataSet,NodeList_of_ViewModel[argumentsIdSet[i]]._data)
 				// };

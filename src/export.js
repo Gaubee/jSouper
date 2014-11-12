@@ -197,7 +197,7 @@ if (typeof module === "object" && module && typeof module.exports === "object") 
     module.exports = jSouper;
 } else {
     if (typeof define === "function" && define.amd) {
-        define("jSouper.core", [], function() {
+        define("jSouper_base", [], function() {
             return jSouper
         })
     }

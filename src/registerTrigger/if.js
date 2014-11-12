@@ -33,9 +33,10 @@ V.rt("#if", function(handle, index, parentHandle) {
             $.p(conditionDOM[conditionStatus], child_handle.id);
         }
     }, index); // no (index + 1):scan itself:deep === 0 --> conditionStatus = !conditionStatus;
-
+// console.log(expression.keys.length,expression.keys);
     trigger = {
         // key:"",//default is ""
+        key:expression.keys.length ? expression.keys : "",
         event: function(NodeList_of_ViewModel, model, /*triggerBy,*/ isAttr, viewModel_ID) {
             //要显示的类型，true为if-else，false为else-endif
             var conditionVal = expression.foo(model)[0],//NodeList_of_ViewModel[conditionHandleId]._data,

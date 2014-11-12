@@ -1,4 +1,7 @@
 //each - VM的onremove事件
+var _remove_by_inner;
+var _remove_by_inner_id;
+var _remove_by_inner_index;
 var _eachVM_onremove = function() {
     var self = this;
     var arrayViewModel = self._arrayViewModel;
@@ -24,12 +27,18 @@ var _eachVM_onremove = function() {
 
     //移除VM并排队到队尾作为备用
     arrayViewModel.splice(oldIndex, 1);
+    arrayViewModel.len -= 1; //减少一个实际对象
 
     //废弃的VM和model暂时不同在一起，在insert时再统一
     $.p(arrayViewModel, self);
 
+    //告知其它使用这个数组的VM，不要重复hangup，而是要把那个对应的VM对象移除到队列末尾
+    _remove_by_inner = $TRUE;
+    _remove_by_inner_id = model.id;
+    _remove_by_inner_index = oldIndex;
     //不应该偷懒直接使用touchOff，因为上一级可能还有绑定到数组内部的key，必须冒泡更新
     parentModel.set(data);
+    _remove_by_inner = $FALSE;
 }
 
 V.rt("#each", function(handle, index, parentHandle) {
@@ -135,14 +144,28 @@ V.rt("#each", function(handle, index, parentHandle) {
                 arrViewModels.len = new_data_len; //change immediately,to avoid the `subset` trigger the `rebuildTree`,and than trigger each-trigger again.
 
                 if (showed_vi_len > new_data_len) { /*  Remove*/
-                    $.E($.s(arrViewModels), function(eachViewModel) {
-                        //挂起停止更新
-                        eachViewModel.getModel().__hangup();
-                        //onremove的效益发生在通过vm的remove来影响数据的改变，并做一定的优化，避免大量的更新
-                        eachViewModel.onremove = $UNDEFINED;
-                        //这里的remove是通过数据改变来影响vm，因此要溢出onremove函数
-                        eachViewModel.remove();
-                    }, new_data_len);
+                    if (_remove_by_inner) {
+                        try { //其它数组触发了remove
+                            var _remove_vm = arrViewModels[_remove_by_inner_index]
+                            var _remove_model = _remove_vm.getModel();
+                            if (_remove_by_inner_id === _remove_model.id) {
+                                //找到那个已经被移除的Model，将它的VM移除到队尾
+                                arrViewModels.splice(_remove_by_inner_index, 1);
+                                arrViewModels.push(_remove_vm);
+                                _remove_vm.onremove = $UNDEFINED;
+                                _remove_vm.remove();
+                            }
+                        } catch (e) {}
+                    } else {
+                        $.E($.s(arrViewModels), function(eachViewModel, index) {
+                            //挂起停止更新
+                            eachViewModel.getModel().__hangup();
+                            //onremove的效益发生在通过vm的remove来影响数据的改变，并做一定的优化，避免大量的更新
+                            eachViewModel.onremove = $UNDEFINED;
+                            //这里的remove是通过数据改变来影响vm，因此要溢出onremove函数
+                            eachViewModel.remove();
+                        }, new_data_len);
+                    }
                 } else { /*  Insert*/
                     //undefined null false "" 0 ...
                     if (data) {
@@ -182,13 +205,14 @@ V.rt("#each", function(handle, index, parentHandle) {
                                 });
                             } else {
                                 var model = viewModel.getModel();
+                                //但一个数组有多处引用，这个hangedown的有效性只限第一次
                                 model.__hangdown({
                                     pk: strIndex
                                 });
                                 if (_rebuild) {
                                     // $.E(arrViewModels,function  (eachVM) {
                                     // });
-                                    proxyModel.shelter(viewModel,arrDataHandle_Key + "." + index)
+                                    proxyModel.shelter(viewModel, arrDataHandle_Key + "." + index)
                                 }
                             }
                             viewModel.onremove = _eachVM_onremove;

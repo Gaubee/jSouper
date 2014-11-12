@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+
+<head>
+    <title>Custom Tag - jSouper</title>
+    <script type="text/javascript" src="../build/jSouper.debug.js">
+    {
+        Id:"jSouperApp",
+        Data:{
+        }
+    }
+    </script>
+
+</head>
+
+<body>
+    <div id="jSouperApp">
+        <hehe arr='[{"text":"a"},{"text":"b"},{"text":"c"}]'></hehe>
+        <xmp type="tag" name="hehe">
+            <ul>
+                {{#each ${arr} }}
+                <li>{{text}}</li>
+                {{/each}}
+            </ul>
+        </xmp>
+    </div>
+</body>
+
+</html>

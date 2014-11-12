@@ -19,7 +19,7 @@ var _testDIV = fragment(), //$.D.cl(shadowDIV),
         // });
 
         // return result
-        if (topNode.hasOwnProperty("innerText")) {
+        if (topNode.innerText!==$UNDEFINED) {
             _getAttrOuter = function (attrVM) {
                 return attrVM.topNode().innerText;
             }
@@ -49,7 +49,10 @@ var _AttributeHandleEvent = {
     com: function(key, currentNode, attrVM) {
         var attrOuter = _getAttrOuter(attrVM);
         if (currentNode.getAttribute(key) !== attrOuter) {
-            currentNode.setAttribute(key, attrOuter)
+            try{
+                currentNode.setAttribute(key, attrOuter)
+            }catch(e){//避免老IE对一些属性的赋值行为报错
+            }
         }
     },
     dir: function(key, currentNode, attrVM) {
@@ -60,15 +63,18 @@ var _AttributeHandleEvent = {
     },
     bool: function(key, currentNode, attrVM) {
         var attrOuter = _booleanFalseRegExp(_getAttrOuter(attrVM));
-        if (attrOuter) { // currentNode.setAttribute(key, key);
-            currentNode[key] = key;
-        } else { // currentNode.removeAttribute(key);
-            currentNode[key] = $FALSE;
+        if (attrOuter) {
+            //readonly等属性是要用node.readOnly，大小写不同，所以用setAttribute比较合理
+            currentNode.setAttribute(key,key);
+        } else {
+            //readonly等属性就算set false也是有用，应该直接remove
+            currentNode.removeAttribute(key);
         }
     },
     // checked:self.bool,
     radio: function(key, currentNode, attrVM) { //radio checked
         var attrOuter = _getAttrOuter(attrVM);
+        debugger
         if (attrOuter === currentNode.value) {
             currentNode[key] = attrOuter;
         } else {
