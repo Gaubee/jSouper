@@ -37,18 +37,20 @@ V.rt("custom_tag", function(handle, index, parentHandle) {
 					});
 				}
 				//锁定标签，避免死循环解析
-				// console.log("lock ",customTagNodeInfo.tagName);
-				V._isCustonTagNodeLock[customTagNodeInfo.tagName] = true;
+				// console.log("lock ",customTagName);
+				V._isCustonTagNodeLock[customTagName] = true;
 				var module_id = "custom_tag-" + id + "-" + uuid;
 				var module = V.customTagModules[customTagCode] || (V.customTagModules[customTagCode] = jSouper.parseStr(customTagCode, module_id));
 				var modulesInit = V.modulesInit[module_id];
-				if (modulesInit) {
+				var vmInit = V.customTagsInit[customTagName];
+				if (modulesInit||vmInit) {
 					V.modulesInit[module_id] = function(vm) {
-						modulesInit.call(customTagNodeInfo, vm, customTagNodeInfo.__node__);
+						modulesInit&&modulesInit.call(customTagNodeInfo, vm, customTagNodeInfo.__node__);
+						vmInit&&vmInit.call(customTagNodeInfo, vm, customTagNodeInfo.__node__);
 					}
 				}
 				//解锁
-				V._isCustonTagNodeLock[customTagNodeInfo.tagName] = false;
+				V._isCustonTagNodeLock[customTagName] = false;
 				module($UNDEFINED, {
 					onInit: function(vm) {
 						//加锁，放置callback前的finallyRun引发的

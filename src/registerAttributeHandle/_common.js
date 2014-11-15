@@ -74,7 +74,6 @@ var _AttributeHandleEvent = {
     // checked:self.bool,
     radio: function(key, currentNode, attrVM) { //radio checked
         var attrOuter = _getAttrOuter(attrVM);
-        debugger
         if (attrOuter === currentNode.value) {
             currentNode[key] = attrOuter;
         } else {

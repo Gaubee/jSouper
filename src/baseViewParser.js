@@ -12,32 +12,32 @@ var QuotedString = /"(?:\.|(\\\")|[^\""\n])*"|'(?:\.|(\\\')|[^\''\n])*'/g, //引
 
 //用于抽离字符串的中特定的字符来避免解析，完成后可以回退这些字符串
 var _string_placeholder = {
-    save: function(regExp_placeholder, str) {
-        var map = this.maps[regExp_placeholder] = {
-            ph: _placeholder("_v"),
-            strs: []
-        };
-        var strings = map.strs;
-        var placeholder = map.ph;
-        str = str.replace(regExp_placeholder, function(matchStr) {
-            $.p(strings, matchStr);
-            return placeholder;
-        });
-        return str;
-    },
-    maps: {},
-    release: function(regExp_placeholder, str) {
-        if (this.maps.hasOwnProperty(regExp_placeholder)) {
-            var map = this.maps[regExp_placeholder];
+        save: function(regExp_placeholder, str) {
+            var map = this.maps[regExp_placeholder] = {
+                ph: _placeholder("_v"),
+                strs: []
+            };
             var strings = map.strs;
             var placeholder = map.ph;
-            str = str.replace(RegExp(placeholder, "g"), function(ph) {
-                return strings.shift();
-            })
-        };
-        return str;
-    }
-},
+            str = str.replace(regExp_placeholder, function(matchStr) {
+                $.p(strings, matchStr);
+                return placeholder;
+            });
+            return str;
+        },
+        maps: {},
+        release: function(regExp_placeholder, str) {
+            if (this.maps.hasOwnProperty(regExp_placeholder)) {
+                var map = this.maps[regExp_placeholder];
+                var strings = map.strs;
+                var placeholder = map.ph;
+                str = str.replace(RegExp(placeholder, "g"), function(ph) {
+                    return strings.shift();
+                })
+            };
+            return str;
+        }
+    },
     // _head = /\{([\w\W]*?)\(/g,
     // _footer = /\)\}/g, ///\)[\s]*\}/g,
     _matchRule = /\{([\w\W]*?)\(([\w\W]*?)\)\}/g, ///\{[\w\W]*?\([\w\W]*?\)[\s]*\}/,
@@ -73,24 +73,24 @@ var _string_placeholder = {
         str = _string_placeholder.save(EscapeString, str);
 
         var parseStr = str
-        //模拟HTML转义
-        // .replace(/&gt;/g, ">")
-        // .replace(/&lt;/g, "<")
-        // .replace(/&amp;/g, "&")
-        // .replace(/&quot;/g, '"')
-        // .replace(/&apos;/g, "'")
-        .replace(_matchRule, function(match, handleName, expression) {
-            handleName = _release_ph_foo($.trim(handleName));
-            if (!V.handles[handleName]) {
-                throw "Can't find handle:" + handleName;
-            }
-            $.p(expression_strs, {
-                nodeType: 1,
-                handleName: handleName,
-                expression: _release_ph_foo(expression)
+            //模拟HTML转义
+            // .replace(/&gt;/g, ">")
+            // .replace(/&lt;/g, "<")
+            // .replace(/&amp;/g, "&")
+            // .replace(/&quot;/g, '"')
+            // .replace(/&apos;/g, "'")
+            .replace(_matchRule, function(match, handleName, expression) {
+                handleName = _release_ph_foo($.trim(handleName));
+                if (!V.handles[handleName]) {
+                    throw "Can't find handle:" + handleName;
+                }
+                $.p(expression_strs, {
+                    nodeType: 1,
+                    handleName: handleName,
+                    expression: _release_ph_foo(expression)
+                });
+                return expression_ph;
             });
-            return expression_ph;
-        });
 
         //还原转义字符
         parseStr = _string_placeholder.release(EscapeString, parseStr);
@@ -117,7 +117,7 @@ var _string_placeholder = {
     /*
      * expores function
      */
-    _ignoreNameSpaceTag = "|area|br|col|embed|hr|img|input|link|meta|param|"+_svgTagStr.replace(/\s/g,"|")+"|",
+    _ignoreNameSpaceTag = "|area|br|col|embed|hr|img|input|link|meta|param|" + _svgTagStr.replace(/\s/g, "|") + "|",
     V = {
         prefix: "bind-",
         namespace: "fix:",
@@ -215,26 +215,41 @@ var _string_placeholder = {
                             }
                         }
                     }
-                }else if (type === "text/tag") {//代码模板
+                } else if (type === "text/tag/vm") {
+                    if (!name) {
+                        console.error("Custom tag VM-scripts must declare the name tags");
+                    } else {
+                        var scriptText = $.trim(scriptNode.text);
+                        if (scriptText) {
+                            try {
+                                //不带编译功能
+                                V.customTagsInit[name.toLowerCase()] = Function("return " + scriptText)();;
+                                $.D.rm(scriptNode);
+                            } catch (e) {
+                                console.error(e);
+                            }
+                        }
+                    }
+                } else if (type === "text/tag") { //代码模板
                     //临时编译临时使用
                     //而且仅仅只能在页面解析就需要定义完整，因为是代码模板
                     if (name) {
                         V.customTags[name.toLowerCase()] = scriptNode.text;
-                    }else{
+                    } else {
                         console.error("the name of custom tag could not empty!");
                     }
                 }
             });
             return node;
         },
-        _scansCustomTags:function (node) {
+        _scansCustomTags: function(node) {
             node || (node = doc);
             //想解析子模块
             var xmps = $.s(node.getElementsByTagName("xmp"));
             Array.prototype.push.apply(xmps, $.s(node.getElementsByTagName(V.namespace + "xmp")));
             $.E(xmps, function(tplNode) {
                 var type = tplNode.getAttribute("type");
-                if (type!=="tag") {
+                if (type !== "tag") {
                     return
                 }
                 var name = tplNode.getAttribute("name");
@@ -243,7 +258,7 @@ var _string_placeholder = {
                         V.customTags[name.toLowerCase()] = $.trim(tplNode.innerHTML);
                         $.D.rm(tplNode);
                     }
-                }else{
+                } else {
                     console.error("the name of custom tag could not empty!");
                 }
             });
@@ -251,36 +266,36 @@ var _string_placeholder = {
             $.e(node.getElementsByTagName("script"), function(scriptNode) {
                 var type = scriptNode.getAttribute("type");
                 var name = scriptNode.getAttribute("name");
-                if (type !== "text/tag") {//代码模板
+                if (type !== "text/tag") { //代码模板
                     return
                 }
                 //临时编译临时使用
                 //而且仅仅只能在页面解析就需要定义完整，因为是代码模板
                 if (name) {
                     V.customTags[name.toLowerCase()] = $.trim(scriptNode.text);
-                }else{
+                } else {
                     console.error("the name of custom tag could not empty!");
                 }
             });
             return node;
         },
-        _buildCustomTags:function (node) {
+        _buildCustomTags: function(node) {
             node || (node = doc);
-            _traversal(node,function(currentNode,index,parentNode){
-                if (currentNode.nodeType===1) {
+            _traversal(node, function(currentNode, index, parentNode) {
+                if (currentNode.nodeType === 1) {
                     var tagName = currentNode.tagName.toLowerCase();
-                    if(tagName.indexOf(V.namespace)===0){
+                    if (tagName.indexOf(V.namespace) === 0) {
                         tagName = tagName.substr(V.namespace.length)
                     }
-                    if (V._isCustonTagNodeLock[tagName]===$TRUE) {
+                    if (V._isCustonTagNodeLock[tagName] === $TRUE) {
                         return
                     }
-                    if(V.customTags[tagName]){
+                    if (V.customTags[tagName]) {
                         var node_id = $.uid();
                         var nodeInfo = {
-                            tagName:tagName,
-                            innerHTML:currentNode.innerHTML,
-                            __node__:currentNode
+                            tagName: tagName,
+                            innerHTML: currentNode.innerHTML,
+                            __node__: currentNode
                         };
                         $.E($.s(currentNode.attributes), function(attr) {
                             //fix IE
@@ -302,7 +317,7 @@ var _string_placeholder = {
                         });
 
                         V._customTagNode[node_id] = nodeInfo;
-                        $.D.re(parentNode,$.D.cs(parse("{{custom_tag '"+tagName+"','"+node_id+"'}}")),currentNode);
+                        $.D.re(parentNode, $.D.cs(parse("{{custom_tag '" + tagName + "','" + node_id + "'}}")), currentNode);
                     }
                 }
             });
@@ -337,6 +352,7 @@ var _string_placeholder = {
         attrHandles: [],
         modules: {},
         modulesInit: {},
+        customTagsInit: {},
         customTags: {},
         _customTagNode: {},
         _isCustonTagNodeLock: {},
@@ -381,16 +397,16 @@ var Expression = {
 //JS对象的获取
 var _obj_get_reg = /([a-zA-Z_?.$][\w?.$]*)/g;
 var _const_obj = {
-    "true": $TRUE,
-    "NaN": $TRUE,
-    "false": $TRUE,
-    "null": $TRUE,
-    "new": $TRUE,
-    "window": $TRUE
-    /*,
-    "this": $TRUE*/
-}
-//编译模板中的表达式
+        "true": $TRUE,
+        "NaN": $TRUE,
+        "false": $TRUE,
+        "null": $TRUE,
+        "new": $TRUE,
+        "window": $TRUE
+            /*,
+            "this": $TRUE*/
+    }
+    //编译模板中的表达式
 var _build_expression = function(expression) {
     //不支持直接Object和Array取值：{a:"a"}或者[1,2]
     //目前暂时支持hash取值，等Path对象完善后才能优化触发hash取值
@@ -422,7 +438,7 @@ var _build_expression = function(expression) {
         return string_sets.shift();
     });
     _build_str = "return function(vm){try{return [" + result + "]}catch(e){/*debugger;var c=window.console;if(c){c.error(e);}*/return [];}}"
-    // console.dir(_build_str);
+        // console.dir(_build_str);
     return Expression.set(expression, _build_str, varsSet);
 };
 
