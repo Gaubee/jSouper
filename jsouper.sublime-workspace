@@ -520,10 +520,18 @@
 	"buffers":
 	[
 		{
-			"file": ".gitignore",
+			"file": "src/registerAttributeHandle/_common.js",
 			"settings":
 			{
-				"buffer_size": 154,
+				"buffer_size": 4285,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": ".demo/.test/select_linkage.html",
+			"settings":
+			{
+				"buffer_size": 2045,
 				"line_ending": "Unix"
 			}
 		}
@@ -654,8 +662,11 @@
 	"expanded_folders":
 	[
 		"/E/Git/HTML-ViewParse",
+		"/E/Git/HTML-ViewParse/.demo",
+		"/E/Git/HTML-ViewParse/.demo/.test",
 		"/E/Git/HTML-ViewParse/build",
 		"/E/Git/HTML-ViewParse/src",
+		"/E/Git/HTML-ViewParse/src/registerAttributeHandle",
 		"/E/Git/HTML-ViewParse/src/registerTrigger"
 	],
 	"file_history":
@@ -1032,32 +1043,62 @@
 	"groups":
 	[
 		{
-			"selected": 0,
+			"selected": 1,
 			"sheets":
 			[
 				{
 					"buffer": 0,
-					"file": ".gitignore",
-					"semi_transient": true,
+					"file": "src/registerAttributeHandle/_common.js",
+					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 154,
+						"buffer_size": 4285,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								0,
-								154
+								2786,
+								2786
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/Text/Plain text.tmLanguage"
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 765.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": ".demo/.test/select_linkage.html",
+					"semi_transient": true,
+					"settings":
+					{
+						"buffer_size": 2045,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								799,
+								599
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/HTML/HTML.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 180.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 0,

@@ -1,4 +1,18 @@
 var _testDIV = fragment(), //$.D.cl(shadowDIV),
+    _attrDataFormat = function (value) {
+        var type = $.st(value||"",":");
+        switch(type){
+            case "$Boolean":
+                value = !!_booleanFalseRegExp(_split_laveStr);
+                break;
+            case "$String":
+                value = _split_laveStr;
+                break;
+            // case "Object"://JSON???....
+
+        }
+        return value
+    },
     _getAttrOuter = function(attrVM) {
         // var NodeList = attrVM.NodeList;
         var topNode = attrVM.topNode();
@@ -21,11 +35,11 @@ var _testDIV = fragment(), //$.D.cl(shadowDIV),
         // return result
         if (topNode.innerText!==$UNDEFINED) {
             _getAttrOuter = function (attrVM) {
-                return attrVM.topNode().innerText;
+                return _attrDataFormat(attrVM.topNode().innerText);
             }
         }else{
             _getAttrOuter = function (attrVM) {
-                return attrVM.topNode().textContent;
+                return _attrDataFormat(attrVM.topNode().textContent);
             }
         }
         return _getAttrOuter(attrVM);

@@ -4926,6 +4926,20 @@ V.rt("#with", function(handle, index, parentHandle) {
 	return trigger;
 });
 var _testDIV = fragment(), //$.D.cl(shadowDIV),
+    _attrDataFormat = function (value) {
+        var type = $.st(value||"",":");
+        switch(type){
+            case "$Boolean":
+                value = !!_booleanFalseRegExp(_split_laveStr);
+                break;
+            case "$String":
+                value = _split_laveStr;
+                break;
+            // case "Object"://JSON???....
+
+        }
+        return value
+    },
     _getAttrOuter = function(attrVM) {
         // var NodeList = attrVM.NodeList;
         var topNode = attrVM.topNode();
@@ -4948,11 +4962,11 @@ var _testDIV = fragment(), //$.D.cl(shadowDIV),
         // return result
         if (topNode.innerText!==$UNDEFINED) {
             _getAttrOuter = function (attrVM) {
-                return attrVM.topNode().innerText;
+                return _attrDataFormat(attrVM.topNode().innerText);
             }
         }else{
             _getAttrOuter = function (attrVM) {
-                return attrVM.topNode().textContent;
+                return _attrDataFormat(attrVM.topNode().textContent);
             }
         }
         return _getAttrOuter(attrVM);
@@ -5069,6 +5083,19 @@ V.ra(function(attrKey) {
     return _AttributeHandleEvent.dir;
 })
 
+function eventFireElementEvent (key, currentNode, attrVM, vi /*, dm_id*/ ,handle, triggerTable) {
+	var elementEventName = key.replace("ele-","");
+	var attrOuter = _getAttrOuter(attrVM);
+	if (typeof currentNode[elementEventName] === "function"&&attrOuter) {
+		currentNode[elementEventName]();
+	}
+}
+//触发元素的原生函数，比如input.foucs()
+V.ra(function(attrKey) {
+	return attrKey.indexOf("ele-") === 0;
+}, function(attrKey) {
+	return eventFireElementEvent;
+})
 var _elementCache = {},
 	eventListerAttribute = function(key, currentNode, attrVM, vi /*, dm_id*/ ,handle, triggerTable) {
 		var attrOuter = _getAttrOuter(attrVM),
