@@ -523,16 +523,50 @@
 			"file": "src/registerAttributeHandle/_common.js",
 			"settings":
 			{
-				"buffer_size": 4285,
+				"buffer_size": 4710,
 				"line_ending": "Windows"
 			}
 		},
 		{
-			"file": ".demo/.test/select_linkage.html",
+			"contents": "Searching 160 files for \"_booleanFalseRegExp\" (case sensitive)\n\nE:\\Git\\HTML-ViewParse\\src\\$.js:\n   65      //在HTML解析时空对象输出的字符串值\n   66      ///false|undefined|null|NaN/\n   67:     _booleanFalseRegExp = function(str) {\n   68          if (_emptyRegExp[String($.trim(str))]) {\n   69              return \"\";\n\nE:\\Git\\HTML-ViewParse\\src\\registerAttributeHandle\\_common.js:\n   72      },\n   73      bool: function(key, currentNode, attrVM) {\n   74:         var attrOuter = _booleanFalseRegExp(_getAttrOuter(attrVM));\n   75          if (attrOuter) {\n   76              //readonly等属性是要用node.readOnly，大小写不同，所以用setAttribute比较合理\n   ..\n  103      var __radio = _AttributeHandleEvent.radio;\n  104      _AttributeHandleEvent.radio = function(key, currentNode, attrVM) {\n  105:         var attrOuter = _booleanFalseRegExp(_getAttrOuter(attrVM));\n  106          if (attrOuter === currentNode.value) {\n  107              currentNode.defaultChecked = attrOuter;\n  ...\n  112      }\n  113      _AttributeHandleEvent.checked = function(key, currentNode, attrVM) {\n  114:         var attrOuter = _booleanFalseRegExp(_getAttrOuter(attrVM));\n  115          if (attrOuter) {\n  116              currentNode.defaultChecked = attrOuter;\n\nE:\\Git\\HTML-ViewParse\\src\\registerTrigger\\if.js:\n   48              conditionVal && (conditionVal = conditionVal.valueOf());\n   49              //转化为Boolean值\n   50:             if (!_booleanFalseRegExp(conditionVal)) {\n   51                  conditionVal = false;\n   52              }else{\n\n5 matches across 3 files\n",
 			"settings":
 			{
-				"buffer_size": 2045,
-				"line_ending": "Unix"
+				"buffer_size": 1524,
+				"line_ending": "Windows",
+				"name": "Find Results",
+				"scratch": true
+			}
+		},
+		{
+			"file": "src/registerAttributeHandle/input.js",
+			"settings":
+			{
+				"buffer_size": 5170,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "src/registerAttributeHandle/ele.js",
+			"settings":
+			{
+				"buffer_size": 445,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "src/registerTrigger/custom_tag.js",
+			"settings":
+			{
+				"buffer_size": 2896,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "src/registerAttributeHandle/event.js",
+			"settings":
+			{
+				"buffer_size": 1336,
+				"line_ending": "Windows"
 			}
 		}
 	],
@@ -662,15 +696,14 @@
 	"expanded_folders":
 	[
 		"/E/Git/HTML-ViewParse",
-		"/E/Git/HTML-ViewParse/.demo",
-		"/E/Git/HTML-ViewParse/.demo/.test",
-		"/E/Git/HTML-ViewParse/build",
-		"/E/Git/HTML-ViewParse/src",
 		"/E/Git/HTML-ViewParse/src/registerAttributeHandle",
 		"/E/Git/HTML-ViewParse/src/registerTrigger"
 	],
 	"file_history":
 	[
+		"/E/Git/HTML-ViewParse/src/$.js",
+		"/E/Git/HTML-ViewParse/src/registerAttributeHandle/status.v2.js",
+		"/E/Git/HTML-ViewParse/.demo/.test/.status.html",
 		"/E/Git/HTML-ViewParse/src/registerTrigger/custom_tag.js",
 		"/E/Git/HTML-ViewParse/src/baseViewParser.js",
 		"/E/Git/HTML-ViewParse/Gruntfile.js",
@@ -681,7 +714,6 @@
 		"/E/Git/HTML-ViewParse/src/registerAttribute.js",
 		"/E/Git/HTML-ViewParse/src/registerTrigger/each.js",
 		"/E/Git/HTML-ViewParse/src/Model.v5.core.js",
-		"/E/Git/HTML-ViewParse/src/$.js",
 		"/E/Git/HTML-ViewParse/src/registerAttributeHandle/boolean.js",
 		"/E/Git/HTML-ViewParse/src/registerAttributeHandle/_common.js",
 		"/E/Git/HTML-ViewParse/src/registerHandle.js",
@@ -796,9 +828,7 @@
 		"/E/Git/O2O/node_modules/body-parser/node_modules/iconv-lite/lib/streams.js",
 		"/E/Git/O2O/node_modules/uns-ccap/addon/jpeglib/plugins/draw_gradient.h",
 		"/E/kp/o2oWebStoreMini/public/js/pages/default/m.carts.js",
-		"/E/kp/o2oWebStoreMini/public/css/m.default.css.map",
-		"/E/kp/o2oWebStoreMini/public/css/m.default.css",
-		"/E/kp/o2oWebStoreMini/public/m.goods-details.html"
+		"/E/kp/o2oWebStoreMini/public/css/m.default.css.map"
 	],
 	"find":
 	{
@@ -809,6 +839,8 @@
 		"height": 93.0,
 		"where_history":
 		[
+			"E:\\Git\\HTML-ViewParse\\src",
+			"E:\\Git\\HTML-ViewParse\\.demo",
 			"E:\\Git\\HTML-ViewParse\\src",
 			"E:\\Git\\HTML-ViewParse\\.demo\\.test\\old",
 			"E:\\Git\\HTML-ViewParse\\doc",
@@ -876,6 +908,13 @@
 		"case_sensitive": true,
 		"find_history":
 		[
+			"_booleanFalseRegExp",
+			"_getAttrOuter",
+			"_formKey",
+			"ls:",
+			"attrOuter",
+			"false",
+			"status",
 			"customTagsInit",
 			"modulesInit",
 			"customTagNodeInfo.tagName",
@@ -996,14 +1035,7 @@
 			"GoodsToCart",
 			"this.type||\"user\"",
 			"removeGoods",
-			"removeGoodsFromCart",
-			"${src}",
-			"${href}",
-			"price",
-			"m-cart",
-			":\"m.",
-			"#list-button",
-			"fixed"
+			"removeGoodsFromCart"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -1043,7 +1075,7 @@
 	"groups":
 	[
 		{
-			"selected": 1,
+			"selected": 3,
 			"sheets":
 			[
 				{
@@ -1052,15 +1084,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 4285,
+						"buffer_size": 4710,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								2786,
-								2786
+								477,
+								477
 							]
 						],
 						"settings":
@@ -1070,38 +1102,189 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 765.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 1,
+					"stack_index": 3,
 					"type": "text"
 				},
 				{
 					"buffer": 1,
-					"file": ".demo/.test/select_linkage.html",
-					"semi_transient": true,
+					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 2045,
+						"buffer_size": 1524,
+						"regions":
+						{
+							"match":
+							{
+								"flags": 112,
+								"regions":
+								[
+									[
+										179,
+										198
+									],
+									[
+										465,
+										484
+									],
+									[
+										785,
+										804
+									],
+									[
+										1072,
+										1091
+									],
+									[
+										1390,
+										1409
+									]
+								],
+								"scope": ""
+							}
+						},
+						"selection":
+						[
+							[
+								203,
+								203
+							]
+						],
+						"settings":
+						{
+							"detect_indentation": false,
+							"line_numbers": false,
+							"output_tag": 1,
+							"result_base_dir": "",
+							"result_file_regex": "^([A-Za-z\\\\/<].*):$",
+							"result_line_regex": "^ +([0-9]+):",
+							"scroll_past_end": true,
+							"syntax": "Packages/Default/Find Results.hidden-tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "src/registerAttributeHandle/input.js",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 5170,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								799,
-								599
+								2579,
+								2588
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/HTML/HTML.tmLanguage"
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 180.0,
+						"translation.y": 1003.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 4,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "src/registerAttributeHandle/ele.js",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 445,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								445,
+								445
+							]
+						],
+						"settings":
+						{
+							"open_with_edit": true,
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "src/registerTrigger/custom_tag.js",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 2896,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1596,
+								1596
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 78.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 5,
+					"file": "src/registerAttributeHandle/event.js",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1336,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								366,
+								122
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 5,
 					"type": "text"
 				}
 			]
@@ -1157,6 +1340,10 @@
 		"height": 0.0,
 		"selected_items":
 		[
+			[
+				"$",
+				"src\\$.js"
+			],
 			[
 				"$.js",
 				"src\\$.js"
@@ -1664,10 +1851,6 @@
 			[
 				"tool",
 				"o2oWebStoreMini\\public\\js\\tools.js"
-			],
-			[
-				"stor",
-				"o2oWebStoreMini\\public\\js\\pages\\admin\\storeinfo.js"
 			]
 		],
 		"width": 0.0

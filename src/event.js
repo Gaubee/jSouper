@@ -1,6 +1,6 @@
 var
 //事件缓存区
-_event_cache = {},
+    _event_cache = {},
     // //底层事件缓存区，实现系统的getEventListeners
     // __base_event_cache = {},
     _fixEvent = function(e) { //@Rybylouvre
@@ -101,6 +101,10 @@ _event_cache = {},
         //声明及执行事件，用于做初始化
         rd: {
             ready: $TRUE
+        },
+        //回车事件，基于keyup
+        en: {
+            enter: "keyup"
         }
     },
     //事件生成器
@@ -120,7 +124,7 @@ _event_cache = {},
             }
         }(_isIE ? (/mouse|click|contextmenu/.test(eventName) ? _fixMouseEvent : _fixEvent) : $.noop));
 
-        if (_registerEventRouterMatch.ip[eventName] && !("oninput" in doc) ) {
+        if (_registerEventRouterMatch.ip[eventName] && !("oninput" in doc)) {
             //不真实，input只来自用户的输入，不来自脚本的改动
             // //现代浏览器模拟value被写
             // if ("oninput" in doc) {
@@ -193,7 +197,7 @@ _event_cache = {},
                         }
                     } else if (e.type === "blur") {
                         Element.fireEvent("onkeyup")
-                        // clearInterval(_TI);
+                            // clearInterval(_TI);
                     } else { //paste cut keypress  // 1
                         _fixPropertychangeLock = $TRUE;
                         _deleteOrChienseInput = $FALSE;
@@ -354,6 +358,15 @@ _event_cache = {},
                     type: "ready"
                 });
             })
+        } else if (result._cacheName = _registerEventRouterMatch.en[eventName]) {;
+            (function() {
+                result.name = result._cacheName;
+                result.fn = function(e) {
+                    if (e.which === 13) {
+                        return _fn(e);
+                    }
+                }
+            }());
         }
         _event_cache[elementHash + $.hashCode(eventFun)] = result;
         return result;
@@ -362,8 +375,8 @@ _event_cache = {},
     //现代浏览器的事件监听
     _addEventListener = function(Element, eventName, eventFun, elementHash) {
         var eventConfig = _registerEventBase(Element, eventName, eventFun, elementHash)
-        // var __base_hash_code = $.hashCode(Element);
-        // var event_cache = __base_event_cache[__base_hash_code] || (__base_event_cache[__base_hash_code] = {});
+            // var __base_hash_code = $.hashCode(Element);
+            // var event_cache = __base_event_cache[__base_hash_code] || (__base_event_cache[__base_hash_code] = {});
         if ($.isS(eventConfig.name)) {
             Element.addEventListener(eventConfig.name, eventConfig.fn, $FALSE);
             // $.p(event_cache[eventConfig.name] || (event_cache[eventConfig.name] = []), eventConfig.fn);
@@ -386,8 +399,8 @@ _event_cache = {},
     //IE浏览器的时间监听
     _attachEvent = function(Element, eventName, eventFun, elementHash) {
         var eventConfig = _registerEventBase(Element, eventName, eventFun, elementHash)
-        // var __base_hash_code = $.hashCode(Element);
-        // var event_cache = __base_event_cache[__base_hash_code] || (__base_event_cache[__base_hash_code] = {});
+            // var __base_hash_code = $.hashCode(Element);
+            // var event_cache = __base_event_cache[__base_hash_code] || (__base_event_cache[__base_hash_code] = {});
         if ($.isS(eventConfig.name)) {
             Element.attachEvent("on" + eventConfig.name, eventConfig.fn);
             // $.p(event_cache[eventConfig.name] || (event_cache[eventConfig.name] = []), eventConfig.fn);

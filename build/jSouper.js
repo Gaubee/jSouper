@@ -450,7 +450,7 @@ var stringifyStr = quote;
 
 var
 //事件缓存区
-_event_cache = {},
+    _event_cache = {},
     // //底层事件缓存区，实现系统的getEventListeners
     // __base_event_cache = {},
     _fixEvent = function(e) { //@Rybylouvre
@@ -551,6 +551,10 @@ _event_cache = {},
         //声明及执行事件，用于做初始化
         rd: {
             ready: $TRUE
+        },
+        //回车事件，基于keyup
+        en: {
+            enter: "keyup"
         }
     },
     //事件生成器
@@ -570,7 +574,7 @@ _event_cache = {},
             }
         }(_isIE ? (/mouse|click|contextmenu/.test(eventName) ? _fixMouseEvent : _fixEvent) : $.noop));
 
-        if (_registerEventRouterMatch.ip[eventName] && !("oninput" in doc) ) {
+        if (_registerEventRouterMatch.ip[eventName] && !("oninput" in doc)) {
             //不真实，input只来自用户的输入，不来自脚本的改动
             // //现代浏览器模拟value被写
             // if ("oninput" in doc) {
@@ -643,7 +647,7 @@ _event_cache = {},
                         }
                     } else if (e.type === "blur") {
                         Element.fireEvent("onkeyup")
-                        // clearInterval(_TI);
+                            // clearInterval(_TI);
                     } else { //paste cut keypress  // 1
                         _fixPropertychangeLock = $TRUE;
                         _deleteOrChienseInput = $FALSE;
@@ -804,6 +808,15 @@ _event_cache = {},
                     type: "ready"
                 });
             })
+        } else if (result._cacheName = _registerEventRouterMatch.en[eventName]) {;
+            (function() {
+                result.name = result._cacheName;
+                result.fn = function(e) {
+                    if (e.which === 13) {
+                        return _fn(e);
+                    }
+                }
+            }());
         }
         _event_cache[elementHash + $.hashCode(eventFun)] = result;
         return result;
@@ -812,8 +825,8 @@ _event_cache = {},
     //现代浏览器的事件监听
     _addEventListener = function(Element, eventName, eventFun, elementHash) {
         var eventConfig = _registerEventBase(Element, eventName, eventFun, elementHash)
-        // var __base_hash_code = $.hashCode(Element);
-        // var event_cache = __base_event_cache[__base_hash_code] || (__base_event_cache[__base_hash_code] = {});
+            // var __base_hash_code = $.hashCode(Element);
+            // var event_cache = __base_event_cache[__base_hash_code] || (__base_event_cache[__base_hash_code] = {});
         if ($.isS(eventConfig.name)) {
             Element.addEventListener(eventConfig.name, eventConfig.fn, $FALSE);
             // $.p(event_cache[eventConfig.name] || (event_cache[eventConfig.name] = []), eventConfig.fn);
@@ -836,8 +849,8 @@ _event_cache = {},
     //IE浏览器的时间监听
     _attachEvent = function(Element, eventName, eventFun, elementHash) {
         var eventConfig = _registerEventBase(Element, eventName, eventFun, elementHash)
-        // var __base_hash_code = $.hashCode(Element);
-        // var event_cache = __base_event_cache[__base_hash_code] || (__base_event_cache[__base_hash_code] = {});
+            // var __base_hash_code = $.hashCode(Element);
+            // var event_cache = __base_event_cache[__base_hash_code] || (__base_event_cache[__base_hash_code] = {});
         if ($.isS(eventConfig.name)) {
             Element.attachEvent("on" + eventConfig.name, eventConfig.fn);
             // $.p(event_cache[eventConfig.name] || (event_cache[eventConfig.name] = []), eventConfig.fn);
@@ -860,7 +873,6 @@ _event_cache = {},
     //对外的接口
     _registerEvent = $.registerEvent = _isIE ? _attachEvent : _addEventListener,
     _cancelEvent = $.cancelEvent = _isIE ? _detachEvent : _removeEventListener;
-
 /*
  * SmartTriggerHandle constructor
  * 用于View层中声明的绑定做包裹。
@@ -4123,8 +4135,81 @@ V.rh("#with", function(handle, index, parentHandle) {
 });
 V.rh("/with", placeholderHandle);
 
+var custom_instructions = {
+	// - ： 表示将匹配到的属性移除
+	__1: function(attrName) {
+		return "ele-remove_attribute-" + Math.random().toString(36).substr(2) + "-" + attrName + "={{" + __ModelConfig__.prefix.This + "&&'" + attrName + "'}} ";
+	},
+	"--": function(customTagNodeInfo, attributeName, attrNameList) {
+		var result = "";
+		$.E(attrNameList, function(attrName) {
+			if (attrName === attributeName) {
+				result += custom_instructions.__1(attrName);
+			}
+		});
+		return result;
+	},
+	"^-": function(customTagNodeInfo, attributeName, attrNameList) {
+		var result = "";
+		$.E(attrNameList, function(attrName) {
+			if (!attrName.indexOf(attributeName)) {
+				result += custom_instructions.__1(attrName);
+			}
+		});
+		return result;
+	},
+	"$-": function(customTagNodeInfo, attributeName, attrNameList) {
+		var result = "";
+		$.E(attrNameList, function(attrName) {
+			if (attrName.indexOf(attributeName) === attrName.length - attributeName.length) {
+				result += custom_instructions.__1(attrName);
+			}
+		});
+		return result;
+	},
+	"*-": function(customTagNodeInfo, attributeName, attrNameList) {
+		var result = "";
+		$.E(attrNameList, function(attrName) {
+			if (attrName.indexOf(attributeName) !== -1) {
+				result += custom_instructions.__1(attrName);
+			}
+		});
+		return result;
+	},
+	// + ： 表示将匹配到的属性加入
+	__2: function(customTagNodeInfo, attributeName) {
+		return attributeName + "=" + stringifyStr(customTagNodeInfo[attributeName]) + " ";
+	},
+	"^+": function(customTagNodeInfo, attributeName, attrNameList) {
+		var result = "";
+		$.E(attrNameList, function(attrName) {
+			if (!attrName.indexOf(attributeName)) {
+				result += custom_instructions.__2(customTagNodeInfo, attributeName);
+			}
+		});
+		return result;
+	},
+	"$+": function(customTagNodeInfo, attributeName, attrNameList) {
+		var result = "";
+		$.E(attrNameList, function(attrName) {
+			if (attrName.indexOf(attributeName) === attrName.length - attributeName.length) {
+				result += custom_instructions.__2(customTagNodeInfo, attributeName);
+			}
+		});
+		return result;
+	},
+	"*+": function(customTagNodeInfo, attributeName, attrNameList) {
+		var result = "";
+		$.E(attrNameList, function(attrName) {
+			if (attrName.indexOf(attributeName) !== -1) {
+				result += custom_instructions.__2(customTagNodeInfo, attributeName);
+			}
+		});
+		return result;
+	}
+}
 V.rt("custom_tag", function(handle, index, parentHandle) {
-	// console.log(handle)
+	// console.log(handle)1
 	var id = handle.id,
 		childNodes = handle.childNodes,
 		expression = Expression.get(handle.handleInfo.expression),
@@ -4145,19 +4230,37 @@ V.rt("custom_tag", function(handle, index, parentHandle) {
 				var customTagNodeInfo = V._customTagNode[customTagNodeId];
 				if (!customTagCode) {
 					customTagCode = V.customTags[customTagName];
-					customTagCode = customTagCode.replace(/\$\{__all_attrs__\}/g, function() {
+
+					customTagCode = customTagCode.replace(/\$\{__all_attrs__\}\=\"\"|\$\{__all_attrs__\}/g, function() { //浏览器自动补全属性
 						var result = ""
 						for (var key in customTagNodeInfo) {
 							if (key === "tagName" || key === "innerHTML" || key === "__node__") {
 								continue;
 							}
 							if (customTagNodeInfo.hasOwnProperty(key)) {
-								result += key + "=" + stringifyStr(customTagNodeInfo[key])+" ";
+								result += key + "=" + stringifyStr(customTagNodeInfo[key]) + " ";
 							}
 						}
 						return result;
-					});//.replace(/\s\=\"\"/g,"");//浏览器自动补全属性
-					customTagCode = customTagCode.replace(/\$\{([\w\W]+?)\}/g, function(matchStr, attributeName) {
+					}); //.replace(/\s\=\"\"/g,"");//浏览器自动补全属性
+					// console.log(customTagCode);
+					var attrNameList = [];
+					for (var _name in customTagNodeInfo) {
+						if (_name === "tagName" || _name === "innerHTML" || _name === "__node__") {
+							continue;
+						}
+						attrNameList.push(_name);
+					}
+					customTagCode = customTagCode.replace(/\$\{([\w\W]+?)\}\=\"\"|\$\{([\w\W]+?)\}/g, function(matchStr, x, attributeName) {
+						attributeName || (attributeName = x); //两个匹配任选一个
+						var instruction_type = attributeName.charAt(1);
+						debugger
+						if (/\-|\+/.test(instruction_type)) {
+							var instruction_handle = custom_instructions[attributeName.charAt(0) + instruction_type];
+							if (instruction_handle) {
+								return instruction_handle(customTagNodeInfo, attributeName.substr(2), attrNameList); // ? customTagNodeInfo[attributeName] : "";
+							}
+						}
 						return customTagNodeInfo[attributeName] || "";
 					});
 				}
@@ -4168,10 +4271,10 @@ V.rt("custom_tag", function(handle, index, parentHandle) {
 				var module = V.customTagModules[customTagCode] || (V.customTagModules[customTagCode] = jSouper.parseStr(customTagCode, module_id));
 				var modulesInit = V.modulesInit[module_id];
 				var vmInit = V.customTagsInit[customTagName];
-				if (modulesInit||vmInit) {
+				if (modulesInit || vmInit) {
 					V.modulesInit[module_id] = function(vm) {
-						modulesInit&&modulesInit.call(customTagNodeInfo, vm, customTagNodeInfo.__node__);
-						vmInit&&vmInit.call(customTagNodeInfo, vm, customTagNodeInfo.__node__);
+						modulesInit && modulesInit.call(customTagNodeInfo, vm, customTagNodeInfo.__node__);
+						vmInit && vmInit.call(customTagNodeInfo, vm, customTagNodeInfo.__node__);
 					}
 				}
 				//解锁
@@ -5083,13 +5186,17 @@ V.ra(function(attrKey) {
     return _AttributeHandleEvent.dir;
 })
 
-function eventFireElementEvent (key, currentNode, attrVM, vi /*, dm_id*/ ,handle, triggerTable) {
-	var elementEventName = key.replace("ele-","");
+function eventFireElementEvent(key, currentNode, attrVM, vi /*, dm_id*/ , handle, triggerTable) {
+	var elementEventName = key.replace("ele-", "").split("-").shift();
+	//属性不支持大写，转化成峰驼式
+	elementEventName = elementEventName.replace(/\_(\w)/g, function(matchStr, _char ) {
+		return _char.toUpperCase();
+	});
 	var attrOuter = _getAttrOuter(attrVM);
-	if (typeof currentNode[elementEventName] === "function"&&attrOuter) {
-		currentNode[elementEventName]();
+	if (typeof currentNode[elementEventName] === "function" && attrOuter) {
+		currentNode[elementEventName](attrOuter);
 	}
-}
+};
 //触发元素的原生函数，比如input.foucs()
 V.ra(function(attrKey) {
 	return attrKey.indexOf("ele-") === 0;
