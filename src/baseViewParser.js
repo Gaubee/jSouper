@@ -6,6 +6,7 @@
 // DoubleQuotedString = /"(?:\.|(\\\")|[^\""\n])*"/g, //双引号字符串
 // SingleQuotedString = /'(?:\.|(\\\')|[^\''\n])*'/g, //单引号字符串
 var QuotedString = /"(?:\.|(\\\")|[^\""\n])*"|'(?:\.|(\\\')|[^\''\n])*'/g, //引号字符串
+    // TemplateString = /`([\s\S]*?)`/g, //模板字符串
     ScriptNodeString = /<script[^>]*>([\s\S]*?)<\/script>/gi,
     StyleNodeString = /<style[^>]*>([\s\S]*?)<\/style>/gi;
 // XmpNodeString = /<xmp[^>]*>([\s\S]*?)<\/xmp>/gi,
@@ -46,6 +47,7 @@ var _string_placeholder = {
      * 将模板语法解析成数组节点
      */
     parseRule = function(str) {
+        if (str.indexOf("function")!==-1) {debugger};
         var _handle_type_tagName;
         var expression_ph = _placeholder("json");
         var expression_strs = [];
@@ -121,6 +123,7 @@ var _string_placeholder = {
     V = {
         prefix: "bind-",
         namespace: "fix:",
+        stringifyStr:stringifyStr,
         // _currentParsers: [],
         _nodeTree: function(htmlStr) {
             var _shadowBody = fragment( /*"body"*/ ); //$.D.cl(shadowBody);
@@ -134,6 +137,7 @@ var _string_placeholder = {
 
             htmlStr = _string_placeholder.save(QuotedString, htmlStr);
             htmlStr = _string_placeholder.save(ScriptNodeString, htmlStr);
+            // htmlStr = _string_placeholder.save(TemplateString, htmlStr);
             htmlStr = _string_placeholder.save(StyleNodeString, htmlStr);
 
             //为无命名空间的标签加上前缀
@@ -150,6 +154,7 @@ var _string_placeholder = {
 
             //回滚字符串与style、script、XMP标签
             htmlStr = _string_placeholder.release(StyleNodeString, htmlStr);
+            // htmlStr = _string_placeholder.release(TemplateString, htmlStr);
             htmlStr = _string_placeholder.release(ScriptNodeString, htmlStr);
             htmlStr = _string_placeholder.release(QuotedString, htmlStr);
 
@@ -379,6 +384,7 @@ var Expression = {
         try {
             foo = Function(build_str)()
         } catch (e) {
+            debugger
             console.group('expression error:');
             console.error(expression);
             console.error(e.message);
@@ -413,15 +419,29 @@ var _build_expression = function(expression) {
     //TODO:引入heightline的解析方式
     var _build_str;
     var string_sets = [];
+    var template_sets = [];
     var varsSet = [];
     var varsMap = {};
     expression = $.trim(expression);
+
+    // //首先将模板字符串进行特殊解析
+    // var result = expression.replace(TemplateString, function(matchTpl) {
+    //     if (!varsMap.hasOwnProperty(matchTpl)) {
+    //         varsMap[matchTpl] = $TRUE;
+    //         $.p(varsSet, matchTpl);
+    //     }
+    //     return "vm.getSmart("+stringifyStr(matchTpl)+")";
+    // });
     //备份字符串，避免解析
     var result = expression.replace(QuotedString, function(matchStr) {
-        var str_ph = _placeholder("_s");
         $.p(string_sets, matchStr);
-        return "@";
+        return "@1";
     });
+    // //备份模板字符串，替换成正常对象
+    // var result = result.replace(TemplateString, function(matchTpl, tpl_content) {
+    //     $.p(template_sets, tpl_content);
+    //     return "@2";
+    // });
     //解析表达式中的对象
     result = result.replace(_obj_get_reg, function(matchVar) {
         if (!_const_obj[matchVar] && matchVar.indexOf("window.")) {
@@ -433,10 +453,15 @@ var _build_expression = function(expression) {
         }
         return matchVar;
     });
+    // //回滚备份的模板
+    // result = result.replace(/\@2/g, function(tpl_ph) {
+    //     return template_sets.shift();
+    // });
     //回滚备份的字符串
-    result = result.replace(/\@/g, function() {
+    result = result.replace(/\@1/g, function() {
         return string_sets.shift();
     });
+    // console.log(result);
     _build_str = "return function(vm){try{return [" + result + "]}catch(e){/*debugger;var c=window.console;if(c){c.error(e);}*/return [];}}"
         // console.dir(_build_str);
     return Expression.set(expression, _build_str, varsSet);

@@ -435,7 +435,7 @@ $.E(_allEventNames, function(eventName) {
  * 为ViewModel拓展proxymodel代理类的功能
  */
 
-$.E(["shelter", "set", "get"], function(handleName) {
+$.E(["shelter", "set", "get"/*, "getSmart"*/], function(handleName) {
     var handle = __ProxyModelProto__[handleName];
     __ViewModelProto__[handleName] = function() {
         var self = this;

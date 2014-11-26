@@ -22,7 +22,7 @@ function registerHandle(handleName, handleFun) {
 		endCommentId = argumentsIdSet[argumentsIdSet.length-2]
 		trigger = {
 			// key:"",//default key === ""
-			key:expression.keys,
+			key:expression.keys.length?expression.keys:".",
 			bubble: true,
 			event: function(NodeList_of_ViewModel, model, /*triggerBy,*/ isAttr, viewModel_ID) {
 				var startCommentNode = NodeList_of_ViewModel[beginCommentId].currentNode,

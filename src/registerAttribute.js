@@ -1,32 +1,32 @@
 //by RubyLouvre(司徒正美)
 //setAttribute bug:http://www.iefans.net/ie-setattribute-bug/
 var IEfix = {
-    acceptcharset: "acceptCharset",
-    accesskey: "accessKey",
-    allowtransparency: "allowTransparency",
-    bgcolor: "bgColor",
-    cellpadding: "cellPadding",
-    cellspacing: "cellSpacing",
-    "class": "className",
-    colspan: "colSpan",
-    // checked: "defaultChecked",
-    selected: "defaultSelected",
-    "for": "htmlFor",
-    frameborder: "frameBorder",
-    hspace: "hSpace",
-    longdesc: "longDesc",
-    maxlength: "maxLength",
-    marginwidth: "marginWidth",
-    marginheight: "marginHeight",
-    noresize: "noResize",
-    noshade: "noShade",
-    readonly: "readOnly",
-    rowspan: "rowSpan",
-    tabindex: "tabIndex",
-    valign: "vAlign",
-    vspace: "vSpace",
-    DOMContentLoaded: "readystatechange"
-},
+        acceptcharset: "acceptCharset",
+        accesskey: "accessKey",
+        allowtransparency: "allowTransparency",
+        bgcolor: "bgColor",
+        cellpadding: "cellPadding",
+        cellspacing: "cellSpacing",
+        "class": "className",
+        colspan: "colSpan",
+        // checked: "defaultChecked",
+        selected: "defaultSelected",
+        "for": "htmlFor",
+        frameborder: "frameBorder",
+        hspace: "hSpace",
+        longdesc: "longDesc",
+        maxlength: "maxLength",
+        marginwidth: "marginWidth",
+        marginheight: "marginHeight",
+        noresize: "noResize",
+        noshade: "noShade",
+        readonly: "readOnly",
+        rowspan: "rowSpan",
+        tabindex: "tabIndex",
+        valign: "vAlign",
+        vspace: "vSpace",
+        DOMContentLoaded: "readystatechange"
+    },
     /*
 The full list of boolean attributes in HTML 4.01 (and hence XHTML 1.0) is (with property names where they differ in case): 
 
@@ -118,14 +118,26 @@ draggable
                 var currentNode = NodeList[handle.id].currentNode,
                     viewModel = V._instances[viewModel_ID];
                 if (currentNode) {
-                	//绑定数据域
+                    //绑定数据域
                     attrViewModel.model = model;
                     //更新所有节点
                     $.E(attrViewModel._triggers, function(key) { //touchoff all triggers
                         attrViewModel.touchOff(key);
                     });
-                    _attributeHandle(attrKey, currentNode, attrViewModel/*.topNode()*/, viewModel, /*model.id,*/ handle, triggerTable);
+
+                    _attributeHandle(attrKey, currentNode, attrViewModel /*.topNode()*/ , viewModel, /*model.id,*/ handle, triggerTable);
                     // model.remove(attrViewModel); //?
+
+                    //触发onporpertychange事件
+                    var _attrChangeListenerKey = currentNode[_attrKeyListenerPlaceholder]
+                    if (_attrChangeListenerKey) {
+                        var eventMap = attrKeyListenerEvent[_attrChangeListenerKey];
+                        var propertyChangeEvents = eventMap && eventMap[attrKey];
+                        $.isA(propertyChangeEvents)&&$.E(propertyChangeEvents,function (handle) {
+                            handle.call(currentNode, attrKey, viewModel);
+                        });
+                    }
+
                 }
             }
         }
@@ -140,3 +152,17 @@ draggable
         // node.removeAttribute(baseAttrKey);
         //}
     };
+
+/*
+ * OnPropertyChange
+ */
+//用于模拟绑定onpropertychange，只能用于通过jSouper触发属性变动的对象
+var _attrKeyListenerPlaceholder = _placeholder("attr_lister");
+var attrKeyListenerEvent = {};
+function bindElementPropertyChange(ele, attrKey, handle){
+    var _attrChangeListenerKey = _placeholder("attr_lister_key")
+    ele[_attrKeyListenerPlaceholder] = _attrChangeListenerKey;
+    var eventMap = attrKeyListenerEvent[_attrChangeListenerKey]||(attrKeyListenerEvent[_attrChangeListenerKey] = {});
+    var propertyChangeEvents = eventMap[attrKey]||(eventMap[attrKey] = []);
+    propertyChangeEvents.push(handle);
+}

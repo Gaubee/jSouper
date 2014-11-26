@@ -34,7 +34,7 @@ function ProxyModel(entrust, model) {
     // if (model) {
     model instanceof Model || (model = Model(model));
     self.follow(model)
-    // }
+        // }
 };
 
 var __ProxyModelProto__ = ProxyModel.prototype = {
@@ -131,10 +131,10 @@ var __ProxyModelProto__ = ProxyModel.prototype = {
         if (model) {
             //递归重建
             $.E(self._childProxyModel, function(proxyModel) {
-                //为“被收留者”重新定位到正确的Model，并重定位触发器位置
-                proxyModel.follow(model, proxyModel._prefix);
-            })
-            //重新定位触发器位置
+                    //为“被收留者”重新定位到正确的Model，并重定位触发器位置
+                    proxyModel.follow(model, proxyModel._prefix);
+                })
+                //重新定位触发器位置
             $.E(self._smartTriggers, function(smartTrigger) {
                 smartTrigger.rebuild();
             });
@@ -237,7 +237,7 @@ $.E([ /*"set", "get", */ "touchOff"], function(handleName) {
         }
         return result
     };
-    var _get = __ProxyModelProto__.get = function(key) {
+    var _get = __ProxyModelProto__.get = function(key, key_map) { //key_map用来替换key节点的匹配对象
         var self = this,
             args = arguments /*$.s(arguments)*/ ,
             model = self.model,
@@ -266,6 +266,34 @@ $.E([ /*"set", "get", */ "touchOff"], function(handleName) {
         }
         return result;
     };
+    // //多种模式
+    // //1. 字符串，用来模糊匹配className `icon-hehe` => "icon-hehe"
+    // //2. hash对象，用来混合对象 a[hehe] => a[vm.get("hehe")]
+    // //3. 普通匹配，最优先
+    // var _smartGet = __ProxyModelProto__.getSmart = function(key) {
+    //     var self = this,
+    //         args = arguments /*$.s(arguments)*/ ,
+    //         model = self.model,
+    //         result;
+    //     if (model) {
+    //         if (args.length) {
+    //             result = self.get(key);
+    //             if (!result) {
+    //                 var _pls_map = {};
+    //                 key = key.replace(/\[([\s\S]*?)\]/g, function(matchStr, hashKey, index) {
+    //                     var _is_end = (hashKey.length + index.length) == key.length;
+    //                     var _pl = _placeholder("");
+    //                     _pls_map[_pl] = String(self.getSmart(hashKey));
+    //                     return "." + _pl + _is_end ? "" : ".";
+    //                 });
+    //                 result = self.get(key, _pls_map);
+    //             }
+    //         } else {
+    //             result = model.get();
+    //         }
+    //     }
+    //     return result || key;
+    // }
 }());
 /*
  * 增加ProxyModel的数据操作的功能

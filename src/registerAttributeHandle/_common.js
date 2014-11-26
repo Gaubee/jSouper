@@ -57,6 +57,7 @@ var _AttributeHandleEvent = {
         currentNode.setAttribute(key, attrOuterEvent);
     },
     style: function(key, currentNode, attrVM) {
+        debugger
         var attrOuter = _getAttrOuter(attrVM);
         currentNode.style.cssText = attrOuter;
     },

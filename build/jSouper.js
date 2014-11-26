@@ -1887,7 +1887,7 @@ function ProxyModel(entrust, model) {
     // if (model) {
     model instanceof Model || (model = Model(model));
     self.follow(model)
-    // }
+        // }
 };
 
 var __ProxyModelProto__ = ProxyModel.prototype = {
@@ -1984,10 +1984,10 @@ var __ProxyModelProto__ = ProxyModel.prototype = {
         if (model) {
             //递归重建
             $.E(self._childProxyModel, function(proxyModel) {
-                //为“被收留者”重新定位到正确的Model，并重定位触发器位置
-                proxyModel.follow(model, proxyModel._prefix);
-            })
-            //重新定位触发器位置
+                    //为“被收留者”重新定位到正确的Model，并重定位触发器位置
+                    proxyModel.follow(model, proxyModel._prefix);
+                })
+                //重新定位触发器位置
             $.E(self._smartTriggers, function(smartTrigger) {
                 smartTrigger.rebuild();
             });
@@ -2090,7 +2090,7 @@ $.E([ /*"set", "get", */ "touchOff"], function(handleName) {
         }
         return result
     };
-    var _get = __ProxyModelProto__.get = function(key) {
+    var _get = __ProxyModelProto__.get = function(key, key_map) { //key_map用来替换key节点的匹配对象
         var self = this,
             args = arguments /*$.s(arguments)*/ ,
             model = self.model,
@@ -2119,6 +2119,34 @@ $.E([ /*"set", "get", */ "touchOff"], function(handleName) {
         }
         return result;
     };
+    // //多种模式
+    // //1. 字符串，用来模糊匹配className `icon-hehe` => "icon-hehe"
+    // //2. hash对象，用来混合对象 a[hehe] => a[vm.get("hehe")]
+    // //3. 普通匹配，最优先
+    // var _smartGet = __ProxyModelProto__.getSmart = function(key) {
+    //     var self = this,
+    //         args = arguments /*$.s(arguments)*/ ,
+    //         model = self.model,
+    //         result;
+    //     if (model) {
+    //         if (args.length) {
+    //             result = self.get(key);
+    //             if (!result) {
+    //                 var _pls_map = {};
+    //                 key = key.replace(/\[([\s\S]*?)\]/g, function(matchStr, hashKey, index) {
+    //                     var _is_end = (hashKey.length + index.length) == key.length;
+    //                     var _pl = _placeholder("");
+    //                     _pls_map[_pl] = String(self.getSmart(hashKey));
+    //                     return "." + _pl + _is_end ? "" : ".";
+    //                 });
+    //                 result = self.get(key, _pls_map);
+    //             }
+    //         } else {
+    //             result = model.get();
+    //         }
+    //     }
+    //     return result || key;
+    // }
 }());
 /*
  * 增加ProxyModel的数据操作的功能
@@ -2201,7 +2229,6 @@ __ProxyModelProto__.mix = function(key_of_obj) {
         return result;
     }
 }
-
 // make an Object-Constructor to Model-Extend-Object-Constructor
 var _modelExtend = Model.extend = function(extendsName, extendsObjConstructor) {
     if (_modelExtend.hasOwnProperty(extendsName)) {
@@ -2232,32 +2259,32 @@ _modelExtend.get = function(exObjProto) {
 //by RubyLouvre(司徒正美)
 //setAttribute bug:http://www.iefans.net/ie-setattribute-bug/
 var IEfix = {
-    acceptcharset: "acceptCharset",
-    accesskey: "accessKey",
-    allowtransparency: "allowTransparency",
-    bgcolor: "bgColor",
-    cellpadding: "cellPadding",
-    cellspacing: "cellSpacing",
-    "class": "className",
-    colspan: "colSpan",
-    // checked: "defaultChecked",
-    selected: "defaultSelected",
-    "for": "htmlFor",
-    frameborder: "frameBorder",
-    hspace: "hSpace",
-    longdesc: "longDesc",
-    maxlength: "maxLength",
-    marginwidth: "marginWidth",
-    marginheight: "marginHeight",
-    noresize: "noResize",
-    noshade: "noShade",
-    readonly: "readOnly",
-    rowspan: "rowSpan",
-    tabindex: "tabIndex",
-    valign: "vAlign",
-    vspace: "vSpace",
-    DOMContentLoaded: "readystatechange"
-},
+        acceptcharset: "acceptCharset",
+        accesskey: "accessKey",
+        allowtransparency: "allowTransparency",
+        bgcolor: "bgColor",
+        cellpadding: "cellPadding",
+        cellspacing: "cellSpacing",
+        "class": "className",
+        colspan: "colSpan",
+        // checked: "defaultChecked",
+        selected: "defaultSelected",
+        "for": "htmlFor",
+        frameborder: "frameBorder",
+        hspace: "hSpace",
+        longdesc: "longDesc",
+        maxlength: "maxLength",
+        marginwidth: "marginWidth",
+        marginheight: "marginHeight",
+        noresize: "noResize",
+        noshade: "noShade",
+        readonly: "readOnly",
+        rowspan: "rowSpan",
+        tabindex: "tabIndex",
+        valign: "vAlign",
+        vspace: "vSpace",
+        DOMContentLoaded: "readystatechange"
+    },
     /*
 The full list of boolean attributes in HTML 4.01 (and hence XHTML 1.0) is (with property names where they differ in case): 
 
@@ -2349,14 +2376,26 @@ draggable
                 var currentNode = NodeList[handle.id].currentNode,
                     viewModel = V._instances[viewModel_ID];
                 if (currentNode) {
-                	//绑定数据域
+                    //绑定数据域
                     attrViewModel.model = model;
                     //更新所有节点
                     $.E(attrViewModel._triggers, function(key) { //touchoff all triggers
                         attrViewModel.touchOff(key);
                     });
-                    _attributeHandle(attrKey, currentNode, attrViewModel/*.topNode()*/, viewModel, /*model.id,*/ handle, triggerTable);
+
+                    _attributeHandle(attrKey, currentNode, attrViewModel /*.topNode()*/ , viewModel, /*model.id,*/ handle, triggerTable);
                     // model.remove(attrViewModel); //?
+
+                    //触发onporpertychange事件
+                    var _attrChangeListenerKey = currentNode[_attrKeyListenerPlaceholder]
+                    if (_attrChangeListenerKey) {
+                        var eventMap = attrKeyListenerEvent[_attrChangeListenerKey];
+                        var propertyChangeEvents = eventMap && eventMap[attrKey];
+                        $.isA(propertyChangeEvents)&&$.E(propertyChangeEvents,function (handle) {
+                            handle.call(currentNode, attrKey, viewModel);
+                        });
+                    }
+
                 }
             }
         }
@@ -2372,6 +2411,19 @@ draggable
         //}
     };
 
+/*
+ * OnPropertyChange
+ */
+//用于模拟绑定onpropertychange，只能用于通过jSouper触发属性变动的对象
+var _attrKeyListenerPlaceholder = _placeholder("attr_lister");
+var attrKeyListenerEvent = {};
+function bindElementPropertyChange(ele, attrKey, handle){
+    var _attrChangeListenerKey = _placeholder("attr_lister_key")
+    ele[_attrKeyListenerPlaceholder] = _attrChangeListenerKey;
+    var eventMap = attrKeyListenerEvent[_attrChangeListenerKey]||(attrKeyListenerEvent[_attrChangeListenerKey] = {});
+    var propertyChangeEvents = eventMap[attrKey]||(eventMap[attrKey] = []);
+    propertyChangeEvents.push(handle);
+}
 /*
  * View constructor
  */
@@ -3225,7 +3277,7 @@ $.E(_allEventNames, function(eventName) {
  * 为ViewModel拓展proxymodel代理类的功能
  */
 
-$.E(["shelter", "set", "get"], function(handleName) {
+$.E(["shelter", "set", "get"/*, "getSmart"*/], function(handleName) {
     var handle = __ProxyModelProto__[handleName];
     __ViewModelProto__[handleName] = function() {
         var self = this;
@@ -3396,6 +3448,7 @@ CommentHandle.prototype = Handle("comment", {
 // DoubleQuotedString = /"(?:\.|(\\\")|[^\""\n])*"/g, //双引号字符串
 // SingleQuotedString = /'(?:\.|(\\\')|[^\''\n])*'/g, //单引号字符串
 var QuotedString = /"(?:\.|(\\\")|[^\""\n])*"|'(?:\.|(\\\')|[^\''\n])*'/g, //引号字符串
+    // TemplateString = /`([\s\S]*?)`/g, //模板字符串
     ScriptNodeString = /<script[^>]*>([\s\S]*?)<\/script>/gi,
     StyleNodeString = /<style[^>]*>([\s\S]*?)<\/style>/gi;
 // XmpNodeString = /<xmp[^>]*>([\s\S]*?)<\/xmp>/gi,
@@ -3436,6 +3489,7 @@ var _string_placeholder = {
      * 将模板语法解析成数组节点
      */
     parseRule = function(str) {
+        if (str.indexOf("function")!==-1) {debugger};
         var _handle_type_tagName;
         var expression_ph = _placeholder("json");
         var expression_strs = [];
@@ -3511,6 +3565,7 @@ var _string_placeholder = {
     V = {
         prefix: "bind-",
         namespace: "fix:",
+        stringifyStr:stringifyStr,
         // _currentParsers: [],
         _nodeTree: function(htmlStr) {
             var _shadowBody = fragment( /*"body"*/ ); //$.D.cl(shadowBody);
@@ -3524,6 +3579,7 @@ var _string_placeholder = {
 
             htmlStr = _string_placeholder.save(QuotedString, htmlStr);
             htmlStr = _string_placeholder.save(ScriptNodeString, htmlStr);
+            // htmlStr = _string_placeholder.save(TemplateString, htmlStr);
             htmlStr = _string_placeholder.save(StyleNodeString, htmlStr);
 
             //为无命名空间的标签加上前缀
@@ -3540,6 +3596,7 @@ var _string_placeholder = {
 
             //回滚字符串与style、script、XMP标签
             htmlStr = _string_placeholder.release(StyleNodeString, htmlStr);
+            // htmlStr = _string_placeholder.release(TemplateString, htmlStr);
             htmlStr = _string_placeholder.release(ScriptNodeString, htmlStr);
             htmlStr = _string_placeholder.release(QuotedString, htmlStr);
 
@@ -3769,6 +3826,7 @@ var Expression = {
         try {
             foo = Function(build_str)()
         } catch (e) {
+            debugger
             console.group('expression error:');
             console.error(expression);
             console.error(e.message);
@@ -3803,15 +3861,29 @@ var _build_expression = function(expression) {
     //TODO:引入heightline的解析方式
     var _build_str;
     var string_sets = [];
+    var template_sets = [];
     var varsSet = [];
     var varsMap = {};
     expression = $.trim(expression);
+
+    // //首先将模板字符串进行特殊解析
+    // var result = expression.replace(TemplateString, function(matchTpl) {
+    //     if (!varsMap.hasOwnProperty(matchTpl)) {
+    //         varsMap[matchTpl] = $TRUE;
+    //         $.p(varsSet, matchTpl);
+    //     }
+    //     return "vm.getSmart("+stringifyStr(matchTpl)+")";
+    // });
     //备份字符串，避免解析
     var result = expression.replace(QuotedString, function(matchStr) {
-        var str_ph = _placeholder("_s");
         $.p(string_sets, matchStr);
-        return "@";
+        return "@1";
     });
+    // //备份模板字符串，替换成正常对象
+    // var result = result.replace(TemplateString, function(matchTpl, tpl_content) {
+    //     $.p(template_sets, tpl_content);
+    //     return "@2";
+    // });
     //解析表达式中的对象
     result = result.replace(_obj_get_reg, function(matchVar) {
         if (!_const_obj[matchVar] && matchVar.indexOf("window.")) {
@@ -3823,10 +3895,15 @@ var _build_expression = function(expression) {
         }
         return matchVar;
     });
+    // //回滚备份的模板
+    // result = result.replace(/\@2/g, function(tpl_ph) {
+    //     return template_sets.shift();
+    // });
     //回滚备份的字符串
-    result = result.replace(/\@/g, function() {
+    result = result.replace(/\@1/g, function() {
         return string_sets.shift();
     });
+    // console.log(result);
     _build_str = "return function(vm){try{return [" + result + "]}catch(e){/*debugger;var c=window.console;if(c){c.error(e);}*/return [];}}"
         // console.dir(_build_str);
     return Expression.set(expression, _build_str, varsSet);
@@ -4254,7 +4331,6 @@ V.rt("custom_tag", function(handle, index, parentHandle) {
 					customTagCode = customTagCode.replace(/\$\{([\w\W]+?)\}\=\"\"|\$\{([\w\W]+?)\}/g, function(matchStr, x, attributeName) {
 						attributeName || (attributeName = x); //两个匹配任选一个
 						var instruction_type = attributeName.charAt(1);
-						debugger
 						if (/\-|\+/.test(instruction_type)) {
 							var instruction_handle = custom_instructions[attributeName.charAt(0) + instruction_type];
 							if (instruction_handle) {
@@ -5087,6 +5163,7 @@ var _AttributeHandleEvent = {
         currentNode.setAttribute(key, attrOuterEvent);
     },
     style: function(key, currentNode, attrVM) {
+        debugger
         var attrOuter = _getAttrOuter(attrVM);
         currentNode.style.cssText = attrOuter;
     },
@@ -5618,7 +5695,7 @@ V.ra("style", function() {
     return _isIE && _AttributeHandleEvent.style;
 })
 
-var newTemplateMatchReg = /\{\{([\w\W]+?)\}\}/g,
+var newTemplateMatchReg = V.templateRule = /\{\{([\w\W]+?)\}\}/g,
     templateHandles = {};
 $.fI(V.handles, function(handleFun, handleName) {
     var result = $TRUE
@@ -5683,7 +5760,7 @@ function registerHandle(handleName, handleFun) {
 		endCommentId = argumentsIdSet[argumentsIdSet.length-2]
 		trigger = {
 			// key:"",//default key === ""
-			key:expression.keys,
+			key:expression.keys.length?expression.keys:".",
 			bubble: true,
 			event: function(NodeList_of_ViewModel, model, /*triggerBy,*/ isAttr, viewModel_ID) {
 				var startCommentNode = NodeList_of_ViewModel[beginCommentId].currentNode,
@@ -5887,7 +5964,11 @@ var _jSouperBase = {
                 }
             }
         }
-    }())
+    }()),
+    /*
+     * 为元素绑定属性触发监听
+     */
+    onElementPropertyChange:bindElementPropertyChange
 };
 var jSouper = global.jSouper = $.c(V);
 $.fI(_jSouperBase, function(value, key) {

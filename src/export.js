@@ -161,7 +161,11 @@ var _jSouperBase = {
                 }
             }
         }
-    }())
+    }()),
+    /*
+     * 为元素绑定属性触发监听
+     */
+    onElementPropertyChange:bindElementPropertyChange
 };
 var jSouper = global.jSouper = $.c(V);
 $.fI(_jSouperBase, function(value, key) {
