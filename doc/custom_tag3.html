@@ -9,20 +9,46 @@
         }
     }
     </script>
+    <script type="text/javascript" src="ui/xmp.material_ui.js"></script>
+    <link rel="stylesheet" type="text/css" href="ui/material_ui.min.css">
 
 </head>
 
 <body>
     <div id="jSouperApp">
-        {{#if false}}
-            <xxx> 呵呵1 </xxx>
-        {{/if}}
-            <xxx> 呵呵2 </xxx>
-        {{#if true}}
-            <xxx> 呵呵3 </xxx>
-        {{/if}}
-        <xmp type="tag" name="xxx">
-            <div>${innerHTML}</div>
+        <android:icon type='editor-insert-emoticon'></android:icon>
+        <div>
+            商家登录密码{{#if $Cache.newbus.password}}（强度：
+                {{#if $Cache.newbus.password.length>5}}
+                    强<android:icon type='editor-insert-emoticon'></android:icon>
+                {{/if}}）
+            {{/if}}
+        </div>
+
+        <xmp type="tag" name="android:icon">
+            <!-- <i class="icon-${type}"></i> -->
+            <div class="android-icon">
+            
+                <span class="materail-icon-contain" type="${type}">i</span>
+                <div class="label-contain">
+                ${innerHTML}
+                </div>
+            </div>
+        </xmp>
+        <xmp type="tag" name="android:input">
+            <div class="android-input">
+                <div class="inherit-wrap">
+                    <!-- 移除placeholder的绑定放到最后，确保最后触发 -->
+                    <!-- <input required ${__all_attrs__} ${--placeholder}  > -->
+
+                    <!-- 提升效率，不用placeholder来减少绑定 -->
+                    <input required ${__all_attrs__} >
+                    <inputPlaceholder>${label}</inputPlaceholder>
+                    <inputHighlight></inputHighlight>
+                    <inputBar></inputBar>
+                    <inputDescription>${description}</inputDescription>
+                </div>
+            </div>
         </xmp>
     </div>
 </body>

@@ -86,7 +86,6 @@ V.rt("custom_tag", function(handle, index, parentHandle) {
 		// cache_tpl_name:$UNDEFINED,
 		key: ".",
 		event: function(NodeList_of_ViewModel, proxyModel, /*eventTrigger,*/ isAttr, viewModel_ID) {
-			console.log(viewModel_ID,id);
 			var AllCustomTagVM = V._instances[viewModel_ID]._CVI;
 			var customTagVm = AllCustomTagVM[id];
 			if (!customTagVm) {
@@ -148,20 +147,19 @@ V.rt("custom_tag", function(handle, index, parentHandle) {
 						customTagVm = AllCustomTagVM[id] = vm;
 					},
 					callback: function(vm) {
+						//在继承数据前，先显示layoutViewModel
+						// console.log("_display_args:", _display_args);
+						var _display_args = _customTag_display_arguments[id];
+						if (_display_args) {
+							_customTag_display.apply(handle, _display_args);
+						} else if (customTagVm && !customTagVm._canRemoveAble) { //canInsertAble
+							//默认显示，因为触发模式是一次性的，所以无需顾虑
+							customTagVm.insert(NodeList_of_ViewModel[comment_layout_id].currentNode);
+						}
+						//然后再把display完全交给_customTag_display来处理，来触发隐藏还是显示
 						proxyModel.shelter(vm, "");
 					}
 				});
-			}
-			//显示layoutViewModel
-			// if (customTagVm && !customTagVm._canRemoveAble) { //canInsertAble
-			// 	customTagVm.insert(NodeList_of_ViewModel[comment_layout_id].currentNode);
-			// }
-			var _display_args = _customTag_display_arguments[id];
-			if (_display_args) {
-				_customTag_display.apply(handle, _display_args);
-			}else if(customTagVm && !customTagVm._canRemoveAble){//canInsertAble
-				//默认显示，因为触发模式是一次性的，所以无需顾虑
-				customTagVm.insert(NodeList_of_ViewModel[comment_layout_id].currentNode);
 			}
 		}
 	}
