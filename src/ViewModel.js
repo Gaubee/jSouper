@@ -109,14 +109,14 @@ function ViewModel(handleNodeTree, NodeList, triggerTable, model) {
  */
 //_buildSmartTriggers接口，
 ViewModel._buildSmartTriggers = function(viewModel, sKey) {
-    var smartTriggers = [];
-    smartTriggers._ = {};
-    $.E(viewModel._triggers, function(sKey) {
-        $.p(smartTriggers, smartTriggers._[sKey] = ViewModel._buildSmart(viewModel, sKey));
-    });
-    return smartTriggers;
-}
-//VM通用的重建接口
+        var smartTriggers = [];
+        smartTriggers._ = {};
+        $.E(viewModel._triggers, function(sKey) {
+            $.p(smartTriggers, smartTriggers._[sKey] = ViewModel._buildSmart(viewModel, sKey));
+        });
+        return smartTriggers;
+    }
+    //VM通用的重建接口
 var _smartTriggerHandle_rebuild = function(forceUpdate) {
     var smartTrigger = this;
     var TEMP = smartTrigger.TEMP;
@@ -136,7 +136,7 @@ var _smartTriggerHandle_rebuild = function(forceUpdate) {
             // finallyRun.register(viewModel._id + TEMP.sK, function() {
             //因为Model是惰性生成的，因此在Model存在的情况下已经可以进行更新DOM节点了
             smartTrigger.event(topGetter._triggerKeys)
-            // });
+                // });
         }
     }
     if (forceUpdate && topGetter) {
@@ -435,7 +435,7 @@ $.E(_allEventNames, function(eventName) {
  * 为ViewModel拓展proxymodel代理类的功能
  */
 
-$.E(["shelter", "set", "get"/*, "getSmart"*/], function(handleName) {
+$.E(["shelter", "set", "get" /*, "getSmart"*/ ], function(handleName) {
     var handle = __ProxyModelProto__[handleName];
     __ViewModelProto__[handleName] = function() {
         var self = this;
@@ -443,3 +443,38 @@ $.E(["shelter", "set", "get"/*, "getSmart"*/], function(handleName) {
         return handle.apply(model, arguments);
     }
 });
+$.E(["filter", "push", "pop"], function(handleName) {
+    var handle = __ProxyModelProto__[handleName];
+    __ViewModelProto__[handleName] = function(key) {
+        var self = this;
+        var model = self.model;
+        if (arguments.length <= 1) {
+            key = ""
+        }
+        var arr = model.get(key);
+        if (!$.isA(arr)) {
+            //不是数组的话直接覆盖
+            model.set(key, arr ? $.s(arr) : []);
+        }
+        return handle.apply(model, arguments);
+    }
+});
+
+__ViewModelProto__.concat = function(key, items) {
+    var self = this;
+    var model = self.model;
+    if (arguments.length <= 1) {
+        key = "";
+        items = key;
+    }
+    var arr = model.get(key);
+    if (!$.isA(arr)) {
+        arr = arr ? $.s(arr) : [];
+        model.set(key, []);
+    }
+    if (!$.isA(items)) {
+        items = items ? $.s(items) : [];
+    }
+    arr.push.apply(arr, items);
+    return model.set(key, arr);
+}

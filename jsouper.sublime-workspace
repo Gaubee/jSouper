@@ -4,6 +4,58 @@
 		"selected_items":
 		[
 			[
+				"m",
+				"model"
+			],
+			[
+				"fun",
+				"fun	Function"
+			],
+			[
+				"event",
+				"eventMap"
+			],
+			[
+				"attrKey",
+				"attrKeyListenerEvent"
+			],
+			[
+				"funcion",
+				"Function"
+			],
+			[
+				"html",
+				"htmlStr"
+			],
+			[
+				"ma",
+				"matchTpl"
+			],
+			[
+				"_p",
+				"_placeholder"
+			],
+			[
+				"hash",
+				"hashKey"
+			],
+			[
+				"string",
+				"stringifyStr"
+			],
+			[
+				"mat",
+				"matchStr"
+			],
+			[
+				"attr",
+				"attributeName"
+			],
+			[
+				"key",
+				"keyup"
+			],
+			[
 				"mod",
 				"modulesInit"
 			],
@@ -62,10 +114,6 @@
 			[
 				"pro",
 				"prototype"
-			],
-			[
-				"attr",
-				"attrKey"
 			],
 			[
 				"class",
@@ -210,10 +258,6 @@
 			[
 				"data",
 				"data_item"
-			],
-			[
-				"key",
-				"keys"
 			],
 			[
 				"con",
@@ -470,102 +514,16 @@
 			[
 				"sc",
 				"scroll"
-			],
-			[
-				"op",
-				"opacity"
-			],
-			[
-				"bac",
-				"background-color"
-			],
-			[
-				"wi",
-				"width"
-			],
-			[
-				"bind",
-				"bind-src"
-			],
-			[
-				"coll",
-				"collect_goods_info_list"
-			],
-			[
-				"true",
-				"TRUE"
-			],
-			[
-				"im",
-				"imgNode"
-			],
-			[
-				"cus",
-				"customTags"
-			],
-			[
-				"_bui",
-				"_buildCustomTags"
-			],
-			[
-				"j",
-				"jSouper"
-			],
-			[
-				"scr",
-				"scriptNode"
 			]
 		]
 	},
 	"buffers":
 	[
 		{
-			"file": "src/registerAttributeHandle/_common.js",
+			"file": "src/Model.v5.core.js",
 			"settings":
 			{
-				"buffer_size": 4710,
-				"line_ending": "Windows"
-			}
-		},
-		{
-			"contents": "Searching 160 files for \"_booleanFalseRegExp\" (case sensitive)\n\nE:\\Git\\HTML-ViewParse\\src\\$.js:\n   65      //在HTML解析时空对象输出的字符串值\n   66      ///false|undefined|null|NaN/\n   67:     _booleanFalseRegExp = function(str) {\n   68          if (_emptyRegExp[String($.trim(str))]) {\n   69              return \"\";\n\nE:\\Git\\HTML-ViewParse\\src\\registerAttributeHandle\\_common.js:\n   72      },\n   73      bool: function(key, currentNode, attrVM) {\n   74:         var attrOuter = _booleanFalseRegExp(_getAttrOuter(attrVM));\n   75          if (attrOuter) {\n   76              //readonly等属性是要用node.readOnly，大小写不同，所以用setAttribute比较合理\n   ..\n  103      var __radio = _AttributeHandleEvent.radio;\n  104      _AttributeHandleEvent.radio = function(key, currentNode, attrVM) {\n  105:         var attrOuter = _booleanFalseRegExp(_getAttrOuter(attrVM));\n  106          if (attrOuter === currentNode.value) {\n  107              currentNode.defaultChecked = attrOuter;\n  ...\n  112      }\n  113      _AttributeHandleEvent.checked = function(key, currentNode, attrVM) {\n  114:         var attrOuter = _booleanFalseRegExp(_getAttrOuter(attrVM));\n  115          if (attrOuter) {\n  116              currentNode.defaultChecked = attrOuter;\n\nE:\\Git\\HTML-ViewParse\\src\\registerTrigger\\if.js:\n   48              conditionVal && (conditionVal = conditionVal.valueOf());\n   49              //转化为Boolean值\n   50:             if (!_booleanFalseRegExp(conditionVal)) {\n   51                  conditionVal = false;\n   52              }else{\n\n5 matches across 3 files\n",
-			"settings":
-			{
-				"buffer_size": 1524,
-				"line_ending": "Windows",
-				"name": "Find Results",
-				"scratch": true
-			}
-		},
-		{
-			"file": "src/registerAttributeHandle/input.js",
-			"settings":
-			{
-				"buffer_size": 5170,
-				"line_ending": "Windows"
-			}
-		},
-		{
-			"file": "src/registerAttributeHandle/ele.js",
-			"settings":
-			{
-				"buffer_size": 445,
-				"line_ending": "Windows"
-			}
-		},
-		{
-			"file": "src/registerTrigger/custom_tag.js",
-			"settings":
-			{
-				"buffer_size": 2896,
-				"line_ending": "Windows"
-			}
-		},
-		{
-			"file": "src/registerAttributeHandle/event.js",
-			"settings":
-			{
-				"buffer_size": 1336,
+				"buffer_size": 18410,
 				"line_ending": "Windows"
 			}
 		}
@@ -696,54 +654,80 @@
 	"expanded_folders":
 	[
 		"/E/Git/HTML-ViewParse",
-		"/E/Git/HTML-ViewParse/src/registerAttributeHandle",
+		"/E/Git/HTML-ViewParse/build",
+		"/E/Git/HTML-ViewParse/src",
 		"/E/Git/HTML-ViewParse/src/registerTrigger"
 	],
 	"file_history":
 	[
-		"/E/Git/HTML-ViewParse/src/$.js",
-		"/E/Git/HTML-ViewParse/src/registerAttributeHandle/status.v2.js",
-		"/E/Git/HTML-ViewParse/.demo/.test/.status.html",
+		"/E/Git/HTML-ViewParse/src/registerAttribute.js",
 		"/E/Git/HTML-ViewParse/src/registerTrigger/custom_tag.js",
 		"/E/Git/HTML-ViewParse/src/baseViewParser.js",
-		"/E/Git/HTML-ViewParse/Gruntfile.js",
-		"/E/Git/HTML-ViewParse/build/.debug.observer.js",
-		"/E/Git/HTML-ViewParse/src/Model.v5.Proxy.js",
-		"/E/Git/HTML-ViewParse/src/registerTrigger/if.js",
 		"/E/Git/HTML-ViewParse/src/export.js",
-		"/E/Git/HTML-ViewParse/src/registerAttribute.js",
-		"/E/Git/HTML-ViewParse/src/registerTrigger/each.js",
-		"/E/Git/HTML-ViewParse/src/Model.v5.core.js",
+		"/E/Git/HTML-ViewParse/src/ViewModel.js",
+		"/E/Git/HTML-ViewParse/src/.highlight/JavaScript.sublime-package",
+		"/E/Git/HTML-ViewParse/ui/metro/jsouper-ui/less/scroll.less",
+		"/E/Git/HTML-ViewParse/node_modules/grunt/node_modules/js-yaml/node_modules/argparse/examples/sub_commands.js",
+		"/E/Git/HTML-ViewParse/.demo/.test/scope.html",
+		"/E/Git/HTML-ViewParse/src/registerHandle/custom_tag.js",
+		"/E/Git/HTML-ViewParse/node_modules/grunt/custom-gruntfile.js",
+		"/E/Git/HTML-ViewParse/node_modules/grunt-contrib-nodeunit/node_modules/nodeunit/deps/ejs/node_modules/expresso/deps/jscoverage/tests/store-bad-response-headers.sh",
+		"/E/Git/HTML-ViewParse/.demo/.test/base3.html",
+		"/E/Git/HTML-ViewParse/.demo/.test/base2.html",
+		"/E/Git/HTML-ViewParse/.demo/.test/base1.html",
+		"/E/Git/HTML-ViewParse/doc/base.html",
+		"/E/Git/HTML-ViewParse/node_modules/grunt/test/fixtures/files/dist/built-a.js",
 		"/E/Git/HTML-ViewParse/src/registerAttributeHandle/boolean.js",
+		"/E/Git/HTML-ViewParse/src/View.js",
+		"/E/Git/HTML-ViewParse/.idea/vcs.xml",
+		"/E/Git/HTML-ViewParse/src/registerAttributeHandle/event.js",
+		"/E/Git/CSSseletor/CSS3-Seletor.png",
+		"/E/Git/HTML-ViewParse/Gruntfile.js",
+		"/E/Git/HTML-ViewParse/build/jSouper.js",
+		"/E/Git/HTML-ViewParse/src/event.js",
+		"/E/Git/HTML-ViewParse/src/registerAttributeHandle/ele.js",
+		"/E/Git/HTML-ViewParse/src/registerAttributeHandle/input.js",
+		"/E/Git/HTML-ViewParse/src/Model.v5.base.js",
+		"/E/Git/HTML-ViewParse/src/Model.v5.Proxy.js",
+		"/E/Git/HTML-ViewParse/src/registerTrigger/getData.js",
+		"/E/Git/HTML-ViewParse/src/Handle.js",
+		"/E/Git/HTML-ViewParse/src/$.js",
+		"/E/Git/HTML-ViewParse/src/templateParse.v3.js",
 		"/E/Git/HTML-ViewParse/src/registerAttributeHandle/_common.js",
 		"/E/Git/HTML-ViewParse/src/registerHandle.js",
-		"/E/Git/HTML-ViewParse/src/registerTrigger/getData.js",
-		"/E/Git/HTML-ViewParse/src/View.js",
+		"/E/Git/HTML-ViewParse/doc/cutom_tag.html",
+		"/E/Git/HTML-ViewParse/doc/caller.html",
+		"/E/Git/HTML-ViewParse/src/json.js",
+		"/E/Git/HTML-ViewParse/jsouper.sublime-project",
+		"/E/Git/HTML-ViewParse/node_modules/grunt/node_modules/glob/test/pause-resume.js",
+		"/E/Git/HTML-ViewParse/package.json",
+		"/E/Git/HTML-ViewParse/node_modules/grunt-contrib-concat/docs/concat-overview.md",
+		"/E/Git/HTML-ViewParse/node_modules/grunt-contrib-nodeunit/node_modules/nodeunit/deps/ejs/node_modules/expresso/deps/jscoverage/tests/destination-is-existing-directory.expected.err",
+		"/E/Git/HTML-ViewParse/node_modules/grunt-contrib-connect/node_modules/connect/node_modules/formidable/test/fixture/js/special-chars-in-filename.js",
+		"/E/Git/HTML-ViewParse/src/registerTrigger/each.js",
+		"/E/Git/HTML-ViewParse/src/registerAttributeHandle/status.v2.js",
+		"/E/Git/HTML-ViewParse/.demo/.test/.status.html",
+		"/E/Git/HTML-ViewParse/build/.debug.observer.js",
+		"/E/Git/HTML-ViewParse/src/registerTrigger/if.js",
+		"/E/Git/HTML-ViewParse/src/Model.v5.core.js",
 		"/E/Git/HTML-ViewParse/src/.highlight/JavaScript/for-()-{}.sublime-snippet",
 		"/E/Git/HTML-ViewParse/node_modules/grunt-contrib-concat/tasks/lib/comment.js",
 		"/E/Git/HTML-ViewParse/node_modules/grunt-contrib-uglify/test/fixtures/expected/compress_mangle.js",
 		"/E/Git/HTML-ViewParse/node_modules/grunt-contrib-concat/docs/concat-options.md",
 		"/E/Git/HTML-ViewParse/node_modules/grunt/CONTRIBUTING.md",
 		"/E/Git/HTML-ViewParse/node_modules/grunt-contrib-concat/docs/concat-examples.md",
-		"/E/Git/HTML-ViewParse/doc/caller.html",
-		"/E/Git/HTML-ViewParse/build/jSouper.js",
-		"/E/Git/HTML-ViewParse/jsouper.sublime-project",
 		"/E/Git/HTML-ViewParse/node_modules/grunt-contrib-uglify/test/fixtures/expected/exportAll.js",
 		"/E/Git/HTML-ViewParse/doc/test.html",
-		"/E/Git/HTML-ViewParse/doc/base.html",
-		"/E/Git/HTML-ViewParse/src/ViewModel.js",
 		"/E/Git/HTML-ViewParse/build/jSouper.min.js",
 		"/E/Git/HTML-ViewParse/src/.lib/jsouper.no_fun.js",
 		"/E/Git/HTML-ViewParse/src/.lib/jsouper.base62.js",
 		"/E/Git/HTML-ViewParse/src/.lib/jq.base62.js",
 		"/E/Git/HTML-ViewParse/src/.lib/jquery.js",
 		"/E/Git/HTML-ViewParse/doc/cutom_tag2.html",
-		"/E/Git/HTML-ViewParse/doc/cutom_tag.html",
 		"/E/Git/HTML-ViewParse/build/jSouper.debug.js",
 		"/E/Git/HTML-ViewParse/src/registerTrigger/teleporter.js",
 		"/E/node_modules/server.js",
 		"/E/node_modules/express/index.js",
-		"/E/Git/HTML-ViewParse/src/registerAttributeHandle/input.js",
 		"/E/Git/HTML-ViewParse/src/registerAttributeHandle/ns.js",
 		"/E/Git/HTML-ViewParse/.gitignore",
 		"/E/kp/o2oWebStoreMini/public/pages/personal/evaluation.html",
@@ -803,32 +787,7 @@
 		"/E/Git/O2O/node_modules/alipay/node_modules/xmldom/test/index.js",
 		"/E/kp/o2oWebStoreMini/public/main-beta.html",
 		"/E/kp/o2oWebStoreMini/public/js/pages/main.js",
-		"/E/kp/o2oWebStoreMini/public/goods-details.html",
-		"/E/kp/o2oWebStoreMini/public/js/pages/goods-details.js",
-		"/E/Git/O2O/core/goods/skill.js",
-		"/E/kp/o2oWebStoreMini/public/js/pages/admin/goodsmanager.js",
-		"/E/Git/O2O/core/schema/goods.json",
-		"/E/Git/O2O/my-koa-app.js",
-		"/E/kp/o2oWebStoreMini/public/js/pages/cart.js",
-		"/E/kp/o2oWebStoreMini/public/pages/default/comments.html",
-		"/E/kp/o2oWebStoreMini/public/js/require.common.js",
-		"/E/kp/o2oWebStoreMini/public/css/common.css",
-		"/E/kp/o2oWebStoreMini/public/config/config.json.js",
-		"/E/Git/O2O/node_modules/uns-ccap/example/web_example.js",
-		"/E/Git/O2O/core/schema/useraddress.json",
-		"/E/Git/O2O/server/RESTAPI/user.bus_bind.rest.js.bak",
-		"/E/Git/O2O/server/RESTAPI/user.evaluation.rest.js",
-		"/E/Git/O2O/server/RESTAPI/user.rest.js",
-		"/E/Git/O2O/core/user.cart_goods/_con.js",
-		"/E/Git/O2O/core/user.cart_goods/skill.js",
-		"/E/Git/O2O/server/RESTAPI/user.cart.rest.js",
-		"/E/Git/O2O/core/schema/usercartgoods.json",
-		"/E/kp/o2oWebStoreMini/public/js/pages/default/carts.js",
-		"/E/Git/O2O/server/index.js",
-		"/E/Git/O2O/node_modules/body-parser/node_modules/iconv-lite/lib/streams.js",
-		"/E/Git/O2O/node_modules/uns-ccap/addon/jpeglib/plugins/draw_gradient.h",
-		"/E/kp/o2oWebStoreMini/public/js/pages/default/m.carts.js",
-		"/E/kp/o2oWebStoreMini/public/css/m.default.css.map"
+		"/E/kp/o2oWebStoreMini/public/goods-details.html"
 	],
 	"find":
 	{
@@ -908,6 +867,56 @@
 		"case_sensitive": true,
 		"find_history":
 		[
+			"||",
+			"arr",
+			"text/vm",
+			"_attrChangeListenerKey",
+			"bindElementPropertyChange",
+			"debugger",
+			"offset",
+			"mouseHooks",
+			"offsetX",
+			"_childProxyModel",
+			"TemplateString",
+			"parseRule",
+			"TemplateHandle",
+			"handleInfo",
+			"handInfo",
+			"ScriptNodeString",
+			"throw \"Can't find handle:\" + han",
+			"_buildTrigger",
+			"_triggerKeys",
+			"trigger",
+			"build",
+			"is",
+			"newTemplateMatchReg",
+			"stringify",
+			"stringifyStr",
+			"TemplateString",
+			"matchVar",
+			"Expression",
+			"QuotedString",
+			"_build_expression",
+			"foo = Function(build_str)()",
+			"attributeName + \"=\" + stringifyStr(customTagNodeInfo[attributeName]) + \" \";",
+			"__",
+			"\"ele-remove_attribute-\" + Math.random().toString(36).substr(2) + \"-\" + attrName + \"={{\" + __ModelConfig__.prefix.This + \"&&'\" + attrName + \"'}} \";",
+			"\"'\"",
+			"<",
+			">",
+			"<",
+			"< ",
+			"<",
+			"<\"",
+			">",
+			"$This",
+			"key",
+			"attributeValue",
+			"name",
+			"attributeName",
+			"function(",
+			"_fixMouseEvent",
+			"_registerEventRouterMatch",
 			"_booleanFalseRegExp",
 			"_getAttrOuter",
 			"_formKey",
@@ -985,57 +994,7 @@
 			"_AttributeHandleEvent",
 			"toLowerCase",
 			"setAttributeNS(null",
-			"200",
-			"setAttribute",
-			"polygonNode",
-			"image.",
-			"_isSvg",
-			"handle._unEleAttr",
-			"catchNodesStr",
-			"nodeStr",
-			"catchNodesStr",
-			"_isSvg",
-			"tagDeep",
-			"_isHTMLUnknownElement",
-			"_unEleAttr",
-			"_isHTMLUnknownElement",
-			"<",
-			"createEle",
-			"_isHTMLUnknownElement",
-			"undefined",
-			"home_imgs",
-			"bg_imgs",
-			"mainset",
-			"home_imgs",
-			"data",
-			":hover",
-			"bus",
-			"_with_page_info",
-			"#00AFF0",
-			"as_comment",
-			"comment.",
-			"comment.comments",
-			"commenter_id",
-			"getComments",
-			"bus.evaluations",
-			"CommentCon",
-			"eval",
-			"comment",
-			"bus",
-			"user/eval",
-			"comment_id",
-			"reply_id",
-			"_addComment",
-			"query",
-			"goods_id",
-			"cart_id",
-			"this.request.",
-			"updateGoodsNumInCart",
-			"cart_make_ach",
-			"GoodsToCart",
-			"this.type||\"user\"",
-			"removeGoods",
-			"removeGoodsFromCart"
+			"200"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -1075,24 +1034,24 @@
 	"groups":
 	[
 		{
-			"selected": 3,
+			"selected": 0,
 			"sheets":
 			[
 				{
 					"buffer": 0,
-					"file": "src/registerAttributeHandle/_common.js",
+					"file": "src/Model.v5.core.js",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 4710,
+						"buffer_size": 18410,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								477,
-								477
+								2746,
+								2746
 							]
 						],
 						"settings":
@@ -1102,189 +1061,10 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 3,
-					"type": "text"
-				},
-				{
-					"buffer": 1,
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 1524,
-						"regions":
-						{
-							"match":
-							{
-								"flags": 112,
-								"regions":
-								[
-									[
-										179,
-										198
-									],
-									[
-										465,
-										484
-									],
-									[
-										785,
-										804
-									],
-									[
-										1072,
-										1091
-									],
-									[
-										1390,
-										1409
-									]
-								],
-								"scope": ""
-							}
-						},
-						"selection":
-						[
-							[
-								203,
-								203
-							]
-						],
-						"settings":
-						{
-							"detect_indentation": false,
-							"line_numbers": false,
-							"output_tag": 1,
-							"result_base_dir": "",
-							"result_file_regex": "^([A-Za-z\\\\/<].*):$",
-							"result_line_regex": "^ +([0-9]+):",
-							"scroll_past_end": true,
-							"syntax": "Packages/Default/Find Results.hidden-tmLanguage"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 2,
-					"type": "text"
-				},
-				{
-					"buffer": 2,
-					"file": "src/registerAttributeHandle/input.js",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 5170,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								2579,
-								2588
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 1003.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 4,
-					"type": "text"
-				},
-				{
-					"buffer": 3,
-					"file": "src/registerAttributeHandle/ele.js",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 445,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								445,
-								445
-							]
-						],
-						"settings":
-						{
-							"open_with_edit": true,
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 1040.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 0,
-					"type": "text"
-				},
-				{
-					"buffer": 4,
-					"file": "src/registerTrigger/custom_tag.js",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 2896,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								1596,
-								1596
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 78.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 1,
-					"type": "text"
-				},
-				{
-					"buffer": 5,
-					"file": "src/registerAttributeHandle/event.js",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 1336,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								366,
-								122
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 5,
 					"type": "text"
 				}
 			]
@@ -1341,12 +1121,52 @@
 		"selected_items":
 		[
 			[
+				"cust",
+				"src\\registerTrigger\\custom_tag.js"
+			],
+			[
+				"custom",
+				"src\\registerHandle\\custom_tag.js"
+			],
+			[
+				"base",
+				"src\\baseViewParser.js"
+			],
+			[
+				"viewmo",
+				"src\\ViewModel.js"
+			],
+			[
+				"cus",
+				"src\\registerTrigger\\custom_tag.js"
+			],
+			[
 				"$",
 				"src\\$.js"
 			],
 			[
 				"$.js",
 				"src\\$.js"
+			],
+			[
+				"$.",
+				"src\\$.js"
+			],
+			[
+				"proxy",
+				"src\\Model.v5.Proxy.js"
+			],
+			[
+				"ciewmo",
+				"src\\ViewModel.js"
+			],
+			[
+				"ele",
+				"src\\registerAttributeHandle\\ele.js"
+			],
+			[
+				"event",
+				"src\\event.js"
 			],
 			[
 				"_com",
@@ -1811,46 +1631,6 @@
 			[
 				"admin/storeinfo",
 				"o2oWebStoreMini\\public\\js\\pages\\admin\\storeinfo.js"
-			],
-			[
-				"goodsman",
-				"o2oWebStoreMini\\public\\js\\pages\\admin\\goodsmanager.js"
-			],
-			[
-				"goodsrest",
-				"O2O\\server\\RESTAPI\\goods.rest.js"
-			],
-			[
-				"evalskill",
-				"O2O\\core\\eval\\skill.js"
-			],
-			[
-				"evalrest",
-				"O2O\\server\\RESTAPI\\bus.evaluations.rest.js"
-			],
-			[
-				"goodsrs",
-				"O2O\\server\\RESTAPI\\goods.rest.js"
-			],
-			[
-				"server",
-				"o2oWebStoreMini\\server\\server.js"
-			],
-			[
-				"goods_con",
-				"O2O\\core\\goods\\_con.js"
-			],
-			[
-				"shelves",
-				"o2oWebStoreMini\\public\\js\\pages\\admin\\shelves.js"
-			],
-			[
-				"adminjs",
-				"o2oWebStoreMini\\public\\js\\pages\\admin.js"
-			],
-			[
-				"tool",
-				"o2oWebStoreMini\\public\\js\\tools.js"
 			]
 		],
 		"width": 0.0
@@ -1883,7 +1663,7 @@
 	"show_open_files": true,
 	"show_tabs": true,
 	"side_bar_visible": true,
-	"side_bar_width": 254.0,
+	"side_bar_width": 277.0,
 	"status_bar_visible": true,
 	"template_settings":
 	{

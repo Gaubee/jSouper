@@ -160,8 +160,11 @@ draggable
 var _attrKeyListenerPlaceholder = _placeholder("attr_lister");
 var attrKeyListenerEvent = {};
 function bindElementPropertyChange(ele, attrKey, handle){
-    var _attrChangeListenerKey = _placeholder("attr_lister_key")
-    ele[_attrKeyListenerPlaceholder] = _attrChangeListenerKey;
+    var _attrChangeListenerKey = ele[_attrKeyListenerPlaceholder];
+    if (!_attrChangeListenerKey) {
+        var _attrChangeListenerKey = _placeholder("attr_lister_key")
+        ele[_attrKeyListenerPlaceholder] = _attrChangeListenerKey;
+    }
     var eventMap = attrKeyListenerEvent[_attrChangeListenerKey]||(attrKeyListenerEvent[_attrChangeListenerKey] = {});
     var propertyChangeEvents = eventMap[attrKey]||(eventMap[attrKey] = []);
     propertyChangeEvents.push(handle);

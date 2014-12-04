@@ -1117,7 +1117,7 @@ var __ModelProto__ = Model.prototype = {
                 }
                 //最后一层，老式浏览器不支持String类型用下标索引，所以统一使用charAt搞定
                 //lastKey
-                result = $.isS(result) ? result.charAt(_split_laveStr) : (result != $UNDEFINED ? result[_split_laveStr] : result);
+                result = ($.isS(result) && parseInt(_split_laveStr) == _split_laveStr) ? result.charAt(_split_laveStr) : (result != $UNDEFINED ? result[_split_laveStr] : result);
             }
 
             /*filterKey = key;*/
@@ -2418,8 +2418,11 @@ draggable
 var _attrKeyListenerPlaceholder = _placeholder("attr_lister");
 var attrKeyListenerEvent = {};
 function bindElementPropertyChange(ele, attrKey, handle){
-    var _attrChangeListenerKey = _placeholder("attr_lister_key")
-    ele[_attrKeyListenerPlaceholder] = _attrChangeListenerKey;
+    var _attrChangeListenerKey = ele[_attrKeyListenerPlaceholder];
+    if (!_attrChangeListenerKey) {
+        var _attrChangeListenerKey = _placeholder("attr_lister_key")
+        ele[_attrKeyListenerPlaceholder] = _attrChangeListenerKey;
+    }
     var eventMap = attrKeyListenerEvent[_attrChangeListenerKey]||(attrKeyListenerEvent[_attrChangeListenerKey] = {});
     var propertyChangeEvents = eventMap[attrKey]||(eventMap[attrKey] = []);
     propertyChangeEvents.push(handle);
@@ -2951,14 +2954,14 @@ function ViewModel(handleNodeTree, NodeList, triggerTable, model) {
  */
 //_buildSmartTriggers接口，
 ViewModel._buildSmartTriggers = function(viewModel, sKey) {
-    var smartTriggers = [];
-    smartTriggers._ = {};
-    $.E(viewModel._triggers, function(sKey) {
-        $.p(smartTriggers, smartTriggers._[sKey] = ViewModel._buildSmart(viewModel, sKey));
-    });
-    return smartTriggers;
-}
-//VM通用的重建接口
+        var smartTriggers = [];
+        smartTriggers._ = {};
+        $.E(viewModel._triggers, function(sKey) {
+            $.p(smartTriggers, smartTriggers._[sKey] = ViewModel._buildSmart(viewModel, sKey));
+        });
+        return smartTriggers;
+    }
+    //VM通用的重建接口
 var _smartTriggerHandle_rebuild = function(forceUpdate) {
     var smartTrigger = this;
     var TEMP = smartTrigger.TEMP;
@@ -2978,7 +2981,7 @@ var _smartTriggerHandle_rebuild = function(forceUpdate) {
             // finallyRun.register(viewModel._id + TEMP.sK, function() {
             //因为Model是惰性生成的，因此在Model存在的情况下已经可以进行更新DOM节点了
             smartTrigger.event(topGetter._triggerKeys)
-            // });
+                // });
         }
     }
     if (forceUpdate && topGetter) {
@@ -3277,7 +3280,7 @@ $.E(_allEventNames, function(eventName) {
  * 为ViewModel拓展proxymodel代理类的功能
  */
 
-$.E(["shelter", "set", "get"/*, "getSmart"*/], function(handleName) {
+$.E(["shelter", "set", "get" /*, "getSmart"*/ ], function(handleName) {
     var handle = __ProxyModelProto__[handleName];
     __ViewModelProto__[handleName] = function() {
         var self = this;
@@ -3285,7 +3288,41 @@ $.E(["shelter", "set", "get"/*, "getSmart"*/], function(handleName) {
         return handle.apply(model, arguments);
     }
 });
+$.E(["filter", "push", "pop"], function(handleName) {
+    var handle = __ProxyModelProto__[handleName];
+    __ViewModelProto__[handleName] = function(key) {
+        var self = this;
+        var model = self.model;
+        if (arguments.length <= 1) {
+            key = ""
+        }
+        var arr = model.get(key);
+        if (!$.isA(arr)) {
+            //不是数组的话直接覆盖
+            model.set(key, arr ? $.s(arr) : []);
+        }
+        return handle.apply(model, arguments);
+    }
+});
 
+__ViewModelProto__.concat = function(key, items) {
+    var self = this;
+    var model = self.model;
+    if (arguments.length <= 1) {
+        key = "";
+        items = key;
+    }
+    var arr = model.get(key);
+    if (!$.isA(arr)) {
+        arr = arr ? $.s(arr) : [];
+        model.set(key, []);
+    }
+    if (!$.isA(items)) {
+        items = items ? $.s(items) : [];
+    }
+    arr.push.apply(arr, items);
+    return model.set(key, arr);
+}
 /*
  * parse function
  */
@@ -3489,7 +3526,6 @@ var _string_placeholder = {
      * 将模板语法解析成数组节点
      */
     parseRule = function(str) {
-        if (str.indexOf("function")!==-1) {debugger};
         var _handle_type_tagName;
         var expression_ph = _placeholder("json");
         var expression_strs = [];
@@ -3966,18 +4002,19 @@ var placeholderHandle = function(handle, index, parentHandle) {
 	var commentHandle = _commentPlaceholder(handle, parentHandle);
 };
 var _customTag_display_arguments = {};
+
 function _customTag_display(show_or_hidden, NodeList_of_ViewModel, model, /*triggerBy,*/ viewModel_ID) {
 	var handle = this,
 		id = handle.id,
 		customTagVm = V._instances[viewModel_ID]._CVI[id];
-	if (!customTagVm) {
+	if (!customTagVm) {//如果VM还没生成，那么将参数进行缓存，在VM生成后在运行display函数
 		_customTag_display_arguments[id] = arguments;
 		return;
 	}
 	//get comment_endeach_id
 	var commentPlaceholderElement = NodeList_of_ViewModel[$.lI(handle.childNodes).id].currentNode;
 	if (show_or_hidden) {
-		if(!customTagVm._canRemoveAble){//can-insert-able
+		if (!customTagVm._canRemoveAble) { //can-insert-able
 			customTagVm.insert(commentPlaceholderElement);
 		}
 	} else {
@@ -4289,8 +4326,8 @@ V.rt("custom_tag", function(handle, index, parentHandle) {
 	// console.log(handle)1
 	var id = handle.id,
 		childNodes = handle.childNodes,
-		expression = Expression.get(handle.handleInfo.expression),
-		comment_layout_id = parentHandle.childNodes[index + 1].id; //eachHandle --> eachComment --> endeachHandle --> endeachComment
+		expression = Expression.get(handle.handleInfo.expression);
+	var comment_layout_id = parentHandle.childNodes[index + 1].id; //eachHandle --> eachComment --> endeachHandle --> endeachComment
 	var handleArgs = expression.foo();
 	var customTagName = handleArgs[0];
 	var customTagNodeId = handleArgs[1];
@@ -4300,6 +4337,7 @@ V.rt("custom_tag", function(handle, index, parentHandle) {
 		// cache_tpl_name:$UNDEFINED,
 		key: ".",
 		event: function(NodeList_of_ViewModel, proxyModel, /*eventTrigger,*/ isAttr, viewModel_ID) {
+			console.log(viewModel_ID,id);
 			var AllCustomTagVM = V._instances[viewModel_ID]._CVI;
 			var customTagVm = AllCustomTagVM[id];
 			if (!customTagVm) {
@@ -4366,12 +4404,15 @@ V.rt("custom_tag", function(handle, index, parentHandle) {
 				});
 			}
 			//显示layoutViewModel
-			if (customTagVm && !customTagVm._canRemoveAble) { //canInsertAble
-				customTagVm.insert(NodeList_of_ViewModel[comment_layout_id].currentNode);
-			}
+			// if (customTagVm && !customTagVm._canRemoveAble) { //canInsertAble
+			// 	customTagVm.insert(NodeList_of_ViewModel[comment_layout_id].currentNode);
+			// }
 			var _display_args = _customTag_display_arguments[id];
 			if (_display_args) {
 				_customTag_display.apply(handle, _display_args);
+			}else if(customTagVm && !customTagVm._canRemoveAble){//canInsertAble
+				//默认显示，因为触发模式是一次性的，所以无需顾虑
+				customTagVm.insert(NodeList_of_ViewModel[comment_layout_id].currentNode);
 			}
 		}
 	}

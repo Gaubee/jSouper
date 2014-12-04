@@ -47,7 +47,6 @@ var _string_placeholder = {
      * 将模板语法解析成数组节点
      */
     parseRule = function(str) {
-        if (str.indexOf("function")!==-1) {debugger};
         var _handle_type_tagName;
         var expression_ph = _placeholder("json");
         var expression_strs = [];

@@ -75,8 +75,8 @@ V.rt("custom_tag", function(handle, index, parentHandle) {
 	// console.log(handle)1
 	var id = handle.id,
 		childNodes = handle.childNodes,
-		expression = Expression.get(handle.handleInfo.expression),
-		comment_layout_id = parentHandle.childNodes[index + 1].id; //eachHandle --> eachComment --> endeachHandle --> endeachComment
+		expression = Expression.get(handle.handleInfo.expression);
+	var comment_layout_id = parentHandle.childNodes[index + 1].id; //eachHandle --> eachComment --> endeachHandle --> endeachComment
 	var handleArgs = expression.foo();
 	var customTagName = handleArgs[0];
 	var customTagNodeId = handleArgs[1];
@@ -86,6 +86,7 @@ V.rt("custom_tag", function(handle, index, parentHandle) {
 		// cache_tpl_name:$UNDEFINED,
 		key: ".",
 		event: function(NodeList_of_ViewModel, proxyModel, /*eventTrigger,*/ isAttr, viewModel_ID) {
+			console.log(viewModel_ID,id);
 			var AllCustomTagVM = V._instances[viewModel_ID]._CVI;
 			var customTagVm = AllCustomTagVM[id];
 			if (!customTagVm) {
@@ -152,12 +153,15 @@ V.rt("custom_tag", function(handle, index, parentHandle) {
 				});
 			}
 			//显示layoutViewModel
-			if (customTagVm && !customTagVm._canRemoveAble) { //canInsertAble
-				customTagVm.insert(NodeList_of_ViewModel[comment_layout_id].currentNode);
-			}
+			// if (customTagVm && !customTagVm._canRemoveAble) { //canInsertAble
+			// 	customTagVm.insert(NodeList_of_ViewModel[comment_layout_id].currentNode);
+			// }
 			var _display_args = _customTag_display_arguments[id];
 			if (_display_args) {
 				_customTag_display.apply(handle, _display_args);
+			}else if(customTagVm && !customTagVm._canRemoveAble){//canInsertAble
+				//默认显示，因为触发模式是一次性的，所以无需顾虑
+				customTagVm.insert(NodeList_of_ViewModel[comment_layout_id].currentNode);
 			}
 		}
 	}

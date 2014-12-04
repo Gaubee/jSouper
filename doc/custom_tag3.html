@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+
+<head>
+    <title>Custom Tag - jSouper</title>
+    <script type="text/javascript" src="../build/jSouper.debug.js">
+    {
+        Id:"jSouperApp",
+        Data:{
+        }
+    }
+    </script>
+
+</head>
+
+<body>
+    <div id="jSouperApp">
+        {{#if false}}
+            <xxx> 呵呵1 </xxx>
+        {{/if}}
+            <xxx> 呵呵2 </xxx>
+        {{#if true}}
+            <xxx> 呵呵3 </xxx>
+        {{/if}}
+        <xmp type="tag" name="xxx">
+            <div>${innerHTML}</div>
+        </xmp>
+    </div>
+</body>
+
+</html>

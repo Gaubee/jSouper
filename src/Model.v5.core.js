@@ -101,7 +101,7 @@ var __ModelProto__ = Model.prototype = {
                 }
                 //最后一层，老式浏览器不支持String类型用下标索引，所以统一使用charAt搞定
                 //lastKey
-                result = $.isS(result) ? result.charAt(_split_laveStr) : (result != $UNDEFINED ? result[_split_laveStr] : result);
+                result = ($.isS(result) && parseInt(_split_laveStr) == _split_laveStr) ? result.charAt(_split_laveStr) : (result != $UNDEFINED ? result[_split_laveStr] : result);
             }
 
             /*filterKey = key;*/
