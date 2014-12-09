@@ -39,9 +39,9 @@ var _string_placeholder = {
             return str;
         }
     },
-    // _head = /\{([\w\W]*?)\(/g,
+    // _head = /\{([\s\S]*?)\(/g,
     // _footer = /\)\}/g, ///\)[\s]*\}/g,
-    _matchRule = /\{([\w\W]*?)\(([\w\W]*?)\)\}/g, ///\{[\w\W]*?\([\w\W]*?\)[\s]*\}/,
+    _matchRule = /\{([\s\S]*?)\(([\s\S]*?)\)\}/g, ///\{[\s\S]*?\([\s\S]*?\)[\s]*\}/,
     _handle_type_argument_name = _placeholder("handle-"),
     /*
      * 将模板语法解析成数组节点
@@ -122,7 +122,7 @@ var _string_placeholder = {
     V = {
         prefix: "bind-",
         namespace: "fix:",
-        stringifyStr:stringifyStr,
+        stringifyStr: stringifyStr,
         // _currentParsers: [],
         _nodeTree: function(htmlStr) {
             var _shadowBody = fragment( /*"body"*/ ); //$.D.cl(shadowBody);
@@ -215,7 +215,7 @@ var _string_placeholder = {
                                 V.modulesInit[name] = Function("return " + scriptText)();
                                 $.D.rm(scriptNode);
                             } catch (e) {
-                                console.error(e);
+                                console.error("VM-scripts build error:", e);
                             }
                         }
                     }
@@ -230,7 +230,7 @@ var _string_placeholder = {
                                 V.customTagsInit[name.toLowerCase()] = Function("return " + scriptText)();;
                                 $.D.rm(scriptNode);
                             } catch (e) {
-                                console.error(e);
+                                console.error("Custom tag VM-scripts build error:", e);
                             }
                         }
                     }

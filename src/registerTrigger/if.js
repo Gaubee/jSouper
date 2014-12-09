@@ -12,7 +12,6 @@ V.rt("#if", function(handle, index, parentHandle) {
         conditionStatus = $TRUE, //the #if block scope
         trigger,
         deep = 0;
-
     $.e(parentHandle.childNodes, function(child_handle, i, childHandles) {
         if (child_handle.handleName === "#if") {
             deep += 1

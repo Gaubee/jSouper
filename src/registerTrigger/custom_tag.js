@@ -114,7 +114,7 @@ V.rt("custom_tag", function(handle, index, parentHandle) {
 						}
 						attrNameList.push(_name);
 					}
-					customTagCode = customTagCode.replace(/\$\{([\w\W]+?)\}\=\"\"|\$\{([\w\W]+?)\}/g, function(matchStr, x, attributeName) {
+					customTagCode = customTagCode.replace(/\$\{([\s\S]+?)\}\=\"\"|\$\{([\s\S]+?)\}/g, function(matchStr, x, attributeName) {
 						attributeName || (attributeName = x); //两个匹配任选一个
 						var instruction_type = attributeName.charAt(1);
 						if (/\-|\+/.test(instruction_type)) {

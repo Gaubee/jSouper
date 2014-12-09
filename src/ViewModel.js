@@ -287,6 +287,14 @@ var __ViewModelProto__ = ViewModel.prototype = {
         });
         return self;
     },
+    getOneElementByTagName: function(tagName) {
+        return this.getElementsByTagName(tagName)[0];
+    },
+    getElementsByTagName: function(tagName) {
+        return this.queryElement({
+            tagName: tagName.toUpperCase()
+        });
+    },
     queryElement: function(matchFun) {
         return this.model.queryElement(matchFun);
     },

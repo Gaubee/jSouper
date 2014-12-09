@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+
+<head>
+    <title>app - jSouper</title>
+    <script type="text/javascript" src="../build/jSouper.debug.js">
+    {
+        Id:"ja",
+        Data:{
+        }
+    }
+    </script>
+</head>
+    <body id="ja">
+<div class="mainbox">
+    <div class="goods_list" style="margin:0">
+        {{#if isresult}}
+            <p>正在查找</p>
+        {{#else}}
+            {{#if goods.length}}
+                <p>查找相关“<b> {{$Cache.search_key}}</b>”的商品结果</p>
+                {{#each goods}}
+                <div class="listitem">
+                    <div class="goodsimg">
+                        <a href="#default/goods_details?id={{_id}}">
+                            <img src="{{preview_img_url}}?imageView/1/w/100/h/100" />
+                        </a>
+                    </div>
+                    <div class="goodsinfo">
+                        <a href="#default/goods_details?id={{_id}}">
+                            <div class="name">{{goods_name+" "}}
+                                <span class="detail">{{intro}}</span>
+                            </div>
+                        </a>
+                        <div class="sale">
+                            <div class="sitem">价格：
+                                <span class="price">{{price}}</span>
+                            </div>
+                            <div class="sitem">库存：{{num}}</div>
+                        </div>
+                    </div>
+                </div>
+                {{/each}} 
+            {{#else}}
+                <p>找不到相关“<b> {{$Cache.search_key}}</b>”的商品</p>
+            {{/if}}
+        {{/if}}
+    </div>
+</div>
+
+    </body>
+</html>
+<script>
+jSouper.ready(function () {
+    App.set("isresult",true);
+    setTimeout(function () {
+        App.set("isresult",false);
+        App.set("goods",[1,2,3,4,5])
+    },1000)
+})
+</script>

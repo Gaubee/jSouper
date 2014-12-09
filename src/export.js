@@ -1,3 +1,8 @@
+// var __error = console.error;
+// console.error = function() {
+//     debugger
+//     __error.apply(console, arguments);
+// };
 /*
  * export
  */
@@ -17,7 +22,7 @@ var _jSouperBase = {
             if (eventName && typeof eventName === "string") {
                 var ev = document.createEvent("HTMLEvents");
                 ev.initEvent(eventName, true, false);
-            }else{
+            } else {
                 ev = eventName;
             }
             element.dispatchEvent(ev);
@@ -150,12 +155,12 @@ var _jSouperBase = {
                 callbackFun.call(scope || global);
             } else {
                 $.p(callbackFunStacks, {
-                    callback: callbackFun,
-                    scope: scope
-                })
-                //complete ==> onload , interactive ==> DOMContentLoaded
-                //https://developer.mozilla.org/en-US/docs/Web/API/document.readyState
-                //seajs src/util-require.js
+                        callback: callbackFun,
+                        scope: scope
+                    })
+                    //complete ==> onload , interactive ==> DOMContentLoaded
+                    //https://developer.mozilla.org/en-US/docs/Web/API/document.readyState
+                    //seajs src/util-require.js
                 if (/complete|onload|interactive/.test(doc.readyState)) { //fix asyn load
                     _load()
                 }
@@ -165,7 +170,7 @@ var _jSouperBase = {
     /*
      * 为元素绑定属性触发监听
      */
-    onElementPropertyChange:bindElementPropertyChange
+    onElementPropertyChange: bindElementPropertyChange
 };
 var jSouper = global.jSouper = $.c(V);
 $.fI(_jSouperBase, function(value, key) {

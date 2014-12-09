@@ -67,9 +67,22 @@ var
         }
         return result;
     },
-
+    _cross_browser_eventName = function(eventName) {
+        var result = [];
+        $.E(["webkit", "moz", "MS", "o"], function(prefix, i) {
+            result[i] = prefix + eventName;
+        });
+        result.push(eventName.toLowerCase());
+        return result;
+    },
     //事件生成器中的路由匹配
     _registerEventRouterMatch = {
+        anE: {
+            //ms + Moz + O, Webkit
+            "animationstart": _cross_browser_eventName("AnimationStart"),
+            "animationiteration": _cross_browser_eventName("AnimationIteration"),
+            "animationend": _cross_browser_eventName("AnimationEnd")
+        },
         ip: {
             input: $TRUE
         },
@@ -367,6 +380,8 @@ var
                     }
                 }
             }());
+        }else if (result._cacheName = _registerEventRouterMatch.anE[eventName]){
+            result.name = result._cacheName;
         }
         _event_cache[elementHash + $.hashCode(eventFun)] = result;
         return result;

@@ -83,7 +83,7 @@ draggable
         });
         return result || _AttributeHandleEvent.com;
     },
-    _templateMatchRule = /\{[\w\W]*?\{[\w\W]*?\}[\s]*\}/,
+    _templateMatchRule = /\{[\s\S]*?\{[\s\S]*?\}[\s]*\}/,
     _fixAttrKey = function(attrKey) {
         attrKey = attrKey.indexOf(V.prefix) /*!== 0*/ ? attrKey : attrKey.replace(V.prefix, "")
         attrKey = (_isIE && IEfix[attrKey]) || attrKey
@@ -133,8 +133,8 @@ draggable
                     if (_attrChangeListenerKey) {
                         var eventMap = attrKeyListenerEvent[_attrChangeListenerKey];
                         var propertyChangeEvents = eventMap && eventMap[attrKey];
-                        $.isA(propertyChangeEvents)&&$.E(propertyChangeEvents,function (handle) {
-                            handle.call(currentNode, attrKey, viewModel);
+                        $.isA(propertyChangeEvents) && $.E(propertyChangeEvents, function(handle) {
+                            handle.call(currentNode, attrKey, currentNode.getAttribute(attrKey));
                         });
                     }
 
@@ -159,13 +159,17 @@ draggable
 //用于模拟绑定onpropertychange，只能用于通过jSouper触发属性变动的对象
 var _attrKeyListenerPlaceholder = _placeholder("attr_lister");
 var attrKeyListenerEvent = {};
-function bindElementPropertyChange(ele, attrKey, handle){
+
+function bindElementPropertyChange(ele, attrKey, handle, runImmediately) {
     var _attrChangeListenerKey = ele[_attrKeyListenerPlaceholder];
     if (!_attrChangeListenerKey) {
         var _attrChangeListenerKey = _placeholder("attr_lister_key")
         ele[_attrKeyListenerPlaceholder] = _attrChangeListenerKey;
     }
-    var eventMap = attrKeyListenerEvent[_attrChangeListenerKey]||(attrKeyListenerEvent[_attrChangeListenerKey] = {});
-    var propertyChangeEvents = eventMap[attrKey]||(eventMap[attrKey] = []);
+    var eventMap = attrKeyListenerEvent[_attrChangeListenerKey] || (attrKeyListenerEvent[_attrChangeListenerKey] = {});
+    var propertyChangeEvents = eventMap[attrKey] || (eventMap[attrKey] = []);
     propertyChangeEvents.push(handle);
+    if (runImmediately) {
+        handle.call(ele, attrKey, ele.getAttribute(attrKey))
+    }
 }

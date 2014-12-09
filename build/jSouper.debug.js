@@ -28,7 +28,7 @@ var global = global || this;
 
 var
 // 手动声明引用，提高压缩率
-doc = document,
+    doc = document,
 
     //用于判断浏览器是否为支持W3C规范，这里主要针对IE系列
     _isIE = !global.dispatchEvent, //!+"\v1",
@@ -54,7 +54,7 @@ doc = document,
         div.setAttribute("className", "t");
         div.innerHTML = "  <link/><table></table><a href='/a'>a</a><input type='checkbox'/>";
         return {
-            htmlSerialize: !! div.getElementsByTagName("link").length
+            htmlSerialize: !!div.getElementsByTagName("link").length
         }
     }()),
     rsingleTag = /^<(\w+)\s*\/?>(?:<\/\1>|)$/,
@@ -103,6 +103,7 @@ doc = document,
 
     _split_laveStr, //@split export argument
     $ = {
+        isIE: _isIE,
         id: 9,
 
         //全局唯一不定字符串，每次程序运行都不一样
@@ -315,7 +316,6 @@ doc = document,
                 try {
                     parentNode.insertBefore(insertNode, beforNode || $NULL);
                 } catch (e) {
-                    debugger
                 }
             },
             //往节点末尾推入节点集合
@@ -363,7 +363,7 @@ doc = document,
             }
             var async = (config.async === $FALSE) ? $FALSE : $TRUE;
             xhr.open(config.type || "GET", config.url, async)
-            // xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest")
+                // xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest")
             xhr.send(null)
             return xhr
         },
@@ -425,7 +425,6 @@ doc = document,
             }
         }
     };
-
 //将字符串反转义
 var charIndexBuggy = "a" [0] != "a";
 var Escapes = {
@@ -539,9 +538,22 @@ var
         }
         return result;
     },
-
+    _cross_browser_eventName = function(eventName) {
+        var result = [];
+        $.E(["webkit", "moz", "MS", "o"], function(prefix, i) {
+            result[i] = prefix + eventName;
+        });
+        result.push(eventName.toLowerCase());
+        return result;
+    },
     //事件生成器中的路由匹配
     _registerEventRouterMatch = {
+        anE: {
+            //ms + Moz + O, Webkit
+            "animationstart": _cross_browser_eventName("AnimationStart"),
+            "animationiteration": _cross_browser_eventName("AnimationIteration"),
+            "animationend": _cross_browser_eventName("AnimationEnd")
+        },
         ip: {
             input: $TRUE
         },
@@ -839,6 +851,8 @@ var
                     }
                 }
             }());
+        }else if (result._cacheName = _registerEventRouterMatch.anE[eventName]){
+            result.name = result._cacheName;
         }
         _event_cache[elementHash + $.hashCode(eventFun)] = result;
         return result;
@@ -2363,7 +2377,7 @@ draggable
         });
         return result || _AttributeHandleEvent.com;
     },
-    _templateMatchRule = /\{[\w\W]*?\{[\w\W]*?\}[\s]*\}/,
+    _templateMatchRule = /\{[\s\S]*?\{[\s\S]*?\}[\s]*\}/,
     _fixAttrKey = function(attrKey) {
         attrKey = attrKey.indexOf(V.prefix) /*!== 0*/ ? attrKey : attrKey.replace(V.prefix, "")
         attrKey = (_isIE && IEfix[attrKey]) || attrKey
@@ -2413,8 +2427,8 @@ draggable
                     if (_attrChangeListenerKey) {
                         var eventMap = attrKeyListenerEvent[_attrChangeListenerKey];
                         var propertyChangeEvents = eventMap && eventMap[attrKey];
-                        $.isA(propertyChangeEvents)&&$.E(propertyChangeEvents,function (handle) {
-                            handle.call(currentNode, attrKey, viewModel);
+                        $.isA(propertyChangeEvents) && $.E(propertyChangeEvents, function(handle) {
+                            handle.call(currentNode, attrKey, currentNode.getAttribute(attrKey));
                         });
                     }
 
@@ -2439,15 +2453,19 @@ draggable
 //用于模拟绑定onpropertychange，只能用于通过jSouper触发属性变动的对象
 var _attrKeyListenerPlaceholder = _placeholder("attr_lister");
 var attrKeyListenerEvent = {};
-function bindElementPropertyChange(ele, attrKey, handle){
+
+function bindElementPropertyChange(ele, attrKey, handle, runImmediately) {
     var _attrChangeListenerKey = ele[_attrKeyListenerPlaceholder];
     if (!_attrChangeListenerKey) {
         var _attrChangeListenerKey = _placeholder("attr_lister_key")
         ele[_attrKeyListenerPlaceholder] = _attrChangeListenerKey;
     }
-    var eventMap = attrKeyListenerEvent[_attrChangeListenerKey]||(attrKeyListenerEvent[_attrChangeListenerKey] = {});
-    var propertyChangeEvents = eventMap[attrKey]||(eventMap[attrKey] = []);
+    var eventMap = attrKeyListenerEvent[_attrChangeListenerKey] || (attrKeyListenerEvent[_attrChangeListenerKey] = {});
+    var propertyChangeEvents = eventMap[attrKey] || (eventMap[attrKey] = []);
     propertyChangeEvents.push(handle);
+    if (runImmediately) {
+        handle.call(ele, attrKey, ele.getAttribute(attrKey))
+    }
 }
 /*
  * View constructor
@@ -2552,7 +2570,7 @@ var _isHTMLUnknownElement = (function(HUE) {
         result = function(tagName) {
             if (__knownElementTag[tagName] === $UNDEFINED) {
                 var _ele = doc.createElement(tagName);
-                __knownElementTag[tagName] = _ele.tagName.toLowerCase()===tagName&&!(_ele instanceof HTMLUnknownElement);
+                __knownElementTag[tagName] = _ele.tagName.toLowerCase() === tagName && !(_ele instanceof HTMLUnknownElement);
             }
             return !__knownElementTag[tagName];
         }
@@ -2569,18 +2587,18 @@ var _unkonwnElementFix = {
 };
 
 var _svgNS = {
-    xlink:"http://www.w3.org/1999/xlink"
+    xlink: "http://www.w3.org/1999/xlink"
 };
 var _svgTag = {};
 var _svgTagStr = "svg image rect circle ellipse line polyline polygon path filter feBlend feColorMatrix feComponentTransfer feComposite feConvolveMatrix feDiffuseLighting feDisplacementMap feFlood feGaussianBlur feImage feMerge feMorphology feOffset feSpecularLighting feTile feTurbulence feDistantLight fePointLight feSpotLight defs feGaussianBlur linearGradient radialGradient";
-var _isSvgElement = (function () {
+var _isSvgElement = (function() {
     var __svgElementTag = {};
-    $.E(_svgTagStr.split(" "), function(tagName, index){
+    $.E(_svgTagStr.split(" "), function(tagName, index) {
         var lowerTagName = tagName.toLowerCase();
         __svgElementTag[lowerTagName] = $TRUE;
         _svgTag[lowerTagName] = tagName;
     });
-    return function (tagName) {
+    return function(tagName) {
         return __svgElementTag[tagName];
     }
 }());
@@ -2634,8 +2652,9 @@ function _buildTrigger(self) {
             $.E($.s(node.attributes) /*.reverse()*/ , function(attr, i) {
                 var value = attr.value,
                     name = attr.name;
-                //模板语言或者底层语言皆可触发绑定
-                if (_templateMatchRule.test(value)||_matchRule.test(value)) {
+                // console.info(name, value, _templateMatchRule.test(value) || _matchRule.test(value));
+                //模板语言或者底层语言皆可触发绑定，不可用test，不然lastIndex不能清空会出问题
+                if (value.match(_templateMatchRule) || value.match(_matchRule)) {
                     attributeHandle(name, value, node, handle, triggerTable);
                     node.removeAttribute(name);
                 }
@@ -2671,12 +2690,12 @@ function _buildTrigger(self) {
                         // console.log(name,value);
                         //be an Element, attribute's name may be diffrend;
                         name = (_isIE ? IEfix[name] : _unkonwnElementFix[name]) || name;
-                        var ns = $.st(name,":");
-                        if (handle._isSvg&&ns) {
+                        var ns = $.st(name, ":");
+                        if (handle._isSvg && ns) {
                             name = _split_laveStr;
                             value = {
-                                ns:_svgNS[ns]||null,
-                                v:value
+                                ns: _svgNS[ns] || null,
+                                v: value
                             }
                         }
                         $.p(eleAttr, name);
@@ -2807,18 +2826,18 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
         var _unknownElementAttribute = currentHandle._unEleAttr;
         if (_unknownElementAttribute) {
             if (currentHandle._isSvg) {
-                currentNode = doc.createElementNS("http://www.w3.org/2000/svg",_svgTag[currentHandle.tag]);
+                currentNode = doc.createElementNS("http://www.w3.org/2000/svg", _svgTag[currentHandle.tag]);
                 $.E(_unknownElementAttribute, function(attrName) {
                     var _attr_info = _unknownElementAttribute._[attrName];
                     if (_attr_info.v) {
                         // console.log(_attr_info.ns,attrName,_attr_info.v);
-                        currentNode.setAttributeNS(_attr_info.ns,attrName,_attr_info.v);
-                    }else{
+                        currentNode.setAttributeNS(_attr_info.ns, attrName, _attr_info.v);
+                    } else {
                         // console.log(attrName,_attr_info);
                         currentNode.setAttribute(attrName, _attr_info);
                     }
                 });
-            }else{
+            } else {
                 currentNode = doc.createElement(currentHandle.tag);
                 $.E(_unknownElementAttribute, function(attrName) {
                     // console.log("setAttribute:", attrName, " : ", _unknownElementAttribute._[attrName])
@@ -2864,7 +2883,6 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
     result.vmName = self.vmName;
     return result;
 };
-
 /*
  * View Instance constructor
  */
@@ -3153,6 +3171,14 @@ var __ViewModelProto__ = ViewModel.prototype = {
             self.model.touchOff(key);
         });
         return self;
+    },
+    getOneElementByTagName: function(tagName) {
+        return this.getElementsByTagName(tagName)[0];
+    },
+    getElementsByTagName: function(tagName) {
+        return this.queryElement({
+            tagName: tagName.toUpperCase()
+        });
     },
     queryElement: function(matchFun) {
         return this.model.queryElement(matchFun);
@@ -3540,9 +3566,9 @@ var _string_placeholder = {
             return str;
         }
     },
-    // _head = /\{([\w\W]*?)\(/g,
+    // _head = /\{([\s\S]*?)\(/g,
     // _footer = /\)\}/g, ///\)[\s]*\}/g,
-    _matchRule = /\{([\w\W]*?)\(([\w\W]*?)\)\}/g, ///\{[\w\W]*?\([\w\W]*?\)[\s]*\}/,
+    _matchRule = /\{([\s\S]*?)\(([\s\S]*?)\)\}/g, ///\{[\s\S]*?\([\s\S]*?\)[\s]*\}/,
     _handle_type_argument_name = _placeholder("handle-"),
     /*
      * 将模板语法解析成数组节点
@@ -3623,7 +3649,7 @@ var _string_placeholder = {
     V = {
         prefix: "bind-",
         namespace: "fix:",
-        stringifyStr:stringifyStr,
+        stringifyStr: stringifyStr,
         // _currentParsers: [],
         _nodeTree: function(htmlStr) {
             var _shadowBody = fragment( /*"body"*/ ); //$.D.cl(shadowBody);
@@ -3716,7 +3742,7 @@ var _string_placeholder = {
                                 V.modulesInit[name] = Function("return " + scriptText)();
                                 $.D.rm(scriptNode);
                             } catch (e) {
-                                console.error(e);
+                                console.error("VM-scripts build error:", e);
                             }
                         }
                     }
@@ -3731,7 +3757,7 @@ var _string_placeholder = {
                                 V.customTagsInit[name.toLowerCase()] = Function("return " + scriptText)();;
                                 $.D.rm(scriptNode);
                             } catch (e) {
-                                console.error(e);
+                                console.error("Custom tag VM-scripts build error:", e);
                             }
                         }
                     }
@@ -4072,9 +4098,10 @@ var _each_display = function(show_or_hidden, NodeList_of_ViewModel, model, /*tri
             var parentNode = commentStartEachPlaceholderElement.parentNode;
             $.D.iB(parentNode, fg, placeholderNode);
         }
-    } else {
+    } else if (fg.childNodes.length === 0) {//处于隐藏状态的话无需再次隐藏，隐藏状态中的fg至少会有commentEndEachPlaceholderElement节点
         var currentNode = commentStartEachPlaceholderElement.nextSibling;
         while (currentNode !== commentEndEachPlaceholderElement) {
+            debugger
             var nextNode = currentNode.nextSibling
             $.D.ap(fg, currentNode);
             currentNode = nextNode;
@@ -4118,7 +4145,6 @@ V.rh("#each", function(handle, index, parentHandle) {
     _commentPlaceholder(handle, parentHandle);
 });
 V.rh("/each", placeholderHandle);
-
 // var _noParameters = _placeholder();
 V.rh("", function(handle, index, parentHandle) {
 	var textHandle = handle.childNodes[0];
@@ -4387,7 +4413,7 @@ V.rt("custom_tag", function(handle, index, parentHandle) {
 						}
 						attrNameList.push(_name);
 					}
-					customTagCode = customTagCode.replace(/\$\{([\w\W]+?)\}\=\"\"|\$\{([\w\W]+?)\}/g, function(matchStr, x, attributeName) {
+					customTagCode = customTagCode.replace(/\$\{([\s\S]+?)\}\=\"\"|\$\{([\s\S]+?)\}/g, function(matchStr, x, attributeName) {
 						attributeName || (attributeName = x); //两个匹配任选一个
 						var instruction_type = attributeName.charAt(1);
 						if (/\-|\+/.test(instruction_type)) {
@@ -4729,7 +4755,6 @@ V.rt("#if", function(handle, index, parentHandle) {
         conditionStatus = $TRUE, //the #if block scope
         trigger,
         deep = 0;
-
     $.e(parentHandle.childNodes, function(child_handle, i, childHandles) {
         if (child_handle.handleName === "#if") {
             deep += 1
@@ -5756,7 +5781,7 @@ V.ra("style", function() {
     return _isIE && _AttributeHandleEvent.style;
 })
 
-var newTemplateMatchReg = V.templateRule = /\{\{([\w\W]+?)\}\}/g,
+var newTemplateMatchReg = V.templateRule = /\{\{([\s\S]+?)\}\}/g,
     templateHandles = {};
 $.fI(V.handles, function(handleFun, handleName) {
     var result = $TRUE
@@ -5862,6 +5887,11 @@ registerHandle("HTML",function () {
 	return Array.prototype.join.call(arguments,"");
 })
 
+// var __error = console.error;
+// console.error = function() {
+//     debugger
+//     __error.apply(console, arguments);
+// };
 /*
  * export
  */
@@ -5881,7 +5911,7 @@ var _jSouperBase = {
             if (eventName && typeof eventName === "string") {
                 var ev = document.createEvent("HTMLEvents");
                 ev.initEvent(eventName, true, false);
-            }else{
+            } else {
                 ev = eventName;
             }
             element.dispatchEvent(ev);
@@ -6014,12 +6044,12 @@ var _jSouperBase = {
                 callbackFun.call(scope || global);
             } else {
                 $.p(callbackFunStacks, {
-                    callback: callbackFun,
-                    scope: scope
-                })
-                //complete ==> onload , interactive ==> DOMContentLoaded
-                //https://developer.mozilla.org/en-US/docs/Web/API/document.readyState
-                //seajs src/util-require.js
+                        callback: callbackFun,
+                        scope: scope
+                    })
+                    //complete ==> onload , interactive ==> DOMContentLoaded
+                    //https://developer.mozilla.org/en-US/docs/Web/API/document.readyState
+                    //seajs src/util-require.js
                 if (/complete|onload|interactive/.test(doc.readyState)) { //fix asyn load
                     _load()
                 }
@@ -6029,7 +6059,7 @@ var _jSouperBase = {
     /*
      * 为元素绑定属性触发监听
      */
-    onElementPropertyChange:bindElementPropertyChange
+    onElementPropertyChange: bindElementPropertyChange
 };
 var jSouper = global.jSouper = $.c(V);
 $.fI(_jSouperBase, function(value, key) {
@@ -6070,7 +6100,6 @@ if (typeof module === "object" && module && typeof module.exports === "object") 
         })
     }
 }
-
 ;
 (function() {
     function Observer(getFun, setFun, formFun) {

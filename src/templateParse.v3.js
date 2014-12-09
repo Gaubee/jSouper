@@ -1,4 +1,4 @@
-var newTemplateMatchReg = V.templateRule = /\{\{([\w\W]+?)\}\}/g,
+var newTemplateMatchReg = V.templateRule = /\{\{([\s\S]+?)\}\}/g,
     templateHandles = {};
 $.fI(V.handles, function(handleFun, handleName) {
     var result = $TRUE

@@ -101,7 +101,7 @@ var _isHTMLUnknownElement = (function(HUE) {
         result = function(tagName) {
             if (__knownElementTag[tagName] === $UNDEFINED) {
                 var _ele = doc.createElement(tagName);
-                __knownElementTag[tagName] = _ele.tagName.toLowerCase()===tagName&&!(_ele instanceof HTMLUnknownElement);
+                __knownElementTag[tagName] = _ele.tagName.toLowerCase() === tagName && !(_ele instanceof HTMLUnknownElement);
             }
             return !__knownElementTag[tagName];
         }
@@ -118,18 +118,18 @@ var _unkonwnElementFix = {
 };
 
 var _svgNS = {
-    xlink:"http://www.w3.org/1999/xlink"
+    xlink: "http://www.w3.org/1999/xlink"
 };
 var _svgTag = {};
 var _svgTagStr = "svg image rect circle ellipse line polyline polygon path filter feBlend feColorMatrix feComponentTransfer feComposite feConvolveMatrix feDiffuseLighting feDisplacementMap feFlood feGaussianBlur feImage feMerge feMorphology feOffset feSpecularLighting feTile feTurbulence feDistantLight fePointLight feSpotLight defs feGaussianBlur linearGradient radialGradient";
-var _isSvgElement = (function () {
+var _isSvgElement = (function() {
     var __svgElementTag = {};
-    $.E(_svgTagStr.split(" "), function(tagName, index){
+    $.E(_svgTagStr.split(" "), function(tagName, index) {
         var lowerTagName = tagName.toLowerCase();
         __svgElementTag[lowerTagName] = $TRUE;
         _svgTag[lowerTagName] = tagName;
     });
-    return function (tagName) {
+    return function(tagName) {
         return __svgElementTag[tagName];
     }
 }());
@@ -183,8 +183,9 @@ function _buildTrigger(self) {
             $.E($.s(node.attributes) /*.reverse()*/ , function(attr, i) {
                 var value = attr.value,
                     name = attr.name;
-                //模板语言或者底层语言皆可触发绑定
-                if (_templateMatchRule.test(value)||_matchRule.test(value)) {
+                // console.info(name, value, _templateMatchRule.test(value) || _matchRule.test(value));
+                //模板语言或者底层语言皆可触发绑定，不可用test，不然lastIndex不能清空会出问题
+                if (value.match(_templateMatchRule) || value.match(_matchRule)) {
                     attributeHandle(name, value, node, handle, triggerTable);
                     node.removeAttribute(name);
                 }
@@ -220,12 +221,12 @@ function _buildTrigger(self) {
                         // console.log(name,value);
                         //be an Element, attribute's name may be diffrend;
                         name = (_isIE ? IEfix[name] : _unkonwnElementFix[name]) || name;
-                        var ns = $.st(name,":");
-                        if (handle._isSvg&&ns) {
+                        var ns = $.st(name, ":");
+                        if (handle._isSvg && ns) {
                             name = _split_laveStr;
                             value = {
-                                ns:_svgNS[ns]||null,
-                                v:value
+                                ns: _svgNS[ns] || null,
+                                v: value
                             }
                         }
                         $.p(eleAttr, name);
@@ -356,18 +357,18 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
         var _unknownElementAttribute = currentHandle._unEleAttr;
         if (_unknownElementAttribute) {
             if (currentHandle._isSvg) {
-                currentNode = doc.createElementNS("http://www.w3.org/2000/svg",_svgTag[currentHandle.tag]);
+                currentNode = doc.createElementNS("http://www.w3.org/2000/svg", _svgTag[currentHandle.tag]);
                 $.E(_unknownElementAttribute, function(attrName) {
                     var _attr_info = _unknownElementAttribute._[attrName];
                     if (_attr_info.v) {
                         // console.log(_attr_info.ns,attrName,_attr_info.v);
-                        currentNode.setAttributeNS(_attr_info.ns,attrName,_attr_info.v);
-                    }else{
+                        currentNode.setAttributeNS(_attr_info.ns, attrName, _attr_info.v);
+                    } else {
                         // console.log(attrName,_attr_info);
                         currentNode.setAttribute(attrName, _attr_info);
                     }
                 });
-            }else{
+            } else {
                 currentNode = doc.createElement(currentHandle.tag);
                 $.E(_unknownElementAttribute, function(attrName) {
                     // console.log("setAttribute:", attrName, " : ", _unknownElementAttribute._[attrName])

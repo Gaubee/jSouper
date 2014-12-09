@@ -4,7 +4,7 @@ var global = global || this;
 
 var
 // 手动声明引用，提高压缩率
-doc = document,
+    doc = document,
 
     //用于判断浏览器是否为支持W3C规范，这里主要针对IE系列
     _isIE = !global.dispatchEvent, //!+"\v1",
@@ -30,7 +30,7 @@ doc = document,
         div.setAttribute("className", "t");
         div.innerHTML = "  <link/><table></table><a href='/a'>a</a><input type='checkbox'/>";
         return {
-            htmlSerialize: !! div.getElementsByTagName("link").length
+            htmlSerialize: !!div.getElementsByTagName("link").length
         }
     }()),
     rsingleTag = /^<(\w+)\s*\/?>(?:<\/\1>|)$/,
@@ -79,6 +79,7 @@ doc = document,
 
     _split_laveStr, //@split export argument
     $ = {
+        isIE: _isIE,
         id: 9,
 
         //全局唯一不定字符串，每次程序运行都不一样
@@ -291,7 +292,6 @@ doc = document,
                 try {
                     parentNode.insertBefore(insertNode, beforNode || $NULL);
                 } catch (e) {
-                    debugger
                 }
             },
             //往节点末尾推入节点集合
@@ -339,7 +339,7 @@ doc = document,
             }
             var async = (config.async === $FALSE) ? $FALSE : $TRUE;
             xhr.open(config.type || "GET", config.url, async)
-            // xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest")
+                // xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest")
             xhr.send(null)
             return xhr
         },
