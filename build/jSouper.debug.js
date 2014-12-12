@@ -865,7 +865,17 @@ var
                     _before: function(e, vm) {
                         var self = this;
                         var args = $.s(arguments);
-                        $.p(args,vm.getElementViewModel(self.options[self.selectedIndex]));
+                        if (self.multiple) {
+                            var vms = [];
+                            $.E(self.options,function (optionNode) {
+                                if (optionNode.selected) {
+                                    vms.push(vm.getElementViewModel(optionNode));
+                                }
+                            });
+                            $.p(args,vms);
+                        }else{
+                            $.p(args,vm.getElementViewModel(self.options[self.selectedIndex]));
+                        }
                         return {
                             ele: this,
                             args: args

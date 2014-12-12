@@ -6,9 +6,16 @@
 		{
 			Id:"jSouperApp",
 			Data:{
-				a:[1,2,3],
+				a:[{a:1},{a:2},{a:3}],
 				selected_event:function (e,vm,cvm) {
-					console.log("selected_event", cvm.get());
+					alert(cvm.get("a"))
+				},
+				muti_selected_event:function (e,vm,cvms) {
+					alert(
+						jSouper.map(cvms,function (cvm) {
+							return cvm.get("a");
+						})
+					);
 				}
 			}
 		}
@@ -21,11 +28,19 @@
 	</head>
 	<body>
 		<xmp id="jSouperApp">
-		<select name="" id="s1" event-change="{{'selected_event'}}">
+		<select id="s1" event-change="{{'selected_event'}}">
 			{{#each a}}
-			<option id="o{{$Index}}" >{{$This}}</option>
+			<option id="o{{$Index}}" >{{a}}</option>
+			{{/each}}
+		</select>
+		<select multiple="true" id="s2" event-change="{{'muti_selected_event'}}">
+			{{#each a}}
+			<option id="o{{$Index}}" >{{a}}</option>
 			{{/each}}
 		</select>
 		</xmp>
 	</body>
 </html>
+<script>
+	// alert(HTMLSelectElement)
+</script>
