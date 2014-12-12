@@ -35,7 +35,7 @@ var
     }()),
     rsingleTag = /^<(\w+)\s*\/?>(?:<\/\1>|)$/,
     rxhtmlTag = /<(?!area|br|col|embed|hr|img|input|link|meta|param)(([\w:]+)[^>]*)\/>/gi,
-    rtagName = /<([\w:]+)/,
+    rtagName = /<([\-\w:]+)/,
     // We have to close these tags to support XHTML (#13200)
     wrapMap = {
         option: [1, "<select multiple='multiple'>", "</select>"],
@@ -296,7 +296,12 @@ var
             },
             //往节点末尾推入节点集合
             ap: function(parentNode, node) { //append
+                try{
+                    
                 parentNode.appendChild(node);
+                }catch(e){
+                    debugger
+                }
             },
             //浅克隆节点
             cl: function(node, deep) { //clone,do not need detached clone

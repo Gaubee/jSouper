@@ -75,7 +75,7 @@ draggable
         var attrHandles = V.attrHandles,
             result;
         $.e(attrHandles, function(attrHandle) {
-            if (attrHandle.match(attrKey)) {
+            if (attrHandle.match(attrKey, element)) {
                 // if (element.type==="textarea") {debugger}
                 result = attrHandle.handle(attrKey, element);
                 return $FALSE

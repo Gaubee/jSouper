@@ -20,7 +20,6 @@ var _each_display = function(show_or_hidden, NodeList_of_ViewModel, model, /*tri
     } else if (fg.childNodes.length === 0) {//处于隐藏状态的话无需再次隐藏，隐藏状态中的fg至少会有commentEndEachPlaceholderElement节点
         var currentNode = commentStartEachPlaceholderElement.nextSibling;
         while (currentNode !== commentEndEachPlaceholderElement) {
-            debugger
             var nextNode = currentNode.nextSibling
             $.D.ap(fg, currentNode);
             currentNode = nextNode;

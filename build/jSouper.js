@@ -37,7 +37,7 @@ var
     }()),
     rsingleTag = /^<(\w+)\s*\/?>(?:<\/\1>|)$/,
     rxhtmlTag = /<(?!area|br|col|embed|hr|img|input|link|meta|param)(([\w:]+)[^>]*)\/>/gi,
-    rtagName = /<([\w:]+)/,
+    rtagName = /<([\-\w:]+)/,
     // We have to close these tags to support XHTML (#13200)
     wrapMap = {
         option: [1, "<select multiple='multiple'>", "</select>"],
@@ -298,7 +298,12 @@ var
             },
             //往节点末尾推入节点集合
             ap: function(parentNode, node) { //append
+                try{
+                    
                 parentNode.appendChild(node);
+                }catch(e){
+                    debugger
+                }
             },
             //浅克隆节点
             cl: function(node, deep) { //clone,do not need detached clone
@@ -2347,7 +2352,7 @@ draggable
         var attrHandles = V.attrHandles,
             result;
         $.e(attrHandles, function(attrHandle) {
-            if (attrHandle.match(attrKey)) {
+            if (attrHandle.match(attrKey, element)) {
                 // if (element.type==="textarea") {debugger}
                 result = attrHandle.handle(attrKey, element);
                 return $FALSE
@@ -4079,7 +4084,6 @@ var _each_display = function(show_or_hidden, NodeList_of_ViewModel, model, /*tri
     } else if (fg.childNodes.length === 0) {//处于隐藏状态的话无需再次隐藏，隐藏状态中的fg至少会有commentEndEachPlaceholderElement节点
         var currentNode = commentStartEachPlaceholderElement.nextSibling;
         while (currentNode !== commentEndEachPlaceholderElement) {
-            debugger
             var nextNode = currentNode.nextSibling
             $.D.ap(fg, currentNode);
             currentNode = nextNode;
@@ -5385,7 +5389,7 @@ V.ra(function(attrKey) {
 var _formCache = {},
 	__text = {
 		attributeName: "value",
-		eventNames: ["input","change"]
+		eventNames: ["input", "change"]
 	},
 	_formKey = {
 		"input": function(node) { //需阻止默认事件，比如Checked需要被重写，否则数据没有变动而Checked因用户点击而变动，没有达到V->M的数据同步
@@ -5425,9 +5429,9 @@ var _formCache = {},
 							//并确保只运行一次。
 							DM_finallyRun[_init_hashCode] = $FALSE;
 							var value = [];
-							$.E(options,function(optionNode){
-								if(optionNode.selected&&optionNode.value){
-									$.p(value,optionNode.value)
+							$.E(options, function(optionNode) {
+								if (optionNode.selected && optionNode.value) {
+									$.p(value, optionNode.value)
 								}
 							})
 							if (value.length) {
@@ -5436,9 +5440,9 @@ var _formCache = {},
 									value = value[0]
 								}
 								// console.log(attrOuter,value)
-								vi.set(attrOuter,value)
+								vi.set(attrOuter, value)
 							}
-						}else{
+						} else {
 							//当each运作后是继续允许进入finallyRun队列
 							_init_finallyRun._inQuene = $FALSE
 						}
@@ -5466,7 +5470,7 @@ var _formCache = {},
 					vi.set(attrOuter, obj.form.apply(ele, args))
 				} else {
 					vi.set(attrOuter, value)
-					// console.log(ele.options)
+						// console.log(ele.options)
 				}
 			}
 		},
@@ -5474,16 +5478,16 @@ var _formCache = {},
 	},
 	formListerAttribute = function(key, currentNode, attrVM, vi, /*dm_id,*/ handle, triggerTable) {
 		var attrOuter = _getAttrOuter(attrVM),
-			eventNameHashCode = $.hashCode(currentNode, "bind-"+key);
-			// console.log(attrOuter)
-			// console.log(eventNameHashCode,key,currentNode);
+			eventNameHashCode = $.hashCode(currentNode, "bind-" + key);
+		// console.log(attrOuter)
+		// console.log(eventNameHashCode,key,currentNode);
 		if (handle[eventNameHashCode] !== attrOuter) {
 			// console.log(handle[eventNameHashCode], attrOuter, arguments)
 			handle[eventNameHashCode] = attrOuter;
 			var eventNames,
 				eventConfig = _formKey[currentNode.tagName.toLowerCase()];
 			if (!eventConfig) return;
-			var elementHashCode = $.hashCode(currentNode, "form"+key),
+			var elementHashCode = $.hashCode(currentNode, "form" + key),
 				formCollection,
 				outerFormHandle;
 			if (eventConfig) {
@@ -5509,12 +5513,12 @@ var _formCache = {},
 					eventConfig.vi = vi;
 					if (!(outerFormHandle = formCollection[eventName])) {
 						outerFormHandle = function(e) {
-							var self = this;
-							eventConfig.before && eventConfig.before.call(this, e, eventConfig.vi, eventConfig.key)
-							eventConfig.inner.call(this, e, eventConfig.vi, eventConfig.key);
-							eventConfig.after && eventConfig.after.call(this, e, eventConfig.vi, eventConfig.key)
-						}
-						// outerFormHandle = Function('o' /*eventConfig*/ , 'return function(e){var s=this;' + (eventConfig.before ? 'o.before.call(s,e,o.vi, o.key);' : '') + 'o.inner.call(s,e,o.vi, o.key);' + (eventConfig.after ? 'o.after.call(s,e,o.vi, o.key);' : '') + '}')(eventConfig);
+								var self = this;
+								eventConfig.before && eventConfig.before.call(this, e, eventConfig.vi, eventConfig.key)
+								eventConfig.inner.call(this, e, eventConfig.vi, eventConfig.key);
+								eventConfig.after && eventConfig.after.call(this, e, eventConfig.vi, eventConfig.key)
+							}
+							// outerFormHandle = Function('o' /*eventConfig*/ , 'return function(e){var s=this;' + (eventConfig.before ? 'o.before.call(s,e,o.vi, o.key);' : '') + 'o.inner.call(s,e,o.vi, o.key);' + (eventConfig.after ? 'o.after.call(s,e,o.vi, o.key);' : '') + '}')(eventConfig);
 						outerFormHandle.eventConfig = eventConfig
 						_registerEvent(currentNode, eventName, outerFormHandle, elementHashCode);
 						formCollection[eventName] = outerFormHandle;
@@ -5529,8 +5533,8 @@ var _formCache = {},
 			}
 		}
 	};
-V.ra(function (attrKey) {
-	return attrKey==="input"||attrKey.indexOf("input-")===0;
+V.ra(function(attrKey, ele) {
+	return ele.tagName === "INPUT" && (attrKey === "input" || attrKey.indexOf("input-") === 0);
 }, function(attrKey) {
 	return formListerAttribute;
 });
