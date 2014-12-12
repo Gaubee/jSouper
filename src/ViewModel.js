@@ -324,7 +324,22 @@ var __ViewModelProto__ = ViewModel.prototype = {
             if (matchFun(elementHandle.currentNode)) {
                 $.p(result, elementHandle.currentNode);
             }
-        })
+        });
+        return result;
+    },
+    getElementViewModel:function (node) {
+        return this.model.getElementViewModel(node);
+    },
+    _getElementViewModel:function (node) {
+        var self = this;
+        var result;
+        var nodeList = self._buildElementMap();
+        $.e(nodeList,function (elementHandle) {
+            if (elementHandle.currentNode === node) {
+                result = self;
+                return false
+            }
+        });
         return result;
     },
     remove: function() {

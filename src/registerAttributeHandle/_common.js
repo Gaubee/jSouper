@@ -1,14 +1,14 @@
 var _testDIV = fragment(), //$.D.cl(shadowDIV),
-    _attrDataFormat = function (value) {
-        var type = $.st(value||"",":");
-        switch(type){
+    _attrDataFormat = function(value) {
+        var type = $.st(value || "", ":");
+        switch (type) {
             case "$Boolean":
                 value = !!_booleanFalseRegExp(_split_laveStr);
                 break;
             case "$String":
                 value = _split_laveStr;
                 break;
-            // case "Object"://JSON???....
+                // case "Object"://JSON???....
 
         }
         return value
@@ -33,12 +33,12 @@ var _testDIV = fragment(), //$.D.cl(shadowDIV),
         // });
 
         // return result
-        if (topNode.innerText!==$UNDEFINED) {
-            _getAttrOuter = function (attrVM) {
+        if (topNode.innerText !== $UNDEFINED) {
+            _getAttrOuter = function(attrVM) {
                 return _attrDataFormat(attrVM.topNode().innerText);
             }
-        }else{
-            _getAttrOuter = function (attrVM) {
+        } else {
+            _getAttrOuter = function(attrVM) {
                 return _attrDataFormat(attrVM.topNode().textContent);
             }
         }
@@ -57,16 +57,17 @@ var _AttributeHandleEvent = {
         currentNode.setAttribute(key, attrOuterEvent);
     },
     style: function(key, currentNode, attrVM) {
-        debugger
         var attrOuter = _getAttrOuter(attrVM);
+        console.info("style:", attrOuter);
         currentNode.style.cssText = attrOuter;
     },
     com: function(key, currentNode, attrVM) {
         var attrOuter = _getAttrOuter(attrVM);
+        if (key === "bind-style") {debugger};
         if (currentNode.getAttribute(key) !== attrOuter) {
-            try{
+            try {
                 currentNode.setAttribute(key, attrOuter)
-            }catch(e){//避免老IE对一些属性的赋值行为报错
+            } catch (e) { //避免老IE对一些属性的赋值行为报错
             }
         }
     },
@@ -80,7 +81,7 @@ var _AttributeHandleEvent = {
         var attrOuter = _booleanFalseRegExp(_getAttrOuter(attrVM));
         if (attrOuter) {
             //readonly等属性是要用node.readOnly，大小写不同，所以用setAttribute比较合理
-            currentNode.setAttribute(key,key);
+            currentNode.setAttribute(key, key);
         } else {
             //readonly等属性就算set false也是有用，应该直接remove
             currentNode.removeAttribute(key);
@@ -95,12 +96,12 @@ var _AttributeHandleEvent = {
             currentNode[key] = $FALSE;
         }
     },
-    withNS:function (key,currentNode,attrVM) {
-        var ns = $.st(key,":");
+    withNS: function(key, currentNode, attrVM) {
+        var ns = $.st(key, ":");
         key = _split_laveStr;
         var attrOuter = _getAttrOuter(attrVM);
         if (currentNode.getAttribute(key) !== attrOuter) {
-            currentNode.setAttributeNS(_svgNS[ns]||null,key, attrOuter);
+            currentNode.setAttributeNS(_svgNS[ns] || null, key, attrOuter);
         }
     }
 };

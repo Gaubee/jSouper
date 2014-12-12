@@ -123,6 +123,7 @@ var
     //事件生成器
     _registerEventBase = function(Element, eventName, eventFun, elementHash) {
         var result = {
+            ele: Element,
             name: eventName,
             fn: eventFun
         };
@@ -380,8 +381,23 @@ var
                     }
                 }
             }());
-        }else if (result._cacheName = _registerEventRouterMatch.anE[eventName]){
+        } else if (result._cacheName = _registerEventRouterMatch.anE[eventName]) {
             result.name = result._cacheName;
+        } else if (eventName === "change" && Element.tagName === "SELECT") {
+            result.fn = function(e) {
+                e._extend = {
+                    _before: function(e, vm) {
+                        var self = this;
+                        var args = $.s(arguments);
+                        $.p(args,vm.getElementViewModel(self.options[self.selectedIndex]));
+                        return {
+                            ele: this,
+                            args: args
+                        }
+                    }
+                }
+                return _fn(e);
+            };
         }
         _event_cache[elementHash + $.hashCode(eventFun)] = result;
         return result;
@@ -389,9 +405,10 @@ var
 
     //现代浏览器的事件监听
     _addEventListener = function(Element, eventName, eventFun, elementHash) {
-        var eventConfig = _registerEventBase(Element, eventName, eventFun, elementHash)
-            // var __base_hash_code = $.hashCode(Element);
-            // var event_cache = __base_event_cache[__base_hash_code] || (__base_event_cache[__base_hash_code] = {});
+        var eventConfig = _registerEventBase(Element, eventName, eventFun, elementHash);
+        Element = eventConfig.ele;
+        // var __base_hash_code = $.hashCode(Element);
+        // var event_cache = __base_event_cache[__base_hash_code] || (__base_event_cache[__base_hash_code] = {});
         if ($.isS(eventConfig.name)) {
             Element.addEventListener(eventConfig.name, eventConfig.fn, $FALSE);
             // $.p(event_cache[eventConfig.name] || (event_cache[eventConfig.name] = []), eventConfig.fn);

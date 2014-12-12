@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>了解View层的基础 - jSouper</title>
+		<script type="text/javascript" src="../build/jSouper.debug.js">
+		{
+			Id:"jSouperApp",
+			Data:{
+				a:[1,2,3],
+				selected_event:function (e,vm,cvm) {
+					console.log("selected_event", cvm.get());
+				}
+			}
+		}
+		</script>
+		<style>
+			.bg{
+				background-color: blue;
+			}
+		</style>
+	</head>
+	<body>
+		<xmp id="jSouperApp">
+		<select name="" id="s1" event-change="{{'selected_event'}}">
+			{{#each a}}
+			<option id="o{{$Index}}" >{{$This}}</option>
+			{{/each}}
+		</select>
+		</xmp>
+	</body>
+</html>

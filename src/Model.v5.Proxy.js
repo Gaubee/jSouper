@@ -47,6 +47,16 @@ var __ProxyModelProto__ = ProxyModel.prototype = {
         });
         return result;
     },
+    getElementViewModel:function (node) {
+        var self = this;
+        var result = self.entrust._getElementViewModel(node);
+        if (!result) {
+            $.e(self._childProxyModel, function(proxyModel) {
+               return !(result = proxyModel.getElementViewModel(node));
+            });
+        }
+        return result;
+    },
     //收留独立的代理层为model中的一份子，必要时会为其开辟新的子model块
     shelter: function(proxyModel, key) {
         var self = this;

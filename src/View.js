@@ -188,6 +188,14 @@ function _buildTrigger(self) {
                 if (value.match(_templateMatchRule) || value.match(_matchRule)) {
                     attributeHandle(name, value, node, handle, triggerTable);
                     node.removeAttribute(name);
+                } else if (name.indexOf(V.prefix) === 0) {
+                    name = _fixAttrKey(name);
+                    node.removeAttribute(name);
+                    if (name === "style") {
+                        node.style.cssText = value;
+                    } else {
+                        node.setAttribute(name, value);
+                    }
                 }
             });
             var nodeHTMLStr = _outerHTML(node);
@@ -201,7 +209,7 @@ function _buildTrigger(self) {
             //svg 属于 HTMLUnknownElement
 
             if (_isHTMLUnknownElement(handle.tag)) {
-                //保存非绑定式的属性
+                //保存非绑定式的属性，因为无法直接通过innerHTML克隆，所以需要用createElement
                 var eleAttr = [];
                 eleAttr._ = {};
                 handle._isSvg = _isSvgElement(handle.tag);

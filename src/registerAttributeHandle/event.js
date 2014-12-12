@@ -1,5 +1,5 @@
 var _elementCache = {},
-	eventListerAttribute = function(key, currentNode, attrVM, vi /*, dm_id*/ ,handle, triggerTable) {
+	eventListerAttribute = function(key, currentNode, attrVM, vi /*, dm_id*/ , handle, triggerTable) {
 		var attrOuter = _getAttrOuter(attrVM),
 			eventInfos = key.replace("event-", "").toLowerCase().split("-"),
 			eventName = eventInfos.shift(), //Multi-event binding
@@ -18,7 +18,17 @@ var _elementCache = {},
 				//没法自动更新eventFun，只能自动更新eventName，因此eventFun要动态获取
 				var vi = wrapEventFun.vi;
 				var eventFun = vi.get(wrapEventFun.attrOuter) || $.noop;
-				return eventFun.call(this, e, vi)
+				var self = this;
+				var result;
+				if (e._before) {
+					result = e._before.call(self, e, vi);
+					if (result) {
+						result = eventFun.apply(result.ele, result.args);
+					}
+				} else {
+					result = eventFun.call(this, e, vi)
+				}
+				return result;
 			}
 			_registerEvent(currentNode, eventName, wrapEventFun, elementHashCode);
 		}

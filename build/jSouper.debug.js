@@ -599,6 +599,7 @@ var
     //事件生成器
     _registerEventBase = function(Element, eventName, eventFun, elementHash) {
         var result = {
+            ele: Element,
             name: eventName,
             fn: eventFun
         };
@@ -856,8 +857,23 @@ var
                     }
                 }
             }());
-        }else if (result._cacheName = _registerEventRouterMatch.anE[eventName]){
+        } else if (result._cacheName = _registerEventRouterMatch.anE[eventName]) {
             result.name = result._cacheName;
+        } else if (eventName === "change" && Element.tagName === "SELECT") {
+            result.fn = function(e) {
+                e._extend = {
+                    _before: function(e, vm) {
+                        var self = this;
+                        var args = $.s(arguments);
+                        $.p(args,vm.getElementViewModel(self.options[self.selectedIndex]));
+                        return {
+                            ele: this,
+                            args: args
+                        }
+                    }
+                }
+                return _fn(e);
+            };
         }
         _event_cache[elementHash + $.hashCode(eventFun)] = result;
         return result;
@@ -865,9 +881,10 @@ var
 
     //现代浏览器的事件监听
     _addEventListener = function(Element, eventName, eventFun, elementHash) {
-        var eventConfig = _registerEventBase(Element, eventName, eventFun, elementHash)
-            // var __base_hash_code = $.hashCode(Element);
-            // var event_cache = __base_event_cache[__base_hash_code] || (__base_event_cache[__base_hash_code] = {});
+        var eventConfig = _registerEventBase(Element, eventName, eventFun, elementHash);
+        Element = eventConfig.ele;
+        // var __base_hash_code = $.hashCode(Element);
+        // var event_cache = __base_event_cache[__base_hash_code] || (__base_event_cache[__base_hash_code] = {});
         if ($.isS(eventConfig.name)) {
             Element.addEventListener(eventConfig.name, eventConfig.fn, $FALSE);
             // $.p(event_cache[eventConfig.name] || (event_cache[eventConfig.name] = []), eventConfig.fn);
@@ -1941,6 +1958,16 @@ var __ProxyModelProto__ = ProxyModel.prototype = {
         });
         return result;
     },
+    getElementViewModel:function (node) {
+        var self = this;
+        var result = self.entrust._getElementViewModel(node);
+        if (!result) {
+            $.e(self._childProxyModel, function(proxyModel) {
+               return !(result = proxyModel.getElementViewModel(node));
+            });
+        }
+        return result;
+    },
     //收留独立的代理层为model中的一份子，必要时会为其开辟新的子model块
     shelter: function(proxyModel, key) {
         var self = this;
@@ -2662,6 +2689,14 @@ function _buildTrigger(self) {
                 if (value.match(_templateMatchRule) || value.match(_matchRule)) {
                     attributeHandle(name, value, node, handle, triggerTable);
                     node.removeAttribute(name);
+                } else if (name.indexOf(V.prefix) === 0) {
+                    name = _fixAttrKey(name);
+                    node.removeAttribute(name);
+                    if (name === "style") {
+                        node.style.cssText = value;
+                    } else {
+                        node.setAttribute(name, value);
+                    }
                 }
             });
             var nodeHTMLStr = _outerHTML(node);
@@ -2675,7 +2710,7 @@ function _buildTrigger(self) {
             //svg 属于 HTMLUnknownElement
 
             if (_isHTMLUnknownElement(handle.tag)) {
-                //保存非绑定式的属性
+                //保存非绑定式的属性，因为无法直接通过innerHTML克隆，所以需要用createElement
                 var eleAttr = [];
                 eleAttr._ = {};
                 handle._isSvg = _isSvgElement(handle.tag);
@@ -3214,7 +3249,22 @@ var __ViewModelProto__ = ViewModel.prototype = {
             if (matchFun(elementHandle.currentNode)) {
                 $.p(result, elementHandle.currentNode);
             }
-        })
+        });
+        return result;
+    },
+    getElementViewModel:function (node) {
+        return this.model.getElementViewModel(node);
+    },
+    _getElementViewModel:function (node) {
+        var self = this;
+        var result;
+        var nodeList = self._buildElementMap();
+        $.e(nodeList,function (elementHandle) {
+            if (elementHandle.currentNode === node) {
+                result = self;
+                return false
+            }
+        });
         return result;
     },
     remove: function() {
@@ -5195,16 +5245,16 @@ V.rt("#with", function(handle, index, parentHandle) {
 	return trigger;
 });
 var _testDIV = fragment(), //$.D.cl(shadowDIV),
-    _attrDataFormat = function (value) {
-        var type = $.st(value||"",":");
-        switch(type){
+    _attrDataFormat = function(value) {
+        var type = $.st(value || "", ":");
+        switch (type) {
             case "$Boolean":
                 value = !!_booleanFalseRegExp(_split_laveStr);
                 break;
             case "$String":
                 value = _split_laveStr;
                 break;
-            // case "Object"://JSON???....
+                // case "Object"://JSON???....
 
         }
         return value
@@ -5229,12 +5279,12 @@ var _testDIV = fragment(), //$.D.cl(shadowDIV),
         // });
 
         // return result
-        if (topNode.innerText!==$UNDEFINED) {
-            _getAttrOuter = function (attrVM) {
+        if (topNode.innerText !== $UNDEFINED) {
+            _getAttrOuter = function(attrVM) {
                 return _attrDataFormat(attrVM.topNode().innerText);
             }
-        }else{
-            _getAttrOuter = function (attrVM) {
+        } else {
+            _getAttrOuter = function(attrVM) {
                 return _attrDataFormat(attrVM.topNode().textContent);
             }
         }
@@ -5253,16 +5303,17 @@ var _AttributeHandleEvent = {
         currentNode.setAttribute(key, attrOuterEvent);
     },
     style: function(key, currentNode, attrVM) {
-        debugger
         var attrOuter = _getAttrOuter(attrVM);
+        console.info("style:", attrOuter);
         currentNode.style.cssText = attrOuter;
     },
     com: function(key, currentNode, attrVM) {
         var attrOuter = _getAttrOuter(attrVM);
+        if (key === "bind-style") {debugger};
         if (currentNode.getAttribute(key) !== attrOuter) {
-            try{
+            try {
                 currentNode.setAttribute(key, attrOuter)
-            }catch(e){//避免老IE对一些属性的赋值行为报错
+            } catch (e) { //避免老IE对一些属性的赋值行为报错
             }
         }
     },
@@ -5276,7 +5327,7 @@ var _AttributeHandleEvent = {
         var attrOuter = _booleanFalseRegExp(_getAttrOuter(attrVM));
         if (attrOuter) {
             //readonly等属性是要用node.readOnly，大小写不同，所以用setAttribute比较合理
-            currentNode.setAttribute(key,key);
+            currentNode.setAttribute(key, key);
         } else {
             //readonly等属性就算set false也是有用，应该直接remove
             currentNode.removeAttribute(key);
@@ -5291,12 +5342,12 @@ var _AttributeHandleEvent = {
             currentNode[key] = $FALSE;
         }
     },
-    withNS:function (key,currentNode,attrVM) {
-        var ns = $.st(key,":");
+    withNS: function(key, currentNode, attrVM) {
+        var ns = $.st(key, ":");
         key = _split_laveStr;
         var attrOuter = _getAttrOuter(attrVM);
         if (currentNode.getAttribute(key) !== attrOuter) {
-            currentNode.setAttributeNS(_svgNS[ns]||null,key, attrOuter);
+            currentNode.setAttributeNS(_svgNS[ns] || null, key, attrOuter);
         }
     }
 };
@@ -5322,7 +5373,6 @@ if (_isIE) {
         (this._attributeHandle = __bool)(key, currentNode, attrVM);
     }
 }
-
 var _boolAssignment = " checked selected disabled readonly multiple defer declare noresize nowrap noshade compact truespeed async typemustmatch open novalidate ismap default seamless autoplay controls loop muted reversed scoped autofocus required formnovalidate editable draggable hidden "
 /*for ie fix*/
 + "defaultSelected ";
@@ -5371,7 +5421,7 @@ V.ra(function(attrKey) {
 	return eventFireElementEvent;
 })
 var _elementCache = {},
-	eventListerAttribute = function(key, currentNode, attrVM, vi /*, dm_id*/ ,handle, triggerTable) {
+	eventListerAttribute = function(key, currentNode, attrVM, vi /*, dm_id*/ , handle, triggerTable) {
 		var attrOuter = _getAttrOuter(attrVM),
 			eventInfos = key.replace("event-", "").toLowerCase().split("-"),
 			eventName = eventInfos.shift(), //Multi-event binding
@@ -5390,7 +5440,17 @@ var _elementCache = {},
 				//没法自动更新eventFun，只能自动更新eventName，因此eventFun要动态获取
 				var vi = wrapEventFun.vi;
 				var eventFun = vi.get(wrapEventFun.attrOuter) || $.noop;
-				return eventFun.call(this, e, vi)
+				var self = this;
+				var result;
+				if (e._before) {
+					result = e._before.call(self, e, vi);
+					if (result) {
+						result = eventFun.apply(result.ele, result.args);
+					}
+				} else {
+					result = eventFun.call(this, e, vi)
+				}
+				return result;
 			}
 			_registerEvent(currentNode, eventName, wrapEventFun, elementHashCode);
 		}
