@@ -4036,7 +4036,8 @@ var _build_expression = function(expression) {
     // });
     //解析表达式中的对象
     result = result.replace(_obj_get_reg, function(matchVar) {
-        if (!_const_obj[matchVar] && matchVar.indexOf("window.")) {
+        //过滤数值、常量
+        if (!_const_obj[matchVar] && matchVar.indexOf("window.") && matchVar != (+matchVar)) {
             if (!varsMap.hasOwnProperty(matchVar)) {
                 varsMap[matchVar] = $TRUE;
                 $.p(varsSet, matchVar);
@@ -4053,6 +4054,7 @@ var _build_expression = function(expression) {
     result = result.replace(/\@\#\@/g, function() {
         return string_sets.shift();
     });
+    console.log(result);
     // console.log(result);
     _build_str = "return function(vm){try{return [" + result + "]}catch(e){/*debugger;var c=window.console;if(c){c.error(e);}*/return [];}}"
         // console.dir(_build_str);
