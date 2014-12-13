@@ -400,7 +400,7 @@ var Expression = {
     }
 };
 //JS对象的获取
-var _obj_get_reg = /([a-zA-Z_?.$][\w?.$]*)/g;
+var _obj_get_reg = /([^\^\~\+\-\*\/\%\=\&\|\?\:\s\(\)\{\}\[\]\:\;\'\"\,\<\>\@\#]*)/g;///([a-zA-Z_?.$][\w?.$][^\x00-\xff]*)/g;
 var _const_obj = {
         "true": $TRUE,
         "NaN": $TRUE,
@@ -434,7 +434,7 @@ var _build_expression = function(expression) {
     //备份字符串，避免解析
     var result = expression.replace(QuotedString, function(matchStr) {
         $.p(string_sets, matchStr);
-        return "@1";
+        return "@#@";
     });
     // //备份模板字符串，替换成正常对象
     // var result = result.replace(TemplateString, function(matchTpl, tpl_content) {
@@ -443,7 +443,7 @@ var _build_expression = function(expression) {
     // });
     //解析表达式中的对象
     result = result.replace(_obj_get_reg, function(matchVar) {
-        if (!_const_obj[matchVar] && matchVar.indexOf("window.")) {
+        if (matchVar && !_const_obj[matchVar] && matchVar.indexOf("window.")) {
             if (!varsMap.hasOwnProperty(matchVar)) {
                 varsMap[matchVar] = $TRUE;
                 $.p(varsSet, matchVar);
@@ -457,7 +457,7 @@ var _build_expression = function(expression) {
     //     return template_sets.shift();
     // });
     //回滚备份的字符串
-    result = result.replace(/\@1/g, function() {
+    result = result.replace(/\@\#\@/g, function() {
         return string_sets.shift();
     });
     // console.log(result);

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>了解View层的基础 - jSouper</title>
+		<script type="text/javascript" src="../build/jSouper.debug.js">
+		{
+			Id:"jSouperApp",
+			Data:{
+				我:{
+					笑:"哈哈哈哈",
+					开心:"开心",
+					伤心:"伤心"
+				}
+			}
+		}
+		</script>
+		<style>
+			.bg{
+				background-color: blue;
+			}
+		</style>
+	</head>
+	<body>
+		<xmp id="jSouperApp">
+		<h1>{{我.笑?我.开心:我.伤心}}</h1>
+		<button event-click="{{'打脸'}}">打脸</button>
+		<button event-click="{{'爱抚'}}">爱抚</button>
+		</xmp>
+	</body>
+</html>
+<script>
+	// alert(HTMLSelectElement)
+	jSouper.ready(function () {
+		App.set("打脸",function (e,vm) {
+			vm.set("我.笑","")
+		});
+		App.set("爱抚",function (e,vm) {
+			vm.set("我.笑","哈哈哈哈")
+		});
+	});
+</script>
