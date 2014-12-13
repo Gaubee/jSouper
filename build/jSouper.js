@@ -3970,7 +3970,8 @@ var Expression = {
     }
 };
 //JS对象的获取
-var _obj_get_reg = /([^\^\~\+\-\*\/\%\=\&\|\?\:\s\(\)\{\}\[\]\:\;\'\"\,\<\>\@\#\!]*)/g;///([a-zA-Z_?.$][\w?.$][^\x00-\xff]*)/g;
+var _obj_get_reg = /([^\^\~\+\-\*\/\%\=\&\|\?\:\s\(\)\{\}\[\]\:\;\'\"\,\<\>\@\#\!]+)/g;
+// var _obj_get_reg = /([a-zA-Z_?.$][\w?.$]*)/g;
 var _const_obj = {
         "true": $TRUE,
         "NaN": $TRUE,
@@ -4013,7 +4014,7 @@ var _build_expression = function(expression) {
     // });
     //解析表达式中的对象
     result = result.replace(_obj_get_reg, function(matchVar) {
-        if (matchVar && !_const_obj[matchVar] && matchVar.indexOf("window.")) {
+        if (!_const_obj[matchVar] && matchVar.indexOf("window.")) {
             if (!varsMap.hasOwnProperty(matchVar)) {
                 varsMap[matchVar] = $TRUE;
                 $.p(varsSet, matchVar);
