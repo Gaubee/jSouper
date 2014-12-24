@@ -2451,7 +2451,8 @@ draggable
             key: attrKey,
             type: "attributesTrigger",
             event: function(NodeList, model, /* eventTrigger,*/ isAttr, viewModel_ID) { /*NodeList, model, eventTrigger, self._isAttr, self._id*/
-                var currentNode = NodeList[handle.id].currentNode,
+                var currentHandle = NodeList[handle.id];
+                var currentNode = currentHandle.currentNode,
                     viewModel = V._instances[viewModel_ID];
                 if (currentNode) {
                     //绑定数据域
@@ -2460,7 +2461,7 @@ draggable
                     $.E(attrViewModel._triggers, function(key) { //touchoff all triggers
                         attrViewModel.touchOff(key);
                     });
-
+                    // currentHandle.setAttr(attrKey, viewModel.get());
                     _attributeHandle(attrKey, currentNode, attrViewModel /*.topNode()*/ , viewModel, /*model.id,*/ handle, triggerTable);
                     // model.remove(attrViewModel); //?
 
@@ -3230,9 +3231,12 @@ var __ViewModelProto__ = ViewModel.prototype = {
             tagName: tagName.toUpperCase()
         });
     },
-    queryElement: function(matchFun) {
-        return this.model.queryElement(matchFun);
-    },
+    // //获取绑定在元素上的真实数据
+    // getElementAttrData: function(node, attrKey) {
+    //     var nodeList = this._buildElementMap();
+    //     var handle = nodeList[$.hashCode(node)];
+    //     return handle && handle.getAttr(attrKey);
+    // },
     _buildElementMap: function() {
         var self = this;
         var NodeList = self.NodeList;
@@ -3248,6 +3252,9 @@ var __ViewModelProto__ = ViewModel.prototype = {
         }
         return NodeList._;
     },
+    queryElement: function(matchFun) {
+        return this.model.queryElement(matchFun);
+    },
     _queryElement: function(matchFun) {
         var self = this;
         var result = [];
@@ -3262,14 +3269,14 @@ var __ViewModelProto__ = ViewModel.prototype = {
         });
         return result;
     },
-    getElementViewModel:function (node) {
+    getElementViewModel: function(node) {
         return this.model.getElementViewModel(node);
     },
-    _getElementViewModel:function (node) {
+    _getElementViewModel: function(node) {
         var self = this;
         var result;
         var nodeList = self._buildElementMap();
-        $.e(nodeList,function (elementHandle) {
+        $.e(nodeList, function(elementHandle) {
             if (elementHandle.currentNode === node) {
                 result = self;
                 return false
@@ -3307,6 +3314,16 @@ var __ViewModelProto__ = ViewModel.prototype = {
             self.onremove && self.onremove();
         }
         return self;
+    },
+    //如果数据所在的对象是数组的元素，将数据中的数据移除，显示的each-remove
+    removeFromArray: function() {
+        var self = this;
+        var arr = self.get("$Parent");
+        if ($.isA(arr)) {
+            var index = self.get("$Index");
+            arr.splice(index, 1);
+            self.set("$Parent", arr);
+        }
     },
     topNode: function(newCurrentTopNode) {
         var self = this,
@@ -3440,22 +3457,22 @@ __ViewModelProto__.concat = function(key, items) {
  * parse function
  */
 var _removeNodes = _isIE ? $.noop
-/*function() {//IE 不能回收节点，会导致子节点被销毁
-        //@大城小胖 http://fins.iteye.com/blog/172263
-        var d = $.D.cl(shadowDIV);
-        return function(n) {
-            // if (n && n.tagName != 'BODY') {
-                d.appendChild(n);
-                d.innerHTML = '';
-            // }
-        }
-    }() */
-: function(n) {
+    /*function() {//IE 不能回收节点，会导致子节点被销毁
+            //@大城小胖 http://fins.iteye.com/blog/172263
+            var d = $.D.cl(shadowDIV);
+            return function(n) {
+                // if (n && n.tagName != 'BODY') {
+                    d.appendChild(n);
+                    d.innerHTML = '';
+                // }
+            }
+        }() */
+    : function(n) {
         // if (n && n.parentNode && n.tagName != 'BODY') {
         $.E(n, function(nodeToDelete) {
-            delete nodeToDelete.parentNode.removeChild(nodeToDelete);
-        })
-        // }
+                delete nodeToDelete.parentNode.removeChild(nodeToDelete);
+            })
+            // }
     },
     //模拟浏览器渲染空格的方式
     _trim_but_space = function(str) {
@@ -3524,6 +3541,7 @@ Handle.init = function(self, weights) {
     self._controllers[$FALSE] = []; //In the #else block scope
     if (weights < 3) return;
     self._triggers = []; //weights <= 3
+    self._attrs = {};
 };
 Handle.prototype = {
     nodeType: 0,
@@ -3531,7 +3549,13 @@ Handle.prototype = {
     display: $FALSE, //function of show or hidden DOM
     childNodes: [],
     parentNode: $NULL,
-    type: "handle"
+    type: "handle"/*,
+    setAttr: function(attr, value) {
+        this._attrs[attr] = value;
+    },
+    getAttr: function(attr) {
+        return this._attrs[attr]
+    }*/
 };
 
 /*
@@ -3589,7 +3613,6 @@ function CommentHandle(node) {
 CommentHandle.prototype = Handle("comment", {
     nodeType: 8
 })
-
 /*
  * parse rule
  * 底层解析器，类Lisp语法规则，易于解析
@@ -4054,7 +4077,6 @@ var _build_expression = function(expression) {
     result = result.replace(/\@\#\@/g, function() {
         return string_sets.shift();
     });
-    console.log(result);
     // console.log(result);
     _build_str = "return function(vm){try{return [" + result + "]}catch(e){/*debugger;var c=window.console;if(c){c.error(e);}*/return [];}}"
         // console.dir(_build_str);
@@ -5406,16 +5428,14 @@ V.ra(function(attrKey) {
 	}
 	return result;
 })
-var _dirAssignment = " className value ";
-V.ra(function(attrKey) {
-    return _dirAssignment.indexOf(" " + attrKey + " ") !== -1;
+V.ra(function(attrKey, ele) {
+	return attrKey === "className" || (attrKey === "value" && ele.tagName === "INPUT");
 }, function(attrKey, element) {
-    if (element.tagName === (V.namespave + "select").toUpperCase()) {
-        return _AttributeHandleEvent.select;
-    }
-    return _AttributeHandleEvent.dir;
-})
-
+	if (element.tagName === (V.namespave + "select").toUpperCase()) {
+		return _AttributeHandleEvent.select;
+	}
+	return _AttributeHandleEvent.dir;
+});
 function eventFireElementEvent(key, currentNode, attrVM, vi /*, dm_id*/ , handle, triggerTable) {
 	var elementEventName = key.replace("ele-", "").split("-").shift();
 	//属性不支持大写，转化成峰驼式

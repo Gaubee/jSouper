@@ -115,7 +115,8 @@ draggable
             key: attrKey,
             type: "attributesTrigger",
             event: function(NodeList, model, /* eventTrigger,*/ isAttr, viewModel_ID) { /*NodeList, model, eventTrigger, self._isAttr, self._id*/
-                var currentNode = NodeList[handle.id].currentNode,
+                var currentHandle = NodeList[handle.id];
+                var currentNode = currentHandle.currentNode,
                     viewModel = V._instances[viewModel_ID];
                 if (currentNode) {
                     //绑定数据域
@@ -124,7 +125,7 @@ draggable
                     $.E(attrViewModel._triggers, function(key) { //touchoff all triggers
                         attrViewModel.touchOff(key);
                     });
-
+                    // currentHandle.setAttr(attrKey, viewModel.get());
                     _attributeHandle(attrKey, currentNode, attrViewModel /*.topNode()*/ , viewModel, /*model.id,*/ handle, triggerTable);
                     // model.remove(attrViewModel); //?
 

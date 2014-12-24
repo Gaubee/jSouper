@@ -295,9 +295,12 @@ var __ViewModelProto__ = ViewModel.prototype = {
             tagName: tagName.toUpperCase()
         });
     },
-    queryElement: function(matchFun) {
-        return this.model.queryElement(matchFun);
-    },
+    // //获取绑定在元素上的真实数据
+    // getElementAttrData: function(node, attrKey) {
+    //     var nodeList = this._buildElementMap();
+    //     var handle = nodeList[$.hashCode(node)];
+    //     return handle && handle.getAttr(attrKey);
+    // },
     _buildElementMap: function() {
         var self = this;
         var NodeList = self.NodeList;
@@ -313,6 +316,9 @@ var __ViewModelProto__ = ViewModel.prototype = {
         }
         return NodeList._;
     },
+    queryElement: function(matchFun) {
+        return this.model.queryElement(matchFun);
+    },
     _queryElement: function(matchFun) {
         var self = this;
         var result = [];
@@ -327,14 +333,14 @@ var __ViewModelProto__ = ViewModel.prototype = {
         });
         return result;
     },
-    getElementViewModel:function (node) {
+    getElementViewModel: function(node) {
         return this.model.getElementViewModel(node);
     },
-    _getElementViewModel:function (node) {
+    _getElementViewModel: function(node) {
         var self = this;
         var result;
         var nodeList = self._buildElementMap();
-        $.e(nodeList,function (elementHandle) {
+        $.e(nodeList, function(elementHandle) {
             if (elementHandle.currentNode === node) {
                 result = self;
                 return false
@@ -372,6 +378,16 @@ var __ViewModelProto__ = ViewModel.prototype = {
             self.onremove && self.onremove();
         }
         return self;
+    },
+    //如果数据所在的对象是数组的元素，将数据中的数据移除，显示的each-remove
+    removeFromArray: function() {
+        var self = this;
+        var arr = self.get("$Parent");
+        if ($.isA(arr)) {
+            var index = self.get("$Index");
+            arr.splice(index, 1);
+            self.set("$Parent", arr);
+        }
     },
     topNode: function(newCurrentTopNode) {
         var self = this,

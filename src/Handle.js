@@ -2,22 +2,22 @@
  * parse function
  */
 var _removeNodes = _isIE ? $.noop
-/*function() {//IE 不能回收节点，会导致子节点被销毁
-        //@大城小胖 http://fins.iteye.com/blog/172263
-        var d = $.D.cl(shadowDIV);
-        return function(n) {
-            // if (n && n.tagName != 'BODY') {
-                d.appendChild(n);
-                d.innerHTML = '';
-            // }
-        }
-    }() */
-: function(n) {
+    /*function() {//IE 不能回收节点，会导致子节点被销毁
+            //@大城小胖 http://fins.iteye.com/blog/172263
+            var d = $.D.cl(shadowDIV);
+            return function(n) {
+                // if (n && n.tagName != 'BODY') {
+                    d.appendChild(n);
+                    d.innerHTML = '';
+                // }
+            }
+        }() */
+    : function(n) {
         // if (n && n.parentNode && n.tagName != 'BODY') {
         $.E(n, function(nodeToDelete) {
-            delete nodeToDelete.parentNode.removeChild(nodeToDelete);
-        })
-        // }
+                delete nodeToDelete.parentNode.removeChild(nodeToDelete);
+            })
+            // }
     },
     //模拟浏览器渲染空格的方式
     _trim_but_space = function(str) {
@@ -86,6 +86,7 @@ Handle.init = function(self, weights) {
     self._controllers[$FALSE] = []; //In the #else block scope
     if (weights < 3) return;
     self._triggers = []; //weights <= 3
+    self._attrs = {};
 };
 Handle.prototype = {
     nodeType: 0,
@@ -93,7 +94,13 @@ Handle.prototype = {
     display: $FALSE, //function of show or hidden DOM
     childNodes: [],
     parentNode: $NULL,
-    type: "handle"
+    type: "handle"/*,
+    setAttr: function(attr, value) {
+        this._attrs[attr] = value;
+    },
+    getAttr: function(attr) {
+        return this._attrs[attr]
+    }*/
 };
 
 /*

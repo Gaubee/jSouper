@@ -13,38 +13,38 @@ module.exports = function(grunt) {
     grunt.registerTask('server', ['connect:server', 'watch']);
 
     var baseFile = [
-        'src/$.js',
-        'src/json.js',
-        'src/event.js',
-        'src/SmartTrigger_for_Model.js',
+            'src/$.js',
+            'src/json.js',
+            'src/event.js',
+            'src/SmartTrigger_for_Model.js',
 
-        'src/Model.v5.core.js',
-        'src/Model.v5.base.js',
-        'src/Model.v5.$scope.js',
-        'src/Model.v5.ArrayModel.js',
-        'src/Model.v5.Proxy.js',
-        'src/_ArrayModel.js',
-        'src/Model.extend.js',
-        'src/registerAttribute.js',
-        'src/View.js',
-        'src/ViewModel.js',
-        'src/Handle.js',
-        'src/baseViewParser.js',
-        'src/registerHandle/*.js',
-        'src/registerTrigger/*.js',
-        'src/registerAttributeHandle/*.js',
-        // 'src/templateParse.v1.js',
-        'src/templateParse.v3.js',
+            'src/Model.v5.core.js',
+            'src/Model.v5.base.js',
+            'src/Model.v5.$scope.js',
+            'src/Model.v5.ArrayModel.js',
+            'src/Model.v5.Proxy.js',
+            'src/_ArrayModel.js',
+            'src/Model.extend.js',
+            'src/registerAttribute.js',
+            'src/View.js',
+            'src/ViewModel.js',
+            'src/Handle.js',
+            'src/baseViewParser.js',
+            'src/registerHandle/*.js',
+            'src/registerTrigger/*.js',
+            'src/registerAttributeHandle/*.js',
+            // 'src/templateParse.v1.js',
+            'src/templateParse.v3.js',
 
-        'src/registerHandle.js',
-        'src/export.js',
+            'src/registerHandle.js',
+            'src/export.js',
 
-        //自动监听变动的的拓展类
-        'src/modelExtendsClass/Observer.js',
-    ],
+            //自动监听变动的的拓展类
+            'src/modelExtendsClass/Observer.js',
+        ],
         debugFile = baseFile.slice();
     debugFile.unshift('src/plugins.js')
-    //grunt config
+        //grunt config
     grunt.initConfig({
         //======== 配置相关 ========
         pkg: grunt.file.readJSON('package.json'),
@@ -85,25 +85,26 @@ module.exports = function(grunt) {
         //======== 开发相关 ========
         //开启服务
         connect: {
-            options: {
-                port: 9000,
-                // Change this to '0.0.0.0' to access the server from outside.
-                // hostname: 'localhost',
-                hostname: '0.0.0.0',
-                middleware: function(connect, options) {
-                    return [
-                        require('connect-livereload')({
-                            port: Number('<%= watch.options.livereload %>')
-                        }),
-                        connect.static(options.base),
-                    ];
-                }
-            },
             server: {
                 options: {
-                    // keepalive: true,
-                    base: '<%= src %>',
-                }
+                    port: 9000,
+                    // Change this to '0.0.0.0' to access the server from outside.
+                    // hostname: 'localhost',
+                    middleware: function(connect, options) {
+                        return [
+                            require('connect-livereload')({
+                                port: Number('<%= watch.options.livereload %>')
+                            }),
+                            function(req, res, next) {
+                                res.setHeader("Access-Control-Allow-Origin", "*");
+                                res.setHeader("Access-Control-Allow-Headers", "X-Requested-With");
+                                return next();
+                            },
+                            connect.static(options.base)
+                        ];
+                    },
+                    base: '<%= src %>'
+                },
             }
         },
 
@@ -116,7 +117,7 @@ module.exports = function(grunt) {
             },
             js: {
                 files: ['src/*.js', 'src/**/*.js'],
-                tasks: ['concat' , 'wrap', 'uglify' ] //,'closure-compiler'
+                tasks: ['concat', 'wrap', 'uglify'] //,'closure-compiler'
             }
         }
 
