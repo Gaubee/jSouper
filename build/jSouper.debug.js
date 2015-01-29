@@ -311,19 +311,22 @@ var
                 }
                 return result;
             },
+            iA: function(parentNode, insertNode, afterNode) {
+                var beforNode = afterNode.nextSibling;
+                $.D.iB(parentNode, insertNode, beforNode)
+            },
             //insertBefore
             iB: function(parentNode, insertNode, beforNode) {
                 try {
                     parentNode.insertBefore(insertNode, beforNode || $NULL);
-                } catch (e) {
-                }
+                } catch (e) {}
             },
             //往节点末尾推入节点集合
             ap: function(parentNode, node) { //append
-                try{
-                    
-                parentNode.appendChild(node);
-                }catch(e){
+                try {
+
+                    parentNode.appendChild(node);
+                } catch (e) {
                     debugger
                 }
             },
@@ -594,6 +597,13 @@ var
         //回车事件，基于keyup
         en: {
             enter: "keyup"
+        },
+        //click and hold 长按
+        ch: {
+            //mouseleave事件有兼容问题，而外提取出来和mouseup另外注册
+            hclick: "mousedown",
+            /*, "mouseup", "mouseleave"*/
+            _hclick_out: ["mouseup", "mouseleave"]
         }
     },
     //事件生成器
@@ -867,14 +877,14 @@ var
                         var args = $.s(arguments);
                         if (self.multiple) {
                             var vms = [];
-                            $.E(self.options,function (optionNode) {
+                            $.E(self.options, function(optionNode) {
                                 if (optionNode.selected) {
                                     vms.push(vm.getElementViewModel(optionNode));
                                 }
                             });
-                            $.p(args,vms);
-                        }else{
-                            $.p(args,vm.getElementViewModel(self.options[self.selectedIndex]));
+                            $.p(args, vms);
+                        } else {
+                            $.p(args, vm.getElementViewModel(self.options[self.selectedIndex]));
                         }
                         return {
                             ele: this,
@@ -884,6 +894,25 @@ var
                 }
                 return _fn(e);
             };
+        } else if (result._cacheName = _registerEventRouterMatch.ch[eventName]) {;
+            (function() {
+                result.name = result._cacheName;
+                var _b_ti
+                var _ti
+                result.fn = function() {
+                    var self = this;
+                    var args = arguments;
+                    _b_ti = setTimeout(function() {
+                        _ti = setInterval(function() {
+                            _fn.apply(self, args);
+                        }, 16);
+                    }, 500);
+                };
+                _registerEvent(Element, _registerEventRouterMatch.ch._hclick_out, function() {
+                    clearTimeout(_b_ti);
+                    clearInterval(_ti);
+                }, elementHash);
+            }());
         }
         _event_cache[elementHash + $.hashCode(eventFun)] = result;
         return result;
@@ -902,7 +931,7 @@ var
             $.E(eventConfig.name, function(eventName) {
                 Element.addEventListener(eventName, eventConfig.fn, $FALSE);
                 // $.p(event_cache[eventConfig.name] || (event_cache[eventConfig.name] = []), eventConfig.fn);
-            })
+            });
         }
     },
     //现代浏览器的事件移除
@@ -1925,7 +1954,8 @@ var _dm_force_update = 0;
  * 在v4版本中需要同时管理静态的数据与动态的代理，v5版本中将二者分离，从而带来更快更灵活稳定的体验
  */
 
-function ProxyModel(entrust, model) {
+function ProxyModel(entrust, model, opts) {
+    opts || (opts = {});
     var self = this;
 
     //存储委托对象
@@ -1956,9 +1986,18 @@ function ProxyModel(entrust, model) {
     model instanceof Model || (model = Model(model));
     self.follow(model)
         // }
+
+    //是否是自定义标签
+    self.isCustomVM = opts.isCustomVM;
 };
 
 var __ProxyModelProto__ = ProxyModel.prototype = {
+    init: function(key, value) {
+        var self = this;
+        if (self.get(key) === $UNDEFINED) {
+            self.set(key, value);
+        }
+    },
     queryElement: function(matchFun) {
         var self = this;
         matchFun = _buildQueryMatchFun(matchFun);
@@ -1968,12 +2007,12 @@ var __ProxyModelProto__ = ProxyModel.prototype = {
         });
         return result;
     },
-    getElementViewModel:function (node) {
+    getElementViewModel: function(node) {
         var self = this;
         var result = self.entrust._getElementViewModel(node);
         if (!result) {
             $.e(self._childProxyModel, function(proxyModel) {
-               return !(result = proxyModel.getElementViewModel(node));
+                return !(result = proxyModel.getElementViewModel(node));
             });
         }
         return result;
@@ -2090,20 +2129,33 @@ $.E([ /*"set", "get", */ "touchOff"], function(handleName) {
  * 路由寻址ProxyModel
  */
 (function(argument) {
+    var _privateVM;
 
+    function _innerPrivateRouter(pmodel, key, getCustomVMPrivate) {
+        if (!pmodel) {debugger}
+        if (pmodel.isCustomVM && !getCustomVMPrivate) { //自定义标签的Private默认获取父级的，需用用CPrivate才能取到customVM的真正的Private
+            return routerMap.$Private.call(this, pmodel._parentPM, key);
+        } else {
+            return pmodel._ppModel || (pmodel._ppModel = new ProxyModel(_privateVM, new Model));
+        }
+    };
     var routerMap = ProxyModel._routerMap = {
-        "$Private": function(pmodel, key) {
-            var _privateVM = V.parse("")();
-
-            function _innerPrivateRouter(pmodel, key) {
-                return pmodel._ppModel || (pmodel._ppModel = new ProxyModel(_privateVM, new Model));
-            };
+        //Custom tag Private model
+        "$CPrivate": function(pmodel, key) {
+            return routerMap.$Private.call(this, pmodel, key, pmodel.isCustomVM);
+        },
+        "$Private": function(pmodel, key, getCustomVMPrivate) {
+            _privateVM = V.parse("")();
             routerMap.$Private = _innerPrivateRouter;
-            return _innerPrivateRouter(pmodel, key)
+            return _innerPrivateRouter(pmodel, key, getCustomVMPrivate)
         },
         //VM中的作用域按xmp范围来算，也就是一个xmp就算是一个function
         "$Caller": function(pmodel, key) {
-            return pmodel._parentPM;
+            var result = pmodel._parentPM;
+            if (pmodel.isCustomVM) {
+                result = result._parentPM;
+            }
+            return result;
         },
         "$App": function(pmodel, key) {
             return jSouper.App && jSouper.App.model;
@@ -2542,7 +2594,7 @@ function View(arg, vmName) {
         //push mark
         finallyRunStacks.push(id)
 
-        var vi = _create(self, data, opction.isAttr);
+        var vi = _create(self, data, opction);
 
         //触发初始化事件，在finallyRun前运行，为了也在return前运行：
         //为了finallyRun可能触发的VM初始化。
@@ -2848,7 +2900,7 @@ function pushById(hashSet, item, arr) {
     return item;
 };
 
-function _create(self, data, isAttribute) { //data maybe basedata or model
+function _create(self, data, opts) { //data maybe basedata or model
 
     var catchNodes = self._catchNodes;
     var catchNodesStr = self.catchNodesStr;
@@ -2930,7 +2982,7 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
     $.e(self._handles, function(handle) {
         handle.call(self, NodeList_of_ViewModel);
     });
-    var result = new ViewModel(self.handleNodeTree, NodeList_of_ViewModel, self._triggerTable, data);
+    var result = new ViewModel(self.handleNodeTree, NodeList_of_ViewModel, self._triggerTable, data, opts);
     result.vmName = self.vmName;
     return result;
 };
@@ -2988,7 +3040,7 @@ function _addAttr(viewModel, node, attrJson) {
     return result;
 };
 
-function ViewModel(handleNodeTree, NodeList, triggerTable, model) {
+function ViewModel(handleNodeTree, NodeList, triggerTable, model, opts) {
     if (!(this instanceof ViewModel)) {
         return new ViewModel(handleNodeTree, NodeList, triggerTable, model);
     }
@@ -3025,7 +3077,7 @@ function ViewModel(handleNodeTree, NodeList, triggerTable, model) {
 
     self.constructor = ViewModel;
     //为vm加上Model代理层
-    new ProxyModel(self, model);
+    new ProxyModel(self, model, opts);
 
     //转移到proxyModel中
     // self._smartTriggers = [];
@@ -3410,7 +3462,7 @@ $.E(_allEventNames, function(eventName) {
  * 为ViewModel拓展proxymodel代理类的功能
  */
 
-$.E(["shelter", "set", "get" /*, "getSmart"*/ ], function(handleName) {
+$.E(["shelter", "set", "get", "init" /*, "getSmart"*/ ], function(handleName) {
     var handle = __ProxyModelProto__[handleName];
     __ViewModelProto__[handleName] = function() {
         var self = this;
@@ -4474,7 +4526,8 @@ V.rt("custom_tag", function(handle, index, parentHandle) {
 		// cache_tpl_name:$UNDEFINED,
 		key: ".",
 		event: function(NodeList_of_ViewModel, proxyModel, /*eventTrigger,*/ isAttr, viewModel_ID) {
-			var AllCustomTagVM = V._instances[viewModel_ID]._CVI;
+			var currentVM = V._instances[viewModel_ID];
+			var AllCustomTagVM = currentVM._CVI;
 			var customTagVm = AllCustomTagVM[id];
 			if (!customTagVm) {
 				//初始化编译标签
@@ -4530,8 +4583,10 @@ V.rt("custom_tag", function(handle, index, parentHandle) {
 				//解锁
 				V._isCustonTagNodeLock[customTagName] = false;
 				module($UNDEFINED, {
+					isCustomVM: $TRUE,
 					onInit: function(vm) {
 						//加锁，放置callback前的finallyRun引发的
+						// vm.model._is_custom_vm = true;
 						customTagVm = AllCustomTagVM[id] = vm;
 					},
 					callback: function(vm) {
@@ -4939,6 +4994,7 @@ V.rt("#if", function(handle, index, parentHandle) {
 });
 
 var _cache_xhrConifg = {};
+var _parseANode;
 var _require_module = function(url, handleFun) {
     var xhrConifg = _cache_xhrConifg.hasOwnProperty(url) && _cache_xhrConifg[url]
     if (xhrConifg) {
@@ -4950,8 +5006,15 @@ var _require_module = function(url, handleFun) {
             })
         }
         handleQuene._ = [handleFun];
+        var config_url = url;
+        if (_jSouperBase.config.noCache) {
+            _parseANode || (_parseANode = doc.createElement("a"));
+            _parseANode.href = url;
+            _parseANode.search += (_parseANode.search ? "&" : "") + "__j__=" + Math.random();
+            config_url = _parseANode.href;
+        }
         xhrConifg = _cache_xhrConifg[url] = {
-            url: url,
+            url: config_url,
             success: handleQuene,
             error: function() {
                 throw new Error("module " + url + " is undefined.")
@@ -5006,7 +5069,7 @@ V.rt("#include", function(handle, index, parentHandle) {
         var url = handleArgs[0];
         // var url = NodeList_of_ViewModel[templateHandle_id]._data;
         var args = arguments
-        
+
         if (!_include_lock[_uid]) {
             _include_lock[_uid] = $TRUE;
             if (!V.modules[url]) {
@@ -5035,7 +5098,6 @@ V.rt("#include", function(handle, index, parentHandle) {
     }
     return trigger;
 });
-
 var _model_to_get_expression_length = {
     get: $.noop()
 };
@@ -5280,6 +5342,28 @@ V.rt("#with", function(handle, index, parentHandle) {
 	return trigger;
 });
 var _testDIV = fragment(), //$.D.cl(shadowDIV),
+    _tagNameIs = function(node, tagName) {
+        var tagName = tagName.toUpperCase();
+        var node_tagName = node.tagName;
+        var namespace = V.namespace.toUpperCase();
+        if (node_tagName === tagName) {
+            return $TRUE;
+        } else if (_ignoreNameSpaceTag.indexOf("|" + node_tagName + "|") === -1) {
+            //如果属于要加命名空间的节点，过滤掉命名空间后再做判断
+            return node_tagName.indexOf(namespace) === 0 && node_tagName.substr(namespace.length) === tagName
+        } else {
+            return $FALSE;
+        }
+    },
+    _tagNameIsArr = function(node, tagNames) {
+        var result = $FALSE;
+        $.E(tagNames, function(tagName) {
+            if (!result) {
+                result = _tagNameIs(node, tagName)
+            }
+        });
+        return result;
+    },
     _attrDataFormat = function(value) {
         var type = $.st(value || "", ":");
         switch (type) {
@@ -5344,7 +5428,9 @@ var _AttributeHandleEvent = {
     },
     com: function(key, currentNode, attrVM) {
         var attrOuter = _getAttrOuter(attrVM);
-        if (key === "bind-style") {debugger};
+        if (key === "bind-style") {
+            debugger
+        };
         if (currentNode.getAttribute(key) !== attrOuter) {
             try {
                 currentNode.setAttribute(key, attrOuter)
@@ -5360,6 +5446,7 @@ var _AttributeHandleEvent = {
     },
     bool: function(key, currentNode, attrVM) {
         var attrOuter = _booleanFalseRegExp(_getAttrOuter(attrVM));
+        console.log("BOOL:",attrOuter);
         if (attrOuter) {
             //readonly等属性是要用node.readOnly，大小写不同，所以用setAttribute比较合理
             currentNode.setAttribute(key, key);
@@ -5429,13 +5516,14 @@ V.ra(function(attrKey) {
 	return result;
 })
 V.ra(function(attrKey, ele) {
-	return attrKey === "className" || (attrKey === "value" && ele.tagName === "INPUT");
-}, function(attrKey, element) {
-	if (element.tagName === (V.namespave + "select").toUpperCase()) {
-		return _AttributeHandleEvent.select;
-	}
-	return _AttributeHandleEvent.dir;
-});
+		return attrKey === "className" || (attrKey === "value" && _tagNameIsArr(ele, ["select", "input"]));
+	},
+	function(attrKey, element) {
+		if (_tagNameIs(element, "select")) {
+			return _AttributeHandleEvent.select;
+		}
+		return _AttributeHandleEvent.dir;
+	});
 function eventFireElementEvent(key, currentNode, attrVM, vi /*, dm_id*/ , handle, triggerTable) {
 	var elementEventName = key.replace("ele-", "").split("-").shift();
 	//属性不支持大写，转化成峰驼式
@@ -5475,6 +5563,7 @@ var _elementCache = {},
 				var eventFun = vi.get(wrapEventFun.attrOuter) || $.noop;
 				var self = this;
 				var result;
+				// vi._is_custom_vm&&vi.model
 				if (e._before) {
 					result = e._before.call(self, e, vi);
 					if (result) {
@@ -5509,7 +5598,8 @@ var _formCache = {},
 	_formKey = {
 		"input": function(node) { //需阻止默认事件，比如Checked需要被重写，否则数据没有变动而Checked因用户点击而变动，没有达到V->M的数据同步
 			var result = __text;
-			switch (node.type.toLowerCase()) {
+			var type = node.type || "text";
+			switch (type.toLowerCase()) {
 				case "checkbox":
 					result = {
 						attributeName: "checked",
@@ -5649,7 +5739,7 @@ var _formCache = {},
 		}
 	};
 V.ra(function(attrKey, ele) {
-	return ele.tagName === "INPUT" && (attrKey === "input" || attrKey.indexOf("input-") === 0);
+	return (attrKey === "input" || attrKey.indexOf("input-") === 0) && _tagNameIsArr(ele, ["input", "select", "textarea"]);
 }, function(attrKey) {
 	return formListerAttribute;
 });
@@ -5923,67 +6013,88 @@ var parse = function(str) {
  * user defined handle function like Handlebarsjs
  */
 function registerHandle(handleName, handleFun) {
-	templateHandles[handleName]= $TRUE;
+
+	function _display(show_or_hidden, NodeList_of_ViewModel, model, /*triggerBy,*/ viewModel_ID) {
+		var handle = this;
+		var handleChilds = handle.childNodes,
+			startCommentNode = NodeList_of_ViewModel[handleChilds[1].id].currentNode,
+			endCommentNode = NodeList_of_ViewModel[handleChilds[0].id].currentNode;
+		var fg = handle.fg || (handle.fg = doc.createDocumentFragment());
+		var parentNode = endCommentNode.parentNode,
+			index = -1;
+		if (show_or_hidden) {
+			$.D.iB(parentNode, fg, endCommentNode);
+		} else if (fg.childNodes.length === 0) { //隐藏
+			//只留endCommentNode作为占位符
+			var currentNode = startCommentNode;
+			do {
+				var removerNode = currentNode;
+				currentNode = currentNode.nextSibling;
+				$.D.ap(fg, removerNode);
+			} while (currentNode && currentNode !== endCommentNode);
+		}
+	};
+	templateHandles[handleName] = $TRUE;
 	V.rh(handleName, function(handle, index, parentHandle) {
+		handle.display = _display;
 		var endCommentHandle = _commentPlaceholder(handle, parentHandle, "html_end_" + handle.id),
 			startCommentHandle = _commentPlaceholder(handle, parentHandle, "html_start_" + handle.id);
 	});
 	V.rt(handleName, function(handle, index, parentHandle) {
 		var handleChilds = handle.childNodes,
-			beginCommentId,// = handleChilds[handleChilds.length - 1].id,
-			endCommentId,// = handleChilds[handleChilds.length - 2].id,
-			cacheNode = fragment(),//$.D.cl(shadowDIV),
+			beginCommentId, // = handleChilds[handleChilds.length - 1].id,
+			endCommentId, // = handleChilds[handleChilds.length - 2].id,
+			cacheNode = fragment(), //$.D.cl(shadowDIV),
 			trigger,
 			argumentsIdSet = [];
-        var expression = Expression.get(handle.handleInfo.expression);
+		var expression = Expression.get(handle.handleInfo.expression);
 		$.E(handleChilds, function(handle_arg) {
 			$.p(argumentsIdSet, handle_arg.id);
 		});
-		beginCommentId = argumentsIdSet[argumentsIdSet.length-1]
-		endCommentId = argumentsIdSet[argumentsIdSet.length-2]
+		beginCommentId = argumentsIdSet[argumentsIdSet.length - 1]
+		endCommentId = argumentsIdSet[argumentsIdSet.length - 2]
 		trigger = {
 			// key:"",//default key === ""
-			key:expression.keys.length?expression.keys:".",
+			key: expression.keys.length ? expression.keys : ".",
 			bubble: true,
 			event: function(NodeList_of_ViewModel, model, /*triggerBy,*/ isAttr, viewModel_ID) {
 				var startCommentNode = NodeList_of_ViewModel[beginCommentId].currentNode,
 					endCommentNode = NodeList_of_ViewModel[endCommentId].currentNode,
-					parentNode = endCommentNode.parentNode,
-					brotherNodes = parentNode.childNodes,
 					// argumentsDataSet = [],
 					index = -1;
 				var handleArgs = expression.foo(V._instances[viewModel_ID]);
-				// for (var i = 0, len = argumentsIdSet.length - 2, handle_arg_data, argumentsDataSet; i < len; i += 1) {
-				// 	$.p(argumentsDataSet,NodeList_of_ViewModel[argumentsIdSet[i]]._data)
-				// };
-				$.e(brotherNodes, function(node, i) {
-					index = i;
-					if (node === startCommentNode) {
-						return $FALSE;
-					}
-				});
-				index = index + 1;
-				$.e(brotherNodes, function(node, i) {
-					if (node === endCommentNode) {
-						return $FALSE;
-					}
-					$.D.rC(parentNode, node); //remove
-				}, index);
 
-				cacheNode.innerHTML = handleFun.apply(V._instances[viewModel_ID],handleArgs)
-				$.e(cacheNode.childNodes, function(node, i) {
-					$.D.iB(parentNode, node, endCommentNode);
-				});
+				//先移除无用内容
+				var currentNode = startCommentNode.nextSibling;
+				var parentNode = currentNode && currentNode.parentNode;
+				while (currentNode && currentNode !== endCommentNode) { //在fg里面的话可能是null
+					var removerNode = currentNode;
+					currentNode = currentNode.nextSibling;
+					$.D.rC(parentNode, removerNode); //remove
+				}
+
+				cacheNode.innerHTML = handleFun.apply(V._instances[viewModel_ID], handleArgs)
+					// $.e(cacheNode.childNodes, function(node, i) {
+					// 	$.D.iB(parentNode, node, endCommentNode);
+					// });
+				var currentNode = cacheNode.childNodes[0];
+				var iANode = startCommentNode;
+				var parentNode = iANode.parentNode;
+				while (currentNode) {
+					var insertNode = currentNode;
+					currentNode = currentNode.nextSibling;
+					$.D.iA(parentNode, insertNode, iANode);
+					iANode = insertNode;
+				}
 			}
 		}
 		return trigger;
 	});
 	return jSouper;
 }
-registerHandle("HTML",function () {
-	return Array.prototype.join.call(arguments,"");
+registerHandle("HTML", function() {
+	return Array.prototype.join.call(arguments, "");
 })
-
 // var __error = console.error;
 // console.error = function() {
 //     debugger
@@ -6087,7 +6198,9 @@ var _jSouperBase = {
                 // console.error("App's name shouldn't the same of the DOM'ID");
                 console.warn("App's name will be set as " + appName);
             }
-            return (global[appName] = template);
+            global[appName] = template;
+            _jSouperBase._onAppReady && _jSouperBase._onAppReady();
+            return template;
         }
     },
     build: function(userConfig) {
@@ -6141,12 +6254,12 @@ var _jSouperBase = {
                 callbackFun.call(scope || global);
             } else {
                 $.p(callbackFunStacks, {
-                        callback: callbackFun,
-                        scope: scope
-                    })
-                    //complete ==> onload , interactive ==> DOMContentLoaded
-                    //https://developer.mozilla.org/en-US/docs/Web/API/document.readyState
-                    //seajs src/util-require.js
+                    callback: callbackFun,
+                    scope: scope
+                });
+                //complete ==> onload , interactive ==> DOMContentLoaded
+                //https://developer.mozilla.org/en-US/docs/Web/API/document.readyState
+                //seajs src/util-require.js
                 if (/complete|onload|interactive/.test(doc.readyState)) { //fix asyn load
                     _load()
                 }
@@ -6158,6 +6271,30 @@ var _jSouperBase = {
      */
     onElementPropertyChange: bindElementPropertyChange
 };
+_jSouperBase.appReady = (function() {
+    var ready_status = $FALSE;
+    var callbackFunStacks = [];
+
+    function _load() {
+        var callbackObj;
+        while (callbackFunStacks.length) {
+            callbackObj = callbackFunStacks.shift(0, 1);
+            callbackObj.callback.call(callbackObj.scope || global)
+        }
+        ready_status = $TRUE;
+    }
+    _jSouperBase._onAppReady = _load;
+    return function(callbackFun, scope) {
+        if (ready_status) {
+            callbackFun.call(scope || global);
+        } else {
+            $.p(callbackFunStacks, {
+                callback: callbackFun,
+                scope: scope
+            });
+        }
+    }
+}());
 var jSouper = global.jSouper = $.c(V);
 $.fI(_jSouperBase, function(value, key) {
     jSouper[key] = value;

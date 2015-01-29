@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<head>
+	<title>app - jSouper</title>
+	<script type="text/javascript" src="../build/jSouper.debug.js">
+	{
+		Id:"jSouperApp",
+		Data:{
+			"hclick":function () {
+				console.log("heheh");
+			},
+			"hkey":function (e) {
+				console.log(e.which);
+				console.log("key");
+			}
+		}
+	}
+	</script>
+	<style type="text/css">
+	</style>
+</head>
+<body>
+	<xmp id="jSouperApp">
+		<button event-hclick="{{'hclick'}}" onfocus="alert(1)" onblur="alert(0)" event-keydown="{{'hkey'}}">按住我别放<div>aa<<a href="">sda</a>da</div></button>
+	</xmp>
+</body>
+</html>

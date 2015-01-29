@@ -9,7 +9,8 @@ var _formCache = {},
 	_formKey = {
 		"input": function(node) { //需阻止默认事件，比如Checked需要被重写，否则数据没有变动而Checked因用户点击而变动，没有达到V->M的数据同步
 			var result = __text;
-			switch (node.type.toLowerCase()) {
+			var type = node.type || "text";
+			switch (type.toLowerCase()) {
 				case "checkbox":
 					result = {
 						attributeName: "checked",
@@ -149,7 +150,7 @@ var _formCache = {},
 		}
 	};
 V.ra(function(attrKey, ele) {
-	return ele.tagName === "INPUT" && (attrKey === "input" || attrKey.indexOf("input-") === 0);
+	return (attrKey === "input" || attrKey.indexOf("input-") === 0) && _tagNameIsArr(ele, ["input", "select", "textarea"]);
 }, function(attrKey) {
 	return formListerAttribute;
 });

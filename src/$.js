@@ -287,19 +287,22 @@ var
                 }
                 return result;
             },
+            iA: function(parentNode, insertNode, afterNode) {
+                var beforNode = afterNode.nextSibling;
+                $.D.iB(parentNode, insertNode, beforNode)
+            },
             //insertBefore
             iB: function(parentNode, insertNode, beforNode) {
                 try {
                     parentNode.insertBefore(insertNode, beforNode || $NULL);
-                } catch (e) {
-                }
+                } catch (e) {}
             },
             //往节点末尾推入节点集合
             ap: function(parentNode, node) { //append
-                try{
-                    
-                parentNode.appendChild(node);
-                }catch(e){
+                try {
+
+                    parentNode.appendChild(node);
+                } catch (e) {
                     debugger
                 }
             },

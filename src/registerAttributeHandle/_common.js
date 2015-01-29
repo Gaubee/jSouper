@@ -1,4 +1,26 @@
 var _testDIV = fragment(), //$.D.cl(shadowDIV),
+    _tagNameIs = function(node, tagName) {
+        var tagName = tagName.toUpperCase();
+        var node_tagName = node.tagName;
+        var namespace = V.namespace.toUpperCase();
+        if (node_tagName === tagName) {
+            return $TRUE;
+        } else if (_ignoreNameSpaceTag.indexOf("|" + node_tagName + "|") === -1) {
+            //如果属于要加命名空间的节点，过滤掉命名空间后再做判断
+            return node_tagName.indexOf(namespace) === 0 && node_tagName.substr(namespace.length) === tagName
+        } else {
+            return $FALSE;
+        }
+    },
+    _tagNameIsArr = function(node, tagNames) {
+        var result = $FALSE;
+        $.E(tagNames, function(tagName) {
+            if (!result) {
+                result = _tagNameIs(node, tagName)
+            }
+        });
+        return result;
+    },
     _attrDataFormat = function(value) {
         var type = $.st(value || "", ":");
         switch (type) {
@@ -63,7 +85,9 @@ var _AttributeHandleEvent = {
     },
     com: function(key, currentNode, attrVM) {
         var attrOuter = _getAttrOuter(attrVM);
-        if (key === "bind-style") {debugger};
+        if (key === "bind-style") {
+            debugger
+        };
         if (currentNode.getAttribute(key) !== attrOuter) {
             try {
                 currentNode.setAttribute(key, attrOuter)
@@ -79,6 +103,7 @@ var _AttributeHandleEvent = {
     },
     bool: function(key, currentNode, attrVM) {
         var attrOuter = _booleanFalseRegExp(_getAttrOuter(attrVM));
+        console.log("BOOL:",attrOuter);
         if (attrOuter) {
             //readonly等属性是要用node.readOnly，大小写不同，所以用setAttribute比较合理
             currentNode.setAttribute(key, key);

@@ -4,7 +4,8 @@
  * 在v4版本中需要同时管理静态的数据与动态的代理，v5版本中将二者分离，从而带来更快更灵活稳定的体验
  */
 
-function ProxyModel(entrust, model) {
+function ProxyModel(entrust, model, opts) {
+    opts || (opts = {});
     var self = this;
 
     //存储委托对象
@@ -35,9 +36,18 @@ function ProxyModel(entrust, model) {
     model instanceof Model || (model = Model(model));
     self.follow(model)
         // }
+
+    //是否是自定义标签
+    self.isCustomVM = opts.isCustomVM;
 };
 
 var __ProxyModelProto__ = ProxyModel.prototype = {
+    init: function(key, value) {
+        var self = this;
+        if (self.get(key) === $UNDEFINED) {
+            self.set(key, value);
+        }
+    },
     queryElement: function(matchFun) {
         var self = this;
         matchFun = _buildQueryMatchFun(matchFun);
@@ -47,12 +57,12 @@ var __ProxyModelProto__ = ProxyModel.prototype = {
         });
         return result;
     },
-    getElementViewModel:function (node) {
+    getElementViewModel: function(node) {
         var self = this;
         var result = self.entrust._getElementViewModel(node);
         if (!result) {
             $.e(self._childProxyModel, function(proxyModel) {
-               return !(result = proxyModel.getElementViewModel(node));
+                return !(result = proxyModel.getElementViewModel(node));
             });
         }
         return result;
@@ -169,20 +179,33 @@ $.E([ /*"set", "get", */ "touchOff"], function(handleName) {
  * 路由寻址ProxyModel
  */
 (function(argument) {
+    var _privateVM;
 
+    function _innerPrivateRouter(pmodel, key, getCustomVMPrivate) {
+        if (!pmodel) {debugger}
+        if (pmodel.isCustomVM && !getCustomVMPrivate) { //自定义标签的Private默认获取父级的，需用用CPrivate才能取到customVM的真正的Private
+            return routerMap.$Private.call(this, pmodel._parentPM, key);
+        } else {
+            return pmodel._ppModel || (pmodel._ppModel = new ProxyModel(_privateVM, new Model));
+        }
+    };
     var routerMap = ProxyModel._routerMap = {
-        "$Private": function(pmodel, key) {
-            var _privateVM = V.parse("")();
-
-            function _innerPrivateRouter(pmodel, key) {
-                return pmodel._ppModel || (pmodel._ppModel = new ProxyModel(_privateVM, new Model));
-            };
+        //Custom tag Private model
+        "$CPrivate": function(pmodel, key) {
+            return routerMap.$Private.call(this, pmodel, key, pmodel.isCustomVM);
+        },
+        "$Private": function(pmodel, key, getCustomVMPrivate) {
+            _privateVM = V.parse("")();
             routerMap.$Private = _innerPrivateRouter;
-            return _innerPrivateRouter(pmodel, key)
+            return _innerPrivateRouter(pmodel, key, getCustomVMPrivate)
         },
         //VM中的作用域按xmp范围来算，也就是一个xmp就算是一个function
         "$Caller": function(pmodel, key) {
-            return pmodel._parentPM;
+            var result = pmodel._parentPM;
+            if (pmodel.isCustomVM) {
+                result = result._parentPM;
+            }
+            return result;
         },
         "$App": function(pmodel, key) {
             return jSouper.App && jSouper.App.model;

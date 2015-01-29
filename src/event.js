@@ -118,6 +118,13 @@ var
         //回车事件，基于keyup
         en: {
             enter: "keyup"
+        },
+        //click and hold 长按
+        ch: {
+            //mouseleave事件有兼容问题，而外提取出来和mouseup另外注册
+            hclick: "mousedown",
+            /*, "mouseup", "mouseleave"*/
+            _hclick_out: ["mouseup", "mouseleave"]
         }
     },
     //事件生成器
@@ -391,14 +398,14 @@ var
                         var args = $.s(arguments);
                         if (self.multiple) {
                             var vms = [];
-                            $.E(self.options,function (optionNode) {
+                            $.E(self.options, function(optionNode) {
                                 if (optionNode.selected) {
                                     vms.push(vm.getElementViewModel(optionNode));
                                 }
                             });
-                            $.p(args,vms);
-                        }else{
-                            $.p(args,vm.getElementViewModel(self.options[self.selectedIndex]));
+                            $.p(args, vms);
+                        } else {
+                            $.p(args, vm.getElementViewModel(self.options[self.selectedIndex]));
                         }
                         return {
                             ele: this,
@@ -408,6 +415,25 @@ var
                 }
                 return _fn(e);
             };
+        } else if (result._cacheName = _registerEventRouterMatch.ch[eventName]) {;
+            (function() {
+                result.name = result._cacheName;
+                var _b_ti
+                var _ti
+                result.fn = function() {
+                    var self = this;
+                    var args = arguments;
+                    _b_ti = setTimeout(function() {
+                        _ti = setInterval(function() {
+                            _fn.apply(self, args);
+                        }, 16);
+                    }, 500);
+                };
+                _registerEvent(Element, _registerEventRouterMatch.ch._hclick_out, function() {
+                    clearTimeout(_b_ti);
+                    clearInterval(_ti);
+                }, elementHash);
+            }());
         }
         _event_cache[elementHash + $.hashCode(eventFun)] = result;
         return result;
@@ -426,7 +452,7 @@ var
             $.E(eventConfig.name, function(eventName) {
                 Element.addEventListener(eventName, eventConfig.fn, $FALSE);
                 // $.p(event_cache[eventConfig.name] || (event_cache[eventConfig.name] = []), eventConfig.fn);
-            })
+            });
         }
     },
     //现代浏览器的事件移除

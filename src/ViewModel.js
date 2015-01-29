@@ -52,7 +52,7 @@ function _addAttr(viewModel, node, attrJson) {
     return result;
 };
 
-function ViewModel(handleNodeTree, NodeList, triggerTable, model) {
+function ViewModel(handleNodeTree, NodeList, triggerTable, model, opts) {
     if (!(this instanceof ViewModel)) {
         return new ViewModel(handleNodeTree, NodeList, triggerTable, model);
     }
@@ -89,7 +89,7 @@ function ViewModel(handleNodeTree, NodeList, triggerTable, model) {
 
     self.constructor = ViewModel;
     //为vm加上Model代理层
-    new ProxyModel(self, model);
+    new ProxyModel(self, model, opts);
 
     //转移到proxyModel中
     // self._smartTriggers = [];
@@ -474,7 +474,7 @@ $.E(_allEventNames, function(eventName) {
  * 为ViewModel拓展proxymodel代理类的功能
  */
 
-$.E(["shelter", "set", "get" /*, "getSmart"*/ ], function(handleName) {
+$.E(["shelter", "set", "get", "init" /*, "getSmart"*/ ], function(handleName) {
     var handle = __ProxyModelProto__[handleName];
     __ViewModelProto__[handleName] = function() {
         var self = this;

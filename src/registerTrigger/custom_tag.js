@@ -86,7 +86,8 @@ V.rt("custom_tag", function(handle, index, parentHandle) {
 		// cache_tpl_name:$UNDEFINED,
 		key: ".",
 		event: function(NodeList_of_ViewModel, proxyModel, /*eventTrigger,*/ isAttr, viewModel_ID) {
-			var AllCustomTagVM = V._instances[viewModel_ID]._CVI;
+			var currentVM = V._instances[viewModel_ID];
+			var AllCustomTagVM = currentVM._CVI;
 			var customTagVm = AllCustomTagVM[id];
 			if (!customTagVm) {
 				//初始化编译标签
@@ -142,8 +143,10 @@ V.rt("custom_tag", function(handle, index, parentHandle) {
 				//解锁
 				V._isCustonTagNodeLock[customTagName] = false;
 				module($UNDEFINED, {
+					isCustomVM: $TRUE,
 					onInit: function(vm) {
 						//加锁，放置callback前的finallyRun引发的
+						// vm.model._is_custom_vm = true;
 						customTagVm = AllCustomTagVM[id] = vm;
 					},
 					callback: function(vm) {

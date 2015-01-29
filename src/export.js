@@ -101,7 +101,9 @@ var _jSouperBase = {
                 // console.error("App's name shouldn't the same of the DOM'ID");
                 console.warn("App's name will be set as " + appName);
             }
-            return (global[appName] = template);
+            global[appName] = template;
+            _jSouperBase._onAppReady && _jSouperBase._onAppReady();
+            return template;
         }
     },
     build: function(userConfig) {
@@ -155,12 +157,12 @@ var _jSouperBase = {
                 callbackFun.call(scope || global);
             } else {
                 $.p(callbackFunStacks, {
-                        callback: callbackFun,
-                        scope: scope
-                    })
-                    //complete ==> onload , interactive ==> DOMContentLoaded
-                    //https://developer.mozilla.org/en-US/docs/Web/API/document.readyState
-                    //seajs src/util-require.js
+                    callback: callbackFun,
+                    scope: scope
+                });
+                //complete ==> onload , interactive ==> DOMContentLoaded
+                //https://developer.mozilla.org/en-US/docs/Web/API/document.readyState
+                //seajs src/util-require.js
                 if (/complete|onload|interactive/.test(doc.readyState)) { //fix asyn load
                     _load()
                 }
@@ -172,6 +174,30 @@ var _jSouperBase = {
      */
     onElementPropertyChange: bindElementPropertyChange
 };
+_jSouperBase.appReady = (function() {
+    var ready_status = $FALSE;
+    var callbackFunStacks = [];
+
+    function _load() {
+        var callbackObj;
+        while (callbackFunStacks.length) {
+            callbackObj = callbackFunStacks.shift(0, 1);
+            callbackObj.callback.call(callbackObj.scope || global)
+        }
+        ready_status = $TRUE;
+    }
+    _jSouperBase._onAppReady = _load;
+    return function(callbackFun, scope) {
+        if (ready_status) {
+            callbackFun.call(scope || global);
+        } else {
+            $.p(callbackFunStacks, {
+                callback: callbackFun,
+                scope: scope
+            });
+        }
+    }
+}());
 var jSouper = global.jSouper = $.c(V);
 $.fI(_jSouperBase, function(value, key) {
     jSouper[key] = value;

@@ -20,6 +20,7 @@ var _elementCache = {},
 				var eventFun = vi.get(wrapEventFun.attrOuter) || $.noop;
 				var self = this;
 				var result;
+				// vi._is_custom_vm&&vi.model
 				if (e._before) {
 					result = e._before.call(self, e, vi);
 					if (result) {

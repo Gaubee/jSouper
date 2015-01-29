@@ -30,7 +30,7 @@ function View(arg, vmName) {
         //push mark
         finallyRunStacks.push(id)
 
-        var vi = _create(self, data, opction.isAttr);
+        var vi = _create(self, data, opction);
 
         //触发初始化事件，在finallyRun前运行，为了也在return前运行：
         //为了finallyRun可能触发的VM初始化。
@@ -336,7 +336,7 @@ function pushById(hashSet, item, arr) {
     return item;
 };
 
-function _create(self, data, isAttribute) { //data maybe basedata or model
+function _create(self, data, opts) { //data maybe basedata or model
 
     var catchNodes = self._catchNodes;
     var catchNodesStr = self.catchNodesStr;
@@ -418,7 +418,7 @@ function _create(self, data, isAttribute) { //data maybe basedata or model
     $.e(self._handles, function(handle) {
         handle.call(self, NodeList_of_ViewModel);
     });
-    var result = new ViewModel(self.handleNodeTree, NodeList_of_ViewModel, self._triggerTable, data);
+    var result = new ViewModel(self.handleNodeTree, NodeList_of_ViewModel, self._triggerTable, data, opts);
     result.vmName = self.vmName;
     return result;
 };

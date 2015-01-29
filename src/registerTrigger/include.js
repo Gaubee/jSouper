@@ -1,4 +1,5 @@
 var _cache_xhrConifg = {};
+var _parseANode;
 var _require_module = function(url, handleFun) {
     var xhrConifg = _cache_xhrConifg.hasOwnProperty(url) && _cache_xhrConifg[url]
     if (xhrConifg) {
@@ -10,8 +11,15 @@ var _require_module = function(url, handleFun) {
             })
         }
         handleQuene._ = [handleFun];
+        var config_url = url;
+        if (_jSouperBase.config.noCache) {
+            _parseANode || (_parseANode = doc.createElement("a"));
+            _parseANode.href = url;
+            _parseANode.search += (_parseANode.search ? "&" : "") + "__j__=" + Math.random();
+            config_url = _parseANode.href;
+        }
         xhrConifg = _cache_xhrConifg[url] = {
-            url: url,
+            url: config_url,
             success: handleQuene,
             error: function() {
                 throw new Error("module " + url + " is undefined.")
@@ -66,7 +74,7 @@ V.rt("#include", function(handle, index, parentHandle) {
         var url = handleArgs[0];
         // var url = NodeList_of_ViewModel[templateHandle_id]._data;
         var args = arguments
-        
+
         if (!_include_lock[_uid]) {
             _include_lock[_uid] = $TRUE;
             if (!V.modules[url]) {
