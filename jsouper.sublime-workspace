@@ -4,6 +4,42 @@
 		"selected_items":
 		[
 			[
+				"remove",
+				"removerNode"
+			],
+			[
+				"iner",
+				"insertNode"
+			],
+			[
+				"ber",
+				"beforNode"
+			],
+			[
+				"af",
+				"afterItem"
+			],
+			[
+				"insert",
+				"insertNode"
+			],
+			[
+				"iB",
+				"iBNode"
+			],
+			[
+				"le",
+				"length"
+			],
+			[
+				"pa",
+				"parentNode"
+			],
+			[
+				"set",
+				"setTimeout"
+			],
+			[
 				"_p",
 				"_parentPM"
 			],
@@ -144,10 +180,6 @@
 				"_remove_by_inner_id"
 			],
 			[
-				"le",
-				"len"
-			],
-			[
 				"len",
 				"length"
 			],
@@ -266,10 +298,6 @@
 			[
 				"godos",
 				"goods_id"
-			],
-			[
-				"remove",
-				"remove_goods"
 			],
 			[
 				"th",
@@ -486,39 +514,51 @@
 			[
 				"godis",
 				"goods_id"
-			],
-			[
-				"Ue",
-				"UserCartGoodsCon"
-			],
-			[
-				"god",
-				"goods_info"
-			],
-			[
-				"index",
-				"indexOf"
-			],
-			[
-				"for",
-				"forEach"
-			],
-			[
-				"Cart",
-				"UserCartGoodsCon"
-			],
-			[
-				"fo",
-				"forEach"
-			],
-			[
-				"Con",
-				"UserCon"
 			]
 		]
 	},
 	"buffers":
 	[
+		{
+			"file": "src/registerTrigger/each.js",
+			"settings":
+			{
+				"buffer_size": 11361,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "src/registerTrigger/layout.js",
+			"settings":
+			{
+				"buffer_size": 5254,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "src/export.js",
+			"settings":
+			{
+				"buffer_size": 7628,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "src/ViewModel.js",
+			"settings":
+			{
+				"buffer_size": 17147,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "src/registerAttributeHandle/event.js",
+			"settings":
+			{
+				"buffer_size": 1595,
+				"line_ending": "Windows"
+			}
+		},
 		{
 			"file": "src/registerAttributeHandle/input.js",
 			"settings":
@@ -528,34 +568,23 @@
 			}
 		},
 		{
-			"file": "src/registerAttributeHandle/boolean.js",
+			"file": "src/registerAttributeHandle/dir.js",
 			"settings":
 			{
-				"buffer_size": 852,
-				"line_ending": "Windows"
-			}
-		},
-		{
-			"file": "Gruntfile.js",
-			"settings":
-			{
-				"buffer_size": 3870,
-				"line_ending": "Windows"
-			}
-		},
-		{
-			"file": "src/registerAttributeHandle/_common.js",
-			"settings":
-			{
-				"buffer_size": 5675,
+				"buffer_size": 301,
 				"line_ending": "Windows"
 			}
 		}
 	],
 	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
 	"command_palette":
 	{
 		"height": 392.0,
+		"last_filter": "",
 		"selected_items":
 		[
 			[
@@ -678,20 +707,40 @@
 	"expanded_folders":
 	[
 		"/E/Git/HTML-ViewParse",
-		"/E/Git/HTML-ViewParse/doc",
 		"/E/Git/HTML-ViewParse/src",
 		"/E/Git/HTML-ViewParse/src/registerAttributeHandle"
 	],
 	"file_history":
 	[
+		"/E/Git/HTML-ViewParse/src/registerAttributeHandle/_common.js",
+		"/E/Git/HTML-ViewParse/src/registerHandle/custom_tag.js",
+		"/E/Git/HTML-ViewParse/src/registerTrigger/getData.js",
+		"/E/Git/HTML-ViewParse/doc/if-html.html",
+		"/E/Git/HTML-ViewParse/src/$.js",
+		"/E/Git/HTML-ViewParse/src/ViewModel.js",
+		"/E/Git/HTML-ViewParse/src/View.js",
+		"/E/Git/HTML-ViewParse/doc/ui/xmp.material_ui.html",
+		"/E/Git/HTML-ViewParse/src/registerTrigger/if.js",
+		"/E/Git/HTML-ViewParse/src/registerHandle.js",
+		"/E/Git/HTML-ViewParse/node_modules/grunt-contrib-nodeunit/node_modules/nodeunit/deps/ejs/node_modules/expresso/deps/jscoverage/tests/javascript-ignore/ignore.js",
+		"/E/Git/HTML-ViewParse/node_modules/grunt-contrib-nodeunit/node_modules/nodeunit/deps/ejs/node_modules/expresso/deps/jscoverage/tests/javascript-ignore.sh",
+		"/E/Git/HTML-ViewParse/src/.highlight/styles/tomorrow-night-eighties.css",
+		"/E/Git/HTML-ViewParse/src/.highlight/styles/tomorrow-night-bright.css",
+		"/E/Git/HTML-ViewParse/node_modules/grunt-contrib-connect/node_modules/connect/lib/middleware/methodOverride.js",
+		"/E/Git/HTML-ViewParse/node_modules/grunt-contrib-connect/node_modules/open/README.md",
+		"/E/Git/HTML-ViewParse/doc/optionselect.html",
+		"/E/Git/HTML-ViewParse/src/registerAttributeHandle/boolean.js",
+		"/E/Git/HTML-ViewParse/src/registerAttributeHandle/input.js",
+		"/E/Git/HTML-ViewParse/.idea/HTML-ViewParse.iml",
+		"/E/Git/HTML-ViewParse/.demo/.test/html5.min.js",
+		"/E/Git/HTML-ViewParse/node_modules/grunt/node_modules/hooker/test/hooker_test.js",
+		"/E/Git/HTML-ViewParse/src/Handle.js",
 		"/E/Git/HTML-ViewParse/doc/value.html",
 		"/E/Git/HTML-ViewParse/node_modules/grunt/node_modules/lodash/vendor/tar/lib/entry.js",
-		"/E/Git/HTML-ViewParse/src/View.js",
 		"/E/Git/HTML-ViewParse/src/registerTrigger/include.js",
 		"/E/Git/HTML-ViewParse/src/Model.v5.$scope.js",
 		"/E/Git/HTML-ViewParse/src/Model.v5.Proxy.js",
 		"/E/Git/HTML-ViewParse/src/registerTrigger/custom_tag.js",
-		"/E/Git/HTML-ViewParse/src/ViewModel.js",
 		"/E/Git/HTML-ViewParse/src/export.js",
 		"/E/Git/HTML-ViewParse/src/registerAttribute.js",
 		"/E/Git/HTML-ViewParse/src/registerAttributeHandle/event.js",
@@ -700,12 +749,10 @@
 		"/E/Git/HTML-ViewParse/doc/view.v3.html",
 		"/E/Git/HTML-ViewParse/src/Model.extend.js",
 		"/E/Git/HTML-ViewParse/.idea/modules.xml",
-		"/E/Git/HTML-ViewParse/node_modules/grunt-contrib-connect/node_modules/connect/lib/middleware/methodOverride.js",
 		"/E/Git/HTML-ViewParse/.idea/misc.xml",
 		"/E/Git/HTML-ViewParse/doc/custom_tag.html",
 		"/E/Git/HTML-ViewParse/node_modules/grunt-contrib-uglify/node_modules/uglify-js/node_modules/source-map/lib/source-map.js",
 		"/E/Git/HTML-ViewParse/node_modules/grunt-contrib-concat/test/expected/custom_options",
-		"/E/Git/HTML-ViewParse/src/registerHandle/custom_tag.js",
 		"/E/Git/HTML-ViewParse/node_modules/grunt-contrib-concat/docs/concat-options.md",
 		"/E/Git/HTML-ViewParse/ui/metro/jsouper-ui/less/countdown.less",
 		"/E/Git/HTML-ViewParse/.demo/.test/attribute.html",
@@ -718,11 +765,8 @@
 		"/E/TEMP/Javascript/apm-master/spec/fixtures/r.tmbundle/Snippets/Cummulative.tmSnippet",
 		"/E/TEMP/Javascript/apm-master/node_modules/wrench/tests/copydirsync_unix.js",
 		"/E/TEMP/Javascript/construct.js",
-		"/E/Git/HTML-ViewParse/src/Handle.js",
 		"/E/Git/HTML-ViewParse/doc/click-and-hold.html",
-		"/E/Git/HTML-ViewParse/src/$.js",
 		"/E/Git/HTML-ViewParse/src/baseViewParser.js",
-		"/E/Git/HTML-ViewParse/src/registerAttributeHandle/input.js",
 		"/E/TEMP/html/gaubee_one_bg_3/bg.html",
 		"/E/TEMP/html/gaubee_one_bg_3/bg.js",
 		"/E/Git/HTML-ViewParse/src/registerHandle/include.js",
@@ -731,17 +775,11 @@
 		"/E/Git/HTML-ViewParse/index.html",
 		"/E/Git/HTML-ViewParse/build/jSouper.debug.js",
 		"/E/Git/HTML-ViewParse/src/registerAttributeHandle/selected.js",
-		"/E/Git/HTML-ViewParse/src/registerAttributeHandle/_common.js",
 		"/E/Git/HTML-ViewParse/src/registerAttributeHandle/dir.js",
 		"/E/Git/HTML-ViewParse/node_modules/grunt-contrib-connect/node_modules/connect/lib/middleware/static.js",
 		"/E/Git/HTML-ViewParse/build/jSouper.js",
 		"/E/Git/HTML-ViewParse/Gruntfile.js",
 		"/E/Git/HTML-ViewParse/node_modules/grunt/node_modules/underscore.string/dist/underscore.string.min.js",
-		"/E/Git/HTML-ViewParse/node_modules/grunt-contrib-nodeunit/node_modules/nodeunit/deps/ejs/node_modules/expresso/deps/jscoverage/tests/javascript-ignore.sh",
-		"/E/Git/HTML-ViewParse/src/.highlight/styles/tomorrow-night-eighties.css",
-		"/E/Git/HTML-ViewParse/src/.highlight/styles/tomorrow-night-bright.css",
-		"/E/Git/HTML-ViewParse/node_modules/grunt-contrib-connect/node_modules/open/README.md",
-		"/E/Git/HTML-ViewParse/doc/optionselect.html",
 		"/E/Git/HTML-ViewParse/ui/metro/node_modules/grunt-contrib-nodeunit/node_modules/nodeunit/node_modules/tap/test/buffer_compare.js",
 		"/E/Git/HTML-ViewParse/ui/metro/node_modules/grunt-peon-gui/tests/peon-gui-server_test.js",
 		"/E/Git/HTML-ViewParse/node_modules/grunt-contrib-nodeunit/node_modules/nodeunit/deps/ejs/node_modules/expresso/deps/jscoverage/doc/users.html",
@@ -756,7 +794,6 @@
 		"/E/Git/HTML-ViewParse/doc/style.html",
 		"/E/Git/HTML-ViewParse/doc/if-each.html",
 		"/E/Git/HTML-ViewParse/src/registerHandle/each-endeach.js",
-		"/E/Git/HTML-ViewParse/src/registerTrigger/if.js",
 		"/E/Git/HTML-ViewParse/ui/metro/jsouper-ui/fonts/iconFont.json",
 		"/E/Git/HTML-ViewParse/src/.lib/.icarus.js",
 		"/E/Git/HTML-ViewParse/src/.lib/.avalon.js",
@@ -780,11 +817,8 @@
 		"/E/Git/HTML-ViewParse/.demo/.test/base1.html",
 		"/E/Git/HTML-ViewParse/doc/base.html",
 		"/E/Git/HTML-ViewParse/node_modules/grunt/test/fixtures/files/dist/built-a.js",
-		"/E/Git/HTML-ViewParse/src/registerAttributeHandle/boolean.js",
 		"/E/Git/HTML-ViewParse/.idea/vcs.xml",
 		"/E/Git/CSSseletor/CSS3-Seletor.png",
-		"/E/Git/HTML-ViewParse/src/registerTrigger/getData.js",
-		"/E/Git/HTML-ViewParse/src/registerHandle.js",
 		"/E/Git/HTML-ViewParse/doc/cutom_tag.html",
 		"/E/Git/HTML-ViewParse/doc/caller.html",
 		"/E/Git/HTML-ViewParse/src/json.js",
@@ -805,13 +839,7 @@
 		"/E/Git/HTML-ViewParse/build/jSouper.min.js",
 		"/E/Git/HTML-ViewParse/src/.lib/jsouper.no_fun.js",
 		"/E/Git/HTML-ViewParse/src/.lib/jsouper.base62.js",
-		"/E/Git/HTML-ViewParse/src/.lib/jq.base62.js",
-		"/E/Git/HTML-ViewParse/src/.lib/jquery.js",
-		"/E/Git/HTML-ViewParse/doc/cutom_tag2.html",
-		"/E/Git/HTML-ViewParse/src/registerTrigger/teleporter.js",
-		"/E/node_modules/server.js",
-		"/E/node_modules/express/index.js",
-		"/E/Git/HTML-ViewParse/src/registerAttributeHandle/ns.js"
+		"/E/Git/HTML-ViewParse/src/.lib/jq.base62.js"
 	],
 	"find":
 	{
@@ -822,6 +850,9 @@
 		"height": 90.0,
 		"where_history":
 		[
+			"E:\\Git\\HTML-ViewParse\\doc",
+			"E:\\Git\\HTML-ViewParse\\doc\\ui",
+			"E:\\Git\\HTML-ViewParse\\src",
 			"E:\\Git\\HTML-ViewParse\\doc",
 			"E:\\Git\\HTML-ViewParse\\src",
 			"E:\\Git\\HTML-ViewParse\\doc",
@@ -894,6 +925,17 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"teleporter",
+			"//",
+			"teleporter",
+			"handleArgs",
+			"radio",
+			"radui",
+			"checkbox",
+			"After",
+			"nextSibling",
+			"show_or_hidden_map",
+			"templateHandles",
 			"checked",
 			"checkbox",
 			"_create",
@@ -1010,18 +1052,7 @@
 			"console.info(name, value, _templateMatchRule.test(value)",
 			"console.log",
 			".test",
-			"_isIE",
-			"numberAddNode",
-			"\\w\\W",
-			"\\W\\w",
-			"\\w\\W",
-			"_matchRule",
-			"attributeHandle",
-			"console.error",
-			"_registerEventBase",
-			"http://localhost:9010/build",
-			"AllCustomTagVM",
-			"_CVI"
+			"_isIE"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -1061,30 +1092,91 @@
 	"groups":
 	[
 		{
-			"selected": 2,
+			"selected": 5,
 			"sheets":
 			[
 				{
 					"buffer": 0,
-					"file": "src/registerAttributeHandle/input.js",
+					"file": "src/registerTrigger/each.js",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 5287,
+						"buffer_size": 11361,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								571,
-								578
+								1481,
+								1498
 							]
 						],
 						"settings":
 						{
 							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
-							"translate_tabs_to_spaces": false
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 488.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 6,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "src/registerTrigger/layout.js",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 5254,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2763,
+								2763
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 1020.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 4,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "src/export.js",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 7628,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								2
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
 						"translation.y": 0.0,
@@ -1094,20 +1186,50 @@
 					"type": "text"
 				},
 				{
-					"buffer": 1,
-					"file": "src/registerAttributeHandle/boolean.js",
+					"buffer": 3,
+					"file": "src/ViewModel.js",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 852,
+						"buffer_size": 17147,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								830,
-								830
+								14922,
+								14922
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 7298.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "src/registerAttributeHandle/event.js",
+					"semi_transient": true,
+					"settings":
+					{
+						"buffer_size": 1595,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
 							]
 						],
 						"settings":
@@ -1123,63 +1245,61 @@
 					"type": "text"
 				},
 				{
-					"buffer": 2,
-					"file": "Gruntfile.js",
-					"semi_transient": true,
+					"buffer": 5,
+					"file": "src/registerAttributeHandle/input.js",
+					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 3870,
+						"buffer_size": 5287,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								3341,
-								3026
+								5068,
+								5068
 							]
 						],
 						"settings":
 						{
 							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
+							"translate_tabs_to_spaces": false
 						},
-						"translation.x": -0.0,
-						"translation.y": 1208.0,
+						"translation.x": 0.0,
+						"translation.y": 510.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 0,
 					"type": "text"
 				},
 				{
-					"buffer": 3,
-					"file": "src/registerAttributeHandle/_common.js",
+					"buffer": 6,
+					"file": "src/registerAttributeHandle/dir.js",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 5675,
+						"buffer_size": 301,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								4056,
-								4056
+								147,
+								147
 							]
 						],
 						"settings":
 						{
 							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
+							"translate_tabs_to_spaces": false
 						},
-						"translation.x": 0.0,
-						"translation.y": 1368.0,
+						"translation.x": 3.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 2,
+					"stack_index": 5,
 					"type": "text"
 				}
 			]
@@ -1224,6 +1344,7 @@
 	{
 		"height": 0.0
 	},
+	"pinned_build_system": "",
 	"project": "jsouper.sublime-project",
 	"replace":
 	{
@@ -1233,11 +1354,32 @@
 	"select_file":
 	{
 		"height": 0.0,
+		"last_filter": "",
 		"selected_items":
 		[
 			[
+				"exo",
+				"src\\export.js"
+			],
+			[
 				"input",
 				"src\\registerAttributeHandle\\input.js"
+			],
+			[
+				"layout",
+				"src\\registerTrigger\\layout.js"
+			],
+			[
+				"each",
+				"src\\registerTrigger\\each.js"
+			],
+			[
+				"view",
+				"src\\View.js"
+			],
+			[
+				"$",
+				"src\\$.js"
 			],
 			[
 				"viewmo",
@@ -1246,10 +1388,6 @@
 			[
 				"event",
 				"src\\event.js"
-			],
-			[
-				"view",
-				"src\\View.js"
 			],
 			[
 				"",
@@ -1296,10 +1434,6 @@
 				"src\\$.js"
 			],
 			[
-				"each",
-				"src\\registerTrigger\\each.js"
-			],
-			[
 				"ex",
 				"src\\export.js"
 			],
@@ -1310,10 +1444,6 @@
 			[
 				"cus",
 				"src\\registerTrigger\\custom_tag.js"
-			],
-			[
-				"$",
-				"src\\$.js"
 			],
 			[
 				"proxy",
@@ -1738,14 +1868,6 @@
 			[
 				"_db",
 				"O2O\\server\\RESTAPI\\_db.rest.js"
-			],
-			[
-				"buscon",
-				"O2O\\core\\bus\\_con.js"
-			],
-			[
-				"rol",
-				"O2O\\server\\RESTAPI\\role.js"
 			]
 		],
 		"width": 0.0
@@ -1753,6 +1875,7 @@
 	"select_project":
 	{
 		"height": 500.0,
+		"last_filter": "",
 		"selected_items":
 		[
 			[
@@ -1765,6 +1888,7 @@
 	"select_symbol":
 	{
 		"height": 0.0,
+		"last_filter": "",
 		"selected_items":
 		[
 		],
@@ -1778,7 +1902,7 @@
 	"show_open_files": true,
 	"show_tabs": true,
 	"side_bar_visible": true,
-	"side_bar_width": 311.0,
+	"side_bar_width": 265.0,
 	"status_bar_visible": true,
 	"template_settings":
 	{

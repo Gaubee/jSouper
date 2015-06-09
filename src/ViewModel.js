@@ -444,14 +444,23 @@ var __ViewModelProto__ = ViewModel.prototype = {
             if (teleporter.show_or_hidden !== $FALSE && teleporter.display) {
                 //remove old
                 var old_viewModel = teleporter.vi;
-                old_viewModel && old_viewModel.remove();
+                if (old_viewModel !== viewModel) {
+                    old_viewModel && old_viewModel.remove();
 
-                //insert new & save new
-                viewModel.insert(teleporter.ph);
+                    //insert new & save new
+                    viewModel.insert(teleporter.ph);
+                }
             }
             teleporter.vi = viewModel
         }
         return self;
+    },
+    getTeleporterVM: function(telporterName) {
+        var self = this;
+        var teleporter = self._teleporters[telporterName];
+        if (teleporter) {
+            return teleporter.vi;
+        }
     },
     /*
      * 获取代理后面真正的Model
