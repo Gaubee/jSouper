@@ -268,7 +268,7 @@ var
         //从数组中移除索引所对应的元素
         rm: function(arr, item) {
             var index = $.iO(arr, item);
-            arr.splice(index, 1);
+            index > -1 && arr.splice(index, 1);
             return arr;
         },
         //将对象绑定到一个新的对象的原型上，实现简单的继承
@@ -369,7 +369,7 @@ var
                     config.complete && config.complete(s, xhr)
                 }
             }
-            var async = (config.async === $FALSE) ? $FALSE : $TRUE;
+            var async = (config.async === $FALSE) ? $FALSE: $TRUE;
             xhr.open(config.type || "GET", config.url, async)
                 // xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest")
             xhr.send(null)
@@ -2982,8 +2982,7 @@ function _create(self, data, opts) { //data maybe basedata or model
     $.e(self._handles, function(handle) {
         handle.call(self, NodeList_of_ViewModel);
     });
-    var result = new ViewModel(self.handleNodeTree, NodeList_of_ViewModel, self._triggerTable, data, opts);
-    result.vmName = self.vmName;
+    var result = new ViewModel(self.handleNodeTree, NodeList_of_ViewModel, self._triggerTable, data, opts, self.vmName);
     return result;
 };
 /*
@@ -3040,11 +3039,12 @@ function _addAttr(viewModel, node, attrJson) {
     return result;
 };
 
-function ViewModel(handleNodeTree, NodeList, triggerTable, model, opts) {
+function ViewModel(handleNodeTree, NodeList, triggerTable, model, opts, vmName) {
     if (!(this instanceof ViewModel)) {
-        return new ViewModel(handleNodeTree, NodeList, triggerTable, model);
+        return new ViewModel(handleNodeTree, NodeList, triggerTable, model, opts, vmName);
     }
     var self = this;
+    self.vmName = vmName;
     self._isAttr = $FALSE; //if no null --> Storage the attribute key and current.
     self._isEach = $FALSE; //if no null --> Storage the attribute key and current.
     self.handleNodeTree = handleNodeTree;
@@ -5455,7 +5455,7 @@ var _AttributeHandleEvent = {
     },
     bool: function(key, currentNode, attrVM) {
         var attrOuter = _booleanFalseRegExp(_getAttrOuter(attrVM));
-        console.log("BOOL:",attrOuter);
+        // console.log("BOOL:",attrOuter);
         if (attrOuter) {
             //readonly等属性是要用node.readOnly，大小写不同，所以用setAttribute比较合理
             currentNode.setAttribute(key, key);

@@ -418,7 +418,6 @@ function _create(self, data, opts) { //data maybe basedata or model
     $.e(self._handles, function(handle) {
         handle.call(self, NodeList_of_ViewModel);
     });
-    var result = new ViewModel(self.handleNodeTree, NodeList_of_ViewModel, self._triggerTable, data, opts);
-    result.vmName = self.vmName;
+    var result = new ViewModel(self.handleNodeTree, NodeList_of_ViewModel, self._triggerTable, data, opts, self.vmName);
     return result;
 };

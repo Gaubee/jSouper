@@ -244,7 +244,7 @@ var
         //从数组中移除索引所对应的元素
         rm: function(arr, item) {
             var index = $.iO(arr, item);
-            arr.splice(index, 1);
+            index > -1 && arr.splice(index, 1);
             return arr;
         },
         //将对象绑定到一个新的对象的原型上，实现简单的继承
@@ -345,7 +345,7 @@ var
                     config.complete && config.complete(s, xhr)
                 }
             }
-            var async = (config.async === $FALSE) ? $FALSE : $TRUE;
+            var async = (config.async === $FALSE) ? $FALSE: $TRUE;
             xhr.open(config.type || "GET", config.url, async)
                 // xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest")
             xhr.send(null)

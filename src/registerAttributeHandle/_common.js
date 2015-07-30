@@ -103,7 +103,7 @@ var _AttributeHandleEvent = {
     },
     bool: function(key, currentNode, attrVM) {
         var attrOuter = _booleanFalseRegExp(_getAttrOuter(attrVM));
-        console.log("BOOL:",attrOuter);
+        // console.log("BOOL:",attrOuter);
         if (attrOuter) {
             //readonly等属性是要用node.readOnly，大小写不同，所以用setAttribute比较合理
             currentNode.setAttribute(key, key);

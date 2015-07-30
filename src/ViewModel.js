@@ -52,11 +52,12 @@ function _addAttr(viewModel, node, attrJson) {
     return result;
 };
 
-function ViewModel(handleNodeTree, NodeList, triggerTable, model, opts) {
+function ViewModel(handleNodeTree, NodeList, triggerTable, model, opts, vmName) {
     if (!(this instanceof ViewModel)) {
-        return new ViewModel(handleNodeTree, NodeList, triggerTable, model);
+        return new ViewModel(handleNodeTree, NodeList, triggerTable, model, opts, vmName);
     }
     var self = this;
+    self.vmName = vmName;
     self._isAttr = $FALSE; //if no null --> Storage the attribute key and current.
     self._isEach = $FALSE; //if no null --> Storage the attribute key and current.
     self.handleNodeTree = handleNodeTree;
