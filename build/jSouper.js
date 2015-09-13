@@ -2110,7 +2110,6 @@ $.E([ /*"set", "get", */ "touchOff"], function(handleName) {
     var _privateVM;
 
     function _innerPrivateRouter(pmodel, key, getCustomVMPrivate) {
-        if (!pmodel) {debugger}
         if (pmodel.isCustomVM && !getCustomVMPrivate) { //自定义标签的Private默认获取父级的，需用用CPrivate才能取到customVM的真正的Private
             return routerMap.$Private.call(this, pmodel._parentPM, key);
         } else {
@@ -2134,6 +2133,10 @@ $.E([ /*"set", "get", */ "touchOff"], function(handleName) {
                 result = result._parentPM;
             }
             return result;
+        },
+        //CustomVM里面套用CustomVM时，CPrivate无法直接传入CustomVM中，所以在开发者之情的情况下，可以直接使用$ParentPM来让子CustomVM调用父级CustomVM的CPrivate
+        "$ParentPM": function(pmodel, key) {
+            return pmodel._parentPM;
         },
         "$App": function(pmodel, key) {
             return jSouper.App && jSouper.App.model;
@@ -5534,6 +5537,9 @@ var _elementCache = {},
 			eventInfos = key.replace("event-", "").toLowerCase().split("-"),
 			eventName = eventInfos.shift(), //Multi-event binding
 			elementHashCode = $.hashCode(currentNode, "event" + eventInfos.join("-"));
+		if (currentNode.tagName === "INPUT") {
+			console.log(key, elementHashCode)
+		};
 		if (eventName.indexOf("on") === 0) {
 			eventName = eventName.substr(2)
 		}
