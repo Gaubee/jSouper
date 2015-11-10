@@ -26,6 +26,17 @@ function _addAttr(viewModel, node, attrJson) {
                 });
                 _attributeHandle(attrKey, node, /*_shadowDIV*/ attrViewModel, viewModel, /*model.id,*/ handle, triggerTable);
                 // model.remove(attrViewModel); //?
+
+                //触发onporpertychange事件
+                var _attrChangeListenerKey = node[_attrKeyListenerPlaceholder]
+                if (_attrChangeListenerKey) {
+                    var eventMap = attrKeyListenerEvent[_attrChangeListenerKey];
+                    var propertyChangeEvents = eventMap && eventMap[attrKey];
+                    $.isA(propertyChangeEvents) && $.E(propertyChangeEvents, function(handle) {
+                        var value = (attrKey === "value" && _tagNameIsArr(node, ["select", "input", "textarea"])) ? node[attrKey] : node.getAttribute(attrKey);
+                        handle.call(node, attrKey, value);
+                    });
+                }
             }
         }
         var triggerTable = viewModel._triggers._;
@@ -484,7 +495,19 @@ $.E(_allEventNames, function(eventName) {
  * 为ViewModel拓展proxymodel代理类的功能
  */
 
-$.E(["shelter", "set", "get", "init" /*, "getSmart"*/ ], function(handleName) {
+$.E(["set", "get"], function(handleName) {
+    var handle = __ProxyModelProto__[handleName];
+    __ViewModelProto__[handleName] = function() {
+        var _current_handle_vms = _jSouperBase["current_" + handleName + "_vms"];
+        var self = this;
+        _current_handle_vms.push(self);
+        var model = self.model;
+        var result = handle.apply(model, arguments);
+        _current_handle_vms.pop();
+        return result;
+    }
+});
+$.E(["shelter", "init" /*, "getSmart"*/ ], function(handleName) {
     var handle = __ProxyModelProto__[handleName];
     __ViewModelProto__[handleName] = function() {
         var self = this;
@@ -492,7 +515,7 @@ $.E(["shelter", "set", "get", "init" /*, "getSmart"*/ ], function(handleName) {
         return handle.apply(model, arguments);
     }
 });
-$.E(["filter", "push", "pop"], function(handleName) {
+$.E(["filter", "push", "pop", "popItem", "unshift", "shift"], function(handleName) {
     var handle = __ProxyModelProto__[handleName];
     __ViewModelProto__[handleName] = function(key) {
         var self = this;
@@ -508,6 +531,41 @@ $.E(["filter", "push", "pop"], function(handleName) {
         return handle.apply(model, arguments);
     }
 });
+
+//庞大数据执行SET渲染，为了避免卡死而妥协的渐进式set方案
+__ViewModelProto__.asyncArraySet = function(key, arr) {
+    var vm = this;
+    var base_time = 1000 / 30;
+    if (!(arr && arr.length > 1)) {
+        return vm.set(key, arr);
+    }
+    var ArraySetTime = vm.__ArraySetTime__ || (vm.__ArraySetTime__ = {})
+    var _array_set_info = ArraySetTime[key];
+    var _loop = _array_set_info && (_array_set_info = _array_set_info.loop);
+    if (!_loop) {
+        var _start_data = +new Date;
+        vm.set(key, arr.slice(0, 1));
+        var _end_data = +new Date;
+        var _interval_time = _end_data - _start_data;
+        //计算出每base_time毫米可以添加几个项以保证渲染速度
+        _loop = Math.ceil(base_time / _interval_time);
+        _array_set_info = ArraySetTime[key] = {
+            loop: _loop,
+            ti: null
+        };
+    }
+    clearTimeout(_array_set_info.ti);
+    var i = 0;
+    _array_set_info.ti = setTimeout(function _set() {
+        i += _loop;
+        console.log(key, i);
+        vm.set(key, arr.slice(0, i));
+        if (i < arr.length) {
+            setTimeout(_set, base_time)
+        }
+    }, base_time)
+    return _array_set_info;
+};
 
 __ViewModelProto__.concat = function(key, items) {
     var self = this;
@@ -526,4 +584,4 @@ __ViewModelProto__.concat = function(key, items) {
     }
     arr.push.apply(arr, items);
     return model.set(key, arr);
-}
+};

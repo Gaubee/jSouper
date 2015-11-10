@@ -7,6 +7,8 @@
  * export
  */
 var _jSouperBase = {
+    current_set_vms: [],
+    current_get_vms: [],
     //暴露基本的工具集合，给拓展组件使用
     $: $,
     // JSON: JSON,

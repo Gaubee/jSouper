@@ -79,6 +79,7 @@ var
 
     _split_laveStr, //@split export argument
     $ = {
+        strToBool:_booleanFalseRegExp,
         isIE: _isIE,
         id: 9,
 

@@ -81,6 +81,7 @@ var
 
     _split_laveStr, //@split export argument
     $ = {
+        strToBool:_booleanFalseRegExp,
         isIE: _isIE,
         id: 9,
 
@@ -490,13 +491,34 @@ var
     //事件对象修复
     _extendEventRouter = function(e, _extend) {
         //可以操作原型链的话直接使用原型链继承方式
-        if (e.__proto__) {
+        if (Object.defineProperty) {
             var result = (_extendEventRouter = function(e, _extend) {
-                var _e = {};
+                var _e = Object.create(null);
+                $.fI(e, function(v, key) {
+                    if (!_extend.hasOwnProperty(key)) {
+                        if (typeof v === "function") {
+                            var _fun;
+                            var _getter = function() {
+                                return _fun || (_fun = v.bind(e))
+                            };
+                        } else {
+                            _getter = function() {
+                                return e[key]
+                            }
+                        }
+                        var _setter = function(new_v) {
+                            return e[key] = new_v
+                        }
+                        Object.defineProperty(_e, key, {
+                            get: _getter,
+                            set: _setter
+                        });
+                    }
+                });
                 $.fI(_extend, function(value, key) {
                     _e[key] = value;
-                })
-                _e.__proto__ = e;
+                });
+                _e.__e__ = e;
                 return _e;
             })(e, _extend);
         } else {
@@ -1142,6 +1164,23 @@ function Model(baseData) {
 };
 
 var abandonedModels = Model._abandonedModels = [];
+
+function _get_obj_key(obj, key) {
+    //老式浏览器不支持String类型用下标索引，所以统一使用charAt搞定
+    if (obj instanceof ViewModel || obj instanceof ProxyModel || obj instanceof Model) {
+        return obj.get(key);
+    }
+    if ($.isS(obj)) {
+        obj = obj.charAt(key);
+    } else {
+        obj = obj[key];
+    }
+    if (obj && obj[_DM_extends_object_constructor] /* && !_dm_get_source*/ ) {
+        //拓展类型的getter，这点遵守使用和默认的defineGetter一样的原则，每一次取值都要运行getter函数，而不直接用缓存
+        obj = obj.get(self, key, obj.value);
+    }
+    return obj;
+};
 /*
  * 核心方法
  */
@@ -1164,7 +1203,9 @@ var __ModelProto__ = Model.prototype = {
         //直接定义了topGetter，在保证正确的情况下尽可能早地定义
         var self = /* Model.session.topGetter = */ this,
             result = self._database,
-            filterKey;
+            filterKey,
+            is_lastKey,
+            perkey;
         //TODO:在终点直接默认filterKey的undefined为""，避免过多无用判断
         if (key === $UNDEFINED || key === "") {
             /*filterKey = "";*/
@@ -1175,24 +1216,34 @@ var __ModelProto__ = Model.prototype = {
             //不直接非空判断（if(result)），确保约束，String、Bumber、Boolean还是有属性的
             if (result != $UNDEFINED) { //null|undefined
                 //开始按"."做寻址分割分离key
-                var perkey = $.st(key, ".");
+                // var perkey = $.st(key, ".");
+                var _temp_split_laveStr = key;
 
                 //perkey出现异常（为空或者结束）或者result已经取不到有意义的值时才停止循环
-                while (perkey && result != $UNDEFINED) {
-                    //获取下一层
-                    result = result[perkey];
-                    perkey = $.st(_split_laveStr, ".");
-
-                    //放在取值后面代表着是从第一层开始查找，第0层也就是_database直接当成最后一层来做
-                    //如果当前层是拓展类型层且不是取源操作，调用getter
-                    if (result && result[_DM_extends_object_constructor] /* && !_dm_get_source*/ ) {
-                        //拓展类型的getter，这点遵守使用和默认的defineGetter一样的原则，每一次取值都要运行getter函数，而不直接用缓存
-                        result = result.get(self, key, result.value, key.substr(0, key.length - (((perkey /*perkey === false*/ .length) + 1 /*perkey不为false时，要换算成'.'.length+length*/ ) || 0) - _split_laveStr.length - 1) /*currentKey*/ );
+                // while (perkey && result != $UNDEFINED) {
+                do {
+                    perkey = $.st(_temp_split_laveStr, ".");
+                    _temp_split_laveStr = _split_laveStr;
+                    is_lastKey = !perkey;
+                    if (is_lastKey) {
+                        perkey = _split_laveStr;
                     }
-                }
-                //最后一层，老式浏览器不支持String类型用下标索引，所以统一使用charAt搞定
-                //lastKey
-                result = ($.isS(result) && parseInt(_split_laveStr) == _split_laveStr) ? result.charAt(_split_laveStr) : (result != $UNDEFINED ? result[_split_laveStr] : result);
+                    var _perfix_index = 0;
+                    var perkey_bak = perkey;
+                    perkey.replace(/\[([\s\S]*?)\]/g, function(matched, expression_str, _index) {
+                        var expression = Expression.get(expression_str);
+                        var _key = "" + expression.foo($.lI(_jSouperBase.current_get_vms) || self);
+                        var _perkey = perkey_bak.substring(_perfix_index, _index);
+                        _perkey && (result = _get_obj_key(result, _perkey));
+                        result = _get_obj_key(result, _key);
+                        _perfix_index = _index + matched.length;
+                        perkey = perkey_bak.substring(_perfix_index);
+                    });
+                    //获取下一层
+                    perkey && (result = _get_obj_key(result, perkey));
+
+                } while (!is_lastKey && result != $UNDEFINED)
+                // }
             }
 
             /*filterKey = key;*/
@@ -1267,7 +1318,7 @@ var __ModelProto__ = Model.prototype = {
                         back_perkey = perkey;
                         cache_cache_n_Obj = cache_n_Obj;
                         cache_n_Obj = cache_n_Obj[perkey] || (cache_n_Obj[perkey] = {})
-                        //放在取值后面代表着是从第一层开始，第0层也就是_database直接当成最后一层来做
+                            //放在取值后面代表着是从第一层开始，第0层也就是_database直接当成最后一层来做
                         if (cache_n_Obj[_DM_extends_object_constructor]) {
                             cache_n_Obj.set(self, key, nObj, key.substr(0, key.length - _split_laveStr.length - 1) /*currentKey*/ );
                             break;
@@ -1459,7 +1510,7 @@ var __ModelProto__ = Model.prototype = {
             } else { //无法找到，可能是key的长度太短
                 for (; childModel = childModels[i]; i--) {
                     prefix = childModel._prefix
-                    //v5版本中不存在prefix===""的情况
+                        //v5版本中不存在prefix===""的情况
                     if (!prefix.indexOf(key + ".") /* === 0*/ ) { //prefix is a part of key,just maybe had been changed
                         childModel._database = self.get(prefix);
                         childModel._touchOff();
@@ -1578,14 +1629,13 @@ var __ModelProto__ = Model.prototype = {
         model._childModels._[self._prefix] = self;
     },
     destroy: function() {
-        for (var i in this) {
-            delete this[i]
+            for (var i in this) {
+                delete this[i]
+            }
         }
-    }
-    // buildGetter: function(key) {},
-    // buildSetter: function(key) {} 
+        // buildGetter: function(key) {},
+        // buildSetter: function(key) {} 
 };
-
 /*
  * Model base
  * Model层对外的一些声明与Model层拓展的常用工具函数
@@ -2279,6 +2329,25 @@ var __setTool = {
         baseArr.pop();
         return baseArr;
     },
+    unshift: function( /*baseArr*/ ) {
+        var args = $.s(arguments),
+            result = $.s(args.shift());
+        Array.prototype.unshift.apply(result, args);
+        return result;
+    },
+    shift: function(baseArr) {
+        baseArr = $.s(baseArr);
+        baseArr.shift();
+        return baseArr;
+    },
+    popItem: function(baseArr, item) {
+        baseArr = $.s(baseArr);
+        var _index = baseArr.indexOf(item);
+        if (_index > -1) {
+            baseArr.splice(_index, 1);
+        }
+        return baseArr;
+    },
     _boolAvator: _placeholder(),
     toggle: function(baser, toggler) {
         if ($.isA(baser) || ($.isO(baser) && typeof baser.length === "number" && (baser = $.s(baser)))) { //数组型或类数组型
@@ -2504,7 +2573,8 @@ draggable
                         var eventMap = attrKeyListenerEvent[_attrChangeListenerKey];
                         var propertyChangeEvents = eventMap && eventMap[attrKey];
                         $.isA(propertyChangeEvents) && $.E(propertyChangeEvents, function(handle) {
-                            handle.call(currentNode, attrKey, currentNode.getAttribute(attrKey));
+                            var value = (attrKey === "value" && _tagNameIsArr(currentNode, ["select", "input", "textarea"])) ? currentNode[attrKey] : currentNode.getAttribute(attrKey);
+                            handle.call(currentNode, attrKey, value);
                         });
                     }
 
@@ -2540,7 +2610,8 @@ function bindElementPropertyChange(ele, attrKey, handle, runImmediately) {
     var propertyChangeEvents = eventMap[attrKey] || (eventMap[attrKey] = []);
     propertyChangeEvents.push(handle);
     if (runImmediately) {
-        handle.call(ele, attrKey, ele.getAttribute(attrKey))
+        var value = (attrKey === "value" && _tagNameIsArr(ele, ["select", "input", "textarea"])) ? ele[attrKey] : ele.getAttribute(attrKey);
+        handle.call(ele, attrKey, value)
     }
 }
 /*
@@ -2994,6 +3065,17 @@ function _addAttr(viewModel, node, attrJson) {
                 });
                 _attributeHandle(attrKey, node, /*_shadowDIV*/ attrViewModel, viewModel, /*model.id,*/ handle, triggerTable);
                 // model.remove(attrViewModel); //?
+
+                //触发onporpertychange事件
+                var _attrChangeListenerKey = node[_attrKeyListenerPlaceholder]
+                if (_attrChangeListenerKey) {
+                    var eventMap = attrKeyListenerEvent[_attrChangeListenerKey];
+                    var propertyChangeEvents = eventMap && eventMap[attrKey];
+                    $.isA(propertyChangeEvents) && $.E(propertyChangeEvents, function(handle) {
+                        var value = (attrKey === "value" && _tagNameIsArr(node, ["select", "input", "textarea"])) ? node[attrKey] : node.getAttribute(attrKey);
+                        handle.call(node, attrKey, value);
+                    });
+                }
             }
         }
         var triggerTable = viewModel._triggers._;
@@ -3452,7 +3534,19 @@ $.E(_allEventNames, function(eventName) {
  * 为ViewModel拓展proxymodel代理类的功能
  */
 
-$.E(["shelter", "set", "get", "init" /*, "getSmart"*/ ], function(handleName) {
+$.E(["set", "get"], function(handleName) {
+    var handle = __ProxyModelProto__[handleName];
+    __ViewModelProto__[handleName] = function() {
+        var _current_handle_vms = _jSouperBase["current_" + handleName + "_vms"];
+        var self = this;
+        _current_handle_vms.push(self);
+        var model = self.model;
+        var result = handle.apply(model, arguments);
+        _current_handle_vms.pop();
+        return result;
+    }
+});
+$.E(["shelter", "init" /*, "getSmart"*/ ], function(handleName) {
     var handle = __ProxyModelProto__[handleName];
     __ViewModelProto__[handleName] = function() {
         var self = this;
@@ -3460,7 +3554,7 @@ $.E(["shelter", "set", "get", "init" /*, "getSmart"*/ ], function(handleName) {
         return handle.apply(model, arguments);
     }
 });
-$.E(["filter", "push", "pop"], function(handleName) {
+$.E(["filter", "push", "pop", "popItem", "unshift", "shift"], function(handleName) {
     var handle = __ProxyModelProto__[handleName];
     __ViewModelProto__[handleName] = function(key) {
         var self = this;
@@ -3476,6 +3570,41 @@ $.E(["filter", "push", "pop"], function(handleName) {
         return handle.apply(model, arguments);
     }
 });
+
+//庞大数据执行SET渲染，为了避免卡死而妥协的渐进式set方案
+__ViewModelProto__.asyncArraySet = function(key, arr) {
+    var vm = this;
+    var base_time = 1000 / 30;
+    if (!(arr && arr.length > 1)) {
+        return vm.set(key, arr);
+    }
+    var ArraySetTime = vm.__ArraySetTime__ || (vm.__ArraySetTime__ = {})
+    var _array_set_info = ArraySetTime[key];
+    var _loop = _array_set_info && (_array_set_info = _array_set_info.loop);
+    if (!_loop) {
+        var _start_data = +new Date;
+        vm.set(key, arr.slice(0, 1));
+        var _end_data = +new Date;
+        var _interval_time = _end_data - _start_data;
+        //计算出每base_time毫米可以添加几个项以保证渲染速度
+        _loop = Math.ceil(base_time / _interval_time);
+        _array_set_info = ArraySetTime[key] = {
+            loop: _loop,
+            ti: null
+        };
+    }
+    clearTimeout(_array_set_info.ti);
+    var i = 0;
+    _array_set_info.ti = setTimeout(function _set() {
+        i += _loop;
+        console.log(key, i);
+        vm.set(key, arr.slice(0, i));
+        if (i < arr.length) {
+            setTimeout(_set, base_time)
+        }
+    }, base_time)
+    return _array_set_info;
+};
 
 __ViewModelProto__.concat = function(key, items) {
     var self = this;
@@ -3494,7 +3623,7 @@ __ViewModelProto__.concat = function(key, items) {
     }
     arr.push.apply(arr, items);
     return model.set(key, arr);
-}
+};
 /*
  * parse function
  */
@@ -3529,17 +3658,21 @@ var _removeNodes = _isIE ? $.noop
             GC_node = [];
         for (var i = 0, child_node, childNodes = node.childNodes; child_node = childNodes[i]; i += 1) {
             switch (child_node.nodeType) {
-                case 3:
+                case 3: //文本节点要注意中间文本不应该被过滤
                     var node_data = child_node.data;
                     if ($.trim(node_data)) {
                         var parseRes = parseRule(node_data);
                         if ($.isA(parseRes)) {
-                            $.E(parseRes, function(parseItem) {
+                            $.E(parseRes, function(parseItem, index) {
                                 // console.log(parseItem);
                                 if ($.isO(parseItem)) {
-                                    $.p(result, new TemplateHandle(parseItem))
-                                } else if ($.trim(parseItem)) {
-                                    $.p(result, new TextHandle(doc.createTextNode(_trim_but_space(parseItem))));
+                                    $.p(result, new TemplateHandle(parseItem));
+                                } else {
+                                    if ($.trim(parseItem)) {
+                                        $.p(result, new TextHandle(doc.createTextNode(_trim_but_space(parseItem))));
+                                    } else if (index < parseRes.length - 1) { //是夹在两个text-handle中的空白文本
+                                        $.p(result, new TextHandle(doc.createTextNode(" ")));
+                                    }
                                 }
                             });
                         } else {
@@ -3591,13 +3724,14 @@ Handle.prototype = {
     display: $FALSE, //function of show or hidden DOM
     childNodes: [],
     parentNode: $NULL,
-    type: "handle"/*,
-    setAttr: function(attr, value) {
-        this._attrs[attr] = value;
-    },
-    getAttr: function(attr) {
-        return this._attrs[attr]
-    }*/
+    type: "handle"
+        /*,
+            setAttr: function(attr, value) {
+                this._attrs[attr] = value;
+            },
+            getAttr: function(attr) {
+                return this._attrs[attr]
+            }*/
 };
 
 /*
@@ -4057,11 +4191,14 @@ var Expression = {
     }
 };
 //JS对象的获取
+//\[\]hash取值现在已经在model.get中支持
 var _obj_get_reg = /([^\^\~\+\-\*\/\%\=\&\|\?\:\s\(\)\{\}\[\]\:\;\'\"\,\<\>\@\#\!]+)/g;
 // var _obj_get_reg = /([a-zA-Z_?.$][\w?.$]*)/g;
 var _const_obj = {
-        "true": $TRUE,
+        "undefined": $TRUE,
+        "Infinity": $TRUE,
         "NaN": $TRUE,
+        "true": $TRUE,
         "false": $TRUE,
         "null": $TRUE,
         "new": $TRUE,
@@ -4070,7 +4207,7 @@ var _const_obj = {
             "this": $TRUE*/
     }
     //编译模板中的表达式
-var _build_expression = function(expression) {
+var _build_expression = window._build_expression = function(expression) {
     //不支持直接Object和Array取值：{a:"a"}或者[1,2]
     //目前暂时支持hash取值，等Path对象完善后才能优化触发hash取值
     //TODO:引入heightline的解析方式
@@ -4102,7 +4239,7 @@ var _build_expression = function(expression) {
     //解析表达式中的对象
     result = result.replace(_obj_get_reg, function(matchVar) {
         //过滤数值、常量
-        if (!_const_obj[matchVar] && matchVar.indexOf("window.") && matchVar != (+matchVar)) {
+        if (!_const_obj[matchVar] && matchVar.indexOf("window.") && matchVar != (+matchVar) && matchVar.charAt(0) !== "." /*说明是a[b].c中的.c情况，这里不再处理，让try去捕捉数据，意味着自定义数据类型无法执行*/ ) {
             if (!varsMap.hasOwnProperty(matchVar)) {
                 varsMap[matchVar] = $TRUE;
                 $.p(varsSet, matchVar);
@@ -4111,6 +4248,7 @@ var _build_expression = function(expression) {
         }
         return matchVar;
     });
+
     // //回滚备份的模板
     // result = result.replace(/\@2/g, function(tpl_ph) {
     //     return template_sets.shift();
@@ -5445,6 +5583,10 @@ var _AttributeHandleEvent = {
             currentNode.removeAttribute(key);
         }
     },
+    dir_bool: function(key, currentNode, attrVM) {
+        var attrOuter = _booleanFalseRegExp(_getAttrOuter(attrVM));
+        currentNode[key] = attrOuter;
+    },
     // checked:self.bool,
     radio: function(key, currentNode, attrVM) { //radio checked
         var attrOuter = _getAttrOuter(attrVM);
@@ -5463,7 +5605,7 @@ var _AttributeHandleEvent = {
         }
     }
 };
-var __bool = _AttributeHandleEvent.checked = _AttributeHandleEvent.bool;
+var __bool = _AttributeHandleEvent.checked = _AttributeHandleEvent.dir_bool;
 if (_isIE) {
     var __radio = _AttributeHandleEvent.radio;
     _AttributeHandleEvent.radio = function(key, currentNode, attrVM) {
@@ -5537,9 +5679,6 @@ var _elementCache = {},
 			eventInfos = key.replace("event-", "").toLowerCase().split("-"),
 			eventName = eventInfos.shift(), //Multi-event binding
 			elementHashCode = $.hashCode(currentNode, "event" + eventInfos.join("-"));
-		if (currentNode.tagName === "INPUT") {
-			console.log(key, elementHashCode)
-		};
 		if (eventName.indexOf("on") === 0) {
 			eventName = eventName.substr(2)
 		}
@@ -6097,6 +6236,8 @@ registerHandle("HTML", function() {
  * export
  */
 var _jSouperBase = {
+    current_set_vms: [],
+    current_get_vms: [],
     //暴露基本的工具集合，给拓展组件使用
     $: $,
     // JSON: JSON,

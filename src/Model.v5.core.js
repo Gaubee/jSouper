@@ -51,6 +51,23 @@ function Model(baseData) {
 };
 
 var abandonedModels = Model._abandonedModels = [];
+
+function _get_obj_key(obj, key) {
+    //老式浏览器不支持String类型用下标索引，所以统一使用charAt搞定
+    if (obj instanceof ViewModel || obj instanceof ProxyModel || obj instanceof Model) {
+        return obj.get(key);
+    }
+    if ($.isS(obj)) {
+        obj = obj.charAt(key);
+    } else {
+        obj = obj[key];
+    }
+    if (obj && obj[_DM_extends_object_constructor] /* && !_dm_get_source*/ ) {
+        //拓展类型的getter，这点遵守使用和默认的defineGetter一样的原则，每一次取值都要运行getter函数，而不直接用缓存
+        obj = obj.get(self, key, obj.value);
+    }
+    return obj;
+};
 /*
  * 核心方法
  */
@@ -73,7 +90,9 @@ var __ModelProto__ = Model.prototype = {
         //直接定义了topGetter，在保证正确的情况下尽可能早地定义
         var self = /* Model.session.topGetter = */ this,
             result = self._database,
-            filterKey;
+            filterKey,
+            is_lastKey,
+            perkey;
         //TODO:在终点直接默认filterKey的undefined为""，避免过多无用判断
         if (key === $UNDEFINED || key === "") {
             /*filterKey = "";*/
@@ -84,24 +103,34 @@ var __ModelProto__ = Model.prototype = {
             //不直接非空判断（if(result)），确保约束，String、Bumber、Boolean还是有属性的
             if (result != $UNDEFINED) { //null|undefined
                 //开始按"."做寻址分割分离key
-                var perkey = $.st(key, ".");
+                // var perkey = $.st(key, ".");
+                var _temp_split_laveStr = key;
 
                 //perkey出现异常（为空或者结束）或者result已经取不到有意义的值时才停止循环
-                while (perkey && result != $UNDEFINED) {
-                    //获取下一层
-                    result = result[perkey];
-                    perkey = $.st(_split_laveStr, ".");
-
-                    //放在取值后面代表着是从第一层开始查找，第0层也就是_database直接当成最后一层来做
-                    //如果当前层是拓展类型层且不是取源操作，调用getter
-                    if (result && result[_DM_extends_object_constructor] /* && !_dm_get_source*/ ) {
-                        //拓展类型的getter，这点遵守使用和默认的defineGetter一样的原则，每一次取值都要运行getter函数，而不直接用缓存
-                        result = result.get(self, key, result.value, key.substr(0, key.length - (((perkey /*perkey === false*/ .length) + 1 /*perkey不为false时，要换算成'.'.length+length*/ ) || 0) - _split_laveStr.length - 1) /*currentKey*/ );
+                // while (perkey && result != $UNDEFINED) {
+                do {
+                    perkey = $.st(_temp_split_laveStr, ".");
+                    _temp_split_laveStr = _split_laveStr;
+                    is_lastKey = !perkey;
+                    if (is_lastKey) {
+                        perkey = _split_laveStr;
                     }
-                }
-                //最后一层，老式浏览器不支持String类型用下标索引，所以统一使用charAt搞定
-                //lastKey
-                result = ($.isS(result) && parseInt(_split_laveStr) == _split_laveStr) ? result.charAt(_split_laveStr) : (result != $UNDEFINED ? result[_split_laveStr] : result);
+                    var _perfix_index = 0;
+                    var perkey_bak = perkey;
+                    perkey.replace(/\[([\s\S]*?)\]/g, function(matched, expression_str, _index) {
+                        var expression = Expression.get(expression_str);
+                        var _key = "" + expression.foo($.lI(_jSouperBase.current_get_vms) || self);
+                        var _perkey = perkey_bak.substring(_perfix_index, _index);
+                        _perkey && (result = _get_obj_key(result, _perkey));
+                        result = _get_obj_key(result, _key);
+                        _perfix_index = _index + matched.length;
+                        perkey = perkey_bak.substring(_perfix_index);
+                    });
+                    //获取下一层
+                    perkey && (result = _get_obj_key(result, perkey));
+
+                } while (!is_lastKey && result != $UNDEFINED)
+                // }
             }
 
             /*filterKey = key;*/
@@ -176,7 +205,7 @@ var __ModelProto__ = Model.prototype = {
                         back_perkey = perkey;
                         cache_cache_n_Obj = cache_n_Obj;
                         cache_n_Obj = cache_n_Obj[perkey] || (cache_n_Obj[perkey] = {})
-                        //放在取值后面代表着是从第一层开始，第0层也就是_database直接当成最后一层来做
+                            //放在取值后面代表着是从第一层开始，第0层也就是_database直接当成最后一层来做
                         if (cache_n_Obj[_DM_extends_object_constructor]) {
                             cache_n_Obj.set(self, key, nObj, key.substr(0, key.length - _split_laveStr.length - 1) /*currentKey*/ );
                             break;
@@ -368,7 +397,7 @@ var __ModelProto__ = Model.prototype = {
             } else { //无法找到，可能是key的长度太短
                 for (; childModel = childModels[i]; i--) {
                     prefix = childModel._prefix
-                    //v5版本中不存在prefix===""的情况
+                        //v5版本中不存在prefix===""的情况
                     if (!prefix.indexOf(key + ".") /* === 0*/ ) { //prefix is a part of key,just maybe had been changed
                         childModel._database = self.get(prefix);
                         childModel._touchOff();
@@ -487,10 +516,10 @@ var __ModelProto__ = Model.prototype = {
         model._childModels._[self._prefix] = self;
     },
     destroy: function() {
-        for (var i in this) {
-            delete this[i]
+            for (var i in this) {
+                delete this[i]
+            }
         }
-    }
-    // buildGetter: function(key) {},
-    // buildSetter: function(key) {} 
+        // buildGetter: function(key) {},
+        // buildSetter: function(key) {} 
 };

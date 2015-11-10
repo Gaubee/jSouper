@@ -135,7 +135,8 @@ draggable
                         var eventMap = attrKeyListenerEvent[_attrChangeListenerKey];
                         var propertyChangeEvents = eventMap && eventMap[attrKey];
                         $.isA(propertyChangeEvents) && $.E(propertyChangeEvents, function(handle) {
-                            handle.call(currentNode, attrKey, currentNode.getAttribute(attrKey));
+                            var value = (attrKey === "value" && _tagNameIsArr(currentNode, ["select", "input", "textarea"])) ? currentNode[attrKey] : currentNode.getAttribute(attrKey);
+                            handle.call(currentNode, attrKey, value);
                         });
                     }
 
@@ -171,6 +172,7 @@ function bindElementPropertyChange(ele, attrKey, handle, runImmediately) {
     var propertyChangeEvents = eventMap[attrKey] || (eventMap[attrKey] = []);
     propertyChangeEvents.push(handle);
     if (runImmediately) {
-        handle.call(ele, attrKey, ele.getAttribute(attrKey))
+        var value = (attrKey === "value" && _tagNameIsArr(ele, ["select", "input", "textarea"])) ? ele[attrKey] : ele.getAttribute(attrKey);
+        handle.call(ele, attrKey, value)
     }
 }

@@ -32,17 +32,21 @@ var _removeNodes = _isIE ? $.noop
             GC_node = [];
         for (var i = 0, child_node, childNodes = node.childNodes; child_node = childNodes[i]; i += 1) {
             switch (child_node.nodeType) {
-                case 3:
+                case 3: //文本节点要注意中间文本不应该被过滤
                     var node_data = child_node.data;
                     if ($.trim(node_data)) {
                         var parseRes = parseRule(node_data);
                         if ($.isA(parseRes)) {
-                            $.E(parseRes, function(parseItem) {
+                            $.E(parseRes, function(parseItem, index) {
                                 // console.log(parseItem);
                                 if ($.isO(parseItem)) {
-                                    $.p(result, new TemplateHandle(parseItem))
-                                } else if ($.trim(parseItem)) {
-                                    $.p(result, new TextHandle(doc.createTextNode(_trim_but_space(parseItem))));
+                                    $.p(result, new TemplateHandle(parseItem));
+                                } else {
+                                    if ($.trim(parseItem)) {
+                                        $.p(result, new TextHandle(doc.createTextNode(_trim_but_space(parseItem))));
+                                    } else if (index < parseRes.length - 1) { //是夹在两个text-handle中的空白文本
+                                        $.p(result, new TextHandle(doc.createTextNode(" ")));
+                                    }
                                 }
                             });
                         } else {
@@ -94,13 +98,14 @@ Handle.prototype = {
     display: $FALSE, //function of show or hidden DOM
     childNodes: [],
     parentNode: $NULL,
-    type: "handle"/*,
-    setAttr: function(attr, value) {
-        this._attrs[attr] = value;
-    },
-    getAttr: function(attr) {
-        return this._attrs[attr]
-    }*/
+    type: "handle"
+        /*,
+            setAttr: function(attr, value) {
+                this._attrs[attr] = value;
+            },
+            getAttr: function(attr) {
+                return this._attrs[attr]
+            }*/
 };
 
 /*

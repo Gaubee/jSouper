@@ -33,13 +33,34 @@ var
     //事件对象修复
     _extendEventRouter = function(e, _extend) {
         //可以操作原型链的话直接使用原型链继承方式
-        if (e.__proto__) {
+        if (Object.defineProperty) {
             var result = (_extendEventRouter = function(e, _extend) {
-                var _e = {};
+                var _e = Object.create(null);
+                $.fI(e, function(v, key) {
+                    if (!_extend.hasOwnProperty(key)) {
+                        if (typeof v === "function") {
+                            var _fun;
+                            var _getter = function() {
+                                return _fun || (_fun = v.bind(e))
+                            };
+                        } else {
+                            _getter = function() {
+                                return e[key]
+                            }
+                        }
+                        var _setter = function(new_v) {
+                            return e[key] = new_v
+                        }
+                        Object.defineProperty(_e, key, {
+                            get: _getter,
+                            set: _setter
+                        });
+                    }
+                });
                 $.fI(_extend, function(value, key) {
                     _e[key] = value;
-                })
-                _e.__proto__ = e;
+                });
+                _e.__e__ = e;
                 return _e;
             })(e, _extend);
         } else {

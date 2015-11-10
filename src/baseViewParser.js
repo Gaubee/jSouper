@@ -400,11 +400,14 @@ var Expression = {
     }
 };
 //JS对象的获取
+//\[\]hash取值现在已经在model.get中支持
 var _obj_get_reg = /([^\^\~\+\-\*\/\%\=\&\|\?\:\s\(\)\{\}\[\]\:\;\'\"\,\<\>\@\#\!]+)/g;
 // var _obj_get_reg = /([a-zA-Z_?.$][\w?.$]*)/g;
 var _const_obj = {
-        "true": $TRUE,
+        "undefined": $TRUE,
+        "Infinity": $TRUE,
         "NaN": $TRUE,
+        "true": $TRUE,
         "false": $TRUE,
         "null": $TRUE,
         "new": $TRUE,
@@ -413,7 +416,7 @@ var _const_obj = {
             "this": $TRUE*/
     }
     //编译模板中的表达式
-var _build_expression = function(expression) {
+var _build_expression = window._build_expression = function(expression) {
     //不支持直接Object和Array取值：{a:"a"}或者[1,2]
     //目前暂时支持hash取值，等Path对象完善后才能优化触发hash取值
     //TODO:引入heightline的解析方式
@@ -445,7 +448,7 @@ var _build_expression = function(expression) {
     //解析表达式中的对象
     result = result.replace(_obj_get_reg, function(matchVar) {
         //过滤数值、常量
-        if (!_const_obj[matchVar] && matchVar.indexOf("window.") && matchVar != (+matchVar)) {
+        if (!_const_obj[matchVar] && matchVar.indexOf("window.") && matchVar != (+matchVar) && matchVar.charAt(0) !== "." /*说明是a[b].c中的.c情况，这里不再处理，让try去捕捉数据，意味着自定义数据类型无法执行*/ ) {
             if (!varsMap.hasOwnProperty(matchVar)) {
                 varsMap[matchVar] = $TRUE;
                 $.p(varsSet, matchVar);
@@ -454,6 +457,7 @@ var _build_expression = function(expression) {
         }
         return matchVar;
     });
+
     // //回滚备份的模板
     // result = result.replace(/\@2/g, function(tpl_ph) {
     //     return template_sets.shift();

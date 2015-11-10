@@ -4,9 +4,6 @@ var _elementCache = {},
 			eventInfos = key.replace("event-", "").toLowerCase().split("-"),
 			eventName = eventInfos.shift(), //Multi-event binding
 			elementHashCode = $.hashCode(currentNode, "event" + eventInfos.join("-"));
-		if (currentNode.tagName === "INPUT") {
-			console.log(key, elementHashCode)
-		};
 		if (eventName.indexOf("on") === 0) {
 			eventName = eventName.substr(2)
 		}

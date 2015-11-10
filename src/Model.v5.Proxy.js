@@ -351,6 +351,25 @@ var __setTool = {
         baseArr.pop();
         return baseArr;
     },
+    unshift: function( /*baseArr*/ ) {
+        var args = $.s(arguments),
+            result = $.s(args.shift());
+        Array.prototype.unshift.apply(result, args);
+        return result;
+    },
+    shift: function(baseArr) {
+        baseArr = $.s(baseArr);
+        baseArr.shift();
+        return baseArr;
+    },
+    popItem: function(baseArr, item) {
+        baseArr = $.s(baseArr);
+        var _index = baseArr.indexOf(item);
+        if (_index > -1) {
+            baseArr.splice(_index, 1);
+        }
+        return baseArr;
+    },
     _boolAvator: _placeholder(),
     toggle: function(baser, toggler) {
         if ($.isA(baser) || ($.isO(baser) && typeof baser.length === "number" && (baser = $.s(baser)))) { //数组型或类数组型

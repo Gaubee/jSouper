@@ -112,6 +112,10 @@ var _AttributeHandleEvent = {
             currentNode.removeAttribute(key);
         }
     },
+    dir_bool: function(key, currentNode, attrVM) {
+        var attrOuter = _booleanFalseRegExp(_getAttrOuter(attrVM));
+        currentNode[key] = attrOuter;
+    },
     // checked:self.bool,
     radio: function(key, currentNode, attrVM) { //radio checked
         var attrOuter = _getAttrOuter(attrVM);
@@ -130,7 +134,7 @@ var _AttributeHandleEvent = {
         }
     }
 };
-var __bool = _AttributeHandleEvent.checked = _AttributeHandleEvent.bool;
+var __bool = _AttributeHandleEvent.checked = _AttributeHandleEvent.dir_bool;
 if (_isIE) {
     var __radio = _AttributeHandleEvent.radio;
     _AttributeHandleEvent.radio = function(key, currentNode, attrVM) {
