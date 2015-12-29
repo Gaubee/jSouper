@@ -82,6 +82,7 @@ V.rt("custom_tag", function(handle, index, parentHandle) {
 	var customTagNodeId = handleArgs[1];
 	var uuid = $.uid();
 	var customTagCode;
+	var _modulesInit_wrap_lock = _placeholder("modulesInit-wrap-lock");
 	var trigger = {
 		// cache_tpl_name:$UNDEFINED,
 		key: ".",
@@ -115,7 +116,7 @@ V.rt("custom_tag", function(handle, index, parentHandle) {
 						}
 						attrNameList.push(_name);
 					}
-					customTagCode = customTagCode.replace(/\$\{([\s\S]+?)\}\=\"\"|\$\{([\s\S]+?)\}/g, function(matchStr, x, attributeName) {
+					customTagCode = customTagCode.replace(/\$\{([\s\S]+?)\}|\$\{([\s\S]+?)\}\=\"\"/g, function(matchStr, x, attributeName) {
 						attributeName || (attributeName = x); //两个匹配任选一个
 						var instruction_type = attributeName.charAt(1);
 						if (/\-|\+/.test(instruction_type)) {
@@ -129,19 +130,22 @@ V.rt("custom_tag", function(handle, index, parentHandle) {
 				}
 				//锁定标签，避免死循环解析
 				// console.log("lock ",customTagName);
-				V._isCustonTagNodeLock[customTagName] = true;
+				V._isCustonTagNodeLock[customTagName] = $TRUE;
 				var module_id = "custom_tag-" + id + "-" + uuid;
 				var module = V.customTagModules[customTagCode] || (V.customTagModules[customTagCode] = jSouper.parseStr(customTagCode, module_id));
 				var modulesInit = V.modulesInit[module_id];
 				var vmInit = V.customTagsInit[customTagName];
-				if (modulesInit || vmInit) {
-					V.modulesInit[module_id] = function(vm) {
-						modulesInit && modulesInit.call(customTagNodeInfo, vm, customTagNodeInfo.__node__);
-						vmInit && vmInit.call(customTagNodeInfo, vm, customTagNodeInfo.__node__);
+				if (!(modulesInit && modulesInit[_modulesInit_wrap_lock])) {
+					if (modulesInit || vmInit) {
+						var _new_modulesInit = V.modulesInit[module_id] = function(vm) { //把模块“匿名初始函数”与“自定义初始函数”一起包裹成型的模块“匿名初始函数”
+							modulesInit && modulesInit.call(customTagNodeInfo, vm, customTagNodeInfo.__node__);
+							vmInit && vmInit.call(customTagNodeInfo, vm, customTagNodeInfo.__node__);
+						};
+						_new_modulesInit[_modulesInit_wrap_lock] = $TRUE;
 					}
 				}
 				//解锁
-				V._isCustonTagNodeLock[customTagName] = false;
+				V._isCustonTagNodeLock[customTagName] = $FALSE;
 				module($UNDEFINED, {
 					isCustomVM: $TRUE,
 					onInit: function(vm) {

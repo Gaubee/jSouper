@@ -103,7 +103,7 @@ var
 
     _split_laveStr, //@split export argument
     $ = {
-        strToBool:_booleanFalseRegExp,
+        strToBool: _booleanFalseRegExp,
         isIE: _isIE,
         id: 9,
 
@@ -247,7 +247,7 @@ var
         //for(in) 这种循环经常涉及到闭包，所以和forEach一样封装成一个工具函数
         fI: function(obj, callback) { //forIn
             for (var i in obj) {
-                callback(obj[i], i, obj);
+                obj.hasOwnProperty(i) && callback(obj[i], i, obj);
             }
         },
         //最简单数组的遍历方式
@@ -422,6 +422,27 @@ var
                 target = _mix(target, extendObj);
             }
             return target;
+        },
+        order: { //函数编程时用的
+            toArray: function(obj) {
+                var arr = [];
+                $.fI(obj, function(value, key) {
+                    arr.push({
+                        key: key,
+                        value: value
+                    });
+                });
+                return arr;
+            },
+            filterKey: function(arr_data, key, value) {
+                if ($.isA(arr_data)) {
+                    return $.filter(arr_data, function(item) {
+                        return item[key] == value;
+                    });
+                } else {
+                    return [];
+                }
+            }
         }
     },
     //空函数，用于绑定对象到该原型链上并生成返回子对象
@@ -513,7 +534,7 @@ var
     //事件对象修复
     _extendEventRouter = function(e, _extend) {
         //可以操作原型链的话直接使用原型链继承方式
-        if (Object.defineProperty) {
+        if (Object.defineProperty && Object.create) {
             var result = (_extendEventRouter = function(e, _extend) {
                 var _e = Object.create(null);
                 $.fI(e, function(v, key) {
@@ -895,18 +916,18 @@ var
             result.fn = function(e) {
                 e._extend = {
                     _before: function(e, vm) {
-                        var self = this;
+                        var target = e.__e__.target;//这里使用target，而不是this。因为时间的触发可能是冒泡而来的。
                         var args = $.s(arguments);
-                        if (self.multiple) {
+                        if (target.multiple) {
                             var vms = [];
-                            $.E(self.options, function(optionNode) {
+                            $.E(target.options, function(optionNode) {
                                 if (optionNode.selected) {
                                     vms.push(vm.getElementViewModel(optionNode));
                                 }
                             });
                             $.p(args, vms);
                         } else {
-                            $.p(args, vm.getElementViewModel(self.options[self.selectedIndex]));
+                            $.p(args, vm.getElementViewModel(target.options[target.selectedIndex]));
                         }
                         return {
                             ele: this,
@@ -2330,6 +2351,47 @@ $.E([ /*"set", "get", */ "touchOff"], function(handleName) {
     //     }
     //     return result || key;
     // }
+
+    // function _rebuild_on() {
+    //     var smartTrigger = this;
+    //     var TEMP = smartTrigger.TEMP;
+    //     var pmodel = TEMP.pM;
+    //     var router_result = pmodel.$router(TEMP.sK);
+    //     var topGetter = router_result.model,
+    //         matchKey = router_result.key || "";
+    //     var currentTopGetter = TEMP.md;
+    //     if (topGetter !== currentTopGetter) {
+    //         TEMP.md = topGetter
+    //         if (currentTopGetter) {
+    //             smartTrigger.unbind(currentTopGetter._triggerKeys)
+    //         }
+    //         if (topGetter) {
+    //             smartTrigger.matchKey = matchKey;
+    //             smartTrigger.bind(topGetter._triggerKeys);
+    //             // finallyRun.register(viewModel._id + TEMP.sK, function() {
+    //             //因为Model是惰性生成的，因此在Model存在的情况下已经可以进行更新DOM节点了
+    //             smartTrigger.event(topGetter._triggerKeys);
+    //             // });
+    //         }
+    //     }
+    //     if (forceUpdate && topGetter) {
+    //         smartTrigger.event(topGetter._triggerKeys)
+    //     }
+    // };
+    // //key监听器
+    // __ProxyModelProto__.on = function(key, handle) {
+    //     var pmodel = this;
+    //     //生成一个智能触发器
+    //     var smartTrigger = new SmartTriggerHandle(
+    //         sKey || "", //match key
+    //         vm_buildSmart_event, //VM通用的触发函数
+    //         { //TEMP data
+    //             pM: pmodel,
+    //             sK: sKey
+    //         }
+    //     );
+    //     smartTrigger.rebuild = _rebuild_on;
+    // }
 }());
 /*
  * 增加ProxyModel的数据操作的功能
@@ -2595,8 +2657,7 @@ draggable
                         var eventMap = attrKeyListenerEvent[_attrChangeListenerKey];
                         var propertyChangeEvents = eventMap && eventMap[attrKey];
                         $.isA(propertyChangeEvents) && $.E(propertyChangeEvents, function(handle) {
-                            var value = (attrKey === "value" && _tagNameIsArr(currentNode, ["select", "input", "textarea"])) ? currentNode[attrKey] : currentNode.getAttribute(attrKey);
-                            handle.call(currentNode, attrKey, value);
+                            handle.call(currentNode, attrKey, _get_element_value_from_key(currentNode, attrKey));
                         });
                     }
 
@@ -2632,10 +2693,16 @@ function bindElementPropertyChange(ele, attrKey, handle, runImmediately) {
     var propertyChangeEvents = eventMap[attrKey] || (eventMap[attrKey] = []);
     propertyChangeEvents.push(handle);
     if (runImmediately) {
-        var value = (attrKey === "value" && _tagNameIsArr(ele, ["select", "input", "textarea"])) ? ele[attrKey] : ele.getAttribute(attrKey);
-        handle.call(ele, attrKey, value)
+        handle.call(ele, attrKey, _get_element_value_from_key(ele, attrKey))
     }
-}
+};
+
+function _get_element_value_from_key(ele, attrKey) {
+    return ((attrKey === "value" && _tagNameIsArr(ele, ["select", "input", "textarea"])) ||
+            (attrKey.indexOf("source-") === 0)) ?
+        ele[attrKey] :
+        ele.getAttribute(attrKey);
+};
 /*
  * View constructor
  */
@@ -3094,8 +3161,7 @@ function _addAttr(viewModel, node, attrJson) {
                     var eventMap = attrKeyListenerEvent[_attrChangeListenerKey];
                     var propertyChangeEvents = eventMap && eventMap[attrKey];
                     $.isA(propertyChangeEvents) && $.E(propertyChangeEvents, function(handle) {
-                        var value = (attrKey === "value" && _tagNameIsArr(node, ["select", "input", "textarea"])) ? node[attrKey] : node.getAttribute(attrKey);
-                        handle.call(node, attrKey, value);
+                        handle.call(node, attrKey, _get_element_value_from_key(node, attrKey));
                     });
                 }
             }
@@ -3182,14 +3248,14 @@ function ViewModel(handleNodeTree, NodeList, triggerTable, model, opts, vmName) 
  */
 //_buildSmartTriggers接口，
 ViewModel._buildSmartTriggers = function(viewModel, sKey) {
-        var smartTriggers = [];
-        smartTriggers._ = {};
-        $.E(viewModel._triggers, function(sKey) {
-            $.p(smartTriggers, smartTriggers._[sKey] = ViewModel._buildSmart(viewModel, sKey));
-        });
-        return smartTriggers;
-    }
-    //VM通用的重建接口
+    var smartTriggers = [];
+    smartTriggers._ = {};
+    $.E(viewModel._triggers, function(sKey) {
+        $.p(smartTriggers, smartTriggers._[sKey] = ViewModel._buildSmart(viewModel, sKey));
+    });
+    return smartTriggers;
+};
+//VM通用的重建接口
 var _smartTriggerHandle_rebuild = function(forceUpdate) {
     var smartTrigger = this;
     var TEMP = smartTrigger.TEMP;
@@ -3208,8 +3274,8 @@ var _smartTriggerHandle_rebuild = function(forceUpdate) {
             smartTrigger.bind(topGetter._triggerKeys);
             // finallyRun.register(viewModel._id + TEMP.sK, function() {
             //因为Model是惰性生成的，因此在Model存在的情况下已经可以进行更新DOM节点了
-            smartTrigger.event(topGetter._triggerKeys)
-                // });
+            smartTrigger.event(topGetter._triggerKeys);
+            // });
         }
     }
     if (forceUpdate && topGetter) {
@@ -3229,12 +3295,12 @@ ViewModel._buildSmart = function(viewModel, sKey) {
     smartTrigger.rebuild = _smartTriggerHandle_rebuild;
     // viewModel._triggers._[sKey]._ = smartTrigger;
     return smartTrigger;
-}
+};
 
 var vm_buildSmart_event = function(smartTriggerSet) {
     var TEMP = this.TEMP;
     TEMP.vM.touchOff(TEMP.sK);
-}
+};
 
 var VI_session = ViewModel.session = {
     touchHandleIdSet: $NULL,
@@ -3299,7 +3365,11 @@ function _buildQueryMatchFun(matchAttr) {
     }
     return function(node) {
         for (var attrKey in matchAttr) {
-            if (matchAttr[attrKey] != node[attrKey]) {
+            var _v = node[attrKey];
+            if (attrKey === "tagName") {
+                _v = _v.toUpperCase();
+            }
+            if (matchAttr[attrKey] != _v) {
                 return $FALSE;
             }
         }
@@ -3348,8 +3418,9 @@ var __ViewModelProto__ = ViewModel.prototype = {
         var self = this;
         var _touchOffKeys;
         if ($.isA(node)) {
+            _touchOffKeys = [];
             $.E(node, function(node) {
-                _touchOffKeys = _addAttr(self, node, attrJson)
+                _touchOffKeys.push.apply(_touchOffKeys, _addAttr(self, node, attrJson));
             });
         } else {
             _touchOffKeys = _addAttr(self, node, attrJson)
@@ -3646,6 +3717,40 @@ __ViewModelProto__.concat = function(key, items) {
     arr.push.apply(arr, items);
     return model.set(key, arr);
 };
+
+//VM层面的数据key监听器
+__ViewModelProto__.on = function(key, handle) {
+    var viewModel = this;
+    if ($.isA(key)) {
+        $.e(key, function(_key) {
+            viewModel.on(_key, handle)
+        });
+        return
+    }
+    var keyTrigger = {
+        handleId: $.uid(),
+        key: key,
+        type: "attributesTrigger",
+        event: function(NodeList, model, /* eventTrigger,*/ isAttr /*, viewModel_ID*/ ) { /*NodeList, model, eventTrigger, self._isAttr, self._id*/
+            handle(model.get(key), key, model);
+        }
+    };
+    var triggerTable = viewModel._triggers._;
+    var triggerContainer = triggerTable[key];
+    var smartTriggers = viewModel.model._smartTriggers
+    if (!triggerContainer) {
+        // ViewModel._buildSmart(viewModel, key);//.rebuild();
+        triggerContainer = triggerTable[key] = [];
+        $.p(viewModel._triggers, key);
+        var smartkeyTrigger = ViewModel._buildSmart(viewModel, key, handle)
+        $.p(smartTriggers, smartTriggers._[key] = smartkeyTrigger);
+    } else {
+        smartkeyTrigger = smartTriggers._[key];
+    }
+    $.us(triggerContainer, keyTrigger);
+    //强制更新
+    smartkeyTrigger.rebuild($TRUE);
+};
 /*
  * parse function
  */
@@ -3689,10 +3794,10 @@ var _removeNodes = _isIE ? $.noop
                                 // console.log(parseItem);
                                 if ($.isO(parseItem)) {
                                     $.p(result, new TemplateHandle(parseItem));
-                                } else {
+                                } else { //文本节点
                                     if ($.trim(parseItem)) {
                                         $.p(result, new TextHandle(doc.createTextNode(_trim_but_space(parseItem))));
-                                    } else if (index < parseRes.length - 1) { //是夹在两个text-handle中的空白文本
+                                    } else if (index < parseRes.length - 1 && $.isS(parseRes[index - 1])) { //是夹在两个text-handle中的空白文本
                                         $.p(result, new TextHandle(doc.createTextNode(" ")));
                                     }
                                 }
@@ -3995,10 +4100,21 @@ var _string_placeholder = {
             $.E(xmps, function(tplNode) {
                 var type = tplNode.getAttribute("type");
                 var name = tplNode.getAttribute("name");
+
                 if (name) {
                     if (type === "template") {
-                        V.modules[name] = jSouper.parseStr(tplNode.innerHTML, name);
-                        $.D.rm(tplNode);
+                        var _if = tplNode.getAttribute("if");
+                        if (_if) {
+                            try {
+                                _if = !eval(_if);
+                            } catch (e) {
+                                debugger
+                            }
+                        }
+                        if (!_if) {
+                            V.modules[name] = jSouper.parseStr(tplNode.innerHTML, name);
+                            $.D.rm(tplNode);
+                        }
                     }
                 }
             });
@@ -4047,6 +4163,21 @@ var _string_placeholder = {
                             }
                         }
                     }
+                } else if (type === "text/tag/vm/before") {
+                    if (!name) {
+                        console.error("Custom tag VM-scripts must declare the name tags");
+                    } else {
+                        var scriptText = $.trim(scriptNode.text);
+                        if (scriptText) {
+                            try {
+                                //不带编译功能
+                                V.customTagsInitBefore[name.toLowerCase()] = Function("return " + scriptText)();;
+                                $.D.rm(scriptNode);
+                            } catch (e) {
+                                console.error("Custom tag VM-scripts build error:", e);
+                            }
+                        }
+                    }
                 } else if (type === "text/tag") { //代码模板
                     //临时编译临时使用
                     //而且仅仅只能在页面解析就需要定义完整，因为是代码模板
@@ -4072,8 +4203,18 @@ var _string_placeholder = {
                 var name = tplNode.getAttribute("name");
                 if (name) {
                     if (type === "tag") {
-                        V.customTags[name.toLowerCase()] = $.trim(tplNode.innerHTML);
-                        $.D.rm(tplNode);
+                        var _if = tplNode.getAttribute("if");
+                        if (_if) {
+                            try {
+                                _if = !eval(_if);
+                            } catch (e) {
+                                debugger
+                            }
+                        }
+                        if (!_if) {
+                            V.customTags[name.toLowerCase()] = $.trim(tplNode.innerHTML);
+                            $.D.rm(tplNode);
+                        }
                     }
                 } else {
                     console.error("the name of custom tag could not empty!");
@@ -4108,6 +4249,12 @@ var _string_placeholder = {
                         return
                     }
                     if (V.customTags[tagName]) {
+                        var before_handle = V.customTagsInitBefore[tagName];
+                        if (before_handle) {
+                            if (!before_handle.call(currentNode)) {
+                                return
+                            }
+                        }
                         var node_id = $.uid();
                         var nodeInfo = {
                             tagName: tagName,
@@ -4119,6 +4266,7 @@ var _string_placeholder = {
                             var name = attr.name;
                             var name_bak = name;
                             var value = currentNode.getAttribute(name);
+                            //TODO attr.specified ??
                             if (value === $NULL || value === "") { //fix IE6-8 is dif
                                 name = _isIE && IEfix[name];
                                 value = name && currentNode.getAttribute(name);
@@ -4169,8 +4317,10 @@ var _string_placeholder = {
         attrHandles: [],
         modules: {},
         modulesInit: {},
-        customTagsInit: {},
+        // modulesInitBefore: {},
         customTags: {},
+        customTagsInit: {},
+        customTagsInitBefore: {},
         _customTagNode: {},
         _isCustonTagNodeLock: {},
         attrModules: {},
@@ -4180,7 +4330,9 @@ var _string_placeholder = {
         _instances: {},
 
         // Proto: DynamicComputed /*Proto*/ ,
-        Model: Model
+        Model: Model,
+        View: View,
+        ViewModel: ViewModel
     };
 
 
@@ -4672,6 +4824,7 @@ V.rt("custom_tag", function(handle, index, parentHandle) {
 	var customTagNodeId = handleArgs[1];
 	var uuid = $.uid();
 	var customTagCode;
+	var _modulesInit_wrap_lock = _placeholder("modulesInit-wrap-lock");
 	var trigger = {
 		// cache_tpl_name:$UNDEFINED,
 		key: ".",
@@ -4705,7 +4858,7 @@ V.rt("custom_tag", function(handle, index, parentHandle) {
 						}
 						attrNameList.push(_name);
 					}
-					customTagCode = customTagCode.replace(/\$\{([\s\S]+?)\}\=\"\"|\$\{([\s\S]+?)\}/g, function(matchStr, x, attributeName) {
+					customTagCode = customTagCode.replace(/\$\{([\s\S]+?)\}|\$\{([\s\S]+?)\}\=\"\"/g, function(matchStr, x, attributeName) {
 						attributeName || (attributeName = x); //两个匹配任选一个
 						var instruction_type = attributeName.charAt(1);
 						if (/\-|\+/.test(instruction_type)) {
@@ -4719,19 +4872,22 @@ V.rt("custom_tag", function(handle, index, parentHandle) {
 				}
 				//锁定标签，避免死循环解析
 				// console.log("lock ",customTagName);
-				V._isCustonTagNodeLock[customTagName] = true;
+				V._isCustonTagNodeLock[customTagName] = $TRUE;
 				var module_id = "custom_tag-" + id + "-" + uuid;
 				var module = V.customTagModules[customTagCode] || (V.customTagModules[customTagCode] = jSouper.parseStr(customTagCode, module_id));
 				var modulesInit = V.modulesInit[module_id];
 				var vmInit = V.customTagsInit[customTagName];
-				if (modulesInit || vmInit) {
-					V.modulesInit[module_id] = function(vm) {
-						modulesInit && modulesInit.call(customTagNodeInfo, vm, customTagNodeInfo.__node__);
-						vmInit && vmInit.call(customTagNodeInfo, vm, customTagNodeInfo.__node__);
+				if (!(modulesInit && modulesInit[_modulesInit_wrap_lock])) {
+					if (modulesInit || vmInit) {
+						var _new_modulesInit = V.modulesInit[module_id] = function(vm) { //把模块“匿名初始函数”与“自定义初始函数”一起包裹成型的模块“匿名初始函数”
+							modulesInit && modulesInit.call(customTagNodeInfo, vm, customTagNodeInfo.__node__);
+							vmInit && vmInit.call(customTagNodeInfo, vm, customTagNodeInfo.__node__);
+						};
+						_new_modulesInit[_modulesInit_wrap_lock] = $TRUE;
 					}
 				}
 				//解锁
-				V._isCustonTagNodeLock[customTagName] = false;
+				V._isCustonTagNodeLock[customTagName] = $FALSE;
 				module($UNDEFINED, {
 					isCustomVM: $TRUE,
 					onInit: function(vm) {
@@ -5028,8 +5184,11 @@ V.rt("", function(handle, index, parentHandle) {
             }
         }
         // data = String(data);
-        if (currentNode.data !== String(data)) {
-            nodeHandle._data = currentNode.data = (data === $UNDEFINED ? "" : data);
+        if (nodeHandle._data !== String(data)) {
+            nodeHandle._data = (data === $UNDEFINED ? "" : data);
+            try{
+                currentNode.data = nodeHandle._data;
+            }catch(e){debugger/*IE 内存泄漏莫名其妙的问题*/}
         }
     }
     return trigger;
@@ -5160,7 +5319,7 @@ var _require_module = function(url, handleFun) {
         if (_jSouperBase.config.noCache) {
             _parseANode || (_parseANode = doc.createElement("a"));
             _parseANode.href = url;
-            _parseANode.search += (_parseANode.search ? "&" : "") + "__j__=" + Math.random();
+            _parseANode.search += (_parseANode.search ? "&" : "?") + "__j__=" + Math.random();
             config_url = _parseANode.href;
         }
         xhrConifg = _cache_xhrConifg[url] = {
@@ -5523,6 +5682,12 @@ var _testDIV = fragment(), //$.D.cl(shadowDIV),
             case "$String":
                 value = _split_laveStr;
                 break;
+            case "$JSON":
+                try {
+                    value = JSON.parse(_split_laveStr);
+                } catch (e) {
+                    value = null;
+                }
                 // case "Object"://JSON???....
 
         }
@@ -5573,14 +5738,11 @@ var _AttributeHandleEvent = {
     },
     style: function(key, currentNode, attrVM) {
         var attrOuter = _getAttrOuter(attrVM);
-        console.info("style:", attrOuter);
+        // console.info("style:", attrOuter);
         currentNode.style.cssText = attrOuter;
     },
     com: function(key, currentNode, attrVM) {
         var attrOuter = _getAttrOuter(attrVM);
-        if (key === "bind-style") {
-            debugger
-        };
         if (currentNode.getAttribute(key) !== attrOuter) {
             try {
                 currentNode.setAttribute(key, attrOuter)
@@ -5637,6 +5799,7 @@ if (_isIE) {
         } else {
             currentNode.defaultChecked = $FALSE;
         }
+        // __radio(key, currentNode, attrVM);
         (this._attributeHandle = __radio)(key, currentNode, attrVM);
     }
     _AttributeHandleEvent.checked = function(key, currentNode, attrVM) {
@@ -5646,12 +5809,13 @@ if (_isIE) {
         } else {
             currentNode.defaultChecked = $FALSE;
         }
+        // __bool(key, currentNode, attrVM);
         (this._attributeHandle = __bool)(key, currentNode, attrVM);
     }
 }
 var _boolAssignment = " checked selected disabled readonly multiple defer declare noresize nowrap noshade compact truespeed async typemustmatch open novalidate ismap default seamless autoplay controls loop muted reversed scoped autofocus required formnovalidate editable draggable hidden "
-/*for ie fix*/
-+ "defaultSelected ";
+	/*for ie fix*/
+	+ "defaultSelected ";
 V.ra(function(attrKey) {
 	return _boolAssignment.indexOf(" " + attrKey + " ") !== -1;
 }, function(attrKey, element) {
@@ -5662,10 +5826,10 @@ V.ra(function(attrKey) {
 			break;
 		case "radio":
 			(attrKey === "checked") && (result = _AttributeHandleEvent.radio)
-			break
-		// case "select-one":
-		// 	/selected|defaultSelected/.test(attrKey) && (result = _AttributeHandleEvent.select)
-		// 	break
+			break;
+			// case "select-one":
+			// 	/selected|defaultSelected/.test(attrKey) && (result = _AttributeHandleEvent.select)
+			// 	break
 	}
 	return result;
 })
@@ -5872,12 +6036,12 @@ var _formCache = {},
 					eventConfig.vi = vi;
 					if (!(outerFormHandle = formCollection[eventName])) {
 						outerFormHandle = function(e) {
-								var self = this;
-								eventConfig.before && eventConfig.before.call(this, e, eventConfig.vi, eventConfig.key)
-								eventConfig.inner.call(this, e, eventConfig.vi, eventConfig.key);
-								eventConfig.after && eventConfig.after.call(this, e, eventConfig.vi, eventConfig.key)
-							}
-							// outerFormHandle = Function('o' /*eventConfig*/ , 'return function(e){var s=this;' + (eventConfig.before ? 'o.before.call(s,e,o.vi, o.key);' : '') + 'o.inner.call(s,e,o.vi, o.key);' + (eventConfig.after ? 'o.after.call(s,e,o.vi, o.key);' : '') + '}')(eventConfig);
+							var self = this;
+							eventConfig.before && eventConfig.before.call(this, e, eventConfig.vi, eventConfig.key)
+							eventConfig.inner.call(this, e, eventConfig.vi, eventConfig.key);
+							eventConfig.after && eventConfig.after.call(this, e, eventConfig.vi, eventConfig.key)
+						};
+						// outerFormHandle = Function('o' /*eventConfig*/ , 'return function(e){var s=this;' + (eventConfig.before ? 'o.before.call(s,e,o.vi, o.key);' : '') + 'o.inner.call(s,e,o.vi, o.key);' + (eventConfig.after ? 'o.after.call(s,e,o.vi, o.key);' : '') + '}')(eventConfig);
 						outerFormHandle.eventConfig = eventConfig
 						_registerEvent(currentNode, eventName, outerFormHandle, elementHashCode);
 						formCollection[eventName] = outerFormHandle;
@@ -6018,6 +6182,11 @@ _AttributeHandleEvent.select = function(key, currentNode, attrVM, vi) { //select
 		})
 	}
 }
+V.ra(function(attrKey){
+	return attrKey.indexOf("source-") === 0;
+},function () {
+	return _AttributeHandleEvent.dir;
+});
 Model.config.prefix.Get = "$GET";
 var _statusEventCache = {},
 	_statusEvent = {

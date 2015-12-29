@@ -79,7 +79,7 @@ var
 
     _split_laveStr, //@split export argument
     $ = {
-        strToBool:_booleanFalseRegExp,
+        strToBool: _booleanFalseRegExp,
         isIE: _isIE,
         id: 9,
 
@@ -223,7 +223,7 @@ var
         //for(in) 这种循环经常涉及到闭包，所以和forEach一样封装成一个工具函数
         fI: function(obj, callback) { //forIn
             for (var i in obj) {
-                callback(obj[i], i, obj);
+                obj.hasOwnProperty(i) && callback(obj[i], i, obj);
             }
         },
         //最简单数组的遍历方式
@@ -398,6 +398,27 @@ var
                 target = _mix(target, extendObj);
             }
             return target;
+        },
+        order: { //函数编程时用的
+            toArray: function(obj) {
+                var arr = [];
+                $.fI(obj, function(value, key) {
+                    arr.push({
+                        key: key,
+                        value: value
+                    });
+                });
+                return arr;
+            },
+            filterKey: function(arr_data, key, value) {
+                if ($.isA(arr_data)) {
+                    return $.filter(arr_data, function(item) {
+                        return item[key] == value;
+                    });
+                } else {
+                    return [];
+                }
+            }
         }
     },
     //空函数，用于绑定对象到该原型链上并生成返回子对象

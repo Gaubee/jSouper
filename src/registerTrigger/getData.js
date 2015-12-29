@@ -23,8 +23,11 @@ V.rt("", function(handle, index, parentHandle) {
             }
         }
         // data = String(data);
-        if (currentNode.data !== String(data)) {
-            nodeHandle._data = currentNode.data = (data === $UNDEFINED ? "" : data);
+        if (nodeHandle._data !== String(data)) {
+            nodeHandle._data = (data === $UNDEFINED ? "" : data);
+            try{
+                currentNode.data = nodeHandle._data;
+            }catch(e){debugger/*IE 内存泄漏莫名其妙的问题*/}
         }
     }
     return trigger;

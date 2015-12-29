@@ -10,7 +10,7 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-wrap');
     grunt.loadNpmTasks('grunt-notify');
     //define tasks
-    grunt.registerTask('server', ['connect:server', 'watch']);
+    grunt.registerTask('server', [/*'connect:server',*/ 'watch']);
 
     var baseFile = [
             'src/$.js',

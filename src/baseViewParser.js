@@ -182,10 +182,21 @@ var _string_placeholder = {
             $.E(xmps, function(tplNode) {
                 var type = tplNode.getAttribute("type");
                 var name = tplNode.getAttribute("name");
+
                 if (name) {
                     if (type === "template") {
-                        V.modules[name] = jSouper.parseStr(tplNode.innerHTML, name);
-                        $.D.rm(tplNode);
+                        var _if = tplNode.getAttribute("if");
+                        if (_if) {
+                            try {
+                                _if = !eval(_if);
+                            } catch (e) {
+                                debugger
+                            }
+                        }
+                        if (!_if) {
+                            V.modules[name] = jSouper.parseStr(tplNode.innerHTML, name);
+                            $.D.rm(tplNode);
+                        }
                     }
                 }
             });
@@ -234,6 +245,21 @@ var _string_placeholder = {
                             }
                         }
                     }
+                } else if (type === "text/tag/vm/before") {
+                    if (!name) {
+                        console.error("Custom tag VM-scripts must declare the name tags");
+                    } else {
+                        var scriptText = $.trim(scriptNode.text);
+                        if (scriptText) {
+                            try {
+                                //不带编译功能
+                                V.customTagsInitBefore[name.toLowerCase()] = Function("return " + scriptText)();;
+                                $.D.rm(scriptNode);
+                            } catch (e) {
+                                console.error("Custom tag VM-scripts build error:", e);
+                            }
+                        }
+                    }
                 } else if (type === "text/tag") { //代码模板
                     //临时编译临时使用
                     //而且仅仅只能在页面解析就需要定义完整，因为是代码模板
@@ -259,8 +285,18 @@ var _string_placeholder = {
                 var name = tplNode.getAttribute("name");
                 if (name) {
                     if (type === "tag") {
-                        V.customTags[name.toLowerCase()] = $.trim(tplNode.innerHTML);
-                        $.D.rm(tplNode);
+                        var _if = tplNode.getAttribute("if");
+                        if (_if) {
+                            try {
+                                _if = !eval(_if);
+                            } catch (e) {
+                                debugger
+                            }
+                        }
+                        if (!_if) {
+                            V.customTags[name.toLowerCase()] = $.trim(tplNode.innerHTML);
+                            $.D.rm(tplNode);
+                        }
                     }
                 } else {
                     console.error("the name of custom tag could not empty!");
@@ -295,6 +331,12 @@ var _string_placeholder = {
                         return
                     }
                     if (V.customTags[tagName]) {
+                        var before_handle = V.customTagsInitBefore[tagName];
+                        if (before_handle) {
+                            if (!before_handle.call(currentNode)) {
+                                return
+                            }
+                        }
                         var node_id = $.uid();
                         var nodeInfo = {
                             tagName: tagName,
@@ -306,6 +348,7 @@ var _string_placeholder = {
                             var name = attr.name;
                             var name_bak = name;
                             var value = currentNode.getAttribute(name);
+                            //TODO attr.specified ??
                             if (value === $NULL || value === "") { //fix IE6-8 is dif
                                 name = _isIE && IEfix[name];
                                 value = name && currentNode.getAttribute(name);
@@ -356,8 +399,10 @@ var _string_placeholder = {
         attrHandles: [],
         modules: {},
         modulesInit: {},
-        customTagsInit: {},
+        // modulesInitBefore: {},
         customTags: {},
+        customTagsInit: {},
+        customTagsInitBefore: {},
         _customTagNode: {},
         _isCustonTagNodeLock: {},
         attrModules: {},
@@ -367,7 +412,9 @@ var _string_placeholder = {
         _instances: {},
 
         // Proto: DynamicComputed /*Proto*/ ,
-        Model: Model
+        Model: Model,
+        View: View,
+        ViewModel: ViewModel
     };
 
 

@@ -15,7 +15,7 @@ var _require_module = function(url, handleFun) {
         if (_jSouperBase.config.noCache) {
             _parseANode || (_parseANode = doc.createElement("a"));
             _parseANode.href = url;
-            _parseANode.search += (_parseANode.search ? "&" : "") + "__j__=" + Math.random();
+            _parseANode.search += (_parseANode.search ? "&" : "?") + "__j__=" + Math.random();
             config_url = _parseANode.href;
         }
         xhrConifg = _cache_xhrConifg[url] = {

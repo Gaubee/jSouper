@@ -30,6 +30,12 @@ var _testDIV = fragment(), //$.D.cl(shadowDIV),
             case "$String":
                 value = _split_laveStr;
                 break;
+            case "$JSON":
+                try {
+                    value = JSON.parse(_split_laveStr);
+                } catch (e) {
+                    value = null;
+                }
                 // case "Object"://JSON???....
 
         }
@@ -80,14 +86,11 @@ var _AttributeHandleEvent = {
     },
     style: function(key, currentNode, attrVM) {
         var attrOuter = _getAttrOuter(attrVM);
-        console.info("style:", attrOuter);
+        // console.info("style:", attrOuter);
         currentNode.style.cssText = attrOuter;
     },
     com: function(key, currentNode, attrVM) {
         var attrOuter = _getAttrOuter(attrVM);
-        if (key === "bind-style") {
-            debugger
-        };
         if (currentNode.getAttribute(key) !== attrOuter) {
             try {
                 currentNode.setAttribute(key, attrOuter)
@@ -144,6 +147,7 @@ if (_isIE) {
         } else {
             currentNode.defaultChecked = $FALSE;
         }
+        // __radio(key, currentNode, attrVM);
         (this._attributeHandle = __radio)(key, currentNode, attrVM);
     }
     _AttributeHandleEvent.checked = function(key, currentNode, attrVM) {
@@ -153,6 +157,7 @@ if (_isIE) {
         } else {
             currentNode.defaultChecked = $FALSE;
         }
+        // __bool(key, currentNode, attrVM);
         (this._attributeHandle = __bool)(key, currentNode, attrVM);
     }
 }

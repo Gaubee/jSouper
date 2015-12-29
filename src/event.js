@@ -33,7 +33,7 @@ var
     //事件对象修复
     _extendEventRouter = function(e, _extend) {
         //可以操作原型链的话直接使用原型链继承方式
-        if (Object.defineProperty) {
+        if (Object.defineProperty && Object.create) {
             var result = (_extendEventRouter = function(e, _extend) {
                 var _e = Object.create(null);
                 $.fI(e, function(v, key) {
@@ -415,18 +415,18 @@ var
             result.fn = function(e) {
                 e._extend = {
                     _before: function(e, vm) {
-                        var self = this;
+                        var target = e.__e__.target;//这里使用target，而不是this。因为时间的触发可能是冒泡而来的。
                         var args = $.s(arguments);
-                        if (self.multiple) {
+                        if (target.multiple) {
                             var vms = [];
-                            $.E(self.options, function(optionNode) {
+                            $.E(target.options, function(optionNode) {
                                 if (optionNode.selected) {
                                     vms.push(vm.getElementViewModel(optionNode));
                                 }
                             });
                             $.p(args, vms);
                         } else {
-                            $.p(args, vm.getElementViewModel(self.options[self.selectedIndex]));
+                            $.p(args, vm.getElementViewModel(target.options[target.selectedIndex]));
                         }
                         return {
                             ele: this,

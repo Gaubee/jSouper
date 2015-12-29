@@ -33,8 +33,7 @@ function _addAttr(viewModel, node, attrJson) {
                     var eventMap = attrKeyListenerEvent[_attrChangeListenerKey];
                     var propertyChangeEvents = eventMap && eventMap[attrKey];
                     $.isA(propertyChangeEvents) && $.E(propertyChangeEvents, function(handle) {
-                        var value = (attrKey === "value" && _tagNameIsArr(node, ["select", "input", "textarea"])) ? node[attrKey] : node.getAttribute(attrKey);
-                        handle.call(node, attrKey, value);
+                        handle.call(node, attrKey, _get_element_value_from_key(node, attrKey));
                     });
                 }
             }
@@ -121,14 +120,14 @@ function ViewModel(handleNodeTree, NodeList, triggerTable, model, opts, vmName) 
  */
 //_buildSmartTriggers接口，
 ViewModel._buildSmartTriggers = function(viewModel, sKey) {
-        var smartTriggers = [];
-        smartTriggers._ = {};
-        $.E(viewModel._triggers, function(sKey) {
-            $.p(smartTriggers, smartTriggers._[sKey] = ViewModel._buildSmart(viewModel, sKey));
-        });
-        return smartTriggers;
-    }
-    //VM通用的重建接口
+    var smartTriggers = [];
+    smartTriggers._ = {};
+    $.E(viewModel._triggers, function(sKey) {
+        $.p(smartTriggers, smartTriggers._[sKey] = ViewModel._buildSmart(viewModel, sKey));
+    });
+    return smartTriggers;
+};
+//VM通用的重建接口
 var _smartTriggerHandle_rebuild = function(forceUpdate) {
     var smartTrigger = this;
     var TEMP = smartTrigger.TEMP;
@@ -147,8 +146,8 @@ var _smartTriggerHandle_rebuild = function(forceUpdate) {
             smartTrigger.bind(topGetter._triggerKeys);
             // finallyRun.register(viewModel._id + TEMP.sK, function() {
             //因为Model是惰性生成的，因此在Model存在的情况下已经可以进行更新DOM节点了
-            smartTrigger.event(topGetter._triggerKeys)
-                // });
+            smartTrigger.event(topGetter._triggerKeys);
+            // });
         }
     }
     if (forceUpdate && topGetter) {
@@ -168,12 +167,12 @@ ViewModel._buildSmart = function(viewModel, sKey) {
     smartTrigger.rebuild = _smartTriggerHandle_rebuild;
     // viewModel._triggers._[sKey]._ = smartTrigger;
     return smartTrigger;
-}
+};
 
 var vm_buildSmart_event = function(smartTriggerSet) {
     var TEMP = this.TEMP;
     TEMP.vM.touchOff(TEMP.sK);
-}
+};
 
 var VI_session = ViewModel.session = {
     touchHandleIdSet: $NULL,
@@ -238,7 +237,11 @@ function _buildQueryMatchFun(matchAttr) {
     }
     return function(node) {
         for (var attrKey in matchAttr) {
-            if (matchAttr[attrKey] != node[attrKey]) {
+            var _v = node[attrKey];
+            if (attrKey === "tagName") {
+                _v = _v.toUpperCase();
+            }
+            if (matchAttr[attrKey] != _v) {
                 return $FALSE;
             }
         }
@@ -287,8 +290,9 @@ var __ViewModelProto__ = ViewModel.prototype = {
         var self = this;
         var _touchOffKeys;
         if ($.isA(node)) {
+            _touchOffKeys = [];
             $.E(node, function(node) {
-                _touchOffKeys = _addAttr(self, node, attrJson)
+                _touchOffKeys.push.apply(_touchOffKeys, _addAttr(self, node, attrJson));
             });
         } else {
             _touchOffKeys = _addAttr(self, node, attrJson)
@@ -584,4 +588,38 @@ __ViewModelProto__.concat = function(key, items) {
     }
     arr.push.apply(arr, items);
     return model.set(key, arr);
+};
+
+//VM层面的数据key监听器
+__ViewModelProto__.on = function(key, handle) {
+    var viewModel = this;
+    if ($.isA(key)) {
+        $.e(key, function(_key) {
+            viewModel.on(_key, handle)
+        });
+        return
+    }
+    var keyTrigger = {
+        handleId: $.uid(),
+        key: key,
+        type: "attributesTrigger",
+        event: function(NodeList, model, /* eventTrigger,*/ isAttr /*, viewModel_ID*/ ) { /*NodeList, model, eventTrigger, self._isAttr, self._id*/
+            handle(model.get(key), key, model);
+        }
+    };
+    var triggerTable = viewModel._triggers._;
+    var triggerContainer = triggerTable[key];
+    var smartTriggers = viewModel.model._smartTriggers
+    if (!triggerContainer) {
+        // ViewModel._buildSmart(viewModel, key);//.rebuild();
+        triggerContainer = triggerTable[key] = [];
+        $.p(viewModel._triggers, key);
+        var smartkeyTrigger = ViewModel._buildSmart(viewModel, key, handle)
+        $.p(smartTriggers, smartTriggers._[key] = smartkeyTrigger);
+    } else {
+        smartkeyTrigger = smartTriggers._[key];
+    }
+    $.us(triggerContainer, keyTrigger);
+    //强制更新
+    smartkeyTrigger.rebuild($TRUE);
 };

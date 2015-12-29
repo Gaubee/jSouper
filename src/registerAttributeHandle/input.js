@@ -129,12 +129,12 @@ var _formCache = {},
 					eventConfig.vi = vi;
 					if (!(outerFormHandle = formCollection[eventName])) {
 						outerFormHandle = function(e) {
-								var self = this;
-								eventConfig.before && eventConfig.before.call(this, e, eventConfig.vi, eventConfig.key)
-								eventConfig.inner.call(this, e, eventConfig.vi, eventConfig.key);
-								eventConfig.after && eventConfig.after.call(this, e, eventConfig.vi, eventConfig.key)
-							}
-							// outerFormHandle = Function('o' /*eventConfig*/ , 'return function(e){var s=this;' + (eventConfig.before ? 'o.before.call(s,e,o.vi, o.key);' : '') + 'o.inner.call(s,e,o.vi, o.key);' + (eventConfig.after ? 'o.after.call(s,e,o.vi, o.key);' : '') + '}')(eventConfig);
+							var self = this;
+							eventConfig.before && eventConfig.before.call(this, e, eventConfig.vi, eventConfig.key)
+							eventConfig.inner.call(this, e, eventConfig.vi, eventConfig.key);
+							eventConfig.after && eventConfig.after.call(this, e, eventConfig.vi, eventConfig.key)
+						};
+						// outerFormHandle = Function('o' /*eventConfig*/ , 'return function(e){var s=this;' + (eventConfig.before ? 'o.before.call(s,e,o.vi, o.key);' : '') + 'o.inner.call(s,e,o.vi, o.key);' + (eventConfig.after ? 'o.after.call(s,e,o.vi, o.key);' : '') + '}')(eventConfig);
 						outerFormHandle.eventConfig = eventConfig
 						_registerEvent(currentNode, eventName, outerFormHandle, elementHashCode);
 						formCollection[eventName] = outerFormHandle;

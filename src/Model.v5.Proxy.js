@@ -330,6 +330,47 @@ $.E([ /*"set", "get", */ "touchOff"], function(handleName) {
     //     }
     //     return result || key;
     // }
+
+    // function _rebuild_on() {
+    //     var smartTrigger = this;
+    //     var TEMP = smartTrigger.TEMP;
+    //     var pmodel = TEMP.pM;
+    //     var router_result = pmodel.$router(TEMP.sK);
+    //     var topGetter = router_result.model,
+    //         matchKey = router_result.key || "";
+    //     var currentTopGetter = TEMP.md;
+    //     if (topGetter !== currentTopGetter) {
+    //         TEMP.md = topGetter
+    //         if (currentTopGetter) {
+    //             smartTrigger.unbind(currentTopGetter._triggerKeys)
+    //         }
+    //         if (topGetter) {
+    //             smartTrigger.matchKey = matchKey;
+    //             smartTrigger.bind(topGetter._triggerKeys);
+    //             // finallyRun.register(viewModel._id + TEMP.sK, function() {
+    //             //因为Model是惰性生成的，因此在Model存在的情况下已经可以进行更新DOM节点了
+    //             smartTrigger.event(topGetter._triggerKeys);
+    //             // });
+    //         }
+    //     }
+    //     if (forceUpdate && topGetter) {
+    //         smartTrigger.event(topGetter._triggerKeys)
+    //     }
+    // };
+    // //key监听器
+    // __ProxyModelProto__.on = function(key, handle) {
+    //     var pmodel = this;
+    //     //生成一个智能触发器
+    //     var smartTrigger = new SmartTriggerHandle(
+    //         sKey || "", //match key
+    //         vm_buildSmart_event, //VM通用的触发函数
+    //         { //TEMP data
+    //             pM: pmodel,
+    //             sK: sKey
+    //         }
+    //     );
+    //     smartTrigger.rebuild = _rebuild_on;
+    // }
 }());
 /*
  * 增加ProxyModel的数据操作的功能

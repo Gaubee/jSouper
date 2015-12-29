@@ -135,8 +135,7 @@ draggable
                         var eventMap = attrKeyListenerEvent[_attrChangeListenerKey];
                         var propertyChangeEvents = eventMap && eventMap[attrKey];
                         $.isA(propertyChangeEvents) && $.E(propertyChangeEvents, function(handle) {
-                            var value = (attrKey === "value" && _tagNameIsArr(currentNode, ["select", "input", "textarea"])) ? currentNode[attrKey] : currentNode.getAttribute(attrKey);
-                            handle.call(currentNode, attrKey, value);
+                            handle.call(currentNode, attrKey, _get_element_value_from_key(currentNode, attrKey));
                         });
                     }
 
@@ -172,7 +171,13 @@ function bindElementPropertyChange(ele, attrKey, handle, runImmediately) {
     var propertyChangeEvents = eventMap[attrKey] || (eventMap[attrKey] = []);
     propertyChangeEvents.push(handle);
     if (runImmediately) {
-        var value = (attrKey === "value" && _tagNameIsArr(ele, ["select", "input", "textarea"])) ? ele[attrKey] : ele.getAttribute(attrKey);
-        handle.call(ele, attrKey, value)
+        handle.call(ele, attrKey, _get_element_value_from_key(ele, attrKey))
     }
-}
+};
+
+function _get_element_value_from_key(ele, attrKey) {
+    return ((attrKey === "value" && _tagNameIsArr(ele, ["select", "input", "textarea"])) ||
+            (attrKey.indexOf("source-") === 0)) ?
+        ele[attrKey] :
+        ele.getAttribute(attrKey);
+};

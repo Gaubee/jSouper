@@ -41,10 +41,10 @@ var _removeNodes = _isIE ? $.noop
                                 // console.log(parseItem);
                                 if ($.isO(parseItem)) {
                                     $.p(result, new TemplateHandle(parseItem));
-                                } else {
+                                } else { //文本节点
                                     if ($.trim(parseItem)) {
                                         $.p(result, new TextHandle(doc.createTextNode(_trim_but_space(parseItem))));
-                                    } else if (index < parseRes.length - 1) { //是夹在两个text-handle中的空白文本
+                                    } else if (index < parseRes.length - 1 && $.isS(parseRes[index - 1])) { //是夹在两个text-handle中的空白文本
                                         $.p(result, new TextHandle(doc.createTextNode(" ")));
                                     }
                                 }
