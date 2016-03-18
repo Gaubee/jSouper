@@ -10,7 +10,7 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-wrap');
     grunt.loadNpmTasks('grunt-notify');
     //define tasks
-    grunt.registerTask('server', [/*'connect:server',*/ 'watch']);
+    grunt.registerTask('server', [ /*'connect:server',*/ 'watch']);
 
     var baseFile = [
             'src/$.js',
@@ -76,10 +76,17 @@ module.exports = function(grunt) {
             options: {
                 beautify: false
             },
-            my_target: {
+            main: {
                 files: {
-                    'build/jSouper.min.js': ['build/jSouper.js']
+                    'build/jSouper.min.js': ['build/jSouper.js'],
                 }
+            },
+            plugin: {
+                files: [{
+                    expand: true,
+                    src: 'plugin/*.js',
+                    dest: 'build'
+                }]
             }
         },
         //======== 开发相关 ========
@@ -117,7 +124,11 @@ module.exports = function(grunt) {
             },
             js: {
                 files: ['src/*.js', 'src/**/*.js'],
-                tasks: ['concat', 'wrap', 'uglify'] //,'closure-compiler'
+                tasks: ['concat', 'wrap', 'uglify:main'] //,'closure-compiler'
+            },
+            plugin: {
+                files: ['plugin/*.js', 'src/**/*.js'],
+                tasks: ['uglify:plugin'] //,'closure-compiler'
             }
         }
 

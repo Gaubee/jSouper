@@ -261,7 +261,7 @@ var
                 return doc.createComment(info)
             },
             //通过传入的字符串创建节点以及其子节点
-            cs: function(nodeHTML) { //createElement by Str
+            cs: function(nodeHTML, _doc) { //createElement by Str
                 var result;
                 if (nodeHTML.charAt(0) === "<" && nodeHTML.charAt(nodeHTML.length - 1) === ">" && nodeHTML.length >= 3) {
                     var parse = rsingleTag.exec(nodeHTML);

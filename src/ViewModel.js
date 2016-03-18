@@ -478,6 +478,14 @@ var __ViewModelProto__ = ViewModel.prototype = {
             return teleporter.vi;
         }
     },
+    removeTeleporterVM: function(telporterName) {
+        var self = this;
+        var teleporter = self._teleporters[telporterName];
+        if (teleporter && teleporter.vi) {
+            teleporter.vi.remove();
+            teleporter.vi = $NULL;
+        }
+    },
     /*
      * 获取代理后面真正的Model
      */
@@ -622,4 +630,6 @@ __ViewModelProto__.on = function(key, handle) {
     $.us(triggerContainer, keyTrigger);
     //强制更新
     smartkeyTrigger.rebuild($TRUE);
+
+    viewModel.model.rebuildTree();
 };

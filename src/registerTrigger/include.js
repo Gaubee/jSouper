@@ -22,7 +22,7 @@ var _require_module = function(url, handleFun) {
             url: config_url,
             success: handleQuene,
             error: function() {
-                throw new Error("module " + url + " is undefined.")
+                console.error(Error("module " + url + " is undefined."));
             },
             complete: function() {
                 //GC

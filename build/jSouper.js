@@ -263,7 +263,7 @@ var
                 return doc.createComment(info)
             },
             //通过传入的字符串创建节点以及其子节点
-            cs: function(nodeHTML) { //createElement by Str
+            cs: function(nodeHTML, _doc) { //createElement by Str
                 var result;
                 if (nodeHTML.charAt(0) === "<" && nodeHTML.charAt(nodeHTML.length - 1) === ">" && nodeHTML.length >= 3) {
                     var parse = rsingleTag.exec(nodeHTML);
@@ -433,6 +433,7 @@ var
             }
         }
     };
+
 //将字符串反转义
 var charIndexBuggy = "a" [0] != "a";
 var Escapes = {
@@ -2753,9 +2754,11 @@ var _outerHTML = (function() {
     var _wrapDIV = fragment();
     var _tagHTML = function(node) {
         node = $.D.cl(node);
-        _wrapDIV.appendChild(node);
+        $.D.ap(_wrapDIV, node);
+        // _wrapDIV.appendChild(node);
         var outerHTMLStr = _wrapDIV.innerHTML;
-        _wrapDIV.removeChild(node);
+        $.D.rm(node);
+        // _wrapDIV.removeChild(node);
 
         return outerHTMLStr;
     }
@@ -2835,7 +2838,7 @@ function _buildHandler(self) {
     });
 };
 var ignoreTagNameMap = {};
-$.fI("script|pre|template|style|link".split("|"), function(value, key) {
+$.fI("script|pre|style|link".split("|"), function(value, key) {
     ignoreTagNameMap[value] = ignoreTagNameMap[value.toUpperCase()] = $TRUE;
 });
 
@@ -3104,6 +3107,7 @@ function _create(self, data, opts) { //data maybe basedata or model
     var result = new ViewModel(self.handleNodeTree, NodeList_of_ViewModel, self._triggerTable, data, opts, self.vmName);
     return result;
 };
+
 /*
  * View Instance constructor
  */
@@ -3584,6 +3588,14 @@ var __ViewModelProto__ = ViewModel.prototype = {
             return teleporter.vi;
         }
     },
+    removeTeleporterVM: function(telporterName) {
+        var self = this;
+        var teleporter = self._teleporters[telporterName];
+        if (teleporter && teleporter.vi) {
+            teleporter.vi.remove();
+            teleporter.vi = $NULL;
+        }
+    },
     /*
      * 获取代理后面真正的Model
      */
@@ -3728,6 +3740,8 @@ __ViewModelProto__.on = function(key, handle) {
     $.us(triggerContainer, keyTrigger);
     //强制更新
     smartkeyTrigger.rebuild($TRUE);
+
+    viewModel.model.rebuildTree();
 };
 /*
  * parse function
@@ -5304,7 +5318,7 @@ var _require_module = function(url, handleFun) {
             url: config_url,
             success: handleQuene,
             error: function() {
-                throw new Error("module " + url + " is undefined.")
+                console.error(Error("module " + url + " is undefined."));
             },
             complete: function() {
                 //GC

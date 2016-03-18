@@ -70,9 +70,11 @@ var _outerHTML = (function() {
     var _wrapDIV = fragment();
     var _tagHTML = function(node) {
         node = $.D.cl(node);
-        _wrapDIV.appendChild(node);
+        $.D.ap(_wrapDIV, node);
+        // _wrapDIV.appendChild(node);
         var outerHTMLStr = _wrapDIV.innerHTML;
-        _wrapDIV.removeChild(node);
+        $.D.rm(node);
+        // _wrapDIV.removeChild(node);
 
         return outerHTMLStr;
     }
@@ -152,7 +154,7 @@ function _buildHandler(self) {
     });
 };
 var ignoreTagNameMap = {};
-$.fI("script|pre|template|style|link".split("|"), function(value, key) {
+$.fI("script|pre|style|link".split("|"), function(value, key) {
     ignoreTagNameMap[value] = ignoreTagNameMap[value.toUpperCase()] = $TRUE;
 });
 
