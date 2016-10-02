@@ -287,10 +287,11 @@ var
             //通过传入的字符串创建节点以及其子节点
             cs: function(nodeHTML, _doc) { //createElement by Str
                 var result;
+                _doc || (_doc = doc);
                 if (nodeHTML.charAt(0) === "<" && nodeHTML.charAt(nodeHTML.length - 1) === ">" && nodeHTML.length >= 3) {
                     var parse = rsingleTag.exec(nodeHTML);
                     if (parse) {
-                        result = doc.createElement(parse[1])
+                        result = _doc.createElement(parse[1])
                     } else {
                         //@jQuery
                         var tag = rtagName.exec(nodeHTML);
@@ -308,7 +309,7 @@ var
                         }
                     }
                 } else {
-                    result = doc.createTextNode(nodeHTML);
+                    result = _doc.createTextNode(nodeHTML);
                 }
                 return result;
             },
@@ -4683,8 +4684,8 @@ function _teleporter_display(show_or_hidden, NodeList_of_ViewModel, model, /*tri
     console.log(show_or_hidden ? "display:" : "remove:", teleporterViewModel);
 
     if (teleporterViewModel) {
-        if (show_or_hidden&&teleporter.display) {
-            if(!teleporterViewModel._canRemoveAble){//can-insert-able
+        if (show_or_hidden && teleporter.display) {
+            if (!teleporterViewModel._canRemoveAble) { //can-insert-able
                 teleporterViewModel.insert(commentPlaceholderElement);
             }
         } else {
@@ -4695,10 +4696,10 @@ function _teleporter_display(show_or_hidden, NodeList_of_ViewModel, model, /*tri
     //使用存储显示信息
     teleporter.show_or_hidden = show_or_hidden;
 };
-V.rh("#teleporter", function(handle, index, parentHandle) {
+V.rh("@", V.rh("#teleporter", function(handle, index, parentHandle) {
     handle.display = _teleporter_display; //Custom rendering function
     _commentPlaceholder(handle, parentHandle);
-});
+}));
 
 var _with_display = function(show_or_hidden, NodeList_of_ViewModel, model, triggerBy, viewModel_ID) {
     var handle = this,
@@ -5553,7 +5554,7 @@ var _layout_trigger_common = function(NodeList_of_ViewModel, proxyModel, viewMod
     return layoutViewModel;
 }
 
-V.rt("#teleporter", function(handle, index, parentHandle) {
+V.rt("@", V.rt("#teleporter", function(handle, index, parentHandle) {
     var expressionStr = handle.handleInfo.expression;
     var teleporterName;
     if (expressionStr) {
@@ -5640,7 +5641,7 @@ V.rt("#teleporter", function(handle, index, parentHandle) {
         }
     }
     return trigger;
-});
+}));
 
 V.rt("#with", function(handle, index, parentHandle) {
 	// console.log(handle)
@@ -6399,6 +6400,13 @@ function registerHandle(handleName, handleFun) {
 					endCommentNode = NodeList_of_ViewModel[endCommentId].currentNode,
 					// argumentsDataSet = [],
 					index = -1;
+				// debugger
+				// //FIX Polymer.js BUG
+				// endCommentNode.__dom && endCommentNode.parentNode && (
+				// 	endCommentNode.__dom.parentNode = endCommentNode.parentNode)
+				// startCommentNode.__dom && startCommentNode.parentNode && (
+				// 	startCommentNode.__dom.parentNode = startCommentNode.parentNode)
+
 				var handleArgs = expression.foo(V._instances[viewModel_ID]);
 
 				//先移除无用内容
@@ -6432,6 +6440,7 @@ function registerHandle(handleName, handleFun) {
 registerHandle("HTML", function() {
 	return Array.prototype.join.call(arguments, "");
 })
+
 // var __error = console.error;
 // console.error = function() {
 //     debugger

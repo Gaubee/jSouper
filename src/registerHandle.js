@@ -51,6 +51,13 @@ function registerHandle(handleName, handleFun) {
 					endCommentNode = NodeList_of_ViewModel[endCommentId].currentNode,
 					// argumentsDataSet = [],
 					index = -1;
+				// debugger
+				// //FIX Polymer.js BUG
+				// endCommentNode.__dom && endCommentNode.parentNode && (
+				// 	endCommentNode.__dom.parentNode = endCommentNode.parentNode)
+				// startCommentNode.__dom && startCommentNode.parentNode && (
+				// 	startCommentNode.__dom.parentNode = startCommentNode.parentNode)
+
 				var handleArgs = expression.foo(V._instances[viewModel_ID]);
 
 				//先移除无用内容

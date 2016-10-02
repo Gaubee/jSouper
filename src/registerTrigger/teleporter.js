@@ -1,4 +1,4 @@
-V.rt("#teleporter", function(handle, index, parentHandle) {
+V.rt("@", V.rt("#teleporter", function(handle, index, parentHandle) {
     var expressionStr = handle.handleInfo.expression;
     var teleporterName;
     if (expressionStr) {
@@ -85,4 +85,4 @@ V.rt("#teleporter", function(handle, index, parentHandle) {
         }
     }
     return trigger;
-});
+}));

@@ -18,8 +18,8 @@ function _teleporter_display(show_or_hidden, NodeList_of_ViewModel, model, /*tri
     console.log(show_or_hidden ? "display:" : "remove:", teleporterViewModel);
 
     if (teleporterViewModel) {
-        if (show_or_hidden&&teleporter.display) {
-            if(!teleporterViewModel._canRemoveAble){//can-insert-able
+        if (show_or_hidden && teleporter.display) {
+            if (!teleporterViewModel._canRemoveAble) { //can-insert-able
                 teleporterViewModel.insert(commentPlaceholderElement);
             }
         } else {
@@ -30,7 +30,7 @@ function _teleporter_display(show_or_hidden, NodeList_of_ViewModel, model, /*tri
     //使用存储显示信息
     teleporter.show_or_hidden = show_or_hidden;
 };
-V.rh("#teleporter", function(handle, index, parentHandle) {
+V.rh("@", V.rh("#teleporter", function(handle, index, parentHandle) {
     handle.display = _teleporter_display; //Custom rendering function
     _commentPlaceholder(handle, parentHandle);
-});
+}));

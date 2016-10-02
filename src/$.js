@@ -263,10 +263,11 @@ var
             //通过传入的字符串创建节点以及其子节点
             cs: function(nodeHTML, _doc) { //createElement by Str
                 var result;
+                _doc || (_doc = doc);
                 if (nodeHTML.charAt(0) === "<" && nodeHTML.charAt(nodeHTML.length - 1) === ">" && nodeHTML.length >= 3) {
                     var parse = rsingleTag.exec(nodeHTML);
                     if (parse) {
-                        result = doc.createElement(parse[1])
+                        result = _doc.createElement(parse[1])
                     } else {
                         //@jQuery
                         var tag = rtagName.exec(nodeHTML);
@@ -284,7 +285,7 @@ var
                         }
                     }
                 } else {
-                    result = doc.createTextNode(nodeHTML);
+                    result = _doc.createTextNode(nodeHTML);
                 }
                 return result;
             },
